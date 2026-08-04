@@ -24,7 +24,7 @@ Unpwn.Storage
  └── Local encrypted persistence
 
 Unpwn.Automation
- ├── Web Standards Integration
+ ├── Recovery Location Discovery
  ├── Browser Assistance (Playwright)
  └── Manual Guidance
 
@@ -121,7 +121,7 @@ Automation layers:
 ```
 Unpwn.Automation
 
-├── Web Standards Integration
+├── Recovery Location Discovery
 │     └── /.well-known/change-password (optional)
 │
 ├── Browser Assistance
@@ -130,10 +130,14 @@ Unpwn.Automation
 └── Manual Guidance
 ```
 
+The `/.well-known/change-password` standard is used only to discover a suitable password change location. It does not provide an automation protocol.
+
+Browser assistance is responsible for helping the user complete workflows when appropriate.
+
 Automation priority:
 
 1. Official APIs where available
-2. Supported web standards
+2. Supported web standards for discovery
 3. Browser assistance for supported workflows
 4. Manual guidance
 
