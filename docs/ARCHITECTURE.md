@@ -2,9 +2,29 @@
 
 ## Overview
 
-unpwn is designed as a modular local-first recovery orchestration platform.
+unpwn is designed as a modular, local-first recovery orchestration platform.
 
 The architecture separates recovery planning, workflow execution, storage, automation assistance, imports, exports, and service-specific providers.
+
+The architecture is designed to be platform-neutral. Windows is the initial target platform, but core components should not depend on Windows-specific functionality. Future support for macOS and Linux should be possible without redesigning the recovery engine.
+
+## Recovery Workflows
+
+Recovery workflows are a first-class concept in unpwn.
+
+A workflow describes the steps required to restore control over a digital account after a suspected security incident.
+
+A workflow may include:
+
+- identifying the account
+- assessing priority and risk
+- changing credentials
+- invalidating sessions
+- reviewing MFA settings
+- checking recovery options
+- documenting completion
+
+Providers define service-specific workflows, while the Recovery Engine manages execution, state tracking, prioritization, and user interaction.
 
 ## Components
 
