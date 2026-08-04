@@ -24,9 +24,8 @@ Unpwn.Storage
  └── Local encrypted persistence
 
 Unpwn.Automation
- ├── Web Standard Actions
- ├── Provider Automation
- ├── Playwright Fallback
+ ├── Web Standards Integration
+ ├── Browser Assistance (Playwright)
  └── Manual Guidance
 
 Unpwn.Import
@@ -40,10 +39,10 @@ Unpwn.Export
  └── CSV
 
 Unpwn.Providers
- ├── Google
- ├── Microsoft
- ├── GitHub
- └── Other services
+ ├── GoogleRecoveryProvider
+ ├── MicrosoftRecoveryProvider
+ ├── GitHubRecoveryProvider
+ └── Other service providers
 ```
 
 ## Recovery Vault
@@ -96,10 +95,22 @@ Example:
 ```
 IRecoveryProvider
     - GetRecoveryActions()
-    - ExecuteRecoveryAction()
+    - DescribeRecoveryWorkflow()
 ```
 
-Providers define service-specific recovery workflows for services such as Google, Microsoft, and GitHub.
+Providers define service-specific recovery workflows.
+
+Examples:
+
+```
+GoogleRecoveryProvider
+ ├── ChangePassword
+ ├── RevokeSessions
+ ├── CheckMFA
+ └── ReviewRecoveryOptions
+```
+
+Providers define what needs to happen. They do not define how browser automation works.
 
 ## Automation
 
@@ -110,15 +121,21 @@ Automation layers:
 ```
 Unpwn.Automation
 
-├── Standard Web Actions
+├── Web Standards Integration
 │     └── /.well-known/change-password (optional)
 │
-├── Provider Automation
-│
-├── Playwright Fallback
+├── Browser Assistance
+│     └── Playwright-based assistance
 │
 └── Manual Guidance
 ```
+
+Automation priority:
+
+1. Official APIs where available
+2. Supported web standards
+3. Browser assistance for supported workflows
+4. Manual guidance
 
 Browser automation uses visible browser sessions where possible.
 
