@@ -2,9 +2,9 @@
 
 ## Overview
 
-unpwn is designed as a modular local-first recovery platform.
+unpwn is designed as a modular local-first recovery orchestration platform.
 
-The architecture separates recovery logic, storage, automation, imports, exports, and service-specific providers.
+The architecture separates recovery planning, workflow execution, storage, automation assistance, imports, exports, and service-specific providers.
 
 ## Components
 
@@ -12,7 +12,8 @@ The architecture separates recovery logic, storage, automation, imports, exports
 Unpwn.Core
  ├── Recovery Engine
  ├── Workflow State Machine
- ├── Prioritization Logic
+ ├── Risk Prioritization Logic
+ ├── Recovery Planning
  └── Recovery Action Model
 
 Unpwn.Vault
@@ -29,7 +30,7 @@ Unpwn.Automation
  └── Manual Guidance
 
 Unpwn.Import
- ├── Browser import
+ ├── Browser/password manager imports
  └── Generic import mapping
 
 Unpwn.Export
@@ -84,23 +85,21 @@ UserConfirmation:
   REQUIRED
 ```
 
-This allows unpwn to decide which actions can be automated and which require explicit user interaction.
+This allows unpwn to decide which actions can be assisted automatically and which require explicit user interaction.
 
 ## Provider System
 
 Services are implemented through providers instead of hard-coded account logic.
 
-Example:
-
-```
-IRecoveryProvider
-    - GetRecoveryActions()
-    - DescribeRecoveryWorkflow()
-```
-
 Providers define service-specific recovery workflows.
 
-Examples:
+They answer:
+
+"What needs to happen for this service?"
+
+They do not define how browser automation works.
+
+Example:
 
 ```
 GoogleRecoveryProvider
@@ -110,9 +109,7 @@ GoogleRecoveryProvider
  └── ReviewRecoveryOptions
 ```
 
-Providers define what needs to happen. They do not define how browser automation works.
-
-## Automation
+## Automation Assistance
 
 unpwn does not depend on browser password managers or vendor-specific ecosystems.
 
@@ -132,7 +129,7 @@ Unpwn.Automation
 
 The `/.well-known/change-password` standard is used only to discover a suitable password change location. It does not provide an automation protocol.
 
-Browser assistance is responsible for helping the user complete workflows when appropriate.
+Browser assistance helps users complete workflows when appropriate. It is not intended to be an autonomous account recovery bot.
 
 Automation priority:
 
@@ -140,8 +137,6 @@ Automation priority:
 2. Supported web standards for discovery
 3. Browser assistance for supported workflows
 4. Manual guidance
-
-Browser automation uses visible browser sessions where possible.
 
 Security boundaries:
 
