@@ -4,21 +4,24 @@
 
 - Repository documentation
 - Application structure
-- Local storage foundation
+- Local encrypted storage foundation
 - Testing setup
+- Recovery session foundation
 
 ## MVP 0.2 - Recovery Engine
 
 - Recovery session model
 - Account model
-- Recovery task workflow
+- Recovery action workflow
+- Account prioritization
 - Status tracking
 - Progress calculation
+- Recovery history
 
 ## MVP 0.3 - Import
 
 - Generic account import
-- Chrome integration
+- Browser/password manager export import support
 - Mapping workflow
 
 ## MVP 0.4 - Recovery Providers
@@ -29,18 +32,22 @@ Initial providers:
 2. Microsoft
 3. GitHub
 
-Each provider defines recovery steps such as:
+Each provider defines recovery workflows such as:
 
-- change password
+- change or reset password
 - invalidate sessions
 - review MFA
 - check recovery options
+- review connected applications
 
-## MVP 0.5 - Automation
+## MVP 0.5 - Automation Assistance
 
-- Playwright integration
-- Visible browser workflows
+- Browser assistance
+- Visible Playwright workflows
 - User-assisted automation
+- Recovery location discovery
+
+Automation remains a supporting feature. The primary product value is the recovery workflow and progress management.
 
 ## Future
 
@@ -50,3 +57,4 @@ Possible future integrations:
 - additional providers
 - advanced recovery recommendations
 - optional portability features
+- additional automation capabilities
