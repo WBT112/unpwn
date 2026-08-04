@@ -14,7 +14,7 @@ Users should run unpwn from a trusted environment whenever possible.
 
 unpwn must:
 
-- keep recovery data local in the MVP
+- keep recovery data local
 - encrypt stored recovery information
 - avoid logging secrets
 - avoid collecting user credentials remotely
