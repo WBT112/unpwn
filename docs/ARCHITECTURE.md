@@ -8,6 +8,19 @@ The architecture separates recovery planning, workflow execution, storage, autom
 
 The architecture is designed to be platform-neutral. Windows is the initial target platform, but core components should not depend on Windows-specific functionality. Future support for macOS and Linux should be possible without redesigning the recovery engine.
 
+## Technology Stack
+
+The initial implementation uses:
+
+- C#
+- .NET LTS
+- Avalonia UI
+- SQLite
+
+The application follows a modular architecture with a platform-independent core.
+
+Platform-specific functionality must remain isolated from recovery logic, workflow logic, and provider implementations.
+
 ## Recovery Workflows
 
 Recovery workflows are a first-class concept in unpwn.
@@ -29,6 +42,12 @@ Providers define service-specific workflows, while the Recovery Engine manages e
 ## Components
 
 ```
+Unpwn.App
+ └── Avalonia Desktop Application
+
+Unpwn.Application
+ └── Application Services and Use Cases
+
 Unpwn.Core
  ├── Recovery Engine
  ├── Workflow State Machine
@@ -36,13 +55,15 @@ Unpwn.Core
  ├── Recovery Planning
  └── Recovery Action Model
 
+Unpwn.Infrastructure
+ ├── SQLite Storage
+ ├── Encryption
+ └── OS Integration
+
 Unpwn.Vault
  ├── Encrypted Recovery Vault
  ├── Credential Storage
  └── Recovery History
-
-Unpwn.Storage
- └── Local encrypted persistence
 
 Unpwn.Automation
  ├── Recovery Location Discovery
