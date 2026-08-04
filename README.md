@@ -23,7 +23,7 @@ unpwn provides a structured recovery process:
 
 - Open source
 - Local-first
-- No cloud dependency in MVP
+- No cloud dependency
 - No password collection service
 - Transparent security model
 - Human in the loop where required
