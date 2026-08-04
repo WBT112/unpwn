@@ -12,7 +12,8 @@ The architecture separates recovery logic, storage, automation, imports, exports
 Unpwn.Core
  ├── Recovery Engine
  ├── Workflow State Machine
- └── Prioritization Logic
+ ├── Prioritization Logic
+ └── Recovery Action Model
 
 Unpwn.Vault
  ├── Encrypted Recovery Vault
@@ -23,7 +24,10 @@ Unpwn.Storage
  └── Local encrypted persistence
 
 Unpwn.Automation
- └── Playwright browser automation
+ ├── Web Standard Actions
+ ├── Provider Automation
+ ├── Playwright Fallback
+ └── Manual Guidance
 
 Unpwn.Import
  ├── Browser import
@@ -51,13 +55,37 @@ It may exist for days or weeks because account recovery is not always completed 
 The vault contains:
 
 - accounts
-- recovery tasks
+- recovery actions
 - workflow state
 - generated credentials
 - export information
 - user notes
 
-The vault is not intended to replace a password manager.
+The vault is a recovery workspace, not a replacement for a dedicated password manager.
+
+## Recovery Actions
+
+Recovery steps are modeled as actions with security metadata.
+
+Example:
+
+```
+RecoveryAction
+
+Type:
+  CHANGE_PASSWORD
+
+Risk:
+  HIGH
+
+AutomationSupport:
+  SUPPORTED
+
+UserConfirmation:
+  REQUIRED
+```
+
+This allows unpwn to decide which actions can be automated and which require explicit user interaction.
 
 ## Provider System
 
@@ -67,17 +95,32 @@ Example:
 
 ```
 IRecoveryProvider
-    - GetRecoveryTasks()
-    - ExecuteRecoveryStep()
+    - GetRecoveryActions()
+    - ExecuteRecoveryAction()
 ```
 
-This allows independent support for Google, Microsoft, GitHub, and others.
+Providers define service-specific recovery workflows for services such as Google, Microsoft, and GitHub.
 
 ## Automation
 
-Browser automation uses Playwright with a visible browser.
+unpwn does not depend on browser password managers or vendor-specific ecosystems.
 
-The goal is maximum assistance while keeping users aware of actions.
+Automation layers:
+
+```
+Unpwn.Automation
+
+├── Standard Web Actions
+│     └── /.well-known/change-password (optional)
+│
+├── Provider Automation
+│
+├── Playwright Fallback
+│
+└── Manual Guidance
+```
+
+Browser automation uses visible browser sessions where possible.
 
 Security boundaries:
 
