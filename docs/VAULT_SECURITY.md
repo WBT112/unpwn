@@ -36,7 +36,6 @@ This design permits a vault-password change by re-encrypting the data key rather
 
 Argon2id parameters are stored as versioned vault metadata so they can be increased in future versions. Concrete parameters must be benchmarked on the minimum supported hardware before release.
 
-
 ## Cryptographic Prototype
 
 The focused Argon2id and AES-256-GCM prototype for Issue #5 is documented in [Cryptographic Prototype](CRYPTO_PROTOTYPE.md). It validates password-derived key wrapping, random vault data keys, per-encryption nonces, AES-GCM authentication tags, and associated-data binding before the encrypted SQLite vault is implemented.
@@ -62,8 +61,22 @@ Minimal unencrypted vault metadata may include:
 - Argon2id parameters and salt
 - encrypted vault data key
 - non-sensitive migration metadata
+- repository-defined generic record categories
+- opaque record identifiers
+
+Record categories are selected from a repository-controlled allowlist. They must describe only generic storage categories such as `account-state` or `generated-credential`; they must not contain provider names, account names, usernames, URLs, notes, or other user-controlled values.
+
+Record identifiers must be non-empty opaque GUIDs. Email addresses, usernames, provider identifiers, account labels, URLs, and recovery-state descriptions are not valid plaintext record identifiers.
 
 Account names, usernames, URLs, notes, credentials, and recovery state must not be stored in plaintext.
+
+Even generic record metadata is available only while the vault is unlocked. Listing encrypted record descriptors must fail closed when the vault is locked.
+
+## Vault File Creation and Opening
+
+Creating a vault must fail when a file already exists at the selected path. unpwn must not overwrite an existing vault or unrelated file implicitly.
+
+Opening an existing vault uses a non-creating SQLite mode. A missing file therefore remains a missing-file error rather than silently creating an empty database that could be mistaken for the original vault.
 
 ## Stored Credentials
 
@@ -87,6 +100,10 @@ A credential record must track whether it was:
 - Treat memory clearing in managed .NET as best effort rather than a complete guarantee.
 - Clipboard use must be explicit. Where supported, unpwn should clear copied credentials after a short user-visible interval.
 - Crash reports must exclude vault content and secrets.
+
+A decrypted vault record is exposed through a disposable object rather than a permanently public mutable byte array. Disposing the record overwrites its managed buffer on a best-effort basis and makes further access fail. Callers must use the narrowest possible lifetime, normally with `using`, and must not copy decrypted values into longer-lived strings or view-model state unless the specific user action requires it.
+
+Disposing a managed buffer reduces accidental retention but is not a forensic memory-erasure guarantee. Copies made by callers, runtimes, operating systems, debuggers, or compromised processes remain outside this guarantee.
 
 ## Export Safety
 
