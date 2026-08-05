@@ -4,7 +4,7 @@
 
 unpwn is designed as a modular, local-first account recovery orchestration platform.
 
-The architecture separates recovery planning, workflow execution, storage, vault security, automation assistance, imports, exports, and service-specific recovery workflows.
+The architecture separates recovery planning, workflow execution, storage, vault security, automation assistance, imports, exports, localization, and service-specific recovery workflows.
 
 The architecture is platform-neutral. Windows is the initial target platform, but core components must not depend on Windows-specific functionality. Future support for macOS and Linux should be possible without redesigning the recovery engine.
 
@@ -15,13 +15,14 @@ The initial implementation uses:
 - C#
 - .NET LTS
 - Avalonia UI
+- .NET resource files for presentation localization
 - SQLite
 - Argon2id for vault-password key derivation
 - AES-256-GCM for authenticated encryption
 
 The application follows a modular architecture with a platform-independent core.
 
-Platform-specific functionality must remain isolated from recovery logic, workflow logic, provider implementations, and portable vault access.
+Platform-specific functionality and localization must remain isolated from recovery logic, workflow logic, provider implementations, and portable vault access.
 
 ## Recovery Workflows
 
@@ -43,6 +44,8 @@ A workflow may include:
 
 Providers define service-specific workflows, while the Recovery Engine manages execution, dependencies, state tracking, prioritization, and user interaction.
 
+Workflow semantics use canonical identifiers and structured data. User-facing workflow titles, descriptions, warnings, and completion guidance are resolved through presentation localization keys and never control execution.
+
 See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
 
 ## Components
@@ -51,6 +54,7 @@ See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
 Unpwn.App
  ├── Avalonia Desktop Application
  ├── MVVM Application Shell and Navigation
+ ├── Localization Service and Resource Sets
  ├── Presentation Commands and Visual States
  └── UI Composition Root
 
@@ -102,7 +106,7 @@ Unpwn.Providers
 
 Dependencies point inward. `Unpwn.Core` is the platform-independent domain and has no project or external package dependencies. `Unpwn.Application` contains use cases and depends only on Core.
 
-Infrastructure, Vault, Automation, Import, Export, and Providers are adapters or feature modules. They may depend on Application and Core, but never on the desktop application or on one another. `Unpwn.App` is the composition root: it references the modules, wires them together, and owns all Avalonia UI concerns.
+Infrastructure, Vault, Automation, Import, Export, and Providers are adapters or feature modules. They may depend on Application and Core, but never on the desktop application or on one another. `Unpwn.App` is the composition root: it references the modules, wires them together, and owns all Avalonia UI and localization concerns.
 
 ```text
 Unpwn.App
@@ -114,13 +118,28 @@ Unpwn.App
  └── Unpwn.Providers ─────┘
 ```
 
-The architecture test project verifies this project-reference graph and checks that Core remains free of UI, storage, browser-automation, and operating-system dependencies.
+The architecture test project verifies this project-reference graph and checks that Core remains free of UI, storage, browser-automation, operating-system, and localization dependencies.
 
-The desktop shell uses constructor-injected view models and UI-facing services.
-Its code-behind is limited to view initialization, native file-picker bridging,
-and dialog close results. Navigation, lock visibility, session context,
-presentation status, command execution, cancellation, and safe error messages
-remain in presentation view models. See [Application Shell and UI Foundation](UI_FOUNDATION.md).
+The desktop shell uses constructor-injected view models and UI-facing services. Its code-behind is limited to view initialization, native file-picker bridging, and dialog close results. Navigation, lock visibility, session context, presentation status, command execution, cancellation, safe error codes, and localization remain in presentation services and view models. See [Application Shell and UI Foundation](UI_FOUNDATION.md).
+
+## Localization Boundary
+
+Localization is an application-wide presentation service owned by `Unpwn.App`.
+
+The boundary provides:
+
+- stable resource-key lookup
+- English source resources and deterministic fallback
+- explicit selected UI culture
+- parameterized formatting with that culture
+- culture-change notifications for visible screens
+- resource diagnostics that contain keys and cultures but no user values
+
+Views and view models consume localized text. Domain entities, workflow definitions, audit events, provider URLs, vault records, import/export schemas, and error codes remain language-neutral.
+
+The selected UI culture must not influence GUIDs, URLs, cryptographic associated data, serialized formats, workflow versions, or security-sensitive parsing. A language change therefore never requires a domain migration, workflow migration, or vault rewrite.
+
+See [Localization and Multilingual GUI](LOCALIZATION.md).
 
 ## Recovery Vault
 
@@ -156,6 +175,8 @@ Operating-system facilities such as Windows Credential Manager, macOS Keychain, 
 
 Old passwords are not stored. Generated new credentials may be retained, encrypted, until they are exported or deliberately deleted by the user.
 
+Localized labels are never used as vault record identifiers, record types, associated data, or canonical persisted state.
+
 See [Vault Security](VAULT_SECURITY.md).
 
 ## Recovery Actions
@@ -188,6 +209,8 @@ UserConfirmation:
 
 Actions may depend on other actions or accounts. For example, a password reset may depend on first securing the primary email account.
 
+The UI maps action types, importance, status, and confirmation consequences to localized resources. Recovery logic never compares localized labels.
+
 ## Data and Progress Model
 
 The central domain entities are:
@@ -207,6 +230,8 @@ unpwn reports more than one progress signal to avoid presenting a misleading sin
 - weighted required actions completed
 - blocked actions and unresolved risks
 
+These signals remain numeric and language-neutral. The presentation layer formats labels, counts, percentages, dates, and plural-sensitive messages with the selected UI culture.
+
 See [Data Model](DATA_MODEL.md).
 
 ## Provider System
@@ -217,7 +242,7 @@ Providers define service-specific recovery workflows. They answer:
 
 > What needs to happen for this service?
 
-They do not own vault cryptography or generic browser automation.
+They do not own vault cryptography, localization, or generic browser automation.
 
 Example:
 
@@ -272,4 +297,4 @@ Security boundaries:
 
 unpwn should be executed on a trusted device.
 
-If the executing system is compromised, local software cannot reliably protect new credentials, browser sessions, screen contents, or user input.
+If the executing system is compromised, local software cannot reliably protect new credentials, browser sessions, screen contents, user input, or translated security guidance displayed by the application.
