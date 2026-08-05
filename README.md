@@ -105,7 +105,7 @@ Tests can produce local Cobertura coverage output with:
 dotnet test unpwn.slnx --collect:"XPlat Code Coverage" --results-directory artifacts/test-results
 ```
 
-GitHub Actions runs the same baseline on Windows and Linux. CI uses synthetic test data only and uploads test results and coverage for seven days.
+GitHub Actions performs full Release builds and tests on Windows and Linux. Formatting/analyzer verification, Cobertura coverage collection, secret-marker scanning, and the normal successful artifact upload run on Linux; failed Windows test artifacts are uploaded only when needed. Retained test artifacts use the configured short retention period.
 
 Start the desktop shell with:
 
