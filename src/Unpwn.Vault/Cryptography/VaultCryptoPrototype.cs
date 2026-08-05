@@ -62,7 +62,7 @@ public sealed class VaultCryptoPrototype : IDisposable
         }
     }
 
-    public byte[] UnwrapDataKey(string vaultPassword, VaultKeyEnvelope envelope)
+    public static byte[] UnwrapDataKey(string vaultPassword, VaultKeyEnvelope envelope)
     {
         ValidateVaultPassword(vaultPassword);
         ArgumentNullException.ThrowIfNull(envelope);
@@ -106,7 +106,7 @@ public sealed class VaultCryptoPrototype : IDisposable
         return new EncryptedVaultRecord(descriptor, nonce, ciphertext, tag);
     }
 
-    public byte[] DecryptRecord(byte[] dataKey, EncryptedVaultRecord record)
+    public static byte[] DecryptRecord(byte[] dataKey, EncryptedVaultRecord record)
     {
         ValidateDataKey(dataKey);
         ArgumentNullException.ThrowIfNull(record);

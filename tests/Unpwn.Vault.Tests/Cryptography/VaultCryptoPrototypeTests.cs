@@ -15,7 +15,7 @@ public sealed class VaultCryptoPrototypeTests
         using var prototype = new VaultCryptoPrototype();
         var envelope = prototype.CreateVault("UNPWN_TEST_SECRET_vault-password", TestParameters);
 
-        var dataKey = prototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
+        var dataKey = VaultCryptoPrototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
 
         Assert.Equal(VaultCryptoPrototype.DataKeySizeBytes, dataKey.Length);
         Assert.Equal(VaultCryptoPrototype.SaltSizeBytes, envelope.Salt.Length);
@@ -30,8 +30,8 @@ public sealed class VaultCryptoPrototypeTests
         using var prototype = new VaultCryptoPrototype();
         var envelope = prototype.CreateVault("UNPWN_TEST_SECRET_correct-password", TestParameters);
 
-        Assert.Throws<CryptographicException>(
-            () => prototype.UnwrapDataKey("UNPWN_TEST_SECRET_wrong-password", envelope));
+        Assert.ThrowsAny<CryptographicException>(
+            () => VaultCryptoPrototype.UnwrapDataKey("UNPWN_TEST_SECRET_wrong-password", envelope));
     }
 
     [Fact]
@@ -39,12 +39,12 @@ public sealed class VaultCryptoPrototypeTests
     {
         using var prototype = new VaultCryptoPrototype();
         var envelope = prototype.CreateVault("UNPWN_TEST_SECRET_vault-password", TestParameters);
-        var dataKey = prototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
+        var dataKey = VaultCryptoPrototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
         var descriptor = new VaultRecordDescriptor("generated-credential", "account-123", 1);
         var plaintext = Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_generated-password");
 
         var record = prototype.EncryptRecord(dataKey, descriptor, plaintext);
-        var decrypted = prototype.DecryptRecord(dataKey, record);
+        var decrypted = VaultCryptoPrototype.DecryptRecord(dataKey, record);
 
         Assert.Equal(plaintext, decrypted);
         Assert.NotEqual(Convert.ToHexString(plaintext), Convert.ToHexString(record.Ciphertext));
@@ -55,14 +55,14 @@ public sealed class VaultCryptoPrototypeTests
     {
         using var prototype = new VaultCryptoPrototype();
         var envelope = prototype.CreateVault("UNPWN_TEST_SECRET_vault-password", TestParameters);
-        var dataKey = prototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
+        var dataKey = VaultCryptoPrototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
         var record = prototype.EncryptRecord(
             dataKey,
             new VaultRecordDescriptor("account-note", "account-123", 1),
             Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_note"));
         record.Ciphertext[0] ^= 0xff;
 
-        Assert.Throws<CryptographicException>(() => prototype.DecryptRecord(dataKey, record));
+        Assert.ThrowsAny<CryptographicException>(() => VaultCryptoPrototype.DecryptRecord(dataKey, record));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class VaultCryptoPrototypeTests
     {
         using var prototype = new VaultCryptoPrototype();
         var envelope = prototype.CreateVault("UNPWN_TEST_SECRET_vault-password", TestParameters);
-        var dataKey = prototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
+        var dataKey = VaultCryptoPrototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
         var record = prototype.EncryptRecord(
             dataKey,
             new VaultRecordDescriptor("credential", "account-123", 1),
@@ -80,7 +80,7 @@ public sealed class VaultCryptoPrototypeTests
             Descriptor = new VaultRecordDescriptor("credential", "account-456", 1),
         };
 
-        Assert.Throws<CryptographicException>(() => prototype.DecryptRecord(dataKey, reboundRecord));
+        Assert.ThrowsAny<CryptographicException>(() => VaultCryptoPrototype.DecryptRecord(dataKey, reboundRecord));
     }
 
     [Fact]
@@ -88,7 +88,7 @@ public sealed class VaultCryptoPrototypeTests
     {
         using var prototype = new VaultCryptoPrototype();
         var envelope = prototype.CreateVault("UNPWN_TEST_SECRET_vault-password", TestParameters);
-        var dataKey = prototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
+        var dataKey = VaultCryptoPrototype.UnwrapDataKey("UNPWN_TEST_SECRET_vault-password", envelope);
         var descriptor = new VaultRecordDescriptor("credential", "account-123", 1);
         var plaintext = Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_record");
 
