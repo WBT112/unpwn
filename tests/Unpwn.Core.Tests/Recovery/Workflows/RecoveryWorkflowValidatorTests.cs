@@ -103,3 +103,37 @@ public sealed class RecoveryWorkflowValidatorTests
             prerequisites ?? [],
             completionCriteria ?? ["The password was changed through the official provider flow."]);
 }
+
+public sealed class ProviderContractValidatorTests
+{
+    [Fact]
+    public void RepositoryCatalogContractScenariosAreValid()
+    {
+        ProviderContractValidationResult result = RepositoryWorkflowCatalog.ValidateContractScenarios();
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Diagnostics.Select(diagnostic => diagnostic.ToString())));
+    }
+
+    [Fact]
+    public void ContractValidationRejectsUnavailableExpectedPathsAndMissingActions()
+    {
+        var workflow = RepositoryWorkflowCatalog.Workflows.Single();
+        var scenario = new ProviderContractScenario(
+            "bad-contract",
+            workflow.WorkflowId,
+            "Invalid scenario for regression coverage.",
+            WorkflowTypes.RecoveryPath.PasswordReset,
+            ["missing-action"],
+            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
+            {
+                ["missing-action"] = new(WorkflowTypes.RecoveryActionRequirement.Required, WorkflowTypes.RecoveryActionImportance.Critical, []),
+            },
+            AccountContractOutcome.CanBeFullySecured);
+
+        ProviderContractValidationResult result = ProviderContractValidator.Validate(workflow, [scenario]);
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "expected-action-missing");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "expected-path-unavailable");
+    }
+}

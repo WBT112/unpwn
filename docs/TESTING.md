@@ -107,6 +107,8 @@ The synthetic provider should be a small local ASP.NET Core application that can
 - network delay or interruption
 - manual-recovery handoff
 
+The initial deterministic harness lives in `tests/Unpwn.SyntheticProvider.Tests`. It starts a local ASP.NET Core app on loopback with explicit scenario query parameters for login, re-authentication, password change, password reset, email-link handoff, MFA pause, CAPTCHA pause, expired links, provider errors, unexpected content, and manual-recovery handoff. The harness must keep using synthetic identifiers only and must not route tests to live providers.
+
 The synthetic provider must expose explicit scenario controls so tests do not depend on timing, randomness, or external services.
 
 ### 6. Playwright test mode
