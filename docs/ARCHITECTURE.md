@@ -2,11 +2,11 @@
 
 ## Overview
 
-unpwn is designed as a modular, local-first recovery orchestration platform.
+unpwn is designed as a modular, local-first account recovery orchestration platform.
 
-The architecture separates recovery planning, workflow execution, storage, automation assistance, imports, exports, and service-specific providers.
+The architecture separates recovery planning, workflow execution, storage, vault security, automation assistance, imports, exports, and service-specific recovery workflows.
 
-The architecture is designed to be platform-neutral. Windows is the initial target platform, but core components should not depend on Windows-specific functionality. Future support for macOS and Linux should be possible without redesigning the recovery engine.
+The architecture is platform-neutral. Windows is the initial target platform, but core components must not depend on Windows-specific functionality. Future support for macOS and Linux should be possible without redesigning the recovery engine.
 
 ## Technology Stack
 
@@ -16,10 +16,12 @@ The initial implementation uses:
 - .NET LTS
 - Avalonia UI
 - SQLite
+- Argon2id for vault-password key derivation
+- AES-256-GCM for authenticated encryption
 
 The application follows a modular architecture with a platform-independent core.
 
-Platform-specific functionality must remain isolated from recovery logic, workflow logic, and provider implementations.
+Platform-specific functionality must remain isolated from recovery logic, workflow logic, provider implementations, and portable vault access.
 
 ## Recovery Workflows
 
@@ -31,13 +33,17 @@ A workflow may include:
 
 - identifying the account
 - assessing priority and risk
+- selecting an authenticated password change, password reset, or manual recovery path
 - changing credentials
 - invalidating sessions
 - reviewing MFA settings
 - checking recovery options
+- reviewing connected applications, tokens, or trusted devices
 - documenting completion
 
-Providers define service-specific workflows, while the Recovery Engine manages execution, state tracking, prioritization, and user interaction.
+Providers define service-specific workflows, while the Recovery Engine manages execution, dependencies, state tracking, prioritization, and user interaction.
+
+See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
 
 ## Components
 
@@ -52,17 +58,19 @@ Unpwn.Core
  ├── Recovery Engine
  ├── Workflow State Machine
  ├── Risk Prioritization Logic
- ├── Recovery Planning
+ ├── Dependency Planning
+ ├── Progress Calculation
  └── Recovery Action Model
 
 Unpwn.Infrastructure
  ├── SQLite Storage
- ├── Encryption
+ ├── Cryptography
  └── OS Integration
 
 Unpwn.Vault
  ├── Encrypted Recovery Vault
  ├── Credential Storage
+ ├── Key Management
  └── Recovery History
 
 Unpwn.Automation
@@ -95,18 +103,37 @@ It may exist for days or weeks because account recovery is not always completed 
 
 The vault contains:
 
-- accounts
-- recovery actions
-- workflow state
-- generated credentials
+- accounts and account dependencies
+- recovery actions and workflow state
+- generated new credentials
 - export information
 - user notes
+- append-only audit events
 
 The vault is a recovery workspace, not a replacement for a dedicated password manager.
 
+### Key hierarchy
+
+The primary protection mechanism is a user-defined vault password.
+
+1. Argon2id derives a key-encryption key from the vault password and a random salt.
+2. A cryptographically random vault data key encrypts sensitive records.
+3. The derived key encrypts the vault data key.
+4. Changing the vault password re-wraps the data key without requiring every record to be re-encrypted.
+
+Sensitive records use AES-256-GCM with a unique nonce for every encryption operation. Record identifiers, record types, and schema versions should be authenticated as associated data.
+
+SQLite is the storage container. It must not be treated as the sole confidentiality boundary.
+
+Operating-system facilities such as Windows Credential Manager, macOS Keychain, or Linux Secret Service may later provide optional unlock convenience. They must not be required for portable vault access.
+
+Old passwords are not stored. Generated new credentials may be retained, encrypted, until they are exported or deliberately deleted by the user.
+
+See [Vault Security](VAULT_SECURITY.md).
+
 ## Recovery Actions
 
-Recovery steps are modeled as actions with security metadata.
+Recovery steps are modeled as actions with security and workflow metadata.
 
 Example:
 
@@ -116,39 +143,66 @@ RecoveryAction
 Type:
   CHANGE_PASSWORD
 
-Risk:
-  HIGH
+RecoveryPath:
+  AUTHENTICATED_CHANGE | PASSWORD_RESET | MANUAL_RECOVERY
+
+Importance:
+  CRITICAL | IMPORTANT | ROUTINE
+
+Status:
+  OPEN | IN_PROGRESS | BLOCKED | NEEDS_USER_ACTION | COMPLETED | FAILED
 
 AutomationSupport:
-  SUPPORTED
+  NONE | NAVIGATION | ASSISTED | AUTOMATED
 
 UserConfirmation:
   REQUIRED
 ```
 
-This allows unpwn to decide which actions can be assisted automatically and which require explicit user interaction.
+Actions may depend on other actions or accounts. For example, a password reset may depend on first securing the primary email account.
+
+## Data and Progress Model
+
+The central domain entities are:
+
+- `RecoverySession`
+- `Account`
+- `AccountDependency`
+- `RecoveryWorkflowDefinition`
+- `RecoveryActionInstance`
+- `CredentialEntry`
+- `AuditEvent`
+
+unpwn reports more than one progress signal to avoid presenting a misleading single percentage:
+
+- critical accounts secured
+- accounts fully reviewed
+- weighted required actions completed
+- blocked actions and unresolved risks
+
+See [Data Model](DATA_MODEL.md).
 
 ## Provider System
 
 Services are implemented through providers instead of hard-coded account logic.
 
-Providers define service-specific recovery workflows.
+Providers define service-specific recovery workflows. They answer:
 
-They answer:
+> What needs to happen for this service?
 
-"What needs to happen for this service?"
-
-They do not define how browser automation works.
+They do not own vault cryptography or generic browser automation.
 
 Example:
 
 ```
 GoogleRecoveryProvider
- ├── ChangePassword
+ ├── ChangeOrResetPassword
  ├── RevokeSessions
  ├── CheckMFA
  └── ReviewRecoveryOptions
 ```
+
+Provider and workflow contributions are made through normal pull requests to this repository. They are reviewed, tested, and shipped with unpwn releases. unpwn does not download or execute third-party provider plugins at runtime.
 
 ## Automation Assistance
 
@@ -163,7 +217,7 @@ Unpwn.Automation
 │     └── /.well-known/change-password (optional)
 │
 ├── Browser Assistance
-│     └── Playwright-based assistance
+│     └── Playwright-based visible workflows
 │
 └── Manual Guidance
 ```
@@ -174,9 +228,9 @@ Browser assistance helps users complete workflows when appropriate. It is not in
 
 Automation priority:
 
-1. Official APIs where available
-2. Supported web standards for discovery
-3. Browser assistance for supported workflows
+1. Official APIs where appropriate and safely available
+2. Supported web standards for location discovery
+3. Visible browser assistance for supported workflows
 4. Manual guidance
 
 Security boundaries:
@@ -184,10 +238,11 @@ Security boundaries:
 - no CAPTCHA bypass
 - no MFA bypass
 - no hidden account changes
+- no use of recovery mechanisms to gain access to accounts the user does not own
 - user confirmation for sensitive steps
 
 ## Security Assumption
 
 unpwn should be executed on a trusted device.
 
-If the executing system is compromised, local software cannot reliably protect new credentials or user input.
+If the executing system is compromised, local software cannot reliably protect new credentials, browser sessions, screen contents, or user input.
