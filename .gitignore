@@ -1,0 +1,32 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Test results
+TestResults/
+coverage/
+*.trx
+
+# Local application data and recovery vaults
+*.unpwn
+*.vault
+*.db
+*.db-shm
+*.db-wal
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Operating system files
+.DS_Store
+Thumbs.db
