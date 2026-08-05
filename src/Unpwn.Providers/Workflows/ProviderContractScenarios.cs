@@ -62,7 +62,7 @@ public static class ProviderContractValidator
     private static void ValidateScenario(
         RecoveryWorkflowDefinition workflow,
         ProviderContractScenario scenario,
-        IReadOnlyDictionary<string, RecoveryActionDefinition> actions,
+        Dictionary<string, RecoveryActionDefinition> actions,
         List<ProviderContractValidationDiagnostic> diagnostics)
     {
         if (!string.Equals(workflow.WorkflowId, scenario.WorkflowId, StringComparison.Ordinal))

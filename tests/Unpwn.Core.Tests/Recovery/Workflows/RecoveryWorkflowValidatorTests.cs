@@ -117,7 +117,11 @@ public sealed class ProviderContractValidatorTests
     [Fact]
     public void ContractValidationRejectsUnavailableExpectedPathsAndMissingActions()
     {
-        var workflow = RepositoryWorkflowCatalog.Workflows.Single();
+        var catalogWorkflow = RepositoryWorkflowCatalog.Workflows.Single();
+        var workflow = catalogWorkflow with
+        {
+            Actions = [.. catalogWorkflow.Actions.Where(action => action.RecoveryPath != WorkflowTypes.RecoveryPath.PasswordReset)],
+        };
         var scenario = new ProviderContractScenario(
             "bad-contract",
             workflow.WorkflowId,
