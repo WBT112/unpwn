@@ -64,13 +64,35 @@ Minimal unencrypted vault metadata may include:
 - repository-defined generic record categories
 - opaque record identifiers
 
-Record categories are selected from a repository-controlled allowlist. They must describe only generic storage categories such as `account-state` or `generated-credential`; they must not contain provider names, account names, usernames, URLs, notes, or other user-controlled values.
+Record categories are selected from a repository-controlled allowlist. They must describe only generic storage categories such as `account-state` or `generated-credential`; they must not contain provider names, account names, usernames, URLs, notes, translated labels, or other user-controlled values.
 
-Record identifiers must be non-empty opaque GUIDs. Email addresses, usernames, provider identifiers, account labels, URLs, and recovery-state descriptions are not valid plaintext record identifiers.
+Record identifiers must be non-empty opaque GUIDs. Email addresses, usernames, provider identifiers, account labels, localized names, URLs, and recovery-state descriptions are not valid plaintext record identifiers.
 
 Account names, usernames, URLs, notes, credentials, and recovery state must not be stored in plaintext.
 
 Even generic record metadata is available only while the vault is unlocked. Listing encrypted record descriptors must fail closed when the vault is locked.
+
+## Localization boundary
+
+Localization is not part of the cryptographic format.
+
+The following must remain invariant and language-neutral:
+
+- vault format versions
+- algorithm identifiers
+- record categories
+- opaque record identifiers
+- associated-data encoding
+- serialized field names and enum values
+- migration identifiers
+
+Translated labels must never be used as record types, identifiers, associated data, lookup keys, or migration conditions. Changing the selected GUI language must not re-encrypt, migrate, rename, or rewrite vault data.
+
+The preferred GUI language may be stored as a separate non-secret application preference available before unlock. It must not be used as key-derivation input or as an authorization signal.
+
+Localized vault warnings and confirmations fall back to complete reviewed English resources when a translation is unavailable. Missing text must never remove the consequence of creating, opening, locking, exporting from, or deleting a vault.
+
+See [Localization and Multilingual GUI](LOCALIZATION.md).
 
 ## Vault File Creation and Opening
 
@@ -92,9 +114,11 @@ A credential record must track whether it was:
 - exported
 - deleted
 
+Credential lifecycle values are canonical. The UI localizes their descriptions at display time.
+
 ## Secret Handling
 
-- Never write credentials or vault keys to logs, telemetry, exception messages, or audit events.
+- Never write credentials or vault keys to logs, telemetry, exception messages, audit events, or localization diagnostics.
 - Disable or sanitize diagnostic output for objects that may contain secrets.
 - Keep decrypted secrets in memory only for the shortest practical period.
 - Treat memory clearing in managed .NET as best effort rather than a complete guarantee.
@@ -104,6 +128,8 @@ A credential record must track whether it was:
 A decrypted vault record is exposed through a disposable object rather than a permanently public mutable byte array. Disposing the record overwrites its managed buffer on a best-effort basis and makes further access fail. Callers must use the narrowest possible lifetime, normally with `using`, and must not copy decrypted values into longer-lived strings or view-model state unless the specific user action requires it.
 
 Disposing a managed buffer reduces accidental retention but is not a forensic memory-erasure guarantee. Copies made by callers, runtimes, operating systems, debuggers, or compromised processes remain outside this guarantee.
+
+Resource formatting or missing-key diagnostics must never include a decrypted value or any formatting argument that may contain vault data.
 
 ## Export Safety
 
@@ -117,7 +143,11 @@ Before export, unpwn must:
 - recommend immediate import into a password manager
 - offer to delete the plaintext export after confirmed import
 
+These warnings must remain explicit in every shipped language and fall back to the reviewed English resources.
+
 Deletion cannot guarantee forensic erasure on modern filesystems or storage devices. The UI must not claim otherwise.
+
+Machine-readable export formats use deterministic field names and value encodings defined by the target format. They do not change with the selected GUI language unless a format explicitly requires localized human-readable output.
 
 ## Locking and Lifecycle
 
@@ -143,3 +173,4 @@ The vault does not protect against:
 - screen capture by a privileged attacker
 - browser-session theft while the browser is in use
 - compromise of the user's vault password outside unpwn
+- misleading third-party or user-supplied translations outside the reviewed application resources
