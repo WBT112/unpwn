@@ -1,0 +1,33 @@
+name: Feature or implementation task
+description: Propose a scoped implementation or architecture task
+title: ""
+labels: []
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem should be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What should be included and excluded?
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and privacy impact
+      description: Describe effects on credentials, vault data, workflows, exports, logging, or automation.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List verifiable completion criteria.
+    validations:
+      required: true
