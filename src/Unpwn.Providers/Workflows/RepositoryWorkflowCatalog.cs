@@ -83,12 +83,11 @@ public static class RepositoryWorkflowCatalog
 
     public static WorkflowValidationResult ValidateAll()
     {
-        RecoveryWorkflowValidator validator = new();
         List<WorkflowValidationDiagnostic> diagnostics = [];
 
         foreach (RecoveryWorkflowDefinition workflow in Workflows)
         {
-            diagnostics.AddRange(validator.Validate(workflow).Diagnostics);
+            diagnostics.AddRange(RecoveryWorkflowValidator.Validate(workflow).Diagnostics);
         }
 
         return diagnostics.Count == 0 ? WorkflowValidationResult.Valid : WorkflowValidationResult.FromDiagnostics(diagnostics);

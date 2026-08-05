@@ -1,5 +1,6 @@
 using Unpwn.Core.Recovery.Workflows;
 using Unpwn.Providers.Workflows;
+using Xunit;
 
 namespace Unpwn.Core.Tests.Recovery.Workflows;
 
@@ -28,7 +29,7 @@ public sealed class RecoveryWorkflowValidatorTests
                 CreateAction("change-password", prerequisites: [])
             ]);
 
-        WorkflowValidationResult result = new RecoveryWorkflowValidator().Validate(workflow);
+        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow);
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "verification-date-in-future");
@@ -49,7 +50,7 @@ public sealed class RecoveryWorkflowValidatorTests
                     completionCriteria: [])
             ]);
 
-        WorkflowValidationResult result = new RecoveryWorkflowValidator().Validate(workflow);
+        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow);
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "required-action-completion-criteria");
@@ -66,7 +67,7 @@ public sealed class RecoveryWorkflowValidatorTests
                 CreateAction("second", prerequisites: ["first"])
             ]);
 
-        WorkflowValidationResult result = new RecoveryWorkflowValidator().Validate(workflow);
+        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow);
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "cyclic-prerequisite");

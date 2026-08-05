@@ -44,6 +44,7 @@ public sealed class ProjectDependencyTests
         var expectedProjects = AllowedReferences.Keys
             .Append("Unpwn.Architecture.Tests")
             .Append("Unpwn.Application.Tests")
+            .Append("Unpwn.Core.Tests")
             .Order(StringComparer.Ordinal)
             .ToArray();
 

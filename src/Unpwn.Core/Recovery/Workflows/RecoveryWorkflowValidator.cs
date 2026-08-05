@@ -4,7 +4,7 @@ public sealed class RecoveryWorkflowValidator
 {
     private static readonly DateOnly CurrentDate = new(2026, 8, 5);
 
-    public WorkflowValidationResult Validate(RecoveryWorkflowDefinition workflow)
+    public static WorkflowValidationResult Validate(RecoveryWorkflowDefinition workflow)
     {
         ArgumentNullException.ThrowIfNull(workflow);
 
