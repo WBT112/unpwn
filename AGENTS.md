@@ -55,6 +55,24 @@ Preserve dependency direction:
 
 Windows is the first target platform, but core components must remain platform-neutral.
 
+## Localization and Presentation Rules
+
+Design every new user-facing surface so additional GUI languages can be added without changing domain, workflow, or vault logic.
+
+- Do not hard-code user-facing text in XAML, code-behind, view models, services, or exception-to-dialog mappings.
+- Obtain labels, buttons, menus, dialogs, validation messages, warnings, tooltips, accessibility names, empty states, and progress text through the application localization boundary.
+- Use stable descriptive resource keys and parameterized messages; do not assemble translated sentences through string concatenation.
+- Keep domain states, audit event types, workflow and action identifiers, error codes, persisted values, and machine-readable formats language-neutral.
+- Translate structured codes only at the presentation boundary. Do not persist localized status names or localized error messages as canonical data.
+- Use an explicit UI culture for user-visible dates, times, numbers, and percentages. Do not let ambient culture alter security-sensitive parsing or invariant identifiers.
+- Preserve deterministic fallback to the default resource language when a culture or key is unavailable.
+- Avoid fixed text dimensions and layout assumptions based on English string length.
+- Keep controls and dialogs resilient to pseudo-localized, longer, and potentially right-to-left text.
+- Provider workflow execution must never depend on translated display text.
+- New GUI tests should include localization lookup or pseudo-localization coverage where relevant.
+
+Localization architecture and acceptance criteria are tracked in Issue #49.
+
 ## Security Rules
 
 Treat all account, vault, credential, reset, token, and browser data as sensitive.
@@ -200,4 +218,5 @@ Before finishing a change, verify:
 - documentation is current
 - generated artifacts and logs are secret-safe
 - provider URLs and origins are official and justified
+- user-facing text is localizable and canonical data remains language-neutral
 - user-visible security claims are accurate and do not overpromise
