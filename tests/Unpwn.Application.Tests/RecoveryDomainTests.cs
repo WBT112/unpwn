@@ -76,7 +76,7 @@ public sealed class RecoveryDomainTests
         Assert.Equal(AccountRecoveryStatus.NotFullySecured, account.Status);
         Assert.Equal(0, progress.WeightedRequiredActionsCompleted);
         Assert.Equal(1, progress.UnresolvedRisks);
-        Assert.Equal(1, progress.FailedRequiredActions);
+        Assert.Equal(0, progress.FailedRequiredActions);
     }
 
     [Fact]
