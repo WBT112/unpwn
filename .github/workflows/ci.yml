@@ -1,0 +1,80 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+
+jobs:
+  build-and-test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore unpwn.slnx
+
+      - name: Verify formatting
+        run: dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
+
+      - name: Build
+        run: dotnet build unpwn.slnx --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: >-
+          dotnet test unpwn.slnx
+          --configuration Release
+          --no-build
+          --no-restore
+          --collect:"XPlat Code Coverage"
+          --results-directory artifacts/test-results
+          --logger "trx;LogFilePrefix=${{ runner.os }}"
+          --
+          DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+
+      - name: Verify test artifacts are secret-safe
+        id: secret-scan
+        if: always()
+        shell: pwsh
+        run: |
+          $secretMatches = Get-ChildItem artifacts/test-results -Recurse -File -ErrorAction SilentlyContinue |
+            Select-String -SimpleMatch 'UNPWN_TEST_SECRET_'
+
+          if ($secretMatches) {
+            Write-Error 'Synthetic secret markers were found in test artifacts. Artifacts will not be uploaded.'
+            exit 1
+          }
+
+      - name: Upload test results and coverage
+        if: ${{ always() && steps.secret-scan.outcome == 'success' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ runner.os }}
+          path: artifacts/test-results
+          if-no-files-found: warn
+          retention-days: 7

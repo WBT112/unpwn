@@ -29,7 +29,7 @@ public sealed class ProjectDependencyTests
         };
 
     [Fact]
-    public void Solution_contains_every_architecture_project()
+    public void SolutionContainsEveryArchitectureProject()
     {
         var solution = XDocument.Load(Path.Combine(RepositoryRoot, "unpwn.slnx"));
         var actualProjects = solution
@@ -43,6 +43,7 @@ public sealed class ProjectDependencyTests
 
         var expectedProjects = AllowedReferences.Keys
             .Append("Unpwn.Architecture.Tests")
+            .Append("Unpwn.Application.Tests")
             .Order(StringComparer.Ordinal)
             .ToArray();
 
@@ -50,7 +51,7 @@ public sealed class ProjectDependencyTests
     }
 
     [Fact]
-    public void Project_references_follow_the_documented_dependency_direction()
+    public void ProjectReferencesFollowTheDocumentedDependencyDirection()
     {
         foreach (var (projectName, expectedReferences) in AllowedReferences)
         {
@@ -66,7 +67,7 @@ public sealed class ProjectDependencyTests
     }
 
     [Fact]
-    public void Core_is_platform_independent()
+    public void CoreIsPlatformIndependent()
     {
         var project = LoadProject("Unpwn.Core");
 

@@ -85,7 +85,16 @@ Install the .NET 10 SDK, then run:
 dotnet restore unpwn.slnx
 dotnet build unpwn.slnx --no-restore
 dotnet test unpwn.slnx --no-build
+dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
 ```
+
+Tests can produce local Cobertura coverage output with:
+
+```shell
+dotnet test unpwn.slnx --collect:"XPlat Code Coverage" --results-directory artifacts/test-results
+```
+
+GitHub Actions runs the same baseline on Windows and Linux. CI uses synthetic test data only and uploads test results and coverage for seven days.
 
 Start the desktop shell with:
 

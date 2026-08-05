@@ -166,6 +166,10 @@ Before release:
 
 ## Pull-Request CI
 
+The current baseline is implemented in `.github/workflows/ci.yml`. It runs restore, formatting enforcement, a warnings-as-errors build, unit tests, and Cobertura coverage collection on both Windows and Linux for pushes to `main` and pull requests. Before upload, CI scans test results and coverage for synthetic secret markers. Test-result and coverage artifacts that pass this scan use a seven-day retention period.
+
+Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The application diagnostic boundary records a bounded operation, stable event ID, static message, and exception type only. It returns a new static-message exception for propagation; source exception messages, inner exceptions, and stack traces are deliberately excluded because they may contain secrets.
+
 The blocking pull-request suite should eventually run:
 
 1. restore dependencies
