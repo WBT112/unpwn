@@ -122,14 +122,14 @@ public sealed class RecoveryActionInstance
             throw new ArgumentException("A not-applicable recovery action requires a recorded reason.", nameof(reason));
         }
 
-        if (disposition == NotApplicableDisposition.UnresolvedRisk && !Definition.IsRequired)
+        if (disposition == global::Unpwn.Core.NotApplicableDisposition.UnresolvedRisk && !Definition.IsRequired)
         {
             throw new InvalidOperationException("Only required actions can create unresolved risks.");
         }
 
         TransitionTo(RecoveryActionStatus.NotApplicable, reason);
         NotApplicableDisposition = disposition;
-        HasUnresolvedRisk = disposition == NotApplicableDisposition.UnresolvedRisk;
+        HasUnresolvedRisk = disposition == global::Unpwn.Core.NotApplicableDisposition.UnresolvedRisk;
     }
 
     public void AcceptUnresolvedRisk(string reason)
