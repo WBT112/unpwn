@@ -58,6 +58,8 @@ public sealed class SecretSafeDiagnosticsTests
     [InlineData(DiagnosticOperation.RecoverySessionLoad, "UNPWN1002", "Recovery session loading failed.")]
     [InlineData(DiagnosticOperation.RecoveryAction, "UNPWN1003", "Recovery action failed.")]
     [InlineData(DiagnosticOperation.CredentialExport, "UNPWN1004", "Credential export failed.")]
+    [InlineData(DiagnosticOperation.VaultLock, "UNPWN1005", "Vault lock failed.")]
+    [InlineData(DiagnosticOperation.VaultPasswordChange, "UNPWN1006", "Vault password change failed.")]
     public void EverySupportedOperationEmitsAStableSafeEvent(
         DiagnosticOperation operation,
         string expectedEventId,

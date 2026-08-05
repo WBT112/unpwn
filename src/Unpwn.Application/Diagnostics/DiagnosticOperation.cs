@@ -9,4 +9,6 @@ public enum DiagnosticOperation
     RecoverySessionLoad,
     RecoveryAction,
     CredentialExport,
+    VaultLock,
+    VaultPasswordChange,
 }

@@ -9,7 +9,7 @@ public sealed class RecoveryVault : IDisposable
 {
     private const int VaultSchemaVersion = 1;
     private readonly string _path;
-    private readonly byte[] _dataKey;
+    private byte[]? _dataKey;
     private bool _disposed;
 
     private RecoveryVault(string path, byte[] dataKey)
@@ -17,6 +17,8 @@ public sealed class RecoveryVault : IDisposable
         _path = path;
         _dataKey = dataKey;
     }
+
+    public bool IsLocked => _dataKey is null;
 
     public static RecoveryVault Create(string path, string vaultPassword, Argon2idParameters parameters)
     {
@@ -43,19 +45,59 @@ public sealed class RecoveryVault : IDisposable
             throw new FileNotFoundException("Recovery vault file was not found.", path);
         }
 
-        using var connection = OpenConnection(path);
-        var envelope = ReadEnvelope(connection);
-        byte[] dataKey;
-        try
+        var vault = new RecoveryVault(path, UnlockDataKey(path, vaultPassword));
+        return vault;
+    }
+
+    public void Lock()
+    {
+        ThrowIfDisposed();
+        if (_dataKey is null)
         {
-            dataKey = VaultCryptoPrototype.UnwrapDataKey(vaultPassword, envelope);
-        }
-        catch (CryptographicException exception)
-        {
-            throw new InvalidOperationException("Recovery vault could not be unlocked with the supplied password.", exception);
+            return;
         }
 
-        return new RecoveryVault(path, dataKey);
+        CryptographicOperations.ZeroMemory(_dataKey);
+        _dataKey = null;
+    }
+
+    public void Unlock(string vaultPassword)
+    {
+        ThrowIfDisposed();
+        if (_dataKey is not null)
+        {
+            throw new InvalidOperationException("Recovery vault is already unlocked.");
+        }
+
+        _dataKey = UnlockDataKey(_path, vaultPassword);
+    }
+
+    public void ChangePassword(string currentVaultPassword, string newVaultPassword, Argon2idParameters parameters)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(parameters);
+        parameters.Validate();
+
+        var verifiedDataKey = UnlockDataKey(_path, currentVaultPassword);
+        try
+        {
+            var activeDataKey = GetDataKey();
+            if (!CryptographicOperations.FixedTimeEquals(activeDataKey, verifiedDataKey))
+            {
+                throw new CryptographicException("Recovery vault data key verification failed.");
+            }
+
+            using var crypto = new VaultCryptoPrototype();
+            var newEnvelope = crypto.WrapExistingDataKey(newVaultPassword, parameters, activeDataKey);
+            using var connection = OpenConnection(_path);
+            using var transaction = connection.BeginTransaction();
+            UpsertEnvelope(connection, transaction, newEnvelope);
+            transaction.Commit();
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(verifiedDataKey);
+        }
     }
 
     public void UpsertRecord(VaultRecordDescriptor descriptor, ReadOnlySpan<byte> plaintext)
@@ -65,7 +107,7 @@ public sealed class RecoveryVault : IDisposable
         descriptor.Validate();
 
         using var crypto = new VaultCryptoPrototype();
-        var encrypted = crypto.EncryptRecord(_dataKey, descriptor, plaintext);
+        var encrypted = crypto.EncryptRecord(GetDataKey(), descriptor, plaintext);
         using var connection = OpenConnection(_path);
         using var command = connection.CreateCommand();
         command.CommandText = """
@@ -112,7 +154,7 @@ public sealed class RecoveryVault : IDisposable
 
         var storedDescriptor = new VaultRecordDescriptor(recordType, recordId, reader.GetInt32(0));
         var encrypted = new EncryptedVaultRecord(storedDescriptor, (byte[])reader[1], (byte[])reader[2], (byte[])reader[3]);
-        var plaintext = VaultCryptoPrototype.DecryptRecord(_dataKey, encrypted);
+        var plaintext = VaultCryptoPrototype.DecryptRecord(GetDataKey(), encrypted);
         return new VaultRecord(storedDescriptor, plaintext);
     }
 
@@ -135,6 +177,7 @@ public sealed class RecoveryVault : IDisposable
     public bool DeleteRecord(string recordType, string recordId)
     {
         ThrowIfDisposed();
+        _ = GetDataKey();
         using var connection = OpenConnection(_path);
         using var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM vault_records WHERE record_type = $record_type AND record_id = $record_id;";
@@ -150,8 +193,28 @@ public sealed class RecoveryVault : IDisposable
             return;
         }
 
-        CryptographicOperations.ZeroMemory(_dataKey);
+        Lock();
         _disposed = true;
+    }
+
+    private static byte[] UnlockDataKey(string path, string vaultPassword)
+    {
+        using var connection = OpenConnection(path);
+        var envelope = ReadEnvelope(connection);
+        try
+        {
+            return VaultCryptoPrototype.UnwrapDataKey(vaultPassword, envelope);
+        }
+        catch (CryptographicException exception)
+        {
+            throw new InvalidOperationException("Recovery vault could not be unlocked with the supplied password.", exception);
+        }
+    }
+
+    private byte[] GetDataKey()
+    {
+        ThrowIfDisposed();
+        return _dataKey ?? throw new InvalidOperationException("Recovery vault is locked.");
     }
 
     private static SqliteConnection OpenConnection(string path)
@@ -206,6 +269,32 @@ public sealed class RecoveryVault : IDisposable
             INSERT INTO vault_key_envelope(id, schema_version, argon2_memory_kib, argon2_iterations, argon2_parallelism, salt, nonce, encrypted_data_key, tag)
             VALUES(1, $schema_version, $memory, $iterations, $parallelism, $salt, $nonce, $encrypted_data_key, $tag);
             """;
+        AddEnvelopeParameters(command, envelope);
+        command.ExecuteNonQuery();
+    }
+
+    private static void UpsertEnvelope(SqliteConnection connection, SqliteTransaction transaction, VaultKeyEnvelope envelope)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            UPDATE vault_key_envelope
+            SET schema_version = $schema_version,
+                argon2_memory_kib = $memory,
+                argon2_iterations = $iterations,
+                argon2_parallelism = $parallelism,
+                salt = $salt,
+                nonce = $nonce,
+                encrypted_data_key = $encrypted_data_key,
+                tag = $tag
+            WHERE id = 1;
+            """;
+        AddEnvelopeParameters(command, envelope);
+        command.ExecuteNonQuery();
+    }
+
+    private static void AddEnvelopeParameters(SqliteCommand command, VaultKeyEnvelope envelope)
+    {
         command.Parameters.AddWithValue("$schema_version", VaultSchemaVersion);
         command.Parameters.AddWithValue("$memory", envelope.Parameters.MemorySizeKiB);
         command.Parameters.AddWithValue("$iterations", envelope.Parameters.Iterations);
@@ -214,7 +303,6 @@ public sealed class RecoveryVault : IDisposable
         command.Parameters.Add("$nonce", SqliteType.Blob).Value = envelope.Nonce;
         command.Parameters.Add("$encrypted_data_key", SqliteType.Blob).Value = envelope.EncryptedDataKey;
         command.Parameters.Add("$tag", SqliteType.Blob).Value = envelope.Tag;
-        command.ExecuteNonQuery();
     }
 
     private static VaultKeyEnvelope ReadEnvelope(SqliteConnection connection)
