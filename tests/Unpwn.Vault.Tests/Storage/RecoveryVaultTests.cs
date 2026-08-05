@@ -133,13 +133,21 @@ public sealed class RecoveryVaultTests : IDisposable
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT nonce || ciphertext
+            SELECT nonce, ciphertext
             FROM vault_records
             WHERE record_type = $record_type AND record_id = $record_id;
             """;
         command.Parameters.AddWithValue("$record_type", recordType);
         command.Parameters.AddWithValue("$record_id", recordId);
-        return (byte[])command.ExecuteScalar()!;
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            throw new InvalidOperationException("Encrypted recovery-vault record was not found.");
+        }
+
+        var nonce = (byte[])reader[0];
+        var ciphertext = (byte[])reader[1];
+        return [.. nonce, .. ciphertext];
     }
 
     private string VaultPath()
