@@ -21,6 +21,8 @@ The primary use case is a private user who suspects that credentials, browser se
 
 The user runs unpwn on a trusted device, imports or records affected accounts, secures critical identity accounts first, and works through service-specific recovery workflows until all relevant accounts have been reviewed.
 
+The recovery experience should remain understandable in the user's preferred supported language. Language selection must not change security semantics, recovery order, workflow behavior, or persisted vault data.
+
 ## What unpwn is
 
 unpwn is an open-source emergency account recovery assistant focused on recovery orchestration.
@@ -37,6 +39,7 @@ It supports users with:
 - MFA and recovery-option review
 - progress tracking
 - recovery history and documentation
+- a multilingual and accessible presentation layer
 
 unpwn does not replace a password manager. Password managers store credentials. unpwn helps users restore control after a security incident.
 
@@ -51,6 +54,7 @@ unpwn is not:
 - an enterprise security product in the MVP
 - an autonomous account takeover or recovery bot
 - a general-purpose incident response suite
+- a runtime machine-translation service
 
 ## Core Principles
 
@@ -66,6 +70,14 @@ Users should understand every action performed or proposed by unpwn.
 
 Automation should accelerate recovery, not hide important security decisions.
 
+### Multilingual accessibility
+
+User-facing security guidance should be available in reviewed language resources without translating canonical workflow, audit, vault, or domain state.
+
+English is the complete source and fallback language. Additional languages are repository-controlled and shipped with releases. Missing translations must fall back to complete reviewed text rather than disappear.
+
+See [Localization and Multilingual GUI](LOCALIZATION.md).
+
 ### Open source
 
 Security-sensitive software benefits from public review and transparent design.
@@ -76,7 +88,7 @@ Automation is a supporting capability. The core value is the recovery workflow, 
 
 ### Repository-based collaboration
 
-Recovery workflows are contributed, reviewed, tested, and released through pull requests to the main repository. unpwn does not rely on a runtime marketplace or downloaded third-party provider code.
+Recovery workflows and translations are contributed, reviewed, tested, and released through pull requests to the main repository. unpwn does not rely on a runtime marketplace or downloaded third-party provider code or language packs.
 
 ### Platform-neutral core
 
