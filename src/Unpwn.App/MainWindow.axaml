@@ -1,0 +1,36 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="Unpwn.App.MainWindow"
+        mc:Ignorable="d"
+        d:DesignWidth="960"
+        d:DesignHeight="640"
+        Title="unpwn"
+        Width="960"
+        Height="640"
+        MinWidth="720"
+        MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="Auto,*" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+    <Border Padding="24,18" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <TextBlock FontSize="24" FontWeight="SemiBold" Text="unpwn" />
+    </Border>
+
+    <Grid Grid.Row="1" Margin="40" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <Border Padding="40" CornerRadius="12" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <StackPanel Spacing="18">
+          <TextBlock FontSize="32" FontWeight="SemiBold" Text="Recovery workspace" />
+          <TextBlock FontSize="17"
+                     TextWrapping="Wrap"
+                     Text="The platform-neutral unpwn foundation is ready. Recovery sessions and vault workflows will be added in the next milestones." />
+          <Border Padding="16" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundAccentBrush}">
+            <TextBlock Foreground="{DynamicResource SystemControlForegroundChromeWhiteBrush}"
+                       TextWrapping="Wrap"
+                       Text="Use unpwn only on a trusted device. This application does not detect or remove malware." />
+          </Border>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

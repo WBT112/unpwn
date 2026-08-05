@@ -95,6 +95,24 @@ Unpwn.Providers
  └── Other service providers
 ```
 
+## Dependency Direction
+
+Dependencies point inward. `Unpwn.Core` is the platform-independent domain and has no project or external package dependencies. `Unpwn.Application` contains use cases and depends only on Core.
+
+Infrastructure, Vault, Automation, Import, Export, and Providers are adapters or feature modules. They may depend on Application and Core, but never on the desktop application or on one another. `Unpwn.App` is the composition root: it references the modules, wires them together, and owns all Avalonia UI concerns.
+
+```text
+Unpwn.App
+ ├── Unpwn.Infrastructure ─┐
+ ├── Unpwn.Vault ─────────┤
+ ├── Unpwn.Automation ────┤
+ ├── Unpwn.Import ────────┼──> Unpwn.Application ──> Unpwn.Core
+ ├── Unpwn.Export ────────┤                 └───────> Unpwn.Core
+ └── Unpwn.Providers ─────┘
+```
+
+The architecture test project verifies this project-reference graph and checks that Core remains free of UI, storage, browser-automation, and operating-system dependencies.
+
 ## Recovery Vault
 
 The Recovery Vault is an encrypted local workspace used during the complete recovery process.

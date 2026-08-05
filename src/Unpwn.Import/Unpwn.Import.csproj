@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Unpwn.Application/Unpwn.Application.csproj" />
+    <ProjectReference Include="../Unpwn.Core/Unpwn.Core.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Fonts.Inter" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Unpwn.Application/Unpwn.Application.csproj" />
+    <ProjectReference Include="../Unpwn.Automation/Unpwn.Automation.csproj" />
+    <ProjectReference Include="../Unpwn.Export/Unpwn.Export.csproj" />
+    <ProjectReference Include="../Unpwn.Import/Unpwn.Import.csproj" />
+    <ProjectReference Include="../Unpwn.Infrastructure/Unpwn.Infrastructure.csproj" />
+    <ProjectReference Include="../Unpwn.Providers/Unpwn.Providers.csproj" />
+    <ProjectReference Include="../Unpwn.Vault/Unpwn.Vault.csproj" />
+  </ItemGroup>
+</Project>

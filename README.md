@@ -75,7 +75,23 @@ See `LICENSE` for details.
 
 ## Status
 
-Early design and architecture phase.
+The initial .NET 10 and Avalonia desktop solution is scaffolded. Domain and recovery functionality are still under active development.
+
+## Building
+
+Install the .NET 10 SDK, then run:
+
+```shell
+dotnet restore unpwn.slnx
+dotnet build unpwn.slnx --no-restore
+dotnet test unpwn.slnx --no-build
+```
+
+Start the desktop shell with:
+
+```shell
+dotnet run --project src/Unpwn.App/Unpwn.App.csproj
+```
 
 See:
 

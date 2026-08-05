@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Unpwn.App/Unpwn.App.csproj" />
+    <Project Path="src/Unpwn.Application/Unpwn.Application.csproj" />
+    <Project Path="src/Unpwn.Automation/Unpwn.Automation.csproj" />
+    <Project Path="src/Unpwn.Core/Unpwn.Core.csproj" />
+    <Project Path="src/Unpwn.Export/Unpwn.Export.csproj" />
+    <Project Path="src/Unpwn.Import/Unpwn.Import.csproj" />
+    <Project Path="src/Unpwn.Infrastructure/Unpwn.Infrastructure.csproj" />
+    <Project Path="src/Unpwn.Providers/Unpwn.Providers.csproj" />
+    <Project Path="src/Unpwn.Vault/Unpwn.Vault.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Unpwn.Architecture.Tests/Unpwn.Architecture.Tests.csproj" />
+  </Folder>
+</Solution>
