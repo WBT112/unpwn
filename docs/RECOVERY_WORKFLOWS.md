@@ -160,3 +160,11 @@ New workflows and updates are submitted through pull requests and must include:
 - no embedded secrets or personal account data
 
 unpwn does not download or execute third-party provider plugins at runtime.
+
+## Repository Workflow Definitions
+
+Repository-controlled workflow definitions are represented in code as immutable `RecoveryWorkflowDefinition` records until the on-disk workflow package format is introduced. Each definition includes provider metadata, supported account type, workflow version, verification date, official recovery locations, expected origins, and ordered recovery actions.
+
+The validation boundary for these definitions is `RecoveryWorkflowValidator`. It currently rejects missing required metadata, future verification dates, duplicate location or action identifiers, non-HTTPS recovery locations, recovery-location origin mismatches, missing expected origins, missing prerequisite targets, prerequisite cycles, required actions without completion criteria, and claims of fully automated recovery. Fully automated recovery is intentionally disallowed at this stage because repository workflows may guide or navigate, but they must not bypass user-visible security decisions.
+
+The shipped provider catalog validates all repository workflows through `RepositoryWorkflowCatalog.ValidateAll()`. Provider workflow changes should add or update catalog entries and regression tests that prove the definition remains structurally and semantically safe.

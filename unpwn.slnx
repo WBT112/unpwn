@@ -13,5 +13,6 @@
   <Folder Name="/tests/">
     <Project Path="tests/Unpwn.Architecture.Tests/Unpwn.Architecture.Tests.csproj" />
     <Project Path="tests/Unpwn.Application.Tests/Unpwn.Application.Tests.csproj" />
+    <Project Path="tests/Unpwn.Core.Tests/Unpwn.Core.Tests.csproj" />
   </Folder>
 </Solution>
