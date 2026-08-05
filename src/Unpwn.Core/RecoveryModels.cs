@@ -16,34 +16,6 @@ public enum AccountRecoveryStatus
     AccessNotRestored,
 }
 
-public enum RecoveryActionType
-{
-    ConfirmAccess,
-    ChangePassword,
-    ResetPassword,
-    InvalidateSessions,
-    ReviewTrustedDevices,
-    ReviewMfa,
-    ReviewRecoveryOptions,
-    RevokeApplicationAccess,
-    ReviewApiTokens,
-    RecordUnresolvedRisk,
-}
-
-public enum RecoveryPath
-{
-    AuthenticatedChange,
-    PasswordReset,
-    ManualRecovery,
-}
-
-public enum RecoveryActionImportance
-{
-    Routine = 1,
-    Important = 2,
-    Critical = 3,
-}
-
 public enum RecoveryActionStatus
 {
     Open,
@@ -55,50 +27,42 @@ public enum RecoveryActionStatus
     NotApplicable,
 }
 
-public enum AutomationSupport
+public enum NotApplicableDisposition
 {
-    None,
-    Navigation,
-    Assisted,
-    Automated,
+    TrulyNotApplicable,
+    UnresolvedRisk,
 }
 
-public sealed record RecoveryActionDefinition(
-    string Id,
-    RecoveryActionType Type,
-    RecoveryPath Path,
-    RecoveryActionImportance Importance,
-    bool IsRequired,
-    AutomationSupport AutomationSupport,
-    string CompletionCriteria,
-    IReadOnlyCollection<string>? PrerequisiteActionIds = null)
+public enum AuditEventType
 {
-    public IReadOnlyCollection<string> PrerequisiteActionIds { get; } = PrerequisiteActionIds ?? [];
+    AccountImported,
+    AccountPriorityChanged,
+    RecoveryActionStarted,
+    RecoveryActionCompleted,
+    RecoveryActionBlocked,
+    RecoveryActionFailed,
+    UnresolvedRiskAccepted,
+    CredentialGenerated,
+    CredentialExported,
+    CredentialDeleted,
+    VaultLocked,
+    SessionCompleted,
 }
-
-public sealed record RecoveryWorkflowDefinition(
-    string Id,
-    string ProviderId,
-    string Version,
-    DateOnly VerifiedAt,
-    IReadOnlyCollection<RecoveryActionDefinition> Actions);
 
 public sealed record AccountDependency(Guid AccountId, Guid DependsOnAccountId, string Reason);
 
-public sealed record AuditEvent(DateTimeOffset OccurredAt, string EventType, string Message)
+public sealed record AuditEvent(
+    DateTimeOffset OccurredAt,
+    AuditEventType EventType,
+    Guid? AccountId,
+    RecoveryActionType? ActionType)
 {
-    public static AuditEvent Create(string eventType, string message, DateTimeOffset? occurredAt = null)
-    {
-        if (ContainsSyntheticSecret(message))
-        {
-            throw new ArgumentException("Audit event messages must not contain secret values.", nameof(message));
-        }
-
-        return new AuditEvent(occurredAt ?? DateTimeOffset.UtcNow, eventType, message);
-    }
-
-    private static bool ContainsSyntheticSecret(string value) =>
-        value.Contains("UNPWN_TEST_SECRET_", StringComparison.Ordinal);
+    public static AuditEvent Create(
+        AuditEventType eventType,
+        Guid? accountId = null,
+        RecoveryActionType? actionType = null,
+        DateTimeOffset? occurredAt = null) =>
+        new(occurredAt ?? DateTimeOffset.UtcNow, eventType, accountId, actionType);
 }
 
 public sealed class RecoveryActionInstance
@@ -117,19 +81,31 @@ public sealed class RecoveryActionInstance
 
     public bool HasUnresolvedRisk { get; private set; }
 
+    public NotApplicableDisposition? NotApplicableDisposition { get; private set; }
+
+    public bool IsExcludedFromRequiredProgress =>
+        Status == RecoveryActionStatus.NotApplicable &&
+        NotApplicableDisposition == global::Unpwn.Core.NotApplicableDisposition.TrulyNotApplicable;
+
     public static RecoveryActionInstance Create(RecoveryActionDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
 
-        if (definition.IsRequired && string.IsNullOrWhiteSpace(definition.CompletionCriteria))
+        if (definition.IsRequired &&
+            (definition.CompletionCriteria.Count == 0 || definition.CompletionCriteria.Any(string.IsNullOrWhiteSpace)))
         {
-            throw new ArgumentException("Required recovery actions must define completion criteria.", nameof(definition));
+            throw new ArgumentException("Required recovery actions must define non-empty completion criteria.", nameof(definition));
         }
 
         return new RecoveryActionInstance(definition);
     }
 
-    public void Start() => TransitionTo(RecoveryActionStatus.InProgress);
+    public void Start()
+    {
+        TransitionTo(RecoveryActionStatus.InProgress);
+        HasUnresolvedRisk = false;
+        NotApplicableDisposition = null;
+    }
 
     public void RequireUserAction(string reason) => TransitionTo(RecoveryActionStatus.NeedsUserAction, reason);
 
@@ -139,14 +115,21 @@ public sealed class RecoveryActionInstance
 
     public void Fail(string reason) => TransitionTo(RecoveryActionStatus.Failed, reason);
 
-    public void MarkNotApplicable(string reason)
+    public void MarkNotApplicable(string reason, NotApplicableDisposition disposition)
     {
         if (string.IsNullOrWhiteSpace(reason))
         {
             throw new ArgumentException("A not-applicable recovery action requires a recorded reason.", nameof(reason));
         }
 
+        if (disposition == NotApplicableDisposition.UnresolvedRisk && !Definition.IsRequired)
+        {
+            throw new InvalidOperationException("Only required actions can create unresolved risks.");
+        }
+
         TransitionTo(RecoveryActionStatus.NotApplicable, reason);
+        NotApplicableDisposition = disposition;
+        HasUnresolvedRisk = disposition == NotApplicableDisposition.UnresolvedRisk;
     }
 
     public void AcceptUnresolvedRisk(string reason)
@@ -161,8 +144,9 @@ public sealed class RecoveryActionInstance
             throw new ArgumentException("An unresolved risk requires a recorded reason.", nameof(reason));
         }
 
-        HasUnresolvedRisk = true;
         TransitionTo(RecoveryActionStatus.Failed, reason);
+        HasUnresolvedRisk = true;
+        NotApplicableDisposition = null;
     }
 
     private void TransitionTo(RecoveryActionStatus next, string? reason = null)
@@ -215,9 +199,9 @@ public sealed class Account(Guid id, string providerId, AccountCriticality criti
     public void StartAction(string actionId)
     {
         var action = GetAction(actionId);
-        var incompletePrerequisites = action.Definition.PrerequisiteActionIds
+        var incompletePrerequisites = action.Definition.Prerequisites
             .Select(GetAction)
-            .Where(prerequisite => prerequisite.Status != RecoveryActionStatus.Completed)
+            .Where(prerequisite => !IsPrerequisiteSatisfied(prerequisite))
             .Select(prerequisite => prerequisite.Definition.Id)
             .ToArray();
 
@@ -240,9 +224,10 @@ public sealed class Account(Guid id, string providerId, AccountCriticality criti
                 return AccountRecoveryStatus.NotFullySecured;
             }
 
-            if (required.Any(action => action.Status is RecoveryActionStatus.Open or RecoveryActionStatus.InProgress or RecoveryActionStatus.NeedsUserAction))
+            var applicableRequired = required.Where(action => !action.IsExcludedFromRequiredProgress).ToArray();
+            if (applicableRequired.Any(action => action.Status is RecoveryActionStatus.Open or RecoveryActionStatus.InProgress or RecoveryActionStatus.NeedsUserAction))
             {
-                return _actions.Any(action => action.Status is RecoveryActionStatus.InProgress or RecoveryActionStatus.NeedsUserAction)
+                return applicableRequired.Any(action => action.Status is RecoveryActionStatus.InProgress or RecoveryActionStatus.NeedsUserAction)
                     ? AccountRecoveryStatus.InProgress
                     : AccountRecoveryStatus.Open;
             }
@@ -250,6 +235,9 @@ public sealed class Account(Guid id, string providerId, AccountCriticality criti
             return AccountRecoveryStatus.FullyReviewed;
         }
     }
+
+    private static bool IsPrerequisiteSatisfied(RecoveryActionInstance action) =>
+        action.Status == RecoveryActionStatus.Completed || action.IsExcludedFromRequiredProgress;
 }
 
 public enum CriticalAccountReadinessStatus
@@ -265,6 +253,7 @@ public sealed record CriticalAccountReadiness(
     int RequiredActionsCompleted,
     int RequiredActionsTotal,
     int BlockedRequiredActions,
+    int FailedRequiredActions,
     int UnresolvedRisks)
 {
     public bool IsReady => Status == CriticalAccountReadinessStatus.Ready;
@@ -277,6 +266,7 @@ public sealed record RecoveryProgress(
     int AccountsTotal,
     double WeightedRequiredActionsCompleted,
     int BlockedRequiredActions,
+    int FailedRequiredActions,
     int UnresolvedRisks)
 {
     public double CriticalAccountReadinessRatio => CriticalAccountsTotal == 0 ? 1 : CriticalAccountsSecured / (double)CriticalAccountsTotal;
@@ -284,12 +274,12 @@ public sealed record RecoveryProgress(
     public double AccountReviewRatio => AccountsTotal == 0 ? 1 : AccountsFullyReviewed / (double)AccountsTotal;
 }
 
-
 public enum AccountRecoveryOrderStatus
 {
     Ready,
     WaitingForDependencies,
     DependencyCycle,
+    UnknownDependency,
 }
 
 public sealed record AccountRecoveryOrderItem(
@@ -357,8 +347,10 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             account => account.Id,
             account => dependencyIdsByAccount.GetValueOrDefault(account.Id)?.Count ?? 0);
         var dependencyDepths = CalculateDependencyDepths(_accounts, dependencyIdsByAccount);
-        var cycleAccountIds = FindCycleAccountIds(_accounts, dependencyIdsByAccount);
-        var ready = _accounts
+        var cycles = FindCycles(_accounts, dependencyIdsByAccount);
+        var cycleAccountIds = cycles.SelectMany(cycle => cycle).ToHashSet();
+        var accountsWithUnknownDependencies = unknownDependencies.Select(dependency => dependency.AccountId).ToHashSet();
+        var readyForOrdering = _accounts
             .Where(account => unresolvedDependencyCounts[account.Id] == 0)
             .OrderByDescending(account => account.Criticality)
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
@@ -366,10 +358,10 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             .ToList();
         var ordered = new List<Account>();
 
-        while (ready.Count > 0)
+        while (readyForOrdering.Count > 0)
         {
-            var account = ready[0];
-            ready.RemoveAt(0);
+            var account = readyForOrdering[0];
+            readyForOrdering.RemoveAt(0);
             ordered.Add(account);
 
             foreach (var dependentId in dependentsByAccount.GetValueOrDefault(account.Id) ?? [])
@@ -377,29 +369,32 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
                 unresolvedDependencyCounts[dependentId]--;
                 if (unresolvedDependencyCounts[dependentId] == 0 && accountsById.TryGetValue(dependentId, out var dependent))
                 {
-                    ready.Add(dependent);
-                    ready.Sort(CompareAccountsForRecoveryOrder);
+                    readyForOrdering.Add(dependent);
+                    readyForOrdering.Sort(CompareAccountsForRecoveryOrder);
                 }
             }
         }
 
         var orderedIds = ordered.Select(account => account.Id).ToHashSet();
-        var remainingAccounts = _accounts
+        ordered.AddRange(_accounts
             .Where(account => !orderedIds.Contains(account.Id))
             .OrderByDescending(account => account.Criticality)
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
-            .ThenBy(account => account.Id);
-
-        ordered.AddRange(remainingAccounts);
+            .ThenBy(account => account.Id));
 
         var items = ordered.Select(account =>
         {
-            var waitingFor = dependencyIdsByAccount.GetValueOrDefault(account.Id)?.Where(id => !orderedIds.Contains(id)).OrderBy(id => id).ToArray() ?? [];
+            var waitingFor = dependencyIdsByAccount.GetValueOrDefault(account.Id)?
+                .Where(dependencyId => accountsById[dependencyId].Status != AccountRecoveryStatus.FullyReviewed)
+                .OrderBy(id => id)
+                .ToArray() ?? [];
             var orderStatus = cycleAccountIds.Contains(account.Id)
                 ? AccountRecoveryOrderStatus.DependencyCycle
-                : waitingFor.Length > 0
-                    ? AccountRecoveryOrderStatus.WaitingForDependencies
-                    : AccountRecoveryOrderStatus.Ready;
+                : accountsWithUnknownDependencies.Contains(account.Id)
+                    ? AccountRecoveryOrderStatus.UnknownDependency
+                    : waitingFor.Length > 0
+                        ? AccountRecoveryOrderStatus.WaitingForDependencies
+                        : AccountRecoveryOrderStatus.Ready;
 
             return new AccountRecoveryOrderItem(
                 account.Id,
@@ -411,16 +406,17 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
                 dependencyDepths.GetValueOrDefault(account.Id));
         }).ToArray();
 
-        return new AccountRecoveryOrderPlan(items, unknownDependencies, FindCycles(_accounts, dependencyIdsByAccount));
+        return new AccountRecoveryOrderPlan(items, unknownDependencies, cycles);
     }
 
     public RecoveryProgress CalculateProgress()
     {
         var requiredActions = _accounts.SelectMany(account => account.Actions).Where(action => action.Definition.IsRequired).ToArray();
-        var completedWeight = requiredActions
-            .Where(action => IsCompletedForProgress(action) && !action.HasUnresolvedRisk)
+        var applicableRequiredActions = requiredActions.Where(action => !action.IsExcludedFromRequiredProgress).ToArray();
+        var completedWeight = applicableRequiredActions
+            .Where(action => action.Status == RecoveryActionStatus.Completed && !action.HasUnresolvedRisk)
             .Sum(action => (int)action.Definition.Importance);
-        var totalWeight = requiredActions.Sum(action => (int)action.Definition.Importance);
+        var totalWeight = applicableRequiredActions.Sum(action => (int)action.Definition.Importance);
         var criticalAccountReadiness = CalculateCriticalAccountReadiness();
 
         return new RecoveryProgress(
@@ -429,7 +425,8 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             _accounts.Count(account => account.Status == AccountRecoveryStatus.FullyReviewed),
             _accounts.Count,
             totalWeight == 0 ? 1 : completedWeight / (double)totalWeight,
-            requiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked),
+            applicableRequiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked),
+            applicableRequiredActions.Count(action => action.Status == RecoveryActionStatus.Failed),
             requiredActions.Count(action => action.HasUnresolvedRisk));
     }
 
@@ -480,11 +477,6 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
         }
     }
 
-    private static HashSet<Guid> FindCycleAccountIds(
-        IEnumerable<Account> accounts,
-        IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount) =>
-        [.. FindCycles(accounts, dependencyIdsByAccount).SelectMany(cycle => cycle)];
-
     private static List<IReadOnlyList<Guid>> FindCycles(
         IEnumerable<Account> accounts,
         IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount)
@@ -530,11 +522,14 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
     private static CriticalAccountReadiness CreateCriticalAccountReadiness(Account account)
     {
         var requiredActions = account.Actions.Where(action => action.Definition.IsRequired).ToArray();
-        var blockedRequiredActions = requiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked);
+        var applicableRequiredActions = requiredActions.Where(action => !action.IsExcludedFromRequiredProgress).ToArray();
+        var blockedRequiredActions = applicableRequiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked);
+        var failedRequiredActions = applicableRequiredActions.Count(action => action.Status == RecoveryActionStatus.Failed);
         var unresolvedRisks = requiredActions.Count(action => action.HasUnresolvedRisk);
-        var requiredActionsCompleted = requiredActions.Count(IsCompletedForProgress);
-        var isReady = requiredActions.Length == requiredActionsCompleted
+        var requiredActionsCompleted = applicableRequiredActions.Count(action => action.Status == RecoveryActionStatus.Completed);
+        var isReady = applicableRequiredActions.Length == requiredActionsCompleted
             && blockedRequiredActions == 0
+            && failedRequiredActions == 0
             && unresolvedRisks == 0
             && account.Status == AccountRecoveryStatus.FullyReviewed;
 
@@ -543,11 +538,9 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             account.ProviderId,
             isReady ? CriticalAccountReadinessStatus.Ready : CriticalAccountReadinessStatus.NotReady,
             requiredActionsCompleted,
-            requiredActions.Length,
+            applicableRequiredActions.Length,
             blockedRequiredActions,
+            failedRequiredActions,
             unresolvedRisks);
     }
-
-    private static bool IsCompletedForProgress(RecoveryActionInstance action) =>
-        action.Status is RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable;
 }
