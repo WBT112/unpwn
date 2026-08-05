@@ -226,7 +226,7 @@ Before release:
 
 ## Pull-Request CI
 
-The current baseline is implemented in `.github/workflows/ci.yml`. It runs restore, formatting enforcement, a warnings-as-errors build, unit tests, and Cobertura coverage collection on Windows and Linux for pushes to `main` and pull requests. Before upload, CI scans test results and coverage for synthetic secret markers. Test-result and coverage artifacts that pass this scan use a seven-day retention period.
+The current baseline is implemented in `.github/workflows/ci.yml`. It performs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting and analyzer verification run once on Linux. Cobertura coverage collection, synthetic-secret artifact scanning, and the normal successful artifact upload also run on Linux. Windows uploads test artifacts only when its build or tests fail. Successful retained artifacts use the configured short retention period.
 
 Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The application diagnostic boundary records a bounded operation, stable event ID, static message, and exception type only. It returns a new static-message exception for propagation; source exception messages, inner exceptions, stack traces, localization formatting arguments, and imported values are deliberately excluded because they may contain secrets.
 
