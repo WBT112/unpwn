@@ -252,6 +252,24 @@ public sealed class Account(Guid id, string providerId, AccountCriticality criti
     }
 }
 
+public enum CriticalAccountReadinessStatus
+{
+    Ready,
+    NotReady,
+}
+
+public sealed record CriticalAccountReadiness(
+    Guid AccountId,
+    string ProviderId,
+    CriticalAccountReadinessStatus Status,
+    int RequiredActionsCompleted,
+    int RequiredActionsTotal,
+    int BlockedRequiredActions,
+    int UnresolvedRisks)
+{
+    public bool IsReady => Status == CriticalAccountReadinessStatus.Ready;
+}
+
 public sealed record RecoveryProgress(
     int CriticalAccountsSecured,
     int CriticalAccountsTotal,
@@ -259,7 +277,12 @@ public sealed record RecoveryProgress(
     int AccountsTotal,
     double WeightedRequiredActionsCompleted,
     int BlockedRequiredActions,
-    int UnresolvedRisks);
+    int UnresolvedRisks)
+{
+    public double CriticalAccountReadinessRatio => CriticalAccountsTotal == 0 ? 1 : CriticalAccountsSecured / (double)CriticalAccountsTotal;
+
+    public double AccountReviewRatio => AccountsTotal == 0 ? 1 : AccountsFullyReviewed / (double)AccountsTotal;
+}
 
 public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
 {
@@ -283,6 +306,11 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
 
     public void RecordAuditEvent(AuditEvent auditEvent) => _auditEvents.Add(auditEvent);
 
+    public IReadOnlyList<CriticalAccountReadiness> CalculateCriticalAccountReadiness() =>
+        [.. _accounts
+            .Where(account => account.Criticality == AccountCriticality.Critical)
+            .Select(CreateCriticalAccountReadiness)];
+
     public RecoveryProgress CalculateProgress()
     {
         var requiredActions = _accounts.SelectMany(account => account.Actions).Where(action => action.Definition.IsRequired).ToArray();
@@ -290,16 +318,37 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             .Where(action => IsCompletedForProgress(action) && !action.HasUnresolvedRisk)
             .Sum(action => (int)action.Definition.Importance);
         var totalWeight = requiredActions.Sum(action => (int)action.Definition.Importance);
-        var criticalAccounts = _accounts.Where(account => account.Criticality == AccountCriticality.Critical).ToArray();
+        var criticalAccountReadiness = CalculateCriticalAccountReadiness();
 
         return new RecoveryProgress(
-            criticalAccounts.Count(account => account.Status == AccountRecoveryStatus.FullyReviewed),
-            criticalAccounts.Length,
+            criticalAccountReadiness.Count(readiness => readiness.IsReady),
+            criticalAccountReadiness.Count,
             _accounts.Count(account => account.Status == AccountRecoveryStatus.FullyReviewed),
             _accounts.Count,
             totalWeight == 0 ? 1 : completedWeight / (double)totalWeight,
             requiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked),
             requiredActions.Count(action => action.HasUnresolvedRisk));
+    }
+
+    private static CriticalAccountReadiness CreateCriticalAccountReadiness(Account account)
+    {
+        var requiredActions = account.Actions.Where(action => action.Definition.IsRequired).ToArray();
+        var blockedRequiredActions = requiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked);
+        var unresolvedRisks = requiredActions.Count(action => action.HasUnresolvedRisk);
+        var requiredActionsCompleted = requiredActions.Count(IsCompletedForProgress);
+        var isReady = requiredActions.Length == requiredActionsCompleted
+            && blockedRequiredActions == 0
+            && unresolvedRisks == 0
+            && account.Status == AccountRecoveryStatus.FullyReviewed;
+
+        return new CriticalAccountReadiness(
+            account.Id,
+            account.ProviderId,
+            isReady ? CriticalAccountReadinessStatus.Ready : CriticalAccountReadinessStatus.NotReady,
+            requiredActionsCompleted,
+            requiredActions.Length,
+            blockedRequiredActions,
+            unresolvedRisks);
     }
 
     private static bool IsCompletedForProgress(RecoveryActionInstance action) =>

@@ -175,6 +175,18 @@ Suggested fields:
 
 Old credentials are never stored.
 
+### RecoveryProgress
+
+Reports recovery status without implying that unresolved risks are secured. It includes:
+
+- critical accounts secured versus total critical accounts
+- overall accounts fully reviewed versus total accounts
+- weighted required-action completion using action importance
+- blocked required-action count
+- unresolved-risk count
+
+Critical-account readiness is calculated separately from the overall percentage so blocked critical accounts and accepted unresolved risks remain visible.
+
 ### AuditEvent
 
 Records meaningful recovery-state changes without containing secrets.
