@@ -156,7 +156,12 @@ public sealed class RecoveryVault : IDisposable
 
     private static SqliteConnection OpenConnection(string path)
     {
-        var builder = new SqliteConnectionStringBuilder { DataSource = path, Mode = SqliteOpenMode.ReadWriteCreate };
+        var builder = new SqliteConnectionStringBuilder
+        {
+            DataSource = path,
+            Mode = SqliteOpenMode.ReadWriteCreate,
+            Pooling = false,
+        };
         var connection = new SqliteConnection(builder.ToString());
         connection.Open();
         return connection;

@@ -103,7 +103,7 @@ public sealed class RecoveryVaultTests : IDisposable
                 Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_state"));
         }
 
-        using (var connection = new SqliteConnection($"Data Source={path}"))
+        using (var connection = OpenConnection(path))
         {
             connection.Open();
             using var command = connection.CreateCommand();
@@ -129,8 +129,7 @@ public sealed class RecoveryVaultTests : IDisposable
 
     private static byte[] ReadEncryptedRecordBytes(string path, string recordType, string recordId)
     {
-        using var connection = new SqliteConnection($"Data Source={path}");
-        connection.Open();
+        using var connection = OpenConnection(path);
         using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT nonce, ciphertext
@@ -154,5 +153,12 @@ public sealed class RecoveryVaultTests : IDisposable
     {
         Directory.CreateDirectory(_directory);
         return Path.Combine(_directory, "recovery-vault.sqlite");
+    }
+
+    private static SqliteConnection OpenConnection(string path)
+    {
+        var connection = new SqliteConnection($"Data Source={path};Pooling=False");
+        connection.Open();
+        return connection;
     }
 }
