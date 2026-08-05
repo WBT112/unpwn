@@ -197,23 +197,15 @@ public sealed class RecoveryActionInstance
         };
 }
 
-public sealed class Account
+public sealed class Account(Guid id, string providerId, AccountCriticality criticality, IEnumerable<RecoveryActionInstance> actions)
 {
-    private readonly List<RecoveryActionInstance> _actions;
+    private readonly List<RecoveryActionInstance> _actions = [.. actions];
 
-    public Account(Guid id, string providerId, AccountCriticality criticality, IEnumerable<RecoveryActionInstance> actions)
-    {
-        Id = id;
-        ProviderId = providerId;
-        Criticality = criticality;
-        _actions = actions.ToList();
-    }
+    public Guid Id { get; } = id;
 
-    public Guid Id { get; }
+    public string ProviderId { get; } = providerId;
 
-    public string ProviderId { get; }
-
-    public AccountCriticality Criticality { get; }
+    public AccountCriticality Criticality { get; } = criticality;
 
     public IReadOnlyList<RecoveryActionInstance> Actions => _actions;
 
@@ -269,21 +261,15 @@ public sealed record RecoveryProgress(
     int BlockedRequiredActions,
     int UnresolvedRisks);
 
-public sealed class RecoverySession
+public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
 {
     private readonly List<Account> _accounts = [];
     private readonly List<AccountDependency> _dependencies = [];
     private readonly List<AuditEvent> _auditEvents = [];
 
-    public RecoverySession(Guid id, DateTimeOffset createdAt)
-    {
-        Id = id;
-        CreatedAt = createdAt;
-    }
+    public Guid Id { get; } = id;
 
-    public Guid Id { get; }
-
-    public DateTimeOffset CreatedAt { get; }
+    public DateTimeOffset CreatedAt { get; } = createdAt;
 
     public IReadOnlyList<Account> Accounts => _accounts;
 
