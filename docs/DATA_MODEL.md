@@ -70,7 +70,7 @@ Account status values:
 
 ### AccountDependency
 
-Represents a recovery dependency between accounts or channels.
+Represents a recovery dependency between accounts or channels. A dependency means the source account should wait for the target account or recovery channel to be secured first, for example when password-reset links for a shopping account are sent to a primary email account.
 
 Suggested fields:
 
@@ -78,7 +78,10 @@ Suggested fields:
 - `SourceAccountId`
 - `TargetAccountId`
 - `DependencyType`
+- `Reason`
 - `Description`
+
+Recovery-order planning should treat dependency roots as earlier work, keep critical accounts ahead of lower-priority accounts when dependencies permit it, and surface imported dependencies that reference unknown accounts. Dependency cycles are blocking issues because the user must decide which account or channel can be recovered manually before the dependent chain can continue.
 
 Examples:
 
