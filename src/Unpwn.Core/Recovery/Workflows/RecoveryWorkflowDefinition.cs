@@ -1,4 +1,4 @@
-namespace Unpwn.Core.Recovery.Workflows;
+namespace Unpwn.Core;
 
 public sealed record RecoveryWorkflowDefinition(
     string WorkflowId,
@@ -18,43 +18,54 @@ public sealed record RecoveryLocationDefinition(
 public sealed record RecoveryActionDefinition(
     string Id,
     RecoveryActionType Type,
-    RecoveryPath RecoveryPath,
+    IReadOnlyList<RecoveryPath> RecoveryPaths,
     RecoveryActionRequirement Requirement,
     RecoveryActionImportance Importance,
     AutomationSupport AutomationSupport,
     IReadOnlyList<string> Prerequisites,
-    IReadOnlyList<string> CompletionCriteria);
+    IReadOnlyList<string> CompletionCriteria)
+{
+    public bool IsRequired => Requirement == RecoveryActionRequirement.Required;
+
+    public bool SupportsPath(RecoveryPath path) => RecoveryPaths.Contains(path);
+}
 
 public enum RecoveryActionType
 {
     IdentifyAccount,
+    ConfirmAccess,
     ChangePassword,
+    ResetPassword,
     InvalidateSessions,
+    ReviewTrustedDevices,
     ReviewMfa,
     ReviewRecoveryOptions,
     ReviewConnectedApplications,
+    RevokeApplicationAccess,
+    ReviewApiTokens,
     ManualRecovery,
-    DocumentCompletion
+    RecordUnresolvedRisk,
+    DocumentCompletion,
 }
 
 public enum RecoveryPath
 {
     AuthenticatedChange,
     PasswordReset,
-    ManualRecovery
+    ManualRecovery,
 }
 
 public enum RecoveryActionRequirement
 {
+    Optional,
     Required,
-    Optional
 }
 
 public enum RecoveryActionImportance
 {
-    Critical,
-    Important,
-    Routine
+    Routine = 1,
+    Important = 3,
+    Critical = 5,
 }
 
 public enum AutomationSupport
@@ -62,5 +73,5 @@ public enum AutomationSupport
     None,
     Navigation,
     Assisted,
-    Automated
+    Automated,
 }
