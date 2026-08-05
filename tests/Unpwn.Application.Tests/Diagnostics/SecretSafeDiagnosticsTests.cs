@@ -5,32 +5,39 @@ namespace Unpwn.Application.Tests.Diagnostics;
 
 public sealed class SecretSafeDiagnosticsTests
 {
-    [Theory]
-    [InlineData("UNPWN_TEST_SECRET_PASSWORD_Correct-Horse-Battery-Staple")]
-    [InlineData("UNPWN_TEST_SECRET_RESET_TOKEN_7ca2f72d8a4b")]
-    [InlineData("UNPWN_TEST_SECRET_COOKIE_session-id-4f8e")]
-    [InlineData("UNPWN_TEST_SECRET_MFA_RECOVERY_CODE_1234-5678")]
-    public void FailureDiagnosticsDoNotExposeExceptionContents(string syntheticSecret)
+    [Fact]
+    public void FailureDiagnosticsDoNotExposeExceptionContents()
     {
-        var sink = new CapturingDiagnosticSink();
-        var diagnostics = new SecretSafeDiagnostics(sink);
-        var exception = new InvalidOperationException($"Provider response contained {syntheticSecret}");
+        string[] syntheticSecrets =
+        [
+            "UNPWN_TEST_SECRET_PASSWORD_Correct-Horse-Battery-Staple",
+            "UNPWN_TEST_SECRET_RESET_TOKEN_7ca2f72d8a4b",
+            "UNPWN_TEST_SECRET_COOKIE_session-id-4f8e",
+            "UNPWN_TEST_SECRET_MFA_RECOVERY_CODE_1234-5678",
+        ];
 
-        var safeException = diagnostics.ReportFailureAndCreateSafeException(
-            DiagnosticOperation.VaultUnlock,
-            exception);
+        foreach (var syntheticSecret in syntheticSecrets)
+        {
+            var sink = new CapturingDiagnosticSink();
+            var diagnostics = new SecretSafeDiagnostics(sink);
+            var exception = new InvalidOperationException($"Provider response contained {syntheticSecret}");
 
-        var diagnosticEvent = Assert.Single(sink.Events);
-        var capturedLog = Render(diagnosticEvent);
+            var safeException = diagnostics.ReportFailureAndCreateSafeException(
+                DiagnosticOperation.VaultUnlock,
+                exception);
 
-        Assert.DoesNotContain(syntheticSecret, capturedLog, StringComparison.Ordinal);
-        Assert.DoesNotContain(exception.Message, capturedLog, StringComparison.Ordinal);
-        Assert.DoesNotContain(syntheticSecret, safeException.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(exception.Message, safeException.ToString(), StringComparison.Ordinal);
-        Assert.Null(safeException.InnerException);
-        Assert.Equal("UNPWN1001", diagnosticEvent.EventId);
-        Assert.Equal("Vault unlock failed.", diagnosticEvent.Message);
-        Assert.Equal(nameof(InvalidOperationException), diagnosticEvent.ExceptionType);
+            var diagnosticEvent = Assert.Single(sink.Events);
+            var capturedLog = Render(diagnosticEvent);
+
+            Assert.DoesNotContain(syntheticSecret, capturedLog, StringComparison.Ordinal);
+            Assert.DoesNotContain(exception.Message, capturedLog, StringComparison.Ordinal);
+            Assert.DoesNotContain(syntheticSecret, safeException.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain(exception.Message, safeException.ToString(), StringComparison.Ordinal);
+            Assert.Null(safeException.InnerException);
+            Assert.Equal("UNPWN1001", diagnosticEvent.EventId);
+            Assert.Equal("Vault unlock failed.", diagnosticEvent.Message);
+            Assert.Equal(nameof(InvalidOperationException), diagnosticEvent.ExceptionType);
+        }
     }
 
     [Fact]
