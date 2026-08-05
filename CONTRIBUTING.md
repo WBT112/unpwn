@@ -4,6 +4,8 @@ Thank you for helping improve unpwn.
 
 unpwn is security-sensitive software. Small, reviewable changes with tests and clear reasoning are preferred over large feature dumps.
 
+Coding agents and automated contributors must also follow [`AGENTS.md`](AGENTS.md).
+
 ## Ways to Contribute
 
 - improve documentation
@@ -52,7 +54,10 @@ A recovery workflow pull request should include:
 - supported credential recovery paths
 - dependencies and blocking conditions
 - automation support level
-- tests or validation for machine-readable definitions
+- completion criteria
+- structural validation
+- semantic validation
+- provider contract scenarios
 
 Workflow URLs must point to the legitimate provider domain or a documented official endpoint.
 
@@ -79,11 +84,28 @@ Cryptographic changes must include:
 
 ## Testing
 
-Tests should avoid real accounts and real credentials.
+Follow [`docs/TESTING.md`](docs/TESTING.md).
 
-Use synthetic provider pages, test fixtures, local mock services, or dedicated non-production accounts where interaction testing is unavoidable.
+Normal pull-request tests must be deterministic and must not require real provider accounts or changing live websites.
 
-Automation tests must be deterministic where possible and must not depend on changing live websites in the core test suite.
+Expected coverage includes, where applicable:
+
+- unit and state-machine tests
+- workflow schema validation
+- semantic workflow validation
+- provider contract scenarios
+- critical-account readiness and progress calculations
+- vault tampering and secret-leakage tests
+- integration tests against the local synthetic provider
+- Playwright tests against the synthetic provider
+
+Production browser assistance must remain visible. Headless browser execution is allowed only in explicit test mode against the local synthetic provider.
+
+Read-only live-provider checks belong in scheduled or manually triggered smoke workflows. They must not submit forms, use credentials, trigger reset emails, or upload browser state and sensitive traces.
+
+Tests and CI artifacts may contain synthetic data only. Use recognizable synthetic secret markers and verify that they do not leak into logs, exceptions, database files, traces, screenshots, or uploaded artifacts.
+
+Do not claim a test passed unless it was actually run. Document checks that could not be executed.
 
 ## Security Reports
 
