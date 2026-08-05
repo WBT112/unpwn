@@ -2,104 +2,104 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:Unpwn.App.Presentation"
+        xmlns:views="using:Unpwn.App.Views"
         x:Class="Unpwn.App.MainWindow"
+        x:DataType="vm:ShellViewModel"
         mc:Ignorable="d"
         d:DesignWidth="1080"
-        d:DesignHeight="760"
+        d:DesignHeight="720"
         Title="unpwn"
         Width="1080"
-        Height="760"
+        Height="720"
         MinWidth="760"
         MinHeight="560"
         WindowStartupLocation="CenterScreen">
   <Grid RowDefinitions="Auto,*" Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
-    <Border Padding="24,18" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-      <TextBlock FontSize="24" FontWeight="SemiBold" Text="unpwn" />
+    <Border Grid.Row="0"
+            Padding="20,14"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="24">
+        <TextBlock Grid.Column="0"
+                   VerticalAlignment="Center"
+                   FontSize="24"
+                   FontWeight="SemiBold"
+                   Text="unpwn" />
+        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+          <TextBlock FontWeight="SemiBold" Text="{Binding VaultContextLabel}" />
+          <TextBlock FontSize="12" Opacity="0.75" Text="{Binding SessionContextLabel}" />
+        </StackPanel>
+        <Button Grid.Column="2"
+                TabIndex="0"
+                IsVisible="{Binding IsVaultUnlocked}"
+                Command="{Binding LockCommand}"
+                Content="Lock vault" />
+      </Grid>
     </Border>
 
-    <ScrollViewer Grid.Row="1">
-      <StackPanel Margin="40,32" MaxWidth="920" HorizontalAlignment="Center" Spacing="20">
-        <TextBlock FontSize="32" FontWeight="SemiBold" Text="Import account inventory" />
-        <TextBlock FontSize="16"
-                   TextWrapping="Wrap"
-                   Text="Import account names and login identifiers from a CSV file. Old passwords are never imported or saved." />
+    <Grid Grid.Row="1" ColumnDefinitions="220,*" RowDefinitions="*,Auto">
+      <Border Grid.Row="0"
+              Grid.RowSpan="2"
+              Grid.Column="0"
+              Padding="12"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+              BorderThickness="0,0,1,0"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <Grid RowDefinitions="Auto,*">
+          <TextBlock Margin="10,6,10,12"
+                     FontSize="13"
+                     FontWeight="SemiBold"
+                     Opacity="0.75"
+                     Text="RECOVERY WORKSPACE" />
+          <ListBox Grid.Row="1"
+                   TabIndex="1"
+                   ItemsSource="{Binding NavigationItems}"
+                   SelectedItem="{Binding SelectedNavigation, Mode=TwoWay}"
+                   Background="Transparent"
+                   BorderThickness="0">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:NavigationItemViewModel">
+                <Grid Margin="2,4" ColumnDefinitions="32,*" ColumnSpacing="8">
+                  <Border Width="28"
+                          Height="28"
+                          VerticalAlignment="Center"
+                          CornerRadius="14"
+                          Background="{DynamicResource SystemControlBackgroundAccentBrush}">
+                    <TextBlock HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource SystemControlForegroundChromeWhiteBrush}"
+                               FontWeight="Bold"
+                               Text="{Binding Symbol}" />
+                  </Border>
+                  <StackPanel Grid.Column="1" Spacing="1">
+                    <TextBlock FontWeight="SemiBold" Text="{Binding Label}" />
+                    <TextBlock FontSize="11"
+                               Opacity="0.72"
+                               Text="{Binding Description}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </Grid>
+      </Border>
 
-        <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="14">
-            <TextBlock FontSize="20" FontWeight="SemiBold" Text="1. Select source" />
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <Button x:Name="OpenCsvButton" Click="OpenCsvButton_OnClick" Content="Choose CSV file" />
-              <TextBlock x:Name="SelectedFileText"
-                         VerticalAlignment="Center"
-                         Text="No file selected"
-                         TextTrimming="CharacterEllipsis" />
-            </StackPanel>
+      <ScrollViewer Grid.Row="0" Grid.Column="1" TabIndex="2">
+        <ContentControl Margin="28,24"
+                        MaxWidth="900"
+                        HorizontalAlignment="Stretch"
+                        Content="{Binding CurrentScreen}" />
+      </ScrollViewer>
 
-            <Border x:Name="PasswordWarningBorder"
-                    IsVisible="False"
-                    Padding="14"
-                    CornerRadius="6"
-                    Background="{DynamicResource SystemControlBackgroundAccentBrush}">
-              <StackPanel Spacing="10">
-                <TextBlock x:Name="PasswordWarningText"
-                           Foreground="{DynamicResource SystemControlForegroundChromeWhiteBrush}"
-                           FontWeight="SemiBold"
-                           TextWrapping="Wrap" />
-                <CheckBox x:Name="ExcludePasswordsCheckBox"
-                          Foreground="{DynamicResource SystemControlForegroundChromeWhiteBrush}"
-                          Content="Exclude all detected password columns from this import"
-                          IsCheckedChanged="ExcludePasswordsCheckBox_OnIsCheckedChanged" />
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </Border>
-
-        <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="14">
-            <TextBlock FontSize="20" FontWeight="SemiBold" Text="2. Map columns" />
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="12">
-              <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
-                <TextBlock Text="Service name" />
-                <ComboBox x:Name="ServiceNameColumnCombo" SelectionChanged="MappingCombo_OnSelectionChanged" />
-              </StackPanel>
-              <StackPanel Grid.Row="0" Grid.Column="1" Spacing="5">
-                <TextBlock Text="Account name" />
-                <ComboBox x:Name="AccountNameColumnCombo" SelectionChanged="MappingCombo_OnSelectionChanged" />
-              </StackPanel>
-              <StackPanel Grid.Row="1" Grid.Column="0" Spacing="5">
-                <TextBlock Text="Username or email" />
-                <ComboBox x:Name="LoginIdentifierColumnCombo" SelectionChanged="MappingCombo_OnSelectionChanged" />
-              </StackPanel>
-              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
-                <TextBlock Text="Account URL" />
-                <ComboBox x:Name="AccountUrlColumnCombo" SelectionChanged="MappingCombo_OnSelectionChanged" />
-              </StackPanel>
-            </Grid>
-            <Button x:Name="CreatePreviewButton"
-                    HorizontalAlignment="Left"
-                    IsEnabled="False"
-                    Click="CreatePreviewButton_OnClick"
-                    Content="Create import preview" />
-          </StackPanel>
-        </Border>
-
-        <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="12">
-            <TextBlock FontSize="20" FontWeight="SemiBold" Text="3. Review preview" />
-            <ItemsControl x:Name="DiagnosticsItems" />
-            <ListBox x:Name="PreviewItems" MinHeight="90" MaxHeight="260" />
-            <TextBlock x:Name="PreviewSummaryText"
-                       Text="Select a CSV file and create a preview."
-                       TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <Border Padding="14" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundAccentBrush}">
-          <TextBlock Foreground="{DynamicResource SystemControlForegroundChromeWhiteBrush}"
-                     TextWrapping="Wrap"
-                     Text="Use unpwn only on a trusted device. This application does not detect or remove malware." />
-        </Border>
-      </StackPanel>
-    </ScrollViewer>
+      <Border Grid.Row="1"
+              Grid.Column="1"
+              Padding="20,12"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+              BorderThickness="0,1,0,0"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+        <views:StatusBannerView DataContext="{Binding CurrentStatus}" />
+      </Border>
+    </Grid>
   </Grid>
 </Window>

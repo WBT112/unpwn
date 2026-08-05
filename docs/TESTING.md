@@ -111,6 +111,15 @@ The initial deterministic harness lives in `tests/Unpwn.SyntheticProvider.Tests`
 
 The synthetic provider must expose explicit scenario controls so tests do not depend on timing, randomness, or external services.
 
+### Application-shell view-model tests
+
+The desktop presentation layer must be testable without opening native windows.
+View-model tests cover locked startup, route navigation, global lock visibility,
+constructor-injected services, busy and cancellation states, repeated command
+execution, and static-message failure handling. Visual-state tests verify that
+blocked, failed, and unresolved-risk states have distinct text and symbols in
+addition to color.
+
 ### 6. Playwright test mode
 
 Production browser assistance and CI browser testing have different execution rules.

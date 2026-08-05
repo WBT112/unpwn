@@ -49,7 +49,10 @@ See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
 
 ```
 Unpwn.App
- └── Avalonia Desktop Application
+ ├── Avalonia Desktop Application
+ ├── MVVM Application Shell and Navigation
+ ├── Presentation Commands and Visual States
+ └── UI Composition Root
 
 Unpwn.Application
  └── Application Services and Use Cases
@@ -112,6 +115,12 @@ Unpwn.App
 ```
 
 The architecture test project verifies this project-reference graph and checks that Core remains free of UI, storage, browser-automation, and operating-system dependencies.
+
+The desktop shell uses constructor-injected view models and UI-facing services.
+Its code-behind is limited to view initialization, native file-picker bridging,
+and dialog close results. Navigation, lock visibility, session context,
+presentation status, command execution, cancellation, and safe error messages
+remain in presentation view models. See [Application Shell and UI Foundation](UI_FOUNDATION.md).
 
 ## Recovery Vault
 

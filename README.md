@@ -106,6 +106,7 @@ See:
 
 - [Project Vision](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Application Shell and UI Foundation](docs/UI_FOUNDATION.md)
 - [CSV Import](docs/IMPORT.md)
 - [Recovery Workflows](docs/RECOVERY_WORKFLOWS.md)
 - [Data Model](docs/DATA_MODEL.md)

@@ -11,6 +11,7 @@
     <Project Path="src/Unpwn.Vault/Unpwn.Vault.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Unpwn.App.Tests/Unpwn.App.Tests.csproj" />
     <Project Path="tests/Unpwn.Architecture.Tests/Unpwn.Architecture.Tests.csproj" />
     <Project Path="tests/Unpwn.Application.Tests/Unpwn.Application.Tests.csproj" />
     <Project Path="tests/Unpwn.Core.Tests/Unpwn.Core.Tests.csproj" />

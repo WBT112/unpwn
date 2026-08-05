@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unpwn.App.Presentation"
+             xmlns:views="using:Unpwn.App.Views"
+             x:Class="Unpwn.App.Views.VaultEntryView"
+             x:DataType="vm:VaultEntryScreenViewModel">
+  <StackPanel Spacing="22">
+    <StackPanel Spacing="8">
+      <TextBlock Classes="page-title" Text="{Binding Title}" />
+      <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <views:StatusBannerView DataContext="{Binding Status}" />
+
+    <Border Padding="20"
+            CornerRadius="8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="section-title" Text="Recovery vault" />
+        <TextBlock Text="Vault creation and unlock operations will be connected in the dedicated vault-entry implementation."
+                   TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button TabIndex="3"
+                  IsEnabled="False"
+                  ToolTip.Tip="Vault creation is not implemented in this shell issue."
+                  Content="Create vault" />
+          <Button TabIndex="4"
+                  IsEnabled="False"
+                  ToolTip.Tip="Vault unlock is not implemented in this shell issue."
+                  Content="Open existing vault" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>

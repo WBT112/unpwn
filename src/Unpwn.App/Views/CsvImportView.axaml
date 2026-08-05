@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unpwn.App.Presentation"
+             xmlns:views="using:Unpwn.App.Views"
+             x:Class="Unpwn.App.Views.CsvImportView"
+             x:DataType="vm:CsvImportScreenViewModel">
+  <StackPanel Spacing="20">
+    <StackPanel Spacing="8">
+      <TextBlock Classes="page-title" Text="{Binding Title}" />
+      <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <views:StatusBannerView DataContext="{Binding Status}" />
+
+    <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="1. Select source" />
+        <StackPanel Orientation="Horizontal" Spacing="12">
+          <Button x:Name="OpenCsvButton" TabIndex="3" Click="OpenCsvButton_OnClick" Content="Choose CSV file" />
+          <TextBlock x:Name="SelectedFileText"
+                     VerticalAlignment="Center"
+                     Text="No file selected"
+                     TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+
+        <Border x:Name="PasswordWarningBorder"
+                IsVisible="False"
+                Padding="14"
+                BorderBrush="#B26A00"
+                BorderThickness="5,1,1,1"
+                CornerRadius="6">
+          <StackPanel Spacing="10">
+            <TextBlock x:Name="PasswordWarningText"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap" />
+            <CheckBox x:Name="ExcludePasswordsCheckBox"
+                      TabIndex="4"
+                      Content="Exclude all detected password columns from this import"
+                      IsCheckedChanged="ExcludePasswordsCheckBox_OnIsCheckedChanged" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+
+    <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="2. Map columns" />
+        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="12">
+          <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
+            <TextBlock Text="Service name" />
+            <ComboBox x:Name="ServiceNameColumnCombo"
+                      TabIndex="5"
+                      SelectionChanged="MappingCombo_OnSelectionChanged" />
+          </StackPanel>
+          <StackPanel Grid.Row="0" Grid.Column="1" Spacing="5">
+            <TextBlock Text="Account name" />
+            <ComboBox x:Name="AccountNameColumnCombo"
+                      TabIndex="6"
+                      SelectionChanged="MappingCombo_OnSelectionChanged" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Grid.Column="0" Spacing="5">
+            <TextBlock Text="Username or email" />
+            <ComboBox x:Name="LoginIdentifierColumnCombo"
+                      TabIndex="7"
+                      SelectionChanged="MappingCombo_OnSelectionChanged" />
+          </StackPanel>
+          <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
+            <TextBlock Text="Account URL" />
+            <ComboBox x:Name="AccountUrlColumnCombo"
+                      TabIndex="8"
+                      SelectionChanged="MappingCombo_OnSelectionChanged" />
+          </StackPanel>
+        </Grid>
+        <Button x:Name="CreatePreviewButton"
+                TabIndex="9"
+                HorizontalAlignment="Left"
+                IsEnabled="False"
+                Click="CreatePreviewButton_OnClick"
+                Content="Create import preview" />
+      </StackPanel>
+    </Border>
+
+    <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="section-title" Text="3. Review preview" />
+        <ItemsControl x:Name="DiagnosticsItems" />
+        <ListBox x:Name="PreviewItems" MinHeight="90" MaxHeight="260" />
+        <TextBlock x:Name="PreviewSummaryText"
+                   Text="Select a CSV file and create a preview."
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+  </StackPanel>
+</UserControl>
