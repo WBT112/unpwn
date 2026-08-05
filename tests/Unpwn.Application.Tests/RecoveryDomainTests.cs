@@ -84,6 +84,56 @@ public sealed class RecoveryDomainTests
         Assert.Equal(1, progress.UnresolvedRisks);
     }
 
+    [Fact]
+    public void CriticalReadinessReportsOnlyCriticalAccountsWithBlockingSignals()
+    {
+        var readyAction = RecoveryActionInstance.Create(RequiredAction("ready-password", RecoveryActionImportance.Critical));
+        readyAction.Start();
+        readyAction.Complete();
+        var ready = new Account(Guid.NewGuid(), "ready-provider", AccountCriticality.Critical, [readyAction]);
+        var blockedAction = RecoveryActionInstance.Create(RequiredAction("blocked-password", RecoveryActionImportance.Critical));
+        blockedAction.Block("Primary email must be secured first.");
+        var blocked = new Account(Guid.NewGuid(), "blocked-provider", AccountCriticality.Critical, [blockedAction]);
+        var routineAction = RecoveryActionInstance.Create(RequiredAction("routine-password", RecoveryActionImportance.Critical));
+        routineAction.Start();
+        routineAction.Complete();
+        var routine = new Account(Guid.NewGuid(), "routine-provider", AccountCriticality.Routine, [routineAction]);
+        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
+        session.AddAccount(ready);
+        session.AddAccount(blocked);
+        session.AddAccount(routine);
+
+        var readiness = session.CalculateCriticalAccountReadiness();
+
+        Assert.Equal(2, readiness.Count);
+        Assert.Contains(readiness, account => account.AccountId == ready.Id && account.IsReady);
+        var blockedReadiness = Assert.Single(readiness, account => account.AccountId == blocked.Id);
+        Assert.Equal(CriticalAccountReadinessStatus.NotReady, blockedReadiness.Status);
+        Assert.Equal(0, blockedReadiness.RequiredActionsCompleted);
+        Assert.Equal(1, blockedReadiness.RequiredActionsTotal);
+        Assert.Equal(1, blockedReadiness.BlockedRequiredActions);
+    }
+
+    [Fact]
+    public void ProgressExposesReadinessAndReviewRatios()
+    {
+        var criticalDone = RecoveryActionInstance.Create(RequiredAction("critical-done"));
+        criticalDone.Start();
+        criticalDone.Complete();
+        var criticalOpen = RecoveryActionInstance.Create(RequiredAction("critical-open"));
+        var routineDone = RecoveryActionInstance.Create(RequiredAction("routine-done"));
+        routineDone.Start();
+        routineDone.Complete();
+        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
+        session.AddAccount(new Account(Guid.NewGuid(), "critical-done", AccountCriticality.Critical, [criticalDone]));
+        session.AddAccount(new Account(Guid.NewGuid(), "critical-open", AccountCriticality.Critical, [criticalOpen]));
+        session.AddAccount(new Account(Guid.NewGuid(), "routine-done", AccountCriticality.Routine, [routineDone]));
+
+        var progress = session.CalculateProgress();
+
+        Assert.Equal(0.5, progress.CriticalAccountReadinessRatio);
+        Assert.Equal(2 / 3.0, progress.AccountReviewRatio);
+    }
 
     [Fact]
     public void StartActionBlocksUntilPrerequisitesAreCompleted()
