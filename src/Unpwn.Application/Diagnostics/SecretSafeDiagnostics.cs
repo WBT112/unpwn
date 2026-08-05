@@ -20,9 +20,11 @@ public sealed class SecretSafeDiagnostics(ISecretSafeDiagnosticSink sink)
         var (eventId, message) = operation switch
         {
             DiagnosticOperation.VaultUnlock => ("UNPWN1001", "Vault unlock failed."),
-            DiagnosticOperation.RecoverySessionLoad => ("UNPWN1002", "Recovery session loading failed."),
-            DiagnosticOperation.RecoveryAction => ("UNPWN1003", "Recovery action failed."),
-            DiagnosticOperation.CredentialExport => ("UNPWN1004", "Credential export failed."),
+            DiagnosticOperation.VaultLock => ("UNPWN1002", "Vault lock failed."),
+            DiagnosticOperation.VaultPasswordChange => ("UNPWN1003", "Vault password change failed."),
+            DiagnosticOperation.RecoverySessionLoad => ("UNPWN1004", "Recovery session loading failed."),
+            DiagnosticOperation.RecoveryAction => ("UNPWN1005", "Recovery action failed."),
+            DiagnosticOperation.CredentialExport => ("UNPWN1006", "Credential export failed."),
             _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, "Unsupported diagnostic operation."),
         };
 

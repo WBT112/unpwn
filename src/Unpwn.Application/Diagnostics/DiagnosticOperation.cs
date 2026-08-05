@@ -6,6 +6,8 @@ namespace Unpwn.Application.Diagnostics;
 public enum DiagnosticOperation
 {
     VaultUnlock,
+    VaultLock,
+    VaultPasswordChange,
     RecoverySessionLoad,
     RecoveryAction,
     CredentialExport,

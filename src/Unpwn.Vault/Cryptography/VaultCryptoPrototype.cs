@@ -62,6 +62,39 @@ public sealed class VaultCryptoPrototype : IDisposable
         }
     }
 
+    public VaultKeyEnvelope WrapExistingDataKey(string vaultPassword, Argon2idParameters parameters, byte[] dataKey)
+    {
+        ValidateVaultPassword(vaultPassword);
+        ArgumentNullException.ThrowIfNull(parameters);
+        parameters.Validate();
+        ValidateDataKey(dataKey);
+
+        var salt = RandomBytes(SaltSizeBytes);
+        var wrappingKey = DeriveWrappingKey(vaultPassword, salt, parameters);
+
+        try
+        {
+            var nonce = RandomBytes(NonceSizeBytes);
+            var encryptedDataKey = new byte[DataKeySizeBytes];
+            var tag = new byte[TagSizeBytes];
+            var associatedData = BuildAssociatedData("vault-data-key", "vault-key", 1);
+
+            using var aes = new AesGcm(wrappingKey, TagSizeBytes);
+            aes.Encrypt(nonce, dataKey, encryptedDataKey, tag, associatedData);
+
+            return new VaultKeyEnvelope(
+                parameters,
+                salt,
+                nonce,
+                encryptedDataKey,
+                tag);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(wrappingKey);
+        }
+    }
+
     public static byte[] UnwrapDataKey(string vaultPassword, VaultKeyEnvelope envelope)
     {
         ValidateVaultPassword(vaultPassword);

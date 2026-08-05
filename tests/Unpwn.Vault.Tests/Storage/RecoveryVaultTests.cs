@@ -93,6 +93,84 @@ public sealed class RecoveryVaultTests : IDisposable
     }
 
     [Fact]
+    public void LockedVaultRejectsSensitiveRecordOperationsUntilUnlocked()
+    {
+        var path = VaultPath();
+        using var vault = RecoveryVault.Create(path, "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        vault.UpsertRecord(
+            new VaultRecordDescriptor("account-state", "account-locked", 1),
+            Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_state"));
+
+        vault.Lock();
+
+        Assert.True(vault.IsLocked);
+        Assert.Throws<InvalidOperationException>(() => vault.ReadRecord("account-state", "account-locked"));
+        Assert.Throws<InvalidOperationException>(() => vault.UpsertRecord(
+            new VaultRecordDescriptor("account-state", "account-locked", 1),
+            Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_new-state")));
+
+        vault.Unlock("UNPWN_TEST_SECRET_vault-password");
+
+        Assert.False(vault.IsLocked);
+        var record = vault.ReadRecord("account-state", "account-locked");
+        Assert.NotNull(record);
+        Assert.Equal("UNPWN_TEST_SECRET_state", Encoding.UTF8.GetString(record.Plaintext));
+    }
+
+    [Fact]
+    public void PasswordChangeRewrapsDataKeyWithoutReencryptingRecords()
+    {
+        var path = VaultPath();
+        using (var vault = RecoveryVault.Create(path, "UNPWN_TEST_SECRET_old-password", TestParameters))
+        {
+            vault.UpsertRecord(
+                new VaultRecordDescriptor("generated-credential", "account-password-change", 1),
+                Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_generated-password"));
+
+            var firstEnvelopeBytes = ReadEnvelopeBytes(path);
+            var encryptedRecordBytes = ReadEncryptedRecordBytes(path, "generated-credential", "account-password-change");
+
+            vault.ChangePassword(
+                "UNPWN_TEST_SECRET_old-password",
+                "UNPWN_TEST_SECRET_new-password",
+                TestParameters);
+
+            var secondEnvelopeBytes = ReadEnvelopeBytes(path);
+            var encryptedRecordBytesAfterChange = ReadEncryptedRecordBytes(path, "generated-credential", "account-password-change");
+
+            Assert.NotEqual(Convert.ToHexString(firstEnvelopeBytes), Convert.ToHexString(secondEnvelopeBytes));
+            Assert.Equal(Convert.ToHexString(encryptedRecordBytes), Convert.ToHexString(encryptedRecordBytesAfterChange));
+        }
+
+        Assert.Throws<InvalidOperationException>(() => RecoveryVault.Open(path, "UNPWN_TEST_SECRET_old-password"));
+        using var reopened = RecoveryVault.Open(path, "UNPWN_TEST_SECRET_new-password");
+        var record = reopened.ReadRecord("generated-credential", "account-password-change");
+
+        Assert.NotNull(record);
+        Assert.Equal("UNPWN_TEST_SECRET_generated-password", Encoding.UTF8.GetString(record.Plaintext));
+    }
+
+    [Fact]
+    public void PasswordChangeRequiresCurrentPasswordAndLeavesOldPasswordValidOnFailure()
+    {
+        var path = VaultPath();
+        using (var vault = RecoveryVault.Create(path, "UNPWN_TEST_SECRET_old-password", TestParameters))
+        {
+            vault.UpsertRecord(
+                new VaultRecordDescriptor("account-state", "account-password-failure", 1),
+                Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_state"));
+
+            Assert.Throws<InvalidOperationException>(() => vault.ChangePassword(
+                "UNPWN_TEST_SECRET_wrong-password",
+                "UNPWN_TEST_SECRET_new-password",
+                TestParameters));
+        }
+
+        using var reopened = RecoveryVault.Open(path, "UNPWN_TEST_SECRET_old-password");
+        Assert.NotNull(reopened.ReadRecord("account-state", "account-password-failure"));
+    }
+
+    [Fact]
     public void TamperedRecordIsRejectedDuringRead()
     {
         var path = VaultPath();
@@ -147,6 +225,20 @@ public sealed class RecoveryVaultTests : IDisposable
         var nonce = (byte[])reader[0];
         var ciphertext = (byte[])reader[1];
         return [.. nonce, .. ciphertext];
+    }
+
+    private static byte[] ReadEnvelopeBytes(string path)
+    {
+        using var connection = OpenConnection(path);
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT salt, nonce, encrypted_data_key, tag FROM vault_key_envelope WHERE id = 1;";
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            throw new InvalidOperationException("Recovery-vault key envelope was not found.");
+        }
+
+        return [.. (byte[])reader[0], .. (byte[])reader[1], .. (byte[])reader[2], .. (byte[])reader[3]];
     }
 
     private string VaultPath()
