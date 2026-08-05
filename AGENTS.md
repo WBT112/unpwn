@@ -13,6 +13,8 @@ Before changing code or architecture, read the relevant project documents:
 - `README.md`
 - `docs/VISION.md`
 - `docs/ARCHITECTURE.md`
+- `docs/UI_FOUNDATION.md`
+- `docs/LOCALIZATION.md`
 - `docs/RECOVERY_WORKFLOWS.md`
 - `docs/DATA_MODEL.md`
 - `docs/VAULT_SECURITY.md`
@@ -48,14 +50,17 @@ The planned stack is:
 Preserve dependency direction:
 
 - `Unpwn.Core` contains domain models, recovery logic, state machines, prioritization, and progress calculations.
-- `Unpwn.Core` must not depend on Avalonia, SQLite, Playwright, operating-system APIs, or provider-specific infrastructure.
+- `Unpwn.Core` must not depend on Avalonia, SQLite, Playwright, operating-system APIs, localization resources, or provider-specific infrastructure.
 - `Unpwn.Application` coordinates use cases.
 - infrastructure, vault, import, export, automation, and provider concerns remain separate modules.
 - platform-specific functionality must be isolated from recovery and workflow logic.
+- localization remains a desktop presentation concern and must not leak into canonical domain or persisted data.
 
 Windows is the first target platform, but core components must remain platform-neutral.
 
 ## Localization and Presentation Rules
+
+Follow `docs/LOCALIZATION.md` for the authoritative localization contract.
 
 Design every new user-facing surface so additional GUI languages can be added without changing domain, workflow, or vault logic.
 
@@ -65,11 +70,12 @@ Design every new user-facing surface so additional GUI languages can be added wi
 - Keep domain states, audit event types, workflow and action identifiers, error codes, persisted values, and machine-readable formats language-neutral.
 - Translate structured codes only at the presentation boundary. Do not persist localized status names or localized error messages as canonical data.
 - Use an explicit UI culture for user-visible dates, times, numbers, and percentages. Do not let ambient culture alter security-sensitive parsing or invariant identifiers.
-- Preserve deterministic fallback to the default resource language when a culture or key is unavailable.
+- Preserve deterministic fallback to the complete English source resources when a culture or key is unavailable.
 - Avoid fixed text dimensions and layout assumptions based on English string length.
 - Keep controls and dialogs resilient to pseudo-localized, longer, and potentially right-to-left text.
 - Provider workflow execution must never depend on translated display text.
 - New GUI tests should include localization lookup or pseudo-localization coverage where relevant.
+- Do not log localization formatting arguments because they may contain user or recovery data.
 
 Localization architecture and acceptance criteria are tracked in Issue #49.
 
@@ -98,7 +104,7 @@ Vault decisions:
 - operating-system keychains may later provide optional convenience, not the sole security basis
 - do not invent custom cryptographic primitives
 
-Secrets must not appear in logs, exception messages, audit events, telemetry, screenshots, traces, videos, crash reports, or test artifacts.
+Secrets must not appear in logs, exception messages, audit events, telemetry, screenshots, traces, videos, crash reports, localization diagnostics, or test artifacts.
 
 ## Recovery Workflow Rules
 
@@ -121,7 +127,7 @@ Workflow definitions must model:
 
 A required action cannot be silently skipped. `NOT_APPLICABLE` requires a recorded reason. Accepted unresolved risks remain visible and prevent the account from being represented as fully secured.
 
-Provider workflows and updates must arrive through pull requests with tests. Do not hard-code provider logic into the UI.
+Provider workflows and updates must arrive through pull requests with tests. Do not hard-code provider logic into the UI. User-facing workflow guidance uses localization keys or another translation-safe representation; workflow execution never branches on translated text.
 
 ## Testing Strategy
 
@@ -138,6 +144,7 @@ The blocking CI suite should cover:
 - provider contract scenarios
 - recovery state-machine and progress tests
 - vault and secret-leakage tests
+- localization resource and fallback tests
 - integration tests against a local synthetic provider
 - Playwright tests against that synthetic provider
 
@@ -205,6 +212,7 @@ Do not claim tests passed unless they were actually executed. Document any check
 - Do not weaken a security boundary merely to simplify a test.
 - Prefer explicit failure over guessing during recovery or automation.
 - Preserve compatibility or document migrations for persisted vault and workflow formats.
+- Treat resource keys and formatting placeholders as reviewed presentation contracts.
 
 ## Completion Checklist
 
@@ -219,4 +227,5 @@ Before finishing a change, verify:
 - generated artifacts and logs are secret-safe
 - provider URLs and origins are official and justified
 - user-facing text is localizable and canonical data remains language-neutral
+- resource fallback and formatting placeholders remain valid
 - user-visible security claims are accurate and do not overpromise
