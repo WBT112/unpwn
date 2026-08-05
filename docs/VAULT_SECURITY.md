@@ -36,6 +36,11 @@ This design permits a vault-password change by re-encrypting the data key rather
 
 Argon2id parameters are stored as versioned vault metadata so they can be increased in future versions. Concrete parameters must be benchmarked on the minimum supported hardware before release.
 
+
+## Cryptographic Prototype
+
+The focused Argon2id and AES-256-GCM prototype for Issue #5 is documented in [Cryptographic Prototype](CRYPTO_PROTOTYPE.md). It validates password-derived key wrapping, random vault data keys, per-encryption nonces, AES-GCM authentication tags, and associated-data binding before the encrypted SQLite vault is implemented.
+
 ## Record Encryption
 
 Sensitive records use AES-256-GCM authenticated encryption.

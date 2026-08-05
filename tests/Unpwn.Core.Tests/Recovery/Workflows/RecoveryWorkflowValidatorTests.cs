@@ -1,6 +1,7 @@
 using Unpwn.Core.Recovery.Workflows;
 using Unpwn.Providers.Workflows;
 using Xunit;
+using WorkflowTypes = global::Unpwn.Core.Recovery.Workflows;
 
 namespace Unpwn.Core.Tests.Recovery.Workflows;
 
@@ -17,11 +18,11 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void ValidateRejectsDuplicateActionsMissingPrerequisitesFutureDatesAndUnsafeUrls()
     {
-        RecoveryWorkflowDefinition workflow = CreateWorkflow(
+        WorkflowTypes.RecoveryWorkflowDefinition workflow = CreateWorkflow(
             verifiedAt: new DateOnly(2026, 8, 6),
             locations:
             [
-                new RecoveryLocationDefinition("reset", new Uri("http://example.test/reset"), ["http://example.test"])
+                new WorkflowTypes.RecoveryLocationDefinition("reset", new Uri("http://example.test/reset"), ["http://example.test"])
             ],
             actions:
             [
@@ -41,12 +42,12 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void ValidateRejectsRequiredActionsWithoutCompletionCriteriaAndFullyAutomatedClaims()
     {
-        RecoveryWorkflowDefinition workflow = CreateWorkflow(
+        WorkflowTypes.RecoveryWorkflowDefinition workflow = CreateWorkflow(
             actions:
             [
                 CreateAction(
                     "change-password",
-                    automationSupport: AutomationSupport.Automated,
+                    automationSupport: WorkflowTypes.AutomationSupport.Automated,
                     completionCriteria: [])
             ]);
 
@@ -60,7 +61,7 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void ValidateRejectsCyclicPrerequisites()
     {
-        RecoveryWorkflowDefinition workflow = CreateWorkflow(
+        WorkflowTypes.RecoveryWorkflowDefinition workflow = CreateWorkflow(
             actions:
             [
                 CreateAction("first", prerequisites: ["second"]),
@@ -73,10 +74,10 @@ public sealed class RecoveryWorkflowValidatorTests
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "cyclic-prerequisite");
     }
 
-    private static RecoveryWorkflowDefinition CreateWorkflow(
+    private static WorkflowTypes.RecoveryWorkflowDefinition CreateWorkflow(
         DateOnly? verifiedAt = null,
-        IReadOnlyList<RecoveryLocationDefinition>? locations = null,
-        IReadOnlyList<RecoveryActionDefinition>? actions = null) =>
+        IReadOnlyList<WorkflowTypes.RecoveryLocationDefinition>? locations = null,
+        IReadOnlyList<WorkflowTypes.RecoveryActionDefinition>? actions = null) =>
         new(
             "example.test/recovery",
             "example.test",
@@ -84,20 +85,20 @@ public sealed class RecoveryWorkflowValidatorTests
             "consumer",
             "1.0.0",
             verifiedAt ?? new DateOnly(2026, 8, 5),
-            locations ?? [new RecoveryLocationDefinition("reset", new Uri("https://example.test/reset"), ["https://example.test"])],
+            locations ?? [new WorkflowTypes.RecoveryLocationDefinition("reset", new Uri("https://example.test/reset"), ["https://example.test"])],
             actions ?? [CreateAction("change-password")]);
 
-    private static RecoveryActionDefinition CreateAction(
+    private static WorkflowTypes.RecoveryActionDefinition CreateAction(
         string id,
         IReadOnlyList<string>? prerequisites = null,
         IReadOnlyList<string>? completionCriteria = null,
-        AutomationSupport automationSupport = AutomationSupport.Navigation) =>
+        WorkflowTypes.AutomationSupport automationSupport = WorkflowTypes.AutomationSupport.Navigation) =>
         new(
             id,
-            RecoveryActionType.ChangePassword,
-            RecoveryPath.AuthenticatedChange,
-            RecoveryActionRequirement.Required,
-            RecoveryActionImportance.Critical,
+            WorkflowTypes.RecoveryActionType.ChangePassword,
+            WorkflowTypes.RecoveryPath.AuthenticatedChange,
+            WorkflowTypes.RecoveryActionRequirement.Required,
+            WorkflowTypes.RecoveryActionImportance.Critical,
             automationSupport,
             prerequisites ?? [],
             completionCriteria ?? ["The password was changed through the official provider flow."]);
