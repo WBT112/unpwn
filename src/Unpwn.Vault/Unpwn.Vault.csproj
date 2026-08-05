@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Unpwn.Application/Unpwn.Application.csproj" />
     <ProjectReference Include="../Unpwn.Core/Unpwn.Core.csproj" />
   </ItemGroup>
