@@ -3,17 +3,11 @@ using Unpwn.Vault.Cryptography;
 
 namespace Unpwn.Vault.Storage;
 
-public sealed class VaultRecord : IDisposable
+public sealed class VaultRecord(VaultRecordDescriptor descriptor, byte[] plaintext) : IDisposable
 {
-    private byte[]? _plaintext;
+    private byte[]? _plaintext = plaintext ?? throw new ArgumentNullException(nameof(plaintext));
 
-    public VaultRecord(VaultRecordDescriptor descriptor, byte[] plaintext)
-    {
-        Descriptor = descriptor ?? throw new ArgumentNullException(nameof(descriptor));
-        _plaintext = plaintext ?? throw new ArgumentNullException(nameof(plaintext));
-    }
-
-    public VaultRecordDescriptor Descriptor { get; }
+    public VaultRecordDescriptor Descriptor { get; } = descriptor ?? throw new ArgumentNullException(nameof(descriptor));
 
     public ReadOnlyMemory<byte> Plaintext =>
         _plaintext ?? throw new ObjectDisposedException(nameof(VaultRecord));
