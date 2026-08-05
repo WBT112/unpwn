@@ -11,6 +11,28 @@ The data model must support:
 - encrypted generated credentials
 - reliable progress reporting
 - an audit history without storing secrets in audit events
+- presentation in multiple languages without rewriting canonical or persisted data
+
+## Language-neutral data principle
+
+Domain and persisted data remain independent of the selected GUI language.
+
+Canonical data uses:
+
+- stable identifiers
+- enum and status values
+- structured error and diagnostic codes
+- timestamps and numeric values
+- workflow and action types
+- opaque vault record identifiers
+
+Localized labels, warnings, descriptions, dates, numbers, percentages, and plural-sensitive sentences are produced only in the presentation layer.
+
+Do not persist localized status names, resource output, or localized error messages as canonical data. Changing the selected language must not require a domain migration, workflow migration, audit rewrite, or vault rewrite.
+
+User-authored notes remain exactly as entered and are not machine-translated.
+
+See [Localization and Multilingual GUI](LOCALIZATION.md).
 
 ## Core Entities
 
@@ -34,6 +56,8 @@ Session status values:
 - `PAUSED`
 - `COMPLETED`
 - `ARCHIVED`
+
+Session names are user-authored content. Status values remain canonical and are mapped to localized presentation resources.
 
 ### Account
 
@@ -68,6 +92,8 @@ Account status values:
 - `REVIEWED_WITH_UNRESOLVED_RISK`
 - `ACCESS_LOST`
 
+Provider IDs, priorities, and statuses are language-neutral. Display names and login identifiers are user data and are never treated as translation keys.
+
 ### AccountDependency
 
 Represents a recovery dependency between accounts or channels. A dependency means the source account should wait for the target account or recovery channel to be secured first, for example when password-reset links for a shopping account are sent to a primary email account.
@@ -99,6 +125,8 @@ Dependency type values may include:
 - `RECOVERY_CONTACT`
 - `OTHER`
 
+Dependency type and readiness codes remain language-neutral. A user-entered reason is stored as encrypted user content and displayed unchanged.
+
 ### RecoveryWorkflowDefinition
 
 A versioned provider-defined workflow template.
@@ -113,8 +141,11 @@ Suggested fields:
 - `VerifiedAt`
 - `RecoveryLocations`
 - `Actions`
+- display-resource keys where user-facing guidance is required
 
 Definitions are repository-controlled and shipped with an application release. Provider validation and runtime action instances use the same canonical types from `Unpwn.Core`.
+
+Workflow semantics do not contain localized control values. Translation-only changes do not alter workflow versions, paths, prerequisites, or verification dates.
 
 ### RecoveryActionDefinition
 
@@ -130,12 +161,15 @@ Suggested fields:
 - `AutomationSupport`
 - `Prerequisites`
 - `CompletionCriteria`
+- resource keys for user-facing title, description, warning, and completion guidance
 
 Importance values and their progress weights are:
 
 - `CRITICAL`: `5`
 - `IMPORTANT`: `3`
 - `ROUTINE`: `1`
+
+Resource keys are presentation references. They are not used to compare actions or determine completion.
 
 ### RecoveryActionInstance
 
@@ -170,6 +204,8 @@ Status values:
 - `TRULY_NOT_APPLICABLE`: the capability is absent for the account type and the action is excluded from required progress
 - `UNRESOLVED_RISK`: the control is relevant but unavailable or declined; the action remains in required progress and prevents a fully secured result
 
+Status and disposition values are canonical. User-authored reasons and notes are encrypted content and are never automatically translated.
+
 ### CredentialEntry
 
 Stores a newly generated credential during recovery.
@@ -187,6 +223,8 @@ Suggested fields:
 
 Old credentials are never stored.
 
+Credential state remains canonical. Localized UI resources describe the state without embedding translated labels in the vault.
+
 ### RecoveryProgress
 
 Reports recovery status without implying that unresolved risks are secured. It includes:
@@ -199,6 +237,8 @@ Reports recovery status without implying that unresolved risks are secured. It i
 - unresolved-risk count
 
 Critical-account readiness is calculated separately from the overall percentage so blocked critical accounts and accepted unresolved risks remain visible.
+
+The domain returns numbers and structured states. The presentation layer formats counts, dates, percentages, and plural-sensitive messages using the selected UI culture.
 
 ### AuditEvent
 
@@ -221,7 +261,9 @@ Examples:
 - credential exported
 - vault locked
 
-Human notes and detailed reasons belong to encrypted domain records, not audit event summaries. Audit events must never contain passwords, vault keys, reset tokens, MFA secrets, recovery codes, account notes, or browser content.
+Human notes and detailed reasons belong to encrypted domain records, not audit event summaries. Audit events must never contain passwords, vault keys, reset tokens, MFA secrets, recovery codes, account notes, browser content, or localized summary text.
+
+The UI maps `EventType` and optional structured fields to localized descriptions at display time. Historical events therefore follow the current selected UI language without modifying the stored audit history.
 
 ## Progress Model
 
@@ -278,7 +320,7 @@ The UI must always show:
 - accounts with unresolved risks
 - accounts for which access could not be restored
 
-A high action-progress percentage must not hide these conditions.
+A high action-progress percentage must not hide these conditions. Missing localized resources must fall back to complete English text rather than suppressing a warning.
 
 ## Completion
 
@@ -293,3 +335,5 @@ Before completion, unpwn summarizes:
 - plaintext export files that may still require cleanup
 
 The user may complete a session with unresolved risks, but the final report must preserve those risks and must not describe the session as fully secured.
+
+Completion reports may be rendered in the selected supported language, but canonical status codes, timestamps, numeric values, and machine-readable export fields remain stable.
