@@ -445,7 +445,7 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
         return providerComparison != 0 ? providerComparison : left.Id.CompareTo(right.Id);
     }
 
-    private static IReadOnlyDictionary<Guid, int> CalculateDependencyDepths(
+    private static Dictionary<Guid, int> CalculateDependencyDepths(
         IEnumerable<Account> accounts,
         IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount)
     {
@@ -483,9 +483,9 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
     private static HashSet<Guid> FindCycleAccountIds(
         IEnumerable<Account> accounts,
         IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount) =>
-        FindCycles(accounts, dependencyIdsByAccount).SelectMany(cycle => cycle).ToHashSet();
+        [.. FindCycles(accounts, dependencyIdsByAccount).SelectMany(cycle => cycle)];
 
-    private static IReadOnlyList<IReadOnlyList<Guid>> FindCycles(
+    private static List<IReadOnlyList<Guid>> FindCycles(
         IEnumerable<Account> accounts,
         IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount)
     {
@@ -505,7 +505,7 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
         {
             if (inStack.Contains(accountId))
             {
-                var cycle = stack.TakeWhile(id => id != accountId).Append(accountId).Reverse().ToArray();
+                Guid[] cycle = [.. stack.TakeWhile(id => id != accountId).Append(accountId).Reverse()];
                 cycles.Add(cycle);
                 return;
             }
