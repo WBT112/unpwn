@@ -14,6 +14,7 @@
     <Project Path="tests/Unpwn.Architecture.Tests/Unpwn.Architecture.Tests.csproj" />
     <Project Path="tests/Unpwn.Application.Tests/Unpwn.Application.Tests.csproj" />
     <Project Path="tests/Unpwn.Core.Tests/Unpwn.Core.Tests.csproj" />
+    <Project Path="tests/Unpwn.Import.Tests/Unpwn.Import.Tests.csproj" />
     <Project Path="tests/Unpwn.SyntheticProvider.Tests/Unpwn.SyntheticProvider.Tests.csproj" />
     <Project Path="tests/Unpwn.Vault.Tests/Unpwn.Vault.Tests.csproj" />
   </Folder>
