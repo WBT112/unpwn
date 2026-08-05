@@ -74,6 +74,8 @@ Typical critical roots include:
 
 A dependency does not automatically prove that an account is compromised. It only affects recovery order and blocking conditions.
 
+`READY` in a recovery-order plan means that the account can be worked on now. An account whose dependency is only earlier in the topological plan, but has not yet been fully reviewed, remains `WAITING_FOR_DEPENDENCIES`.
+
 ## Workflow Structure
 
 A provider workflow contains:
@@ -82,6 +84,7 @@ A provider workflow contains:
 - supported account types
 - recovery locations
 - action definitions
+- supported recovery paths for each action
 - prerequisites and dependencies
 - action importance
 - automation support level
@@ -102,6 +105,10 @@ Example actions:
 - review API tokens, access keys, or SSH keys
 - record unresolved risks
 
+The canonical workflow and action types live in `Unpwn.Core`. Provider catalogs, contract validation, and runtime action instances must use these same types rather than parallel provider-only and runtime-only models.
+
+An action may support one or more recovery paths. Prerequisites must be executable on the same path. The initial catalog deliberately uses path-specific action definitions where prerequisite chains differ, avoiding ambiguous OR-prerequisites between authenticated change and password reset.
+
 ## Action Status
 
 Each recovery action instance has one of these states:
@@ -116,19 +123,22 @@ Each recovery action instance has one of these states:
 
 A required action cannot be silently skipped.
 
+`NOT_APPLICABLE` requires both a recorded reason and an explicit disposition:
+
+- **truly not applicable:** the capability does not exist for this account type; the action is excluded from required-action progress
+- **unresolved risk:** the security control would be relevant but cannot be completed; it remains in required-action progress and the account is not fully secured
+
 When the user decides not to complete a required action, unpwn records an unresolved risk. The account is not shown as fully secured.
 
 ## Completion Rules
 
-An account is **fully reviewed** when every applicable required action is either:
-
-- completed, or
-- marked not applicable with a recorded reason
+An account is **fully reviewed** when every applicable required action is completed and every excluded action is explicitly documented as truly not applicable.
 
 An account is **not fully secured** when:
 
 - a required action is blocked
 - a required action failed
+- a relevant control was marked unavailable with unresolved risk
 - the user accepted an unresolved risk
 - access to the account could not be restored
 
@@ -163,8 +173,10 @@ unpwn does not download or execute third-party provider plugins at runtime.
 
 ## Repository Workflow Definitions
 
-Repository-controlled workflow definitions are represented in code as immutable `RecoveryWorkflowDefinition` records until the on-disk workflow package format is introduced. Each definition includes provider metadata, supported account type, workflow version, verification date, official recovery locations, expected origins, and ordered recovery actions.
+Repository-controlled workflow definitions are represented in code as immutable `RecoveryWorkflowDefinition` records until the on-disk workflow package format is introduced. Each definition includes provider metadata, supported account type, workflow version, verification date, official recovery locations, expected origins, and recovery actions.
 
-The validation boundary for these definitions is `RecoveryWorkflowValidator`. It currently rejects missing required metadata, future verification dates, duplicate location or action identifiers, non-HTTPS recovery locations, recovery-location origin mismatches, missing expected origins, missing prerequisite targets, prerequisite cycles, required actions without completion criteria, and claims of fully automated recovery. Fully automated recovery is intentionally disallowed at this stage because repository workflows may guide or navigate, but they must not bypass user-visible security decisions.
+The validation boundary for these definitions is `RecoveryWorkflowValidator`. It rejects missing required metadata, a verification date later than the supplied or current validation date, duplicate location or action identifiers, invalid HTTPS locations or origins, missing or duplicate recovery paths, missing prerequisite targets, prerequisite cycles, required actions without non-empty completion criteria, and claims of fully automated recovery. Fully automated recovery is intentionally disallowed at this stage because repository workflows may guide or navigate, but they must not bypass user-visible security decisions.
+
+Provider contract scenarios additionally prove that every expected action supports the scenario path, all prerequisites are present earlier on that path, expectations match the workflow definition, and a scenario claiming full security includes every required action for that path.
 
 The shipped provider catalog validates all repository workflows through `RepositoryWorkflowCatalog.ValidateAll()`. Provider workflow changes should add or update catalog entries and regression tests that prove the definition remains structurally and semantically safe.
