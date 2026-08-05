@@ -284,6 +284,31 @@ public sealed record RecoveryProgress(
     public double AccountReviewRatio => AccountsTotal == 0 ? 1 : AccountsFullyReviewed / (double)AccountsTotal;
 }
 
+
+public enum AccountRecoveryOrderStatus
+{
+    Ready,
+    WaitingForDependencies,
+    DependencyCycle,
+}
+
+public sealed record AccountRecoveryOrderItem(
+    Guid AccountId,
+    string ProviderId,
+    AccountCriticality Criticality,
+    AccountRecoveryStatus RecoveryStatus,
+    AccountRecoveryOrderStatus OrderStatus,
+    IReadOnlyCollection<Guid> WaitingForAccountIds,
+    int DependencyDepth);
+
+public sealed record AccountRecoveryOrderPlan(
+    IReadOnlyList<AccountRecoveryOrderItem> Items,
+    IReadOnlyList<AccountDependency> UnknownAccountDependencies,
+    IReadOnlyList<IReadOnlyList<Guid>> Cycles)
+{
+    public bool HasBlockingIssues => UnknownAccountDependencies.Count > 0 || Cycles.Count > 0;
+}
+
 public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
 {
     private readonly List<Account> _accounts = [];
@@ -311,6 +336,84 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             .Where(account => account.Criticality == AccountCriticality.Critical)
             .Select(CreateCriticalAccountReadiness)];
 
+    public AccountRecoveryOrderPlan PlanRecoveryOrder()
+    {
+        var accountsById = _accounts.ToDictionary(account => account.Id);
+        var dependencies = _dependencies
+            .Where(dependency => accountsById.ContainsKey(dependency.AccountId) && accountsById.ContainsKey(dependency.DependsOnAccountId))
+            .Distinct()
+            .ToArray();
+        var unknownDependencies = _dependencies
+            .Where(dependency => !accountsById.ContainsKey(dependency.AccountId) || !accountsById.ContainsKey(dependency.DependsOnAccountId))
+            .Distinct()
+            .ToArray();
+        var dependencyIdsByAccount = dependencies
+            .GroupBy(dependency => dependency.AccountId)
+            .ToDictionary(group => group.Key, group => group.Select(dependency => dependency.DependsOnAccountId).Distinct().ToHashSet());
+        var dependentsByAccount = dependencies
+            .GroupBy(dependency => dependency.DependsOnAccountId)
+            .ToDictionary(group => group.Key, group => group.Select(dependency => dependency.AccountId).Distinct().ToArray());
+        var unresolvedDependencyCounts = _accounts.ToDictionary(
+            account => account.Id,
+            account => dependencyIdsByAccount.GetValueOrDefault(account.Id)?.Count ?? 0);
+        var dependencyDepths = CalculateDependencyDepths(_accounts, dependencyIdsByAccount);
+        var cycleAccountIds = FindCycleAccountIds(_accounts, dependencyIdsByAccount);
+        var ready = _accounts
+            .Where(account => unresolvedDependencyCounts[account.Id] == 0)
+            .OrderByDescending(account => account.Criticality)
+            .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
+            .ThenBy(account => account.Id)
+            .ToList();
+        var ordered = new List<Account>();
+
+        while (ready.Count > 0)
+        {
+            var account = ready[0];
+            ready.RemoveAt(0);
+            ordered.Add(account);
+
+            foreach (var dependentId in dependentsByAccount.GetValueOrDefault(account.Id) ?? [])
+            {
+                unresolvedDependencyCounts[dependentId]--;
+                if (unresolvedDependencyCounts[dependentId] == 0 && accountsById.TryGetValue(dependentId, out var dependent))
+                {
+                    ready.Add(dependent);
+                    ready.Sort(CompareAccountsForRecoveryOrder);
+                }
+            }
+        }
+
+        var orderedIds = ordered.Select(account => account.Id).ToHashSet();
+        var remainingAccounts = _accounts
+            .Where(account => !orderedIds.Contains(account.Id))
+            .OrderByDescending(account => account.Criticality)
+            .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
+            .ThenBy(account => account.Id);
+
+        ordered.AddRange(remainingAccounts);
+
+        var items = ordered.Select(account =>
+        {
+            var waitingFor = dependencyIdsByAccount.GetValueOrDefault(account.Id)?.Where(id => !orderedIds.Contains(id)).OrderBy(id => id).ToArray() ?? [];
+            var orderStatus = cycleAccountIds.Contains(account.Id)
+                ? AccountRecoveryOrderStatus.DependencyCycle
+                : waitingFor.Length > 0
+                    ? AccountRecoveryOrderStatus.WaitingForDependencies
+                    : AccountRecoveryOrderStatus.Ready;
+
+            return new AccountRecoveryOrderItem(
+                account.Id,
+                account.ProviderId,
+                account.Criticality,
+                account.Status,
+                orderStatus,
+                waitingFor,
+                dependencyDepths.GetValueOrDefault(account.Id));
+        }).ToArray();
+
+        return new AccountRecoveryOrderPlan(items, unknownDependencies, FindCycles(_accounts, dependencyIdsByAccount));
+    }
+
     public RecoveryProgress CalculateProgress()
     {
         var requiredActions = _accounts.SelectMany(account => account.Actions).Where(action => action.Definition.IsRequired).ToArray();
@@ -328,6 +431,100 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
             totalWeight == 0 ? 1 : completedWeight / (double)totalWeight,
             requiredActions.Count(action => action.Status == RecoveryActionStatus.Blocked),
             requiredActions.Count(action => action.HasUnresolvedRisk));
+    }
+
+    private static int CompareAccountsForRecoveryOrder(Account left, Account right)
+    {
+        var criticalityComparison = right.Criticality.CompareTo(left.Criticality);
+        if (criticalityComparison != 0)
+        {
+            return criticalityComparison;
+        }
+
+        var providerComparison = string.Compare(left.ProviderId, right.ProviderId, StringComparison.Ordinal);
+        return providerComparison != 0 ? providerComparison : left.Id.CompareTo(right.Id);
+    }
+
+    private static Dictionary<Guid, int> CalculateDependencyDepths(
+        IEnumerable<Account> accounts,
+        IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount)
+    {
+        var depths = new Dictionary<Guid, int>();
+        var visiting = new HashSet<Guid>();
+
+        foreach (var account in accounts)
+        {
+            CalculateDepth(account.Id);
+        }
+
+        return depths;
+
+        int CalculateDepth(Guid accountId)
+        {
+            if (depths.TryGetValue(accountId, out var existingDepth))
+            {
+                return existingDepth;
+            }
+
+            if (!visiting.Add(accountId))
+            {
+                return 0;
+            }
+
+            var depth = dependencyIdsByAccount.GetValueOrDefault(accountId) is { Count: > 0 } dependencies
+                ? dependencies.Select(CalculateDepth).DefaultIfEmpty(0).Max() + 1
+                : 0;
+            visiting.Remove(accountId);
+            depths[accountId] = depth;
+            return depth;
+        }
+    }
+
+    private static HashSet<Guid> FindCycleAccountIds(
+        IEnumerable<Account> accounts,
+        IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount) =>
+        [.. FindCycles(accounts, dependencyIdsByAccount).SelectMany(cycle => cycle)];
+
+    private static List<IReadOnlyList<Guid>> FindCycles(
+        IEnumerable<Account> accounts,
+        IReadOnlyDictionary<Guid, HashSet<Guid>> dependencyIdsByAccount)
+    {
+        var cycles = new List<IReadOnlyList<Guid>>();
+        var visited = new HashSet<Guid>();
+        var stack = new Stack<Guid>();
+        var inStack = new HashSet<Guid>();
+
+        foreach (var account in accounts)
+        {
+            Visit(account.Id);
+        }
+
+        return cycles;
+
+        void Visit(Guid accountId)
+        {
+            if (inStack.Contains(accountId))
+            {
+                Guid[] cycle = [.. stack.TakeWhile(id => id != accountId).Append(accountId).Reverse()];
+                cycles.Add(cycle);
+                return;
+            }
+
+            if (!visited.Add(accountId))
+            {
+                return;
+            }
+
+            stack.Push(accountId);
+            inStack.Add(accountId);
+            foreach (var dependencyId in dependencyIdsByAccount.GetValueOrDefault(accountId) ?? [])
+            {
+                Visit(dependencyId);
+            }
+
+            inStack.Remove(accountId);
+            stack.Pop();
+        }
     }
 
     private static CriticalAccountReadiness CreateCriticalAccountReadiness(Account account)
