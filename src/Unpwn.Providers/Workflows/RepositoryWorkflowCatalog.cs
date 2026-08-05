@@ -1,9 +1,14 @@
+using Unpwn.Core;
 using Unpwn.Core.Recovery.Workflows;
 
 namespace Unpwn.Providers.Workflows;
 
 public static class RepositoryWorkflowCatalog
 {
+    private static readonly RecoveryPath[] AuthenticatedPath = [RecoveryPath.AuthenticatedChange];
+    private static readonly RecoveryPath[] PasswordResetPath = [RecoveryPath.PasswordReset];
+    private static readonly RecoveryPath[] ManualPath = [RecoveryPath.ManualRecovery];
+
     public static IReadOnlyList<RecoveryWorkflowDefinition> Workflows { get; } =
     [
         new(
@@ -24,69 +29,27 @@ public static class RepositoryWorkflowCatalog
                     ["https://github.com"])
             ],
             [
-                new(
-                    "identify-account",
-                    RecoveryActionType.IdentifyAccount,
-                    RecoveryPath.AuthenticatedChange,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Critical,
-                    AutomationSupport.None,
-                    [],
-                    ["The user has identified the affected synthetic or real account outside test artifacts."]),
-                new(
-                    "change-password",
-                    RecoveryActionType.ChangePassword,
-                    RecoveryPath.AuthenticatedChange,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Critical,
-                    AutomationSupport.Navigation,
-                    ["identify-account"],
-                    ["The account password has been changed or reset through an official GitHub recovery path."]),
-                new(
-                    "reset-password",
-                    RecoveryActionType.ChangePassword,
-                    RecoveryPath.PasswordReset,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Critical,
-                    AutomationSupport.Navigation,
-                    ["identify-account"],
-                    ["The account password has been reset through an official GitHub recovery path after dependent recovery channels are secured."]),
-                new(
-                    "review-mfa",
-                    RecoveryActionType.ReviewMfa,
-                    RecoveryPath.AuthenticatedChange,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Critical,
-                    AutomationSupport.Navigation,
-                    ["change-password"],
-                    ["MFA methods and recovery codes have been reviewed, rotated, or documented as unavailable with unresolved risk."]),
-                new(
-                    "invalidate-sessions",
-                    RecoveryActionType.InvalidateSessions,
-                    RecoveryPath.AuthenticatedChange,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Important,
-                    AutomationSupport.Navigation,
-                    ["change-password"],
-                    ["Active sessions, trusted devices, and tokens have been reviewed and revoked where appropriate."]),
-                new(
-                    "review-recovery-options",
-                    RecoveryActionType.ReviewRecoveryOptions,
-                    RecoveryPath.AuthenticatedChange,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Important,
-                    AutomationSupport.Navigation,
-                    ["change-password"],
-                    ["Recovery email addresses, phone numbers, SSH keys, and connected applications have been reviewed."]),
-                new(
-                    "document-completion",
-                    RecoveryActionType.DocumentCompletion,
-                    RecoveryPath.ManualRecovery,
-                    RecoveryActionRequirement.Required,
-                    RecoveryActionImportance.Routine,
-                    AutomationSupport.None,
-                    ["review-mfa", "invalidate-sessions", "review-recovery-options"],
-                    ["Completion notes record remaining unresolved risks and the account is not represented as fully secured when risks remain."])
+                Required("identify-account-auth", RecoveryActionType.IdentifyAccount, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.None, [], "The affected account has been identified."),
+                Required("change-password", RecoveryActionType.ChangePassword, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-auth"], "The account password has been changed through the official authenticated flow."),
+                Required("review-mfa-auth", RecoveryActionType.ReviewMfa, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["change-password"], "MFA methods and recovery codes have been reviewed or an unresolved risk has been recorded."),
+                Required("invalidate-sessions-auth", RecoveryActionType.InvalidateSessions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Active sessions and trusted devices have been reviewed and revoked where appropriate."),
+                Required("review-recovery-options-auth", RecoveryActionType.ReviewRecoveryOptions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Recovery methods have been reviewed and corrected where possible."),
+                Required("review-connected-apps-auth", RecoveryActionType.ReviewConnectedApplications, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Connected applications have been reviewed and unauthorized access has been revoked."),
+                Required("review-api-tokens-auth", RecoveryActionType.ReviewApiTokens, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate."),
+                Required("document-completion-auth", RecoveryActionType.DocumentCompletion, AuthenticatedPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth"], "Completion records remaining unresolved risks without claiming unsupported security guarantees."),
+
+                Required("identify-account-reset", RecoveryActionType.IdentifyAccount, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.None, [], "The affected account and its secured reset channel have been identified."),
+                Required("reset-password", RecoveryActionType.ResetPassword, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-reset"], "The account password has been reset through the official provider flow."),
+                Required("review-mfa-reset", RecoveryActionType.ReviewMfa, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["reset-password"], "MFA methods and recovery codes have been reviewed or an unresolved risk has been recorded."),
+                Required("invalidate-sessions-reset", RecoveryActionType.InvalidateSessions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Active sessions and trusted devices have been reviewed and revoked where appropriate."),
+                Required("review-recovery-options-reset", RecoveryActionType.ReviewRecoveryOptions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Recovery methods have been reviewed and corrected where possible."),
+                Required("review-connected-apps-reset", RecoveryActionType.ReviewConnectedApplications, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Connected applications have been reviewed and unauthorized access has been revoked."),
+                Required("review-api-tokens-reset", RecoveryActionType.ReviewApiTokens, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate."),
+                Required("document-completion-reset", RecoveryActionType.DocumentCompletion, PasswordResetPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset"], "Completion records remaining unresolved risks without claiming unsupported security guarantees."),
+
+                Required("identify-account-manual", RecoveryActionType.IdentifyAccount, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, [], "The affected account and available recovery evidence have been identified."),
+                Required("manual-recovery", RecoveryActionType.ManualRecovery, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, ["identify-account-manual"], "The provider's manual recovery outcome has been recorded."),
+                Required("document-completion-manual", RecoveryActionType.DocumentCompletion, ManualPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["manual-recovery"], "The manual recovery result and all unresolved risks have been recorded.")
             ])
     ];
 
@@ -97,101 +60,95 @@ public static class RepositoryWorkflowCatalog
             "github.com/consumer-account-recovery",
             "Authenticated password change is available after the user confirms account access.",
             RecoveryPath.AuthenticatedChange,
-            ["identify-account", "change-password", "review-mfa", "invalidate-sessions", "review-recovery-options", "document-completion"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["change-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account"]),
-                ["review-mfa"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["change-password"]),
-                ["invalidate-sessions"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Important, ["change-password"]),
-                ["review-recovery-options"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Important, ["change-password"]),
-                ["document-completion"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Routine, ["review-mfa", "invalidate-sessions", "review-recovery-options"]),
-            },
+            ["identify-account-auth", "change-password", "review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth", "document-completion-auth"],
+            Expectations(
+                ("identify-account-auth", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                ("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"]),
+                ("invalidate-sessions-auth", RecoveryActionImportance.Important, ["change-password"]),
+                ("review-recovery-options-auth", RecoveryActionImportance.Important, ["change-password"]),
+                ("review-connected-apps-auth", RecoveryActionImportance.Important, ["change-password"]),
+                ("review-api-tokens-auth", RecoveryActionImportance.Important, ["change-password"]),
+                ("document-completion-auth", RecoveryActionImportance.Routine, ["review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth"])),
             AccountContractOutcome.CanBeFullySecured),
         new(
             "github-password-reset-through-secured-email",
             "github.com/consumer-account-recovery",
             "Password reset can proceed after the primary email dependency has already been secured.",
             RecoveryPath.PasswordReset,
-            ["identify-account", "reset-password"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["reset-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account"]),
-            },
+            ["identify-account-reset", "reset-password", "review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset", "document-completion-reset"],
+            Expectations(
+                ("identify-account-reset", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"]),
+                ("review-mfa-reset", RecoveryActionImportance.Critical, ["reset-password"]),
+                ("invalidate-sessions-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                ("review-recovery-options-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                ("review-connected-apps-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                ("review-api-tokens-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                ("document-completion-reset", RecoveryActionImportance.Routine, ["review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset"])),
             AccountContractOutcome.CanBeFullySecured),
         new(
             "github-password-reset-blocked-by-email",
             "github.com/consumer-account-recovery",
             "Password reset remains blocked until the dependent primary email account is secured.",
             RecoveryPath.PasswordReset,
-            ["identify-account", "reset-password"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["reset-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account"], IsInitiallyBlocked: true),
-            },
+            ["identify-account-reset", "reset-password"],
+            Expectations(
+                ("identify-account-reset", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], true, false)),
             AccountContractOutcome.BlockedByDependency),
         new(
             "github-mfa-device-unavailable",
             "github.com/consumer-account-recovery",
             "MFA review pauses for user action when a recovery factor is unavailable.",
             RecoveryPath.AuthenticatedChange,
-            ["identify-account", "change-password", "review-mfa"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["change-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account"]),
-                ["review-mfa"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["change-password"], IsInitiallyBlocked: true),
-            },
+            ["identify-account-auth", "change-password", "review-mfa-auth"],
+            Expectations(
+                ("identify-account-auth", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                ("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"], true, false)),
             AccountContractOutcome.ManualRecoveryRequired),
         new(
             "github-reset-link-expired",
             "github.com/consumer-account-recovery",
             "An expired reset link blocks password reset until the user requests a fresh link.",
             RecoveryPath.PasswordReset,
-            ["identify-account", "reset-password"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["reset-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account"], IsInitiallyBlocked: true),
-            },
+            ["identify-account-reset", "reset-password"],
+            Expectations(
+                ("identify-account-reset", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], true, false)),
             AccountContractOutcome.BlockedByDependency),
         new(
             "github-required-action-fails",
             "github.com/consumer-account-recovery",
             "A required password-change failure prevents the account from being represented as fully secured.",
             RecoveryPath.AuthenticatedChange,
-            ["identify-account", "change-password"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["change-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account"], CreatesUnresolvedRisk: true),
-            },
+            ["identify-account-auth", "change-password"],
+            Expectations(
+                ("identify-account-auth", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"], false, true)),
             AccountContractOutcome.NotFullySecuredWithAcceptedRisk),
         new(
             "github-access-cannot-be-restored",
             "github.com/consumer-account-recovery",
             "Manual recovery records that account access cannot currently be restored.",
             RecoveryPath.ManualRecovery,
-            ["identify-account", "document-completion"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["document-completion"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Routine, ["review-mfa", "invalidate-sessions", "review-recovery-options"], CreatesUnresolvedRisk: true),
-            },
+            ["identify-account-manual", "manual-recovery", "document-completion-manual"],
+            Expectations(
+                ("identify-account-manual", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], false, true),
+                ("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], false, true)),
             AccountContractOutcome.AccessCannotBeRestored),
         new(
             "github-manual-recovery-with-unresolved-risk",
             "github.com/consumer-account-recovery",
             "Manual recovery documents unsupported or unavailable controls as visible unresolved risk.",
             RecoveryPath.ManualRecovery,
-            ["identify-account", "document-completion"],
-            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
-            {
-                ["identify-account"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
-                ["document-completion"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Routine, ["review-mfa", "invalidate-sessions", "review-recovery-options"], CreatesUnresolvedRisk: true),
-            },
+            ["identify-account-manual", "manual-recovery", "document-completion-manual"],
+            Expectations(
+                ("identify-account-manual", RecoveryActionImportance.Critical, Array.Empty<string>()),
+                ("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], false, true),
+                ("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], false, true)),
             AccountContractOutcome.NotFullySecuredWithAcceptedRisk),
     ];
 
@@ -210,15 +167,55 @@ public static class RepositoryWorkflowCatalog
         return diagnostics.Count == 0 ? ProviderContractValidationResult.Valid : new ProviderContractValidationResult(diagnostics);
     }
 
-    public static WorkflowValidationResult ValidateAll()
+    public static WorkflowValidationResult ValidateAll(DateOnly? currentDate = null)
     {
         List<WorkflowValidationDiagnostic> diagnostics = [];
 
         foreach (RecoveryWorkflowDefinition workflow in Workflows)
         {
-            diagnostics.AddRange(RecoveryWorkflowValidator.Validate(workflow).Diagnostics);
+            diagnostics.AddRange(RecoveryWorkflowValidator.Validate(workflow, currentDate).Diagnostics);
         }
 
         return diagnostics.Count == 0 ? WorkflowValidationResult.Valid : WorkflowValidationResult.FromDiagnostics(diagnostics);
     }
+
+    private static RecoveryActionDefinition Required(
+        string id,
+        RecoveryActionType type,
+        IReadOnlyList<RecoveryPath> paths,
+        RecoveryActionImportance importance,
+        AutomationSupport automationSupport,
+        IReadOnlyList<string> prerequisites,
+        string completionCriterion) =>
+        new(
+            id,
+            type,
+            paths,
+            RecoveryActionRequirement.Required,
+            importance,
+            automationSupport,
+            prerequisites,
+            [completionCriterion]);
+
+    private static IReadOnlyDictionary<string, ContractActionExpectation> Expectations(
+        params (string Id, RecoveryActionImportance Importance, string[] Prerequisites, bool Blocked, bool Risk)[] actions) =>
+        actions.ToDictionary(
+            action => action.Id,
+            action => new ContractActionExpectation(
+                RecoveryActionRequirement.Required,
+                action.Importance,
+                action.Prerequisites,
+                action.Blocked,
+                action.Risk),
+            StringComparer.Ordinal);
+
+    private static IReadOnlyDictionary<string, ContractActionExpectation> Expectations(
+        params (string Id, RecoveryActionImportance Importance, string[] Prerequisites)[] actions) =>
+        actions.ToDictionary(
+            action => action.Id,
+            action => new ContractActionExpectation(
+                RecoveryActionRequirement.Required,
+                action.Importance,
+                action.Prerequisites),
+            StringComparer.Ordinal);
 }
