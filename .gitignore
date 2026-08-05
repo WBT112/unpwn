@@ -2,6 +2,7 @@
 bin/
 obj/
 artifacts/
+tmp/
 
 # IDE and editor files
 .vs/
