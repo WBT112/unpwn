@@ -307,10 +307,9 @@ public sealed class RecoverySession(Guid id, DateTimeOffset createdAt)
     public void RecordAuditEvent(AuditEvent auditEvent) => _auditEvents.Add(auditEvent);
 
     public IReadOnlyList<CriticalAccountReadiness> CalculateCriticalAccountReadiness() =>
-        _accounts
+        [.. _accounts
             .Where(account => account.Criticality == AccountCriticality.Critical)
-            .Select(CreateCriticalAccountReadiness)
-            .ToArray();
+            .Select(CreateCriticalAccountReadiness)];
 
     public RecoveryProgress CalculateProgress()
     {
