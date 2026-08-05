@@ -62,14 +62,14 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.AuthenticatedChange,
             ["identify-account-auth", "change-password", "review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth", "document-completion-auth"],
             Expectations(
-                ("identify-account-auth", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
-                ("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"]),
-                ("invalidate-sessions-auth", RecoveryActionImportance.Important, ["change-password"]),
-                ("review-recovery-options-auth", RecoveryActionImportance.Important, ["change-password"]),
-                ("review-connected-apps-auth", RecoveryActionImportance.Important, ["change-password"]),
-                ("review-api-tokens-auth", RecoveryActionImportance.Important, ["change-password"]),
-                ("document-completion-auth", RecoveryActionImportance.Routine, ["review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth"])),
+                Expected("identify-account-auth", RecoveryActionImportance.Critical, []),
+                Expected("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                Expected("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"]),
+                Expected("invalidate-sessions-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("review-recovery-options-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("review-connected-apps-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("review-api-tokens-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("document-completion-auth", RecoveryActionImportance.Routine, ["review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth"])),
             AccountContractOutcome.CanBeFullySecured),
         new(
             "github-password-reset-through-secured-email",
@@ -78,14 +78,14 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.PasswordReset,
             ["identify-account-reset", "reset-password", "review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset", "document-completion-reset"],
             Expectations(
-                ("identify-account-reset", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"]),
-                ("review-mfa-reset", RecoveryActionImportance.Critical, ["reset-password"]),
-                ("invalidate-sessions-reset", RecoveryActionImportance.Important, ["reset-password"]),
-                ("review-recovery-options-reset", RecoveryActionImportance.Important, ["reset-password"]),
-                ("review-connected-apps-reset", RecoveryActionImportance.Important, ["reset-password"]),
-                ("review-api-tokens-reset", RecoveryActionImportance.Important, ["reset-password"]),
-                ("document-completion-reset", RecoveryActionImportance.Routine, ["review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset"])),
+                Expected("identify-account-reset", RecoveryActionImportance.Critical, []),
+                Expected("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"]),
+                Expected("review-mfa-reset", RecoveryActionImportance.Critical, ["reset-password"]),
+                Expected("invalidate-sessions-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("review-recovery-options-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("review-connected-apps-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("review-api-tokens-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("document-completion-reset", RecoveryActionImportance.Routine, ["review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset"])),
             AccountContractOutcome.CanBeFullySecured),
         new(
             "github-password-reset-blocked-by-email",
@@ -94,8 +94,8 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.PasswordReset,
             ["identify-account-reset", "reset-password"],
             Expectations(
-                ("identify-account-reset", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], true, false)),
+                Expected("identify-account-reset", RecoveryActionImportance.Critical, []),
+                Expected("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], blocked: true)),
             AccountContractOutcome.BlockedByDependency),
         new(
             "github-mfa-device-unavailable",
@@ -104,9 +104,9 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.AuthenticatedChange,
             ["identify-account-auth", "change-password", "review-mfa-auth"],
             Expectations(
-                ("identify-account-auth", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
-                ("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"], true, false)),
+                Expected("identify-account-auth", RecoveryActionImportance.Critical, []),
+                Expected("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                Expected("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"], blocked: true)),
             AccountContractOutcome.ManualRecoveryRequired),
         new(
             "github-reset-link-expired",
@@ -115,8 +115,8 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.PasswordReset,
             ["identify-account-reset", "reset-password"],
             Expectations(
-                ("identify-account-reset", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], true, false)),
+                Expected("identify-account-reset", RecoveryActionImportance.Critical, []),
+                Expected("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], blocked: true)),
             AccountContractOutcome.BlockedByDependency),
         new(
             "github-required-action-fails",
@@ -125,8 +125,8 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.AuthenticatedChange,
             ["identify-account-auth", "change-password"],
             Expectations(
-                ("identify-account-auth", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"], false, true)),
+                Expected("identify-account-auth", RecoveryActionImportance.Critical, []),
+                Expected("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"], risk: true)),
             AccountContractOutcome.NotFullySecuredWithAcceptedRisk),
         new(
             "github-access-cannot-be-restored",
@@ -135,9 +135,9 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.ManualRecovery,
             ["identify-account-manual", "manual-recovery", "document-completion-manual"],
             Expectations(
-                ("identify-account-manual", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], false, true),
-                ("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], false, true)),
+                Expected("identify-account-manual", RecoveryActionImportance.Critical, []),
+                Expected("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], risk: true),
+                Expected("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], risk: true)),
             AccountContractOutcome.AccessCannotBeRestored),
         new(
             "github-manual-recovery-with-unresolved-risk",
@@ -146,9 +146,9 @@ public static class RepositoryWorkflowCatalog
             RecoveryPath.ManualRecovery,
             ["identify-account-manual", "manual-recovery", "document-completion-manual"],
             Expectations(
-                ("identify-account-manual", RecoveryActionImportance.Critical, Array.Empty<string>()),
-                ("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], false, true),
-                ("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], false, true)),
+                Expected("identify-account-manual", RecoveryActionImportance.Critical, []),
+                Expected("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], risk: true),
+                Expected("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], risk: true)),
             AccountContractOutcome.NotFullySecuredWithAcceptedRisk),
     ];
 
@@ -197,8 +197,16 @@ public static class RepositoryWorkflowCatalog
             prerequisites,
             [completionCriterion]);
 
-    private static IReadOnlyDictionary<string, ContractActionExpectation> Expectations(
-        params (string Id, RecoveryActionImportance Importance, string[] Prerequisites, bool Blocked, bool Risk)[] actions) =>
+    private static ContractExpectationEntry Expected(
+        string id,
+        RecoveryActionImportance importance,
+        string[] prerequisites,
+        bool blocked = false,
+        bool risk = false) =>
+        new(id, importance, prerequisites, blocked, risk);
+
+    private static Dictionary<string, ContractActionExpectation> Expectations(
+        params ContractExpectationEntry[] actions) =>
         actions.ToDictionary(
             action => action.Id,
             action => new ContractActionExpectation(
@@ -209,13 +217,10 @@ public static class RepositoryWorkflowCatalog
                 action.Risk),
             StringComparer.Ordinal);
 
-    private static IReadOnlyDictionary<string, ContractActionExpectation> Expectations(
-        params (string Id, RecoveryActionImportance Importance, string[] Prerequisites)[] actions) =>
-        actions.ToDictionary(
-            action => action.Id,
-            action => new ContractActionExpectation(
-                RecoveryActionRequirement.Required,
-                action.Importance,
-                action.Prerequisites),
-            StringComparer.Ordinal);
+    private sealed record ContractExpectationEntry(
+        string Id,
+        RecoveryActionImportance Importance,
+        string[] Prerequisites,
+        bool Blocked,
+        bool Risk);
 }
