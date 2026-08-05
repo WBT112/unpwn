@@ -43,6 +43,7 @@ unpwn answers:
 - Transparent security model
 - Human in the loop where required
 - Platform-neutral core with Windows as the first target
+- Multilingual presentation without localized domain or vault data
 
 ## Recovery Vault
 
@@ -62,6 +63,16 @@ Possible assistance layers include:
 - manual guidance for sensitive steps
 
 Critical actions remain under user control.
+
+## Multilingual GUI
+
+The GUI is designed so additional languages can be added without changing recovery logic, workflow semantics, encrypted vault data, or machine-readable formats.
+
+English is the complete source and fallback language. User-facing labels, warnings, validation messages, workflow guidance, accessibility text, and formatted values are obtained through the presentation localization boundary. Canonical status values, workflow identifiers, audit event types, URLs, error codes, and persisted records remain language-neutral.
+
+Translation resources are repository-controlled and shipped with releases. Runtime machine translation and downloaded language packs are not used for security-critical content.
+
+See [Localization and Multilingual GUI](docs/LOCALIZATION.md).
 
 ## Contributing Recovery Workflows
 
@@ -107,10 +118,12 @@ See:
 - [Project Vision](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Application Shell and UI Foundation](docs/UI_FOUNDATION.md)
+- [Localization and Multilingual GUI](docs/LOCALIZATION.md)
 - [CSV Import](docs/IMPORT.md)
 - [Recovery Workflows](docs/RECOVERY_WORKFLOWS.md)
 - [Data Model](docs/DATA_MODEL.md)
 - [Vault Security](docs/VAULT_SECURITY.md)
 - [Threat Model](docs/THREAT_MODEL.md)
+- [Testing Strategy](docs/TESTING.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Contributing](CONTRIBUTING.md)
