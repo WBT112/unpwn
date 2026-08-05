@@ -10,6 +10,8 @@ unpwn helps users recover their digital identity after a suspected account compr
 
 It does not guarantee that an already compromised system is safe.
 
+Security-critical guidance must remain complete and understandable in every shipped GUI language. Localization must not alter recovery semantics, hide unresolved risks, or influence canonical security decisions.
+
 ## Protected Assets
 
 - account inventory
@@ -20,6 +22,7 @@ It does not guarantee that an already compromised system is safe.
 - recovery history
 - export data
 - vault encryption keys
+- the integrity of security warnings and recovery guidance
 
 ## Trust Boundary
 
@@ -34,6 +37,7 @@ If malware or an attacker controls the operating system, they may be able to obs
 - new credentials
 - application memory
 - network traffic after it leaves the application
+- displayed UI text or language preferences
 
 No local recovery application can fully prevent this.
 
@@ -50,6 +54,8 @@ The Recovery Vault uses:
 The vault design aims to protect confidentiality and integrity when an attacker obtains a locked vault file.
 
 Cryptography does not protect secrets while they are legitimately decrypted on a compromised device.
+
+Localization resources and selected UI culture are outside the cryptographic format. Translated labels must not become record identifiers, associated data, key-derivation input, or authorization data.
 
 ## Threat Scenarios
 
@@ -130,6 +136,7 @@ Mitigations:
 - warning about synchronized folders
 - recommend immediate import into an established password manager
 - offer deletion after confirmed import
+- complete reviewed warning text in every shipped language with English fallback
 
 Residual risk:
 
@@ -139,13 +146,14 @@ Deletion does not guarantee forensic erasure on modern storage.
 
 Risk:
 
-Credentials, reset tokens, or decrypted records appear in diagnostic output.
+Credentials, reset tokens, decrypted records, or localization formatting arguments appear in diagnostic output.
 
 Mitigations:
 
-- no secret values in logs, exception messages, telemetry, or audit events
+- no secret values in logs, exception messages, telemetry, audit events, or localization diagnostics
 - sanitize sensitive object representations
 - tests for known secret patterns in diagnostic output
+- localization diagnostics include resource keys and cultures only
 - no automatic upload of crash data containing application state
 
 ### Malicious or compromised recovery workflow
@@ -161,6 +169,57 @@ Mitigations:
 - no runtime download or execution of third-party provider plugins
 - review of recovery URLs, permissions, and automation behavior
 - tests and verification metadata for provider workflows
+- workflow execution uses canonical identifiers rather than translated display text
+
+### Malicious, incorrect, or incomplete translation
+
+Risk:
+
+A translation changes the meaning of a security warning, removes a consequence, understates unresolved risk, alters a provider instruction, or causes the user to authorize the wrong action.
+
+Mitigations:
+
+- translation resources are repository-controlled and reviewed through pull requests
+- English is the complete source and fallback language
+- missing translations never produce empty security text
+- resource-key and formatting-placeholder parity checks
+- security-sensitive terminology review by a fluent or native reviewer where practical
+- translated text never controls workflow paths, URLs, prerequisites, completion, or authorization
+- no runtime machine translation for security-critical content
+- confirmation dialogs execute structured canonical actions rather than button text
+
+Residual risk:
+
+A grammatically valid translation may still communicate security meaning poorly. Review must assess meaning and consequences, not only linguistic correctness.
+
+### Text clipping or inaccessible localized UI
+
+Risk:
+
+Longer translated strings, plural forms, or right-to-left presentation hide warnings, controls, status text, or confirmation consequences.
+
+Mitigations:
+
+- pseudo-localization and long-string tests
+- layouts that wrap or scroll rather than assume English dimensions
+- minimum-window verification
+- localized accessibility names and descriptions
+- status symbols and text in addition to color
+- an architectural path for right-to-left flow direction
+
+### Culture-sensitive parsing changes meaning
+
+Risk:
+
+Changing the GUI language changes interpretation of imported values, URLs, dates, numbers, identifiers, or serialized security data.
+
+Mitigations:
+
+- explicit separation of UI culture and data-processing culture
+- invariant parsing for identifiers, URLs, workflow versions, and cryptographic data
+- declared culture or unambiguous format for imported date and numeric fields
+- deterministic machine-readable export formats
+- tests that run parsing under multiple UI cultures
 
 ### Misleading completion status
 
@@ -174,6 +233,7 @@ Mitigations:
 - display blocked actions and unresolved risks prominently
 - do not count unresolved required actions as complete
 - require explicit session completion
+- verify that every shipped language preserves these distinctions
 
 ## Out of Scope
 
@@ -186,7 +246,12 @@ unpwn does not:
 - bypass identity verification or account-ownership checks
 - guarantee account recovery
 - guarantee that a plaintext export has been securely erased
+- guarantee the quality of unofficial modified translations outside released repository resources
 
 ## Security Principle
 
 Automation should reduce workload while keeping critical security decisions visible to the user. Recovery status must communicate uncertainty and unresolved risk rather than create false assurance.
+
+Localization must preserve that same security meaning. A missing or unclear translation is a security defect, not merely a cosmetic issue.
+
+See [Localization and Multilingual GUI](LOCALIZATION.md).
