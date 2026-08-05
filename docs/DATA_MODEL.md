@@ -81,7 +81,9 @@ Suggested fields:
 - `Reason`
 - `Description`
 
-Recovery-order planning should treat dependency roots as earlier work, keep critical accounts ahead of lower-priority accounts when dependencies permit it, and surface imported dependencies that reference unknown accounts. Dependency cycles are blocking issues because the user must decide which account or channel can be recovered manually before the dependent chain can continue.
+Recovery-order planning treats dependency roots as earlier work, keeps critical accounts ahead of lower-priority accounts when dependencies permit it, and surfaces imported dependencies that reference unknown accounts. Dependency cycles are blocking issues because the user must decide which account or channel can be recovered manually before the dependent chain can continue.
+
+Topological order and current readiness are separate. A dependent account may appear later in the recommended plan but remains `WAITING_FOR_DEPENDENCIES` until every target account is fully reviewed. `READY` means the account can be worked on now.
 
 Examples:
 
@@ -103,14 +105,16 @@ A versioned provider-defined workflow template.
 
 Suggested fields:
 
-- `Id`
+- `WorkflowId`
 - `ProviderId`
-- `Version`
-- `AccountType`
+- `ProviderName`
+- `WorkflowVersion`
+- `SupportedAccountType`
 - `VerifiedAt`
+- `RecoveryLocations`
 - `Actions`
 
-Definitions are repository-controlled and shipped with an application release.
+Definitions are repository-controlled and shipped with an application release. Provider validation and runtime action instances use the same canonical types from `Unpwn.Core`.
 
 ### RecoveryActionDefinition
 
@@ -120,19 +124,18 @@ Suggested fields:
 
 - `Id`
 - `Type`
-- `Title`
-- `Description`
-- `Required`
+- `Requirement`
 - `Importance`
-- `SupportedRecoveryPaths`
+- `RecoveryPaths`
 - `AutomationSupport`
-- `PrerequisiteActionIds`
+- `Prerequisites`
+- `CompletionCriteria`
 
-Importance values:
+Importance values and their progress weights are:
 
-- `CRITICAL`
-- `IMPORTANT`
-- `ROUTINE`
+- `CRITICAL`: `5`
+- `IMPORTANT`: `3`
+- `ROUTINE`: `1`
 
 ### RecoveryActionInstance
 
@@ -147,8 +150,9 @@ Suggested fields:
 - `SelectedRecoveryPath`
 - `StartedAt`
 - `CompletedAt`
-- `BlockedReason`
-- `UnresolvedRiskReason`
+- `StatusReason`
+- `NotApplicableDisposition`
+- `HasUnresolvedRisk`
 - `UserNotes`
 
 Status values:
@@ -160,6 +164,11 @@ Status values:
 - `COMPLETED`
 - `FAILED`
 - `NOT_APPLICABLE`
+
+`NOT_APPLICABLE` always requires a reason and one explicit disposition:
+
+- `TRULY_NOT_APPLICABLE`: the capability is absent for the account type and the action is excluded from required progress
+- `UNRESOLVED_RISK`: the control is relevant but unavailable or declined; the action remains in required progress and prevents a fully secured result
 
 ### CredentialEntry
 
@@ -186,23 +195,21 @@ Reports recovery status without implying that unresolved risks are secured. It i
 - overall accounts fully reviewed versus total accounts
 - weighted required-action completion using action importance
 - blocked required-action count
+- failed required-action count
 - unresolved-risk count
 
 Critical-account readiness is calculated separately from the overall percentage so blocked critical accounts and accepted unresolved risks remain visible.
 
 ### AuditEvent
 
-Records meaningful recovery-state changes without containing secrets.
+Records meaningful recovery-state changes without containing user-controlled free text.
 
-Suggested fields:
+Implemented structured fields:
 
-- `Id`
-- `RecoverySessionId`
-- `AccountId`
-- `ActionInstanceId`
-- `EventType`
 - `OccurredAt`
-- `SafeSummary`
+- `EventType`
+- `AccountId` when relevant
+- `ActionType` when relevant
 
 Examples:
 
@@ -214,7 +221,7 @@ Examples:
 - credential exported
 - vault locked
 
-Audit events must never contain passwords, vault keys, reset tokens, MFA secrets, or full sensitive browser content.
+Human notes and detailed reasons belong to encrypted domain records, not audit event summaries. Audit events must never contain passwords, vault keys, reset tokens, MFA secrets, recovery codes, account notes, or browser content.
 
 ## Progress Model
 
@@ -226,7 +233,7 @@ Display:
 
 - number of critical accounts fully reviewed
 - total number of critical accounts
-- critical accounts that remain blocked or carry unresolved risk
+- critical accounts that remain blocked, failed, or carry unresolved risk
 
 This is the primary emergency indicator.
 
@@ -256,7 +263,7 @@ sum(weights of completed required actions)
 sum(weights of all applicable required actions)
 ```
 
-Actions marked `NOT_APPLICABLE` with a reason are excluded from the denominator.
+Only actions marked `NOT_APPLICABLE` with a reason and the `TRULY_NOT_APPLICABLE` disposition are excluded from the denominator.
 
 Blocked, failed, and unresolved required actions remain in the denominator.
 

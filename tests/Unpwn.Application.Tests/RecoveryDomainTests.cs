@@ -16,17 +16,17 @@ public sealed class RecoveryDomainTests
     }
 
     [Fact]
-    public void NotApplicableRequiresReason()
+    public void NotApplicableRequiresReasonAndExplicitDisposition()
     {
         var action = RecoveryActionInstance.Create(RequiredAction("mfa"));
 
-        Assert.Throws<ArgumentException>(() => action.MarkNotApplicable(""));
+        Assert.Throws<ArgumentException>(() => action.MarkNotApplicable("", NotApplicableDisposition.TrulyNotApplicable));
     }
 
     [Fact]
     public void RequiredActionWithoutCompletionCriteriaIsRejected()
     {
-        var definition = RequiredAction("sessions") with { CompletionCriteria = "" };
+        var definition = RequiredAction("sessions") with { CompletionCriteria = [] };
 
         Assert.Throws<ArgumentException>(() => RecoveryActionInstance.Create(definition));
     }
@@ -46,20 +46,41 @@ public sealed class RecoveryDomainTests
     }
 
     [Fact]
-    public void AccountIsFullyReviewedWhenRequiredActionsAreCompletedOrNotApplicableWithReason()
+    public void TrulyNotApplicableActionDoesNotCreateFalseIncompleteWork()
     {
         var password = RecoveryActionInstance.Create(RequiredAction("password"));
         var tokens = RecoveryActionInstance.Create(RequiredAction("tokens"));
         password.Start();
         password.Complete();
-        tokens.MarkNotApplicable("The account type does not support API tokens.");
+        tokens.MarkNotApplicable(
+            "The account type does not support API tokens.",
+            NotApplicableDisposition.TrulyNotApplicable);
         var account = new Account(Guid.NewGuid(), "synthetic", AccountCriticality.Important, [password, tokens]);
 
         Assert.Equal(AccountRecoveryStatus.FullyReviewed, account.Status);
     }
 
     [Fact]
-    public void SessionProgressReportsSeparateSecuritySignals()
+    public void UnavailableRequiredControlMarkedNotApplicableRemainsAnUnresolvedRisk()
+    {
+        var action = RecoveryActionInstance.Create(RequiredAction("sessions"));
+        action.MarkNotApplicable(
+            "The provider does not expose session revocation.",
+            NotApplicableDisposition.UnresolvedRisk);
+        var account = new Account(Guid.NewGuid(), "synthetic", AccountCriticality.Critical, [action]);
+        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
+        session.AddAccount(account);
+
+        var progress = session.CalculateProgress();
+
+        Assert.Equal(AccountRecoveryStatus.NotFullySecured, account.Status);
+        Assert.Equal(0, progress.WeightedRequiredActionsCompleted);
+        Assert.Equal(1, progress.UnresolvedRisks);
+        Assert.Equal(0, progress.FailedRequiredActions);
+    }
+
+    [Fact]
+    public void SessionProgressUsesDocumentedFiveThreeOneWeights()
     {
         var complete = RecoveryActionInstance.Create(RequiredAction("complete", RecoveryActionImportance.Critical));
         complete.Start();
@@ -79,8 +100,9 @@ public sealed class RecoveryDomainTests
         Assert.Equal(1, progress.CriticalAccountsTotal);
         Assert.Equal(0, progress.AccountsFullyReviewed);
         Assert.Equal(1, progress.AccountsTotal);
-        Assert.Equal(0.5, progress.WeightedRequiredActionsCompleted);
+        Assert.Equal(5 / 9.0, progress.WeightedRequiredActionsCompleted);
         Assert.Equal(1, progress.BlockedRequiredActions);
+        Assert.Equal(1, progress.FailedRequiredActions);
         Assert.Equal(1, progress.UnresolvedRisks);
     }
 
@@ -112,6 +134,7 @@ public sealed class RecoveryDomainTests
         Assert.Equal(0, blockedReadiness.RequiredActionsCompleted);
         Assert.Equal(1, blockedReadiness.RequiredActionsTotal);
         Assert.Equal(1, blockedReadiness.BlockedRequiredActions);
+        Assert.Equal(0, blockedReadiness.FailedRequiredActions);
     }
 
     [Fact]
@@ -149,7 +172,6 @@ public sealed class RecoveryDomainTests
         Assert.Contains("secure-email", dependent.StatusReason, StringComparison.Ordinal);
     }
 
-
     [Fact]
     public void RecoveryOrderSecuresDependencyRootsBeforeDependentAccounts()
     {
@@ -170,6 +192,24 @@ public sealed class RecoveryDomainTests
         Assert.All(plan.Items, item => Assert.Equal(AccountRecoveryOrderStatus.Ready, item.OrderStatus));
         Assert.Equal(0, plan.Items.Single(item => item.AccountId == email.Id).DependencyDepth);
         Assert.Equal(1, plan.Items.Single(item => item.AccountId == shop.Id).DependencyDepth);
+    }
+
+    [Fact]
+    public void RecoveryOrderMarksDependentAccountAsWaitingUntilDependencyIsReviewed()
+    {
+        var email = new Account(Guid.Parse("00000000-0000-0000-0000-000000000021"), "primary-email", AccountCriticality.Critical, [RequiredActionInstance("email")]);
+        var shop = new Account(Guid.Parse("00000000-0000-0000-0000-000000000022"), "online-shop", AccountCriticality.Important, [RequiredActionInstance("shop")]);
+        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
+        session.AddAccount(shop);
+        session.AddAccount(email);
+        session.AddDependency(new AccountDependency(shop.Id, email.Id, "Password reset links are sent to the primary email account."));
+
+        var plan = session.PlanRecoveryOrder();
+
+        Assert.Equal(AccountRecoveryOrderStatus.Ready, plan.Items.Single(item => item.AccountId == email.Id).OrderStatus);
+        var shopPlan = plan.Items.Single(item => item.AccountId == shop.Id);
+        Assert.Equal(AccountRecoveryOrderStatus.WaitingForDependencies, shopPlan.OrderStatus);
+        Assert.Equal([email.Id], shopPlan.WaitingForAccountIds);
     }
 
     [Fact]
@@ -195,11 +235,21 @@ public sealed class RecoveryDomainTests
     }
 
     [Fact]
-    public void AuditEventsRejectSyntheticSecretMarkers()
+    public void AuditEventsUseStructuredFieldsInsteadOfFreeText()
     {
-        Assert.Throws<ArgumentException>(() => AuditEvent.Create("test", "leaked UNPWN_TEST_SECRET_password"));
-    }
+        var accountId = Guid.NewGuid();
 
+        var auditEvent = AuditEvent.Create(
+            AuditEventType.RecoveryActionCompleted,
+            accountId,
+            RecoveryActionType.ChangePassword,
+            DateTimeOffset.UnixEpoch);
+
+        Assert.Equal(AuditEventType.RecoveryActionCompleted, auditEvent.EventType);
+        Assert.Equal(accountId, auditEvent.AccountId);
+        Assert.Equal(RecoveryActionType.ChangePassword, auditEvent.ActionType);
+        Assert.Equal(DateTimeOffset.UnixEpoch, auditEvent.OccurredAt);
+    }
 
     private static RecoveryActionInstance RequiredActionInstance(string id) =>
         RecoveryActionInstance.Create(RequiredAction(id));
@@ -215,14 +265,14 @@ public sealed class RecoveryDomainTests
     private static RecoveryActionDefinition RequiredAction(
         string id,
         RecoveryActionImportance importance = RecoveryActionImportance.Important,
-        IReadOnlyCollection<string>? prerequisites = null) =>
+        IReadOnlyList<string>? prerequisites = null) =>
         new(
             id,
             RecoveryActionType.ChangePassword,
-            RecoveryPath.AuthenticatedChange,
+            [RecoveryPath.AuthenticatedChange],
+            RecoveryActionRequirement.Required,
             importance,
-            IsRequired: true,
             AutomationSupport.None,
-            CompletionCriteria: "User confirmed the synthetic recovery action is complete.",
-            PrerequisiteActionIds: prerequisites);
+            prerequisites ?? [],
+            ["User confirmed the synthetic recovery action is complete."]);
 }

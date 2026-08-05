@@ -5,16 +5,27 @@ public sealed record VaultRecordDescriptor(
     string RecordId,
     int SchemaVersion)
 {
+    private static readonly HashSet<string> AllowedRecordTypes =
+        new(StringComparer.Ordinal)
+        {
+            "account-state",
+            "audit-events",
+            "generated-credential",
+            "note",
+            "provider-workflow",
+            "recovery-session",
+        };
+
     public void Validate()
     {
-        if (string.IsNullOrWhiteSpace(RecordType))
+        if (!AllowedRecordTypes.Contains(RecordType))
         {
-            throw new ArgumentException("Record type is required.", nameof(RecordType));
+            throw new ArgumentException("Record type must be a repository-defined non-sensitive metadata category.", nameof(RecordType));
         }
 
-        if (string.IsNullOrWhiteSpace(RecordId))
+        if (!Guid.TryParse(RecordId, out var recordId) || recordId == Guid.Empty)
         {
-            throw new ArgumentException("Record identifier is required.", nameof(RecordId));
+            throw new ArgumentException("Record identifier must be a non-empty opaque GUID and must not contain account data.", nameof(RecordId));
         }
 
         if (SchemaVersion < 1)

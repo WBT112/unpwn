@@ -1,7 +1,7 @@
+using Unpwn.Core;
 using Unpwn.Core.Recovery.Workflows;
 using Unpwn.Providers.Workflows;
 using Xunit;
-using WorkflowTypes = global::Unpwn.Core.Recovery.Workflows;
 
 namespace Unpwn.Core.Tests.Recovery.Workflows;
 
@@ -10,19 +10,31 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void RepositoryCatalogWorkflowsAreValid()
     {
-        WorkflowValidationResult result = RepositoryWorkflowCatalog.ValidateAll();
+        WorkflowValidationResult result = RepositoryWorkflowCatalog.ValidateAll(new DateOnly(2026, 8, 5));
 
         Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Diagnostics.Select(diagnostic => diagnostic.ToString())));
     }
 
     [Fact]
+    public void ValidateUsesSuppliedCurrentDateInsteadOfACompiledConstant()
+    {
+        var workflow = CreateWorkflow(verifiedAt: new DateOnly(2027, 1, 2));
+
+        var beforeVerification = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2027, 1, 1));
+        var onVerificationDate = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2027, 1, 2));
+
+        Assert.Contains(beforeVerification.Diagnostics, diagnostic => diagnostic.Rule == "verification-date-in-future");
+        Assert.True(onVerificationDate.IsValid);
+    }
+
+    [Fact]
     public void ValidateRejectsDuplicateActionsMissingPrerequisitesFutureDatesAndUnsafeUrls()
     {
-        WorkflowTypes.RecoveryWorkflowDefinition workflow = CreateWorkflow(
+        RecoveryWorkflowDefinition workflow = CreateWorkflow(
             verifiedAt: new DateOnly(2026, 8, 6),
             locations:
             [
-                new WorkflowTypes.RecoveryLocationDefinition("reset", new Uri("http://example.test/reset"), ["http://example.test"])
+                new RecoveryLocationDefinition("reset", new Uri("http://example.test/reset"), ["http://example.test"])
             ],
             actions:
             [
@@ -30,11 +42,12 @@ public sealed class RecoveryWorkflowValidatorTests
                 CreateAction("change-password", prerequisites: [])
             ]);
 
-        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow);
+        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2026, 8, 5));
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "verification-date-in-future");
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "location-url-must-use-https");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "expected-origin-invalid");
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "duplicate-action-id");
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "missing-prerequisite");
     }
@@ -42,16 +55,16 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void ValidateRejectsRequiredActionsWithoutCompletionCriteriaAndFullyAutomatedClaims()
     {
-        WorkflowTypes.RecoveryWorkflowDefinition workflow = CreateWorkflow(
+        RecoveryWorkflowDefinition workflow = CreateWorkflow(
             actions:
             [
                 CreateAction(
                     "change-password",
-                    automationSupport: WorkflowTypes.AutomationSupport.Automated,
+                    automationSupport: AutomationSupport.Automated,
                     completionCriteria: [])
             ]);
 
-        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow);
+        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2026, 8, 5));
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "required-action-completion-criteria");
@@ -61,23 +74,23 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void ValidateRejectsCyclicPrerequisites()
     {
-        WorkflowTypes.RecoveryWorkflowDefinition workflow = CreateWorkflow(
+        RecoveryWorkflowDefinition workflow = CreateWorkflow(
             actions:
             [
                 CreateAction("first", prerequisites: ["second"]),
                 CreateAction("second", prerequisites: ["first"])
             ]);
 
-        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow);
+        WorkflowValidationResult result = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2026, 8, 5));
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "cyclic-prerequisite");
     }
 
-    private static WorkflowTypes.RecoveryWorkflowDefinition CreateWorkflow(
+    private static RecoveryWorkflowDefinition CreateWorkflow(
         DateOnly? verifiedAt = null,
-        IReadOnlyList<WorkflowTypes.RecoveryLocationDefinition>? locations = null,
-        IReadOnlyList<WorkflowTypes.RecoveryActionDefinition>? actions = null) =>
+        IReadOnlyList<RecoveryLocationDefinition>? locations = null,
+        IReadOnlyList<RecoveryActionDefinition>? actions = null) =>
         new(
             "example.test/recovery",
             "example.test",
@@ -85,20 +98,21 @@ public sealed class RecoveryWorkflowValidatorTests
             "consumer",
             "1.0.0",
             verifiedAt ?? new DateOnly(2026, 8, 5),
-            locations ?? [new WorkflowTypes.RecoveryLocationDefinition("reset", new Uri("https://example.test/reset"), ["https://example.test"])],
+            locations ?? [new RecoveryLocationDefinition("reset", new Uri("https://example.test/reset"), ["https://example.test"])],
             actions ?? [CreateAction("change-password")]);
 
-    private static WorkflowTypes.RecoveryActionDefinition CreateAction(
+    private static RecoveryActionDefinition CreateAction(
         string id,
         IReadOnlyList<string>? prerequisites = null,
         IReadOnlyList<string>? completionCriteria = null,
-        WorkflowTypes.AutomationSupport automationSupport = WorkflowTypes.AutomationSupport.Navigation) =>
+        AutomationSupport automationSupport = AutomationSupport.Navigation,
+        IReadOnlyList<RecoveryPath>? recoveryPaths = null) =>
         new(
             id,
-            WorkflowTypes.RecoveryActionType.ChangePassword,
-            WorkflowTypes.RecoveryPath.AuthenticatedChange,
-            WorkflowTypes.RecoveryActionRequirement.Required,
-            WorkflowTypes.RecoveryActionImportance.Critical,
+            RecoveryActionType.ChangePassword,
+            recoveryPaths ?? [RecoveryPath.AuthenticatedChange],
+            RecoveryActionRequirement.Required,
+            RecoveryActionImportance.Critical,
             automationSupport,
             prerequisites ?? [],
             completionCriteria ?? ["The password was changed through the official provider flow."]);
@@ -117,20 +131,17 @@ public sealed class ProviderContractValidatorTests
     [Fact]
     public void ContractValidationRejectsUnavailableExpectedPathsAndMissingActions()
     {
-        var catalogWorkflow = RepositoryWorkflowCatalog.Workflows.Single();
-        var workflow = catalogWorkflow with
-        {
-            Actions = [.. catalogWorkflow.Actions.Where(action => action.RecoveryPath != WorkflowTypes.RecoveryPath.PasswordReset)],
-        };
+        var workflow = RepositoryWorkflowCatalog.Workflows.Single();
         var scenario = new ProviderContractScenario(
             "bad-contract",
             workflow.WorkflowId,
             "Invalid scenario for regression coverage.",
-            WorkflowTypes.RecoveryPath.PasswordReset,
-            ["missing-action"],
+            RecoveryPath.PasswordReset,
+            ["change-password", "missing-action"],
             new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
             {
-                ["missing-action"] = new(WorkflowTypes.RecoveryActionRequirement.Required, WorkflowTypes.RecoveryActionImportance.Critical, []),
+                ["change-password"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                ["missing-action"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, []),
             },
             AccountContractOutcome.CanBeFullySecured);
 
@@ -138,6 +149,55 @@ public sealed class ProviderContractValidatorTests
 
         Assert.False(result.IsValid);
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "expected-action-missing");
-        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "expected-path-unavailable");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "action-path-mismatch");
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "fully-secured-scenario-incomplete");
+    }
+
+    [Fact]
+    public void ContractValidationRejectsPrerequisitesMissingFromTheScenarioPath()
+    {
+        var workflow = new RecoveryWorkflowDefinition(
+            "example.test/recovery",
+            "example.test",
+            "Example",
+            "consumer",
+            "1.0.0",
+            new DateOnly(2026, 8, 5),
+            [new RecoveryLocationDefinition("reset", new Uri("https://example.test/reset"), ["https://example.test"])],
+            [
+                new RecoveryActionDefinition(
+                    "auth-only",
+                    RecoveryActionType.ConfirmAccess,
+                    [RecoveryPath.AuthenticatedChange],
+                    RecoveryActionRequirement.Required,
+                    RecoveryActionImportance.Critical,
+                    AutomationSupport.None,
+                    [],
+                    ["Authenticated access is confirmed."]),
+                new RecoveryActionDefinition(
+                    "reset-action",
+                    RecoveryActionType.ResetPassword,
+                    [RecoveryPath.PasswordReset],
+                    RecoveryActionRequirement.Required,
+                    RecoveryActionImportance.Critical,
+                    AutomationSupport.Navigation,
+                    ["auth-only"],
+                    ["The password was reset."])
+            ]);
+        var scenario = new ProviderContractScenario(
+            "impossible-reset",
+            workflow.WorkflowId,
+            "The reset action depends on an action unavailable on the reset path.",
+            RecoveryPath.PasswordReset,
+            ["reset-action"],
+            new Dictionary<string, ContractActionExpectation>(StringComparer.Ordinal)
+            {
+                ["reset-action"] = new(RecoveryActionRequirement.Required, RecoveryActionImportance.Critical, ["auth-only"]),
+            },
+            AccountContractOutcome.BlockedByDependency);
+
+        var result = ProviderContractValidator.Validate(workflow, [scenario]);
+
+        Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "prerequisite-unavailable-for-path");
     }
 }

@@ -1,15 +1,18 @@
+using global::Unpwn.Core;
+
 namespace Unpwn.Core.Recovery.Workflows;
 
 public sealed class RecoveryWorkflowValidator
 {
-    private static readonly DateOnly CurrentDate = new(2026, 8, 5);
-
-    public static WorkflowValidationResult Validate(RecoveryWorkflowDefinition workflow)
+    public static WorkflowValidationResult Validate(
+        RecoveryWorkflowDefinition workflow,
+        DateOnly? currentDate = null)
     {
         ArgumentNullException.ThrowIfNull(workflow);
 
         List<WorkflowValidationDiagnostic> diagnostics = [];
         string workflowId = string.IsNullOrWhiteSpace(workflow.WorkflowId) ? "<unknown>" : workflow.WorkflowId;
+        var validationDate = currentDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         RequireText(workflow.WorkflowId, null, "workflow-id-required", "WorkflowId is required.", diagnostics, workflowId);
         RequireText(workflow.ProviderId, null, "provider-id-required", "ProviderId is required.", diagnostics, workflowId);
@@ -17,7 +20,11 @@ public sealed class RecoveryWorkflowValidator
         RequireText(workflow.SupportedAccountType, null, "account-type-required", "SupportedAccountType is required.", diagnostics, workflowId);
         RequireText(workflow.WorkflowVersion, null, "workflow-version-required", "WorkflowVersion is required.", diagnostics, workflowId);
 
-        if (workflow.VerifiedAt > CurrentDate)
+        if (workflow.VerifiedAt == default)
+        {
+            diagnostics.Add(new(workflowId, null, "verification-date-required", "VerifiedAt is required."));
+        }
+        else if (workflow.VerifiedAt > validationDate)
         {
             diagnostics.Add(new(workflowId, null, "verification-date-in-future", "VerifiedAt must not be in the future."));
         }
@@ -28,35 +35,65 @@ public sealed class RecoveryWorkflowValidator
         return diagnostics.Count == 0 ? WorkflowValidationResult.Valid : WorkflowValidationResult.FromDiagnostics(diagnostics);
     }
 
-    private static void ValidateLocations(RecoveryWorkflowDefinition workflow, string workflowId, List<WorkflowValidationDiagnostic> diagnostics)
+    private static void ValidateLocations(
+        RecoveryWorkflowDefinition workflow,
+        string workflowId,
+        List<WorkflowValidationDiagnostic> diagnostics)
     {
+        if (workflow.RecoveryLocations.Count == 0)
+        {
+            diagnostics.Add(new(workflowId, null, "recovery-location-required", "At least one recovery location is required."));
+            return;
+        }
+
         HashSet<string> locationIds = new(StringComparer.Ordinal);
         foreach (RecoveryLocationDefinition location in workflow.RecoveryLocations)
         {
-            if (!locationIds.Add(location.Id))
+            if (string.IsNullOrWhiteSpace(location.Id))
+            {
+                diagnostics.Add(new(workflowId, null, "location-id-required", "Recovery locations require an identifier."));
+            }
+            else if (!locationIds.Add(location.Id))
             {
                 diagnostics.Add(new(workflowId, null, "duplicate-location-id", $"Recovery location '{location.Id}' is duplicated."));
             }
 
-            if (location.Url.Scheme != Uri.UriSchemeHttps)
+            if (!location.Url.IsAbsoluteUri || location.Url.Scheme != Uri.UriSchemeHttps)
             {
-                diagnostics.Add(new(workflowId, null, "location-url-must-use-https", $"Recovery location '{location.Id}' must use HTTPS."));
+                diagnostics.Add(new(workflowId, null, "location-url-must-use-https", $"Recovery location '{location.Id}' must use an absolute HTTPS URL."));
             }
 
             if (location.ExpectedOrigins.Count == 0)
             {
                 diagnostics.Add(new(workflowId, null, "expected-origin-required", $"Recovery location '{location.Id}' must declare at least one expected origin."));
+                continue;
             }
 
-            string actualOrigin = location.Url.GetLeftPart(UriPartial.Authority);
-            if (!location.ExpectedOrigins.Contains(actualOrigin, StringComparer.OrdinalIgnoreCase))
+            foreach (string expectedOrigin in location.ExpectedOrigins)
             {
-                diagnostics.Add(new(workflowId, null, "location-origin-mismatch", $"Recovery location '{location.Id}' URL origin must be listed in ExpectedOrigins."));
+                if (!Uri.TryCreate(expectedOrigin, UriKind.Absolute, out var expectedUri) ||
+                    expectedUri.Scheme != Uri.UriSchemeHttps ||
+                    !string.Equals(expectedUri.GetLeftPart(UriPartial.Authority), expectedOrigin.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                {
+                    diagnostics.Add(new(workflowId, null, "expected-origin-invalid", $"Recovery location '{location.Id}' contains an invalid HTTPS origin."));
+                }
+            }
+
+            if (location.Url.IsAbsoluteUri)
+            {
+                string actualOrigin = location.Url.GetLeftPart(UriPartial.Authority);
+                if (!location.ExpectedOrigins.Contains(actualOrigin, StringComparer.OrdinalIgnoreCase))
+                {
+                    diagnostics.Add(new(workflowId, null, "location-origin-mismatch", $"Recovery location '{location.Id}' URL origin must be listed in ExpectedOrigins."));
+                }
             }
         }
     }
 
-    private static void ValidateActions(RecoveryWorkflowDefinition workflow, string workflowId, List<WorkflowValidationDiagnostic> diagnostics)
+    private static void ValidateActions(
+        RecoveryWorkflowDefinition workflow,
+        string workflowId,
+        List<WorkflowValidationDiagnostic> diagnostics)
     {
         if (workflow.Actions.Count == 0)
         {
@@ -67,14 +104,28 @@ public sealed class RecoveryWorkflowValidator
         HashSet<string> actionIds = new(StringComparer.Ordinal);
         foreach (RecoveryActionDefinition action in workflow.Actions)
         {
-            if (!actionIds.Add(action.Id))
+            if (string.IsNullOrWhiteSpace(action.Id))
+            {
+                diagnostics.Add(new(workflowId, null, "action-id-required", "Recovery actions require an identifier."));
+            }
+            else if (!actionIds.Add(action.Id))
             {
                 diagnostics.Add(new(workflowId, action.Id, "duplicate-action-id", $"Recovery action '{action.Id}' is duplicated."));
             }
 
-            if (action.Requirement == RecoveryActionRequirement.Required && action.CompletionCriteria.Count == 0)
+            if (action.RecoveryPaths.Count == 0)
             {
-                diagnostics.Add(new(workflowId, action.Id, "required-action-completion-criteria", "Required actions must declare completion criteria."));
+                diagnostics.Add(new(workflowId, action.Id, "recovery-path-required", "Recovery actions must support at least one recovery path."));
+            }
+            else if (action.RecoveryPaths.Distinct().Count() != action.RecoveryPaths.Count)
+            {
+                diagnostics.Add(new(workflowId, action.Id, "duplicate-recovery-path", "Recovery action paths must be unique."));
+            }
+
+            if (action.Requirement == RecoveryActionRequirement.Required &&
+                (action.CompletionCriteria.Count == 0 || action.CompletionCriteria.Any(string.IsNullOrWhiteSpace)))
+            {
+                diagnostics.Add(new(workflowId, action.Id, "required-action-completion-criteria", "Required actions must declare non-empty completion criteria."));
             }
 
             if (action.AutomationSupport == AutomationSupport.Automated)
@@ -97,9 +148,13 @@ public sealed class RecoveryWorkflowValidator
         AddCycleDiagnostics(workflow, workflowId, diagnostics);
     }
 
-    private static void AddCycleDiagnostics(RecoveryWorkflowDefinition workflow, string workflowId, List<WorkflowValidationDiagnostic> diagnostics)
+    private static void AddCycleDiagnostics(
+        RecoveryWorkflowDefinition workflow,
+        string workflowId,
+        List<WorkflowValidationDiagnostic> diagnostics)
     {
         Dictionary<string, RecoveryActionDefinition> actions = workflow.Actions
+            .Where(action => !string.IsNullOrWhiteSpace(action.Id))
             .GroupBy(action => action.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         HashSet<string> visiting = new(StringComparer.Ordinal);
@@ -133,7 +188,13 @@ public sealed class RecoveryWorkflowValidator
         }
     }
 
-    private static void RequireText(string value, string? actionId, string rule, string message, List<WorkflowValidationDiagnostic> diagnostics, string workflowId)
+    private static void RequireText(
+        string value,
+        string? actionId,
+        string rule,
+        string message,
+        List<WorkflowValidationDiagnostic> diagnostics,
+        string workflowId)
     {
         if (string.IsNullOrWhiteSpace(value))
         {

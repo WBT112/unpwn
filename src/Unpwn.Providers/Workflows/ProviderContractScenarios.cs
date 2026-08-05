@@ -1,4 +1,4 @@
-using Unpwn.Core.Recovery.Workflows;
+using Unpwn.Core;
 
 namespace Unpwn.Providers.Workflows;
 
@@ -24,7 +24,7 @@ public enum AccountContractOutcome
     BlockedByDependency,
     ManualRecoveryRequired,
     NotFullySecuredWithAcceptedRisk,
-    AccessCannotBeRestored
+    AccessCannotBeRestored,
 }
 
 public sealed record ProviderContractValidationDiagnostic(string ScenarioId, string Rule, string Message)
@@ -49,10 +49,18 @@ public static class ProviderContractValidator
         ArgumentNullException.ThrowIfNull(scenarios);
 
         List<ProviderContractValidationDiagnostic> diagnostics = [];
-        Dictionary<string, RecoveryActionDefinition> actions = workflow.Actions.ToDictionary(action => action.Id, StringComparer.Ordinal);
+        Dictionary<string, RecoveryActionDefinition> actions = workflow.Actions
+            .GroupBy(action => action.Id, StringComparer.Ordinal)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+        HashSet<string> scenarioIds = new(StringComparer.Ordinal);
 
         foreach (ProviderContractScenario scenario in scenarios)
         {
+            if (!scenarioIds.Add(scenario.Id))
+            {
+                diagnostics.Add(new(scenario.Id, "duplicate-scenario-id", "Scenario identifiers must be unique within a workflow."));
+            }
+
             ValidateScenario(workflow, scenario, actions, diagnostics);
         }
 
@@ -70,9 +78,15 @@ public static class ProviderContractValidator
             diagnostics.Add(new(scenario.Id, "workflow-id-mismatch", "Scenario must reference the workflow being validated."));
         }
 
-        if (!workflow.Actions.Any(action => action.RecoveryPath == scenario.ExpectedRecoveryPath))
+        if (scenario.ExpectedActionOrder.Count == 0)
         {
-            diagnostics.Add(new(scenario.Id, "expected-path-unavailable", "Scenario expects a recovery path not modeled by the workflow."));
+            diagnostics.Add(new(scenario.Id, "expected-action-order-required", "Scenario must define at least one expected action."));
+            return;
+        }
+
+        if (scenario.ExpectedActionOrder.Distinct(StringComparer.Ordinal).Count() != scenario.ExpectedActionOrder.Count)
+        {
+            diagnostics.Add(new(scenario.Id, "duplicate-expected-action", "Expected action order must not contain duplicate actions."));
         }
 
         HashSet<string> orderedActionIds = new(StringComparer.Ordinal);
@@ -84,19 +98,46 @@ public static class ProviderContractValidator
                 continue;
             }
 
+            if (!action.SupportsPath(scenario.ExpectedRecoveryPath))
+            {
+                diagnostics.Add(new(scenario.Id, "action-path-mismatch", $"Expected action '{actionId}' does not support recovery path '{scenario.ExpectedRecoveryPath}'."));
+            }
+
             foreach (string prerequisite in action.Prerequisites)
             {
-                if (scenario.ExpectedActionOrder.Contains(prerequisite, StringComparer.Ordinal) && !orderedActionIds.Contains(prerequisite))
+                if (!actions.TryGetValue(prerequisite, out RecoveryActionDefinition? prerequisiteAction))
                 {
-                    diagnostics.Add(new(scenario.Id, "action-order-violates-prerequisite", $"Expected action '{actionId}' appears before prerequisite '{prerequisite}'."));
+                    continue;
+                }
+
+                if (!prerequisiteAction.SupportsPath(scenario.ExpectedRecoveryPath))
+                {
+                    diagnostics.Add(new(scenario.Id, "prerequisite-unavailable-for-path", $"Action '{actionId}' depends on '{prerequisite}', which is unavailable on recovery path '{scenario.ExpectedRecoveryPath}'."));
+                }
+                else if (!orderedActionIds.Contains(prerequisite))
+                {
+                    diagnostics.Add(new(scenario.Id, "action-order-violates-prerequisite", $"Expected action '{actionId}' appears before or without prerequisite '{prerequisite}'."));
                 }
             }
 
             orderedActionIds.Add(actionId);
         }
 
+        foreach (string expectedActionId in scenario.ExpectedActionOrder)
+        {
+            if (!scenario.ActionExpectations.ContainsKey(expectedActionId))
+            {
+                diagnostics.Add(new(scenario.Id, "action-expectation-missing", $"Expected action '{expectedActionId}' has no contract expectation."));
+            }
+        }
+
         foreach ((string actionId, ContractActionExpectation expectation) in scenario.ActionExpectations)
         {
+            if (!scenario.ExpectedActionOrder.Contains(actionId, StringComparer.Ordinal))
+            {
+                diagnostics.Add(new(scenario.Id, "unexpected-action-expectation", $"Action expectation '{actionId}' is not present in ExpectedActionOrder."));
+            }
+
             if (!actions.TryGetValue(actionId, out RecoveryActionDefinition? action))
             {
                 diagnostics.Add(new(scenario.Id, "expected-action-missing", $"Expected action '{actionId}' is not defined by the workflow."));
@@ -119,9 +160,25 @@ public static class ProviderContractValidator
             }
         }
 
-        if (scenario.ExpectedOutcome == AccountContractOutcome.CanBeFullySecured && scenario.ActionExpectations.Values.Any(expectation => expectation.IsInitiallyBlocked || expectation.CreatesUnresolvedRisk))
+        if (scenario.ExpectedOutcome == AccountContractOutcome.CanBeFullySecured)
         {
-            diagnostics.Add(new(scenario.Id, "fully-secured-scenario-has-blockers", "A fully secured scenario cannot start with blocked actions or accepted unresolved risks."));
+            if (scenario.ActionExpectations.Values.Any(expectation => expectation.IsInitiallyBlocked || expectation.CreatesUnresolvedRisk))
+            {
+                diagnostics.Add(new(scenario.Id, "fully-secured-scenario-has-blockers", "A fully secured scenario cannot start with blocked actions or accepted unresolved risks."));
+            }
+
+            var missingRequiredActions = workflow.Actions
+                .Where(action => action.IsRequired && action.SupportsPath(scenario.ExpectedRecoveryPath))
+                .Select(action => action.Id)
+                .Where(actionId => !scenario.ExpectedActionOrder.Contains(actionId, StringComparer.Ordinal))
+                .ToArray();
+            if (missingRequiredActions.Length > 0)
+            {
+                diagnostics.Add(new(
+                    scenario.Id,
+                    "fully-secured-scenario-incomplete",
+                    $"A fully secured scenario omits required actions: {string.Join(", ", missingRequiredActions)}."));
+            }
         }
     }
 }

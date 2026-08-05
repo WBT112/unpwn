@@ -23,11 +23,16 @@ public sealed class RecoveryVault : IDisposable
     public static RecoveryVault Create(string path, string vaultPassword, Argon2idParameters parameters)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        if (File.Exists(path))
+        {
+            throw new IOException("A recovery vault already exists at the selected path.");
+        }
+
         using var crypto = new VaultCryptoPrototype();
         var envelope = crypto.CreateVault(vaultPassword, parameters);
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".");
 
-        using var connection = OpenConnection(path);
+        using var connection = OpenConnection(path, SqliteOpenMode.ReadWriteCreate);
         using var transaction = connection.BeginTransaction();
         CreateSchema(connection, transaction);
         InsertEnvelope(connection, transaction, envelope);
@@ -45,8 +50,7 @@ public sealed class RecoveryVault : IDisposable
             throw new FileNotFoundException("Recovery vault file was not found.", path);
         }
 
-        var vault = new RecoveryVault(path, UnlockDataKey(path, vaultPassword));
-        return vault;
+        return new RecoveryVault(path, UnlockDataKey(path, vaultPassword));
     }
 
     public void Lock()
@@ -89,7 +93,7 @@ public sealed class RecoveryVault : IDisposable
 
             using var crypto = new VaultCryptoPrototype();
             var newEnvelope = crypto.WrapExistingDataKey(newVaultPassword, parameters, activeDataKey);
-            using var connection = OpenConnection(_path);
+            using var connection = OpenConnection(_path, SqliteOpenMode.ReadWrite);
             using var transaction = connection.BeginTransaction();
             UpsertEnvelope(connection, transaction, newEnvelope);
             transaction.Commit();
@@ -108,7 +112,7 @@ public sealed class RecoveryVault : IDisposable
 
         using var crypto = new VaultCryptoPrototype();
         var encrypted = crypto.EncryptRecord(GetDataKey(), descriptor, plaintext);
-        using var connection = OpenConnection(_path);
+        using var connection = OpenConnection(_path, SqliteOpenMode.ReadWrite);
         using var command = connection.CreateCommand();
         command.CommandText = """
             INSERT INTO vault_records(record_type, record_id, schema_version, nonce, ciphertext, tag, updated_utc)
@@ -133,10 +137,11 @@ public sealed class RecoveryVault : IDisposable
     public VaultRecord? ReadRecord(string recordType, string recordId)
     {
         ThrowIfDisposed();
+        var dataKey = GetDataKey();
         var descriptor = new VaultRecordDescriptor(recordType, recordId, 1);
         descriptor.Validate();
 
-        using var connection = OpenConnection(_path);
+        using var connection = OpenConnection(_path, SqliteOpenMode.ReadOnly);
         using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT schema_version, nonce, ciphertext, tag
@@ -153,22 +158,26 @@ public sealed class RecoveryVault : IDisposable
         }
 
         var storedDescriptor = new VaultRecordDescriptor(recordType, recordId, reader.GetInt32(0));
+        storedDescriptor.Validate();
         var encrypted = new EncryptedVaultRecord(storedDescriptor, (byte[])reader[1], (byte[])reader[2], (byte[])reader[3]);
-        var plaintext = VaultCryptoPrototype.DecryptRecord(GetDataKey(), encrypted);
+        var plaintext = VaultCryptoPrototype.DecryptRecord(dataKey, encrypted);
         return new VaultRecord(storedDescriptor, plaintext);
     }
 
     public IReadOnlyList<VaultRecordDescriptor> ListRecords()
     {
         ThrowIfDisposed();
-        using var connection = OpenConnection(_path);
+        _ = GetDataKey();
+        using var connection = OpenConnection(_path, SqliteOpenMode.ReadOnly);
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT record_type, record_id, schema_version FROM vault_records ORDER BY record_type, record_id;";
         using var reader = command.ExecuteReader();
         var descriptors = new List<VaultRecordDescriptor>();
         while (reader.Read())
         {
-            descriptors.Add(new VaultRecordDescriptor(reader.GetString(0), reader.GetString(1), reader.GetInt32(2)));
+            var descriptor = new VaultRecordDescriptor(reader.GetString(0), reader.GetString(1), reader.GetInt32(2));
+            descriptor.Validate();
+            descriptors.Add(descriptor);
         }
 
         return descriptors;
@@ -178,7 +187,9 @@ public sealed class RecoveryVault : IDisposable
     {
         ThrowIfDisposed();
         _ = GetDataKey();
-        using var connection = OpenConnection(_path);
+        var descriptor = new VaultRecordDescriptor(recordType, recordId, 1);
+        descriptor.Validate();
+        using var connection = OpenConnection(_path, SqliteOpenMode.ReadWrite);
         using var command = connection.CreateCommand();
         command.CommandText = "DELETE FROM vault_records WHERE record_type = $record_type AND record_id = $record_id;";
         command.Parameters.AddWithValue("$record_type", recordType);
@@ -199,7 +210,7 @@ public sealed class RecoveryVault : IDisposable
 
     private static byte[] UnlockDataKey(string path, string vaultPassword)
     {
-        using var connection = OpenConnection(path);
+        using var connection = OpenConnection(path, SqliteOpenMode.ReadOnly);
         var envelope = ReadEnvelope(connection);
         try
         {
@@ -217,12 +228,12 @@ public sealed class RecoveryVault : IDisposable
         return _dataKey ?? throw new InvalidOperationException("Recovery vault is locked.");
     }
 
-    private static SqliteConnection OpenConnection(string path)
+    private static SqliteConnection OpenConnection(string path, SqliteOpenMode mode)
     {
         var builder = new SqliteConnectionStringBuilder
         {
             DataSource = path,
-            Mode = SqliteOpenMode.ReadWriteCreate,
+            Mode = mode,
             Pooling = false,
         };
         var connection = new SqliteConnection(builder.ToString());
@@ -290,7 +301,10 @@ public sealed class RecoveryVault : IDisposable
             WHERE id = 1;
             """;
         AddEnvelopeParameters(command, envelope);
-        command.ExecuteNonQuery();
+        if (command.ExecuteNonQuery() != 1)
+        {
+            throw new InvalidOperationException("Recovery vault key envelope could not be updated.");
+        }
     }
 
     private static void AddEnvelopeParameters(SqliteCommand command, VaultKeyEnvelope envelope)
