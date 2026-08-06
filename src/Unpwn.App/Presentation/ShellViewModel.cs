@@ -15,6 +15,8 @@ public sealed class ShellViewModel : ObservableObject
     private LanguageOptionViewModel _selectedLanguage;
     private ScreenViewModel _currentScreen;
     private VisualStatusViewModel _currentStatus;
+    private Guid? _navigationAccountId;
+    private string? _navigationActionId;
 
     public ShellViewModel(
         IScreenFactory screenFactory,
@@ -104,6 +106,18 @@ public sealed class ShellViewModel : ObservableObject
         private set => SetProperty(ref _currentStatus, value);
     }
 
+    public Guid? NavigationAccountId
+    {
+        get => _navigationAccountId;
+        private set => SetProperty(ref _navigationAccountId, value);
+    }
+
+    public string? NavigationActionId
+    {
+        get => _navigationActionId;
+        private set => SetProperty(ref _navigationActionId, value);
+    }
+
     public bool IsVaultUnlocked => _vaultLifecycle.Current.IsVaultUnlocked;
 
     public string VaultContextLabel => _vaultLifecycle.Current.IsVaultUnlocked
@@ -187,6 +201,8 @@ public sealed class ShellViewModel : ObservableObject
 
         if (!IsVaultUnlocked && CurrentScreen.Route != AppRoute.VaultEntry)
         {
+            NavigationAccountId = null;
+            NavigationActionId = null;
             NavigateTo(AppRoute.VaultEntry);
         }
     }
@@ -263,12 +279,26 @@ public sealed class ShellViewModel : ObservableObject
     private void VaultEntry_OnContinueRequested(object? sender, EventArgs eventArgs) =>
         NavigateTo(AppRoute.Dashboard);
 
+    private void Dashboard_OnNavigationRequested(
+        object? sender,
+        DashboardNavigationRequest eventArgs)
+    {
+        NavigationAccountId = eventArgs.AccountId;
+        NavigationActionId = eventArgs.ActionId;
+        NavigateTo(eventArgs.Route);
+    }
+
     private void SubscribeToScreen(ScreenViewModel screen)
     {
         screen.PropertyChanged += CurrentScreen_OnPropertyChanged;
         if (screen is VaultEntryScreenViewModel vaultEntry)
         {
             vaultEntry.ContinueRequested += VaultEntry_OnContinueRequested;
+        }
+
+        if (screen is DashboardScreenViewModel dashboard)
+        {
+            dashboard.NavigationRequested += Dashboard_OnNavigationRequested;
         }
     }
 
@@ -278,6 +308,11 @@ public sealed class ShellViewModel : ObservableObject
         if (screen is VaultEntryScreenViewModel vaultEntry)
         {
             vaultEntry.ContinueRequested -= VaultEntry_OnContinueRequested;
+        }
+
+        if (screen is DashboardScreenViewModel dashboard)
+        {
+            dashboard.NavigationRequested -= Dashboard_OnNavigationRequested;
         }
     }
 
