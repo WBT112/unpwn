@@ -9,7 +9,8 @@ namespace Unpwn.App.Services;
 public sealed class RecoveryVaultLifecycleService :
     IVaultLifecycleService,
     IEncryptedVaultRecordStore,
-    IRecoveryWizardVaultCoordinator
+    IRecoveryWizardVaultCoordinator,
+    IRecoveryWizardPersistenceCoordinator
 {
     private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase
@@ -98,11 +99,12 @@ public sealed class RecoveryVaultLifecycleService :
         }, cancellationToken);
     }
 
-    public async Task ApplyWizardTransitionAsync(
-        RecoverySessionWizardTransition transition,
+    public async Task WriteEncryptedRecordsAtomicallyAsync(
+        IReadOnlyCollection<VaultRecordWrite> writes,
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(writes);
         var vault = _vault;
         if (vault is null || vault.IsLocked)
         {
@@ -112,25 +114,37 @@ public sealed class RecoveryVaultLifecycleService :
         await Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var occurredAt = _clock();
-            switch (transition)
-            {
-                case RecoverySessionWizardTransition.CompleteIncidentIntake:
-                    _wizard.CompleteIncidentIntake(vault, occurredAt);
-                    break;
-                case RecoverySessionWizardTransition.Pause:
-                    _wizard.Pause(vault, occurredAt);
-                    break;
-                case RecoverySessionWizardTransition.Resume:
-                    _wizard.Resume(vault, occurredAt);
-                    break;
-                case RecoverySessionWizardTransition.Archive:
-                    _wizard.Archive(vault, occurredAt);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(transition), transition, "Unknown session transition.");
-            }
+            vault.UpsertRecords(writes);
         }, cancellationToken);
+    }
+
+    public async Task ApplyWizardTransitionAsync(
+        RecoverySessionWizardTransition transition,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        using var prepared = PrepareTransition(transition, _clock());
+        await WriteEncryptedRecordsAtomicallyAsync([prepared.ToWrite()], cancellationToken);
+        CommitPreparedTransition(prepared);
+    }
+
+    public PreparedRecoveryWizardUpdate PrepareTransition(
+        RecoverySessionWizardTransition transition,
+        DateTimeOffset occurredAt)
+    {
+        ThrowIfDisposed();
+        if (!IsVaultUnlocked)
+        {
+            throw new InvalidOperationException("The recovery vault is locked.");
+        }
+
+        return _wizard.PrepareTransition(transition, occurredAt);
+    }
+
+    public void CommitPreparedTransition(PreparedRecoveryWizardUpdate update)
+    {
+        ThrowIfDisposed();
+        _wizard.CommitPreparedTransition(update);
     }
 
     public void SetSessionDisplayName(string? sessionDisplayName)
