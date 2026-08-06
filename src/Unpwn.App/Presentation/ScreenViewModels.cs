@@ -1,5 +1,6 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Import.Csv;
 
 namespace Unpwn.App.Presentation;
 
@@ -121,14 +122,34 @@ public sealed class PlaceholderScreenViewModel(
         statusTitleKey,
         statusMessageKey);
 
-public sealed class CsvImportScreenViewModel(ILocalizationService localization) : LocalizedScreenViewModel(
-    AppRoute.CsvImport,
-    localization,
-    "Screen.Import.Title",
-    "Screen.Import.Description",
-    AppVisualState.Warning,
-    "Screen.Import.StatusTitle",
-    "Screen.Import.StatusMessage");
+public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
+{
+    private readonly IAccountInventoryService _inventory;
+
+    public CsvImportScreenViewModel(
+        IAccountInventoryService inventory,
+        ILocalizationService localization)
+        : base(
+            AppRoute.CsvImport,
+            localization,
+            "Screen.Import.Title",
+            "Screen.Import.Description",
+            AppVisualState.Warning,
+            "Screen.Import.StatusTitle",
+            "Screen.Import.StatusMessage")
+    {
+        _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+    }
+
+    public IReadOnlyList<ExistingAccountReference> ExistingAccounts =>
+        _inventory.GetExistingAccountReferences();
+
+    public Task<AccountInventoryOperationResult> ImportAsync(
+        IReadOnlyCollection<ImportAccountCandidate> candidates,
+        ImportDuplicateResolution? duplicateResolution,
+        CancellationToken cancellationToken) =>
+        _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+}
 
 public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
 {
