@@ -417,7 +417,7 @@ public sealed record RecoverySessionWorkspace(
         new(code, account.AccountId, account.ProviderId, account.RecommendedActionId);
 
     private static void AddAlert(
-        ICollection<RecoveryDashboardAlert> alerts,
+        List<RecoveryDashboardAlert> alerts,
         RecoveryDashboardAlertKind kind,
         RecoveryAccountDashboardEntry account,
         int count)
