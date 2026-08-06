@@ -143,12 +143,12 @@ public sealed class VaultEntryScreenViewModelTests
         RecoveryWizardSessionService wizard,
         ResourceLocalizationService? localization = null,
         TimeSpan? passwordRevealDuration = null) =>
-        new(
-            lifecycle,
-            wizard,
-            new TestConfirmationDialogService(),
-            localization ?? CreateLocalization(),
-            passwordRevealDuration);
+            new(
+                lifecycle,
+                wizard,
+                new TestConfirmationDialogService(),
+                localization ?? CreateLocalization(),
+                passwordRevealDuration);
 
     private sealed class TestConfirmationDialogService : IConfirmationDialogService
     {
