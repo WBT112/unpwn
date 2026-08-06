@@ -164,21 +164,16 @@ public sealed class DashboardScreenViewModelTests
         }
     }
 
-    private sealed class TestRecoverySessionService : IRecoverySessionService
+    private sealed class TestRecoverySessionService(RecoverySessionWorkspace? session = null)
+        : IRecoverySessionService
     {
-        public TestRecoverySessionService(RecoverySessionWorkspace? session = null)
-        {
-            CurrentSession = session;
-            LoadState = session is null
-                ? RecoverySessionLoadState.Empty
-                : RecoverySessionLoadState.Loaded;
-        }
-
         public event EventHandler? SessionChanged;
 
-        public RecoverySessionLoadState LoadState { get; private set; }
+        public RecoverySessionLoadState LoadState { get; private set; } = session is null
+            ? RecoverySessionLoadState.Empty
+            : RecoverySessionLoadState.Loaded;
 
-        public RecoverySessionWorkspace? CurrentSession { get; private set; }
+        public RecoverySessionWorkspace? CurrentSession { get; private set; } = session;
 
         public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();
 
