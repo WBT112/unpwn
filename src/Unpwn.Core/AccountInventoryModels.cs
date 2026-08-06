@@ -251,12 +251,12 @@ public sealed record AccountInventoryState(
         DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(accounts);
-        if (occurredAt < UpdatedAt)
-        {
-            throw new ArgumentOutOfRangeException(nameof(occurredAt));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThan(occurredAt, UpdatedAt);
 
-        var materialized = accounts.Select(account => account.NormalizeAndInfer(occurredAt)).ToArray();
+        AccountInventoryEntry[] materialized =
+        [
+            .. accounts.Select(account => account.NormalizeAndInfer(occurredAt)),
+        ];
         if (materialized.Select(account => account.Id).Distinct().Count() != materialized.Length)
         {
             throw new InvalidOperationException("Inventory account identifiers must be unique.");
@@ -330,7 +330,7 @@ public static class AccountRoleInference
             }
         }
 
-        return existing.Values.OrderBy(role => role.Role).ToArray();
+        return [.. existing.Values.OrderBy(role => role.Role)];
     }
 }
 
@@ -402,7 +402,7 @@ public static class AccountInventoryPlanner
 
         foreach (var account in ordered)
         {
-            var waitingFor = effectiveDependencies[account.Id].ToArray();
+            Guid[] waitingFor = [.. effectiveDependencies[account.Id]];
             var hasOverride = account.Dependencies.Any(dependency => dependency.IsOverride);
             var reason = hasOverride
                 ? AccountInventoryPlanReasonCode.UserOverridePresent
@@ -444,16 +444,18 @@ public static class AccountInventoryPlanner
                     : AccountInventoryPlanReasonCode.DependencyCycle,
                 items.Count + 1,
                 0,
-                effectiveDependencies.GetValueOrDefault(account.Id)?.ToArray() ?? [],
+                effectiveDependencies.TryGetValue(account.Id, out var dependencies)
+                    ? [.. dependencies]
+                    : [],
                 account.Dependencies.Any(dependency => dependency.IsOverride)));
         }
 
-        return new AccountInventoryPlan(items.ToArray(), issues.ToArray());
+        return new AccountInventoryPlan([.. items], [.. issues]);
     }
 
     private static List<AccountInventoryEntry> TopologicalOrder(
         IEnumerable<AccountInventoryEntry> accounts,
-        IReadOnlyDictionary<Guid, List<Guid>> dependencies,
+        Dictionary<Guid, List<Guid>> dependencies,
         IncidentIndicator incidentIndicators)
     {
         var remaining = accounts.ToDictionary(account => account.Id);
@@ -483,7 +485,7 @@ public static class AccountInventoryPlanner
 
     private static Dictionary<Guid, int> CalculateDepths(
         IReadOnlyList<AccountInventoryEntry> ordered,
-        IReadOnlyDictionary<Guid, List<Guid>> dependencies)
+        Dictionary<Guid, List<Guid>> dependencies)
     {
         var depths = new Dictionary<Guid, int>();
         foreach (var account in ordered)
@@ -502,7 +504,7 @@ public static class AccountInventoryPlanner
 
     private static HashSet<Guid> FindCycleAccounts(
         IEnumerable<Guid> accountIds,
-        IReadOnlyDictionary<Guid, List<Guid>> dependencies)
+        Dictionary<Guid, List<Guid>> dependencies)
     {
         var cycleAccounts = new HashSet<Guid>();
         var visiting = new HashSet<Guid>();
@@ -519,7 +521,7 @@ public static class AccountInventoryPlanner
 
     private static void Visit(
         Guid accountId,
-        IReadOnlyDictionary<Guid, List<Guid>> dependencies,
+        Dictionary<Guid, List<Guid>> dependencies,
         HashSet<Guid> visiting,
         HashSet<Guid> visited,
         List<Guid> stack,
@@ -543,9 +545,12 @@ public static class AccountInventoryPlanner
 
         visiting.Add(accountId);
         stack.Add(accountId);
-        foreach (var dependency in dependencies.GetValueOrDefault(accountId) ?? [])
+        if (dependencies.TryGetValue(accountId, out var accountDependencies))
         {
-            Visit(dependency, dependencies, visiting, visited, stack, cycleAccounts);
+            foreach (var dependency in accountDependencies)
+            {
+                Visit(dependency, dependencies, visiting, visited, stack, cycleAccounts);
+            }
         }
 
         stack.RemoveAt(stack.Count - 1);
