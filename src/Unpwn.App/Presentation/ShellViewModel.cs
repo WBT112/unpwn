@@ -10,7 +10,7 @@ public sealed class ShellViewModel : ObservableObject
     private readonly IShellContextService _shellContext;
     private readonly ILocalizationService _localization;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
-    private IReadOnlyList<LanguageOptionViewModel> _languageOptions;
+    private LanguageOptionViewModel[] _languageOptions;
     private NavigationItemViewModel _selectedNavigation;
     private LanguageOptionViewModel _selectedLanguage;
     private ScreenViewModel _currentScreen;
@@ -165,12 +165,12 @@ public sealed class ShellViewModel : ObservableObject
             "I"),
     ];
 
-    private IReadOnlyList<LanguageOptionViewModel> BuildLanguageOptions() =>
-        _localization.SupportedLanguages
-            .Select(language => new LanguageOptionViewModel(
-                language.Code,
-                _localization.GetString(language.DisplayNameKey)))
-            .ToArray();
+    private LanguageOptionViewModel[] BuildLanguageOptions() =>
+    [
+        .. _localization.SupportedLanguages.Select(language => new LanguageOptionViewModel(
+            language.Code,
+            _localization.GetString(language.DisplayNameKey))),
+    ];
 
     private void ShellContext_OnContextChanged(object? sender, EventArgs eventArgs)
     {
