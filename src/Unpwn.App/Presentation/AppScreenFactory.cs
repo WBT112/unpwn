@@ -1,3 +1,4 @@
+using Unpwn.App.Localization;
 using Unpwn.App.Services;
 
 namespace Unpwn.App.Presentation;
@@ -8,48 +9,53 @@ public sealed class AppScreenFactory : IScreenFactory
 
     public AppScreenFactory(
         IConfirmationDialogService confirmationDialog,
-        IShellContextService shellContext)
+        IShellContextService shellContext,
+        ILocalizationService localization)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(shellContext);
+        ArgumentNullException.ThrowIfNull(localization);
 
         _screens = new Dictionary<AppRoute, ScreenViewModel>
         {
-            [AppRoute.VaultEntry] = new VaultEntryScreenViewModel(),
+            [AppRoute.VaultEntry] = new VaultEntryScreenViewModel(localization),
             [AppRoute.Dashboard] = new PlaceholderScreenViewModel(
                 AppRoute.Dashboard,
-                "Recovery dashboard",
-                "Critical-account readiness, progress, and blocked work will be summarized here.",
-                VisualStatusViewModel.Create(
-                    AppVisualState.Normal,
-                    "Dashboard placeholder",
-                    "Unlock a recovery vault to load session progress.")),
+                localization,
+                "Screen.Dashboard.Title",
+                "Screen.Dashboard.Description",
+                AppVisualState.Normal,
+                "Screen.Dashboard.StatusTitle",
+                "Screen.Dashboard.StatusMessage"),
             [AppRoute.Accounts] = new PlaceholderScreenViewModel(
                 AppRoute.Accounts,
-                "Accounts",
-                "Review imported accounts, priorities, and recovery dependencies.",
-                VisualStatusViewModel.Create(
-                    AppVisualState.Normal,
-                    "Account inventory placeholder",
-                    "No account data is loaded while the vault is locked.")),
+                localization,
+                "Screen.Accounts.Title",
+                "Screen.Accounts.Description",
+                AppVisualState.Normal,
+                "Screen.Accounts.StatusTitle",
+                "Screen.Accounts.StatusMessage"),
             [AppRoute.Workflow] = new PlaceholderScreenViewModel(
                 AppRoute.Workflow,
-                "Recovery workflow",
-                "Work through required actions with dependencies and user-visible automation boundaries.",
-                VisualStatusViewModel.Create(
-                    AppVisualState.Blocked,
-                    "Workflow unavailable",
-                    "Select an account from an unlocked recovery session before starting a workflow.")),
+                localization,
+                "Screen.Workflow.Title",
+                "Screen.Workflow.Description",
+                AppVisualState.Blocked,
+                "Screen.Workflow.StatusTitle",
+                "Screen.Workflow.StatusMessage"),
             [AppRoute.CredentialsExport] = new PlaceholderScreenViewModel(
                 AppRoute.CredentialsExport,
-                "Credentials and export",
-                "Review newly generated credentials and export them to an established password manager.",
-                VisualStatusViewModel.Create(
-                    AppVisualState.Warning,
-                    "Plaintext exports require care",
-                    "Export destinations and cleanup must be explicitly confirmed.")),
-            [AppRoute.Completion] = new CompletionScreenViewModel(confirmationDialog, shellContext),
-            [AppRoute.CsvImport] = new CsvImportScreenViewModel(),
+                localization,
+                "Screen.Credentials.Title",
+                "Screen.Credentials.Description",
+                AppVisualState.Warning,
+                "Screen.Credentials.StatusTitle",
+                "Screen.Credentials.StatusMessage"),
+            [AppRoute.Completion] = new CompletionScreenViewModel(
+                confirmationDialog,
+                shellContext,
+                localization),
+            [AppRoute.CsvImport] = new CsvImportScreenViewModel(localization),
         };
     }
 
