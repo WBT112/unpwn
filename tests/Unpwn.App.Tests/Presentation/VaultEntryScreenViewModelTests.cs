@@ -97,15 +97,29 @@ public sealed class VaultEntryScreenViewModelTests
     [Fact]
     public async Task PasswordRevealAutomaticallyEnds()
     {
+        var delay = new TestPresentationDelay();
         var viewModel = CreateViewModel(
             new TestVaultLifecycleService(),
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
-            passwordRevealDuration: TimeSpan.FromMilliseconds(20));
+            passwordRevealDuration: TimeSpan.FromMilliseconds(20),
+            passwordRevealDelay: delay);
+        var passwordHidden = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        viewModel.PropertyChanged += (_, eventArgs) =>
+        {
+            if (eventArgs.PropertyName == nameof(viewModel.IsCreatePasswordRevealed) &&
+                !viewModel.IsCreatePasswordRevealed)
+            {
+                passwordHidden.TrySetResult();
+            }
+        };
 
         viewModel.IsCreatePasswordRevealed = true;
         Assert.True(viewModel.IsCreatePasswordRevealed);
 
-        await Task.Delay(100);
+        await delay.Started;
+        Assert.Equal(TimeSpan.FromMilliseconds(20), delay.RequestedDelay);
+        delay.Complete();
+        await passwordHidden.Task.WaitAsync(TimeSpan.FromSeconds(5));
 
         Assert.False(viewModel.IsCreatePasswordRevealed);
     }
@@ -145,13 +159,34 @@ public sealed class VaultEntryScreenViewModelTests
         TestVaultLifecycleService lifecycle,
         RecoveryWizardSessionService wizard,
         ResourceLocalizationService? localization = null,
-        TimeSpan? passwordRevealDuration = null) =>
+        TimeSpan? passwordRevealDuration = null,
+        IPresentationDelay? passwordRevealDelay = null) =>
         new(
             lifecycle,
             wizard,
             new TestConfirmationDialogService(),
             localization ?? CreateLocalization(),
-            passwordRevealDuration);
+            passwordRevealDuration,
+            passwordRevealDelay);
+
+    private sealed class TestPresentationDelay : IPresentationDelay
+    {
+        private readonly TaskCompletionSource _completed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource _started = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task Started => _started.Task;
+
+        public TimeSpan? RequestedDelay { get; private set; }
+
+        public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+        {
+            RequestedDelay = delay;
+            _started.TrySetResult();
+            return _completed.Task.WaitAsync(cancellationToken);
+        }
+
+        public void Complete() => _completed.TrySetResult();
+    }
 
     private sealed class TestConfirmationDialogService : IConfirmationDialogService
     {

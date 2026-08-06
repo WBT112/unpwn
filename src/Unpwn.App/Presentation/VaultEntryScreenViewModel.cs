@@ -36,6 +36,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     private readonly RecoveryWizardSessionService _wizard;
     private readonly IConfirmationDialogService _confirmationDialog;
     private readonly TimeSpan _passwordRevealDuration;
+    private readonly IPresentationDelay _passwordRevealDelay;
     private VaultEntryStage _stage;
     private string _createPath = string.Empty;
     private string _openPath = string.Empty;
@@ -61,7 +62,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         RecoveryWizardSessionService wizard,
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
-        TimeSpan? passwordRevealDuration = null)
+        TimeSpan? passwordRevealDuration = null,
+        IPresentationDelay? passwordRevealDelay = null)
         : base(
             AppRoute.VaultEntry,
             localization,
@@ -75,6 +77,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         _wizard = wizard ?? throw new ArgumentNullException(nameof(wizard));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         _passwordRevealDuration = passwordRevealDuration ?? TimeSpan.FromSeconds(15);
+        _passwordRevealDelay = passwordRevealDelay ?? SystemPresentationDelay.Instance;
         if (_passwordRevealDuration <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(passwordRevealDuration));
@@ -788,7 +791,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     {
         try
         {
-            await Task.Delay(_passwordRevealDuration, cancellationToken);
+            await _passwordRevealDelay.DelayAsync(_passwordRevealDuration, cancellationToken);
             if (propertyName == nameof(IsCreatePasswordRevealed))
             {
                 IsCreatePasswordRevealed = false;
