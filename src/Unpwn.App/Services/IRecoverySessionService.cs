@@ -22,6 +22,14 @@ public enum RecoverySessionOperationFailureCode
     IoFailure,
 }
 
+public enum RecoverySessionWizardTransition
+{
+    CompleteIncidentIntake,
+    Pause,
+    Resume,
+    Archive,
+}
+
 public sealed record RecoverySessionOperationResult(
     bool Succeeded,
     RecoverySessionOperationFailureCode FailureCode)
@@ -51,6 +59,15 @@ public interface IEncryptedVaultRecordStore
     Task WriteEncryptedRecordAsync(
         VaultRecordDescriptor descriptor,
         ReadOnlyMemory<byte> plaintext,
+        CancellationToken cancellationToken);
+}
+
+public interface IRecoveryWizardVaultCoordinator
+{
+    RecoveryWizardState CurrentWizard { get; }
+
+    Task ApplyWizardTransitionAsync(
+        RecoverySessionWizardTransition transition,
         CancellationToken cancellationToken);
 }
 
