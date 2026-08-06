@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Vault.Welcome.Title" xml:space="preserve"><value>Schritt für Schritt die Kontrolle zurückgewinnen</value></data>
+  <data name="Vault.Welcome.Description" xml:space="preserve"><value>unpwn führt durch die Kontowiederherstellung. Die Anwendung erkennt keine Schadsoftware und kann nicht beweisen, dass ein Gerät oder Konto sicher ist.</value></data>
+  <data name="Vault.Welcome.Begin" xml:space="preserve"><value>Wiederherstellung beginnen</value></data>
+  <data name="Vault.Trusted.Title" xml:space="preserve"><value>Nutzt du ein Gerät, dem du vertraust?</value></data>
+  <data name="Vault.Trusted.Description" xml:space="preserve"><value>Nutze ein anderes, aktualisiertes Gerät, wenn dieser Computer noch von einem Angreifer kontrolliert werden könnte. Deine Antwort ist eine Sicherheitsentscheidung, kein Schadsoftware-Scan.</value></data>
+  <data name="Vault.Trusted.Yes" xml:space="preserve"><value>Ja, auf diesem Gerät fortfahren</value></data>
+  <data name="Vault.Trusted.No" xml:space="preserve"><value>Nein, diesem Gerät vertraue ich nicht</value></data>
+  <data name="Vault.Trusted.Unsure" xml:space="preserve"><value>Ich bin unsicher</value></data>
+  <data name="Vault.Trusted.Back" xml:space="preserve"><value>Zurück</value></data>
+  <data name="Vault.Guidance.Title" xml:space="preserve"><value>Wechsle zuerst auf ein sichereres Gerät</value></data>
+  <data name="Vault.Guidance.Description" xml:space="preserve"><value>Gib hier keine Konto- oder Tresor-Zugangsdaten ein. Nutze ein anderes vertrauenswürdiges Gerät, installiere Betriebssystem- und Browser-Updates und meide verdächtige Browser-Erweiterungen. Starte unpwn anschließend auf diesem Gerät erneut.</value></data>
+  <data name="Vault.Guidance.End" xml:space="preserve"><value>Sicher beenden</value></data>
+  <data name="Vault.Guidance.Reconsider" xml:space="preserve"><value>Antwort noch einmal prüfen</value></data>
+  <data name="Vault.SafetyStopped.Title" xml:space="preserve"><value>Es wurden keine Wiederherstellungsdaten erfasst</value></data>
+  <data name="Vault.SafetyStopped.Description" xml:space="preserve"><value>Dieser Versuch wurde beendet, bevor ein Tresor erstellt oder geöffnet wurde. Fahre nur auf einem vertrauenswürdigen Gerät fort.</value></data>
+  <data name="Vault.SafetyStopped.Restart" xml:space="preserve"><value>Neue Sicherheitsprüfung starten</value></data>
+  <data name="Vault.Choice.Title" xml:space="preserve"><value>Wiederherstellungstresor auswählen</value></data>
+  <data name="Vault.Choice.Description" xml:space="preserve"><value>Der verschlüsselte Tresor speichert den Wiederherstellungsfortschritt und neu erzeugte Zugangsdaten lokal. Er ist ein temporärer Arbeitsbereich und kein Passwortmanager.</value></data>
+  <data name="Vault.Choice.Create" xml:space="preserve"><value>Neuen Tresor erstellen</value></data>
+  <data name="Vault.Choice.Open" xml:space="preserve"><value>Vorhandenen Tresor öffnen</value></data>
+  <data name="Vault.Choice.Back" xml:space="preserve"><value>Gerätesicherheit erneut prüfen</value></data>
+  <data name="Vault.Create.Title" xml:space="preserve"><value>Verschlüsselten Wiederherstellungstresor erstellen</value></data>
+  <data name="Vault.Create.Path" xml:space="preserve"><value>Tresordatei</value></data>
+  <data name="Vault.Create.Browse" xml:space="preserve"><value>Speicherort wählen</value></data>
+  <data name="Vault.Create.Password" xml:space="preserve"><value>Tresorpasswort</value></data>
+  <data name="Vault.Create.ConfirmPassword" xml:space="preserve"><value>Tresorpasswort bestätigen</value></data>
+  <data name="Vault.Create.Reveal" xml:space="preserve"><value>Passwörter kurzzeitig anzeigen</value></data>
+  <data name="Vault.Create.NonRecoverable" xml:space="preserve"><value>Ich verstehe, dass unpwn ein vergessenes Tresorpasswort nicht wiederherstellen kann.</value></data>
+  <data name="Vault.Create.Submit" xml:space="preserve"><value>Tresor erstellen und entsperren</value></data>
+  <data name="Vault.Create.Back" xml:space="preserve"><value>Zurück zur Tresorauswahl</value></data>
+  <data name="Vault.Open.Title" xml:space="preserve"><value>Verschlüsselten Wiederherstellungstresor öffnen</value></data>
+  <data name="Vault.Open.Path" xml:space="preserve"><value>Tresordatei</value></data>
+  <data name="Vault.Open.Browse" xml:space="preserve"><value>Tresordatei auswählen</value></data>
+  <data name="Vault.Open.Password" xml:space="preserve"><value>Tresorpasswort</value></data>
+  <data name="Vault.Open.Reveal" xml:space="preserve"><value>Passwort kurzzeitig anzeigen</value></data>
+  <data name="Vault.Open.Submit" xml:space="preserve"><value>Tresor entsperren</value></data>
+  <data name="Vault.Open.Back" xml:space="preserve"><value>Zurück zur Tresorauswahl</value></data>
+  <data name="Vault.Locked.Title" xml:space="preserve"><value>Wiederherstellungstresor ist gesperrt</value></data>
+  <data name="Vault.Locked.Description" xml:space="preserve"><value>Kontonamen, Fortschritt, Notizen, Vorfalldetails und erzeugte Zugangsdaten bleiben verborgen, bis der Tresor erneut entsperrt wird.</value></data>
+  <data name="Vault.Locked.Password" xml:space="preserve"><value>Tresorpasswort</value></data>
+  <data name="Vault.Locked.Reveal" xml:space="preserve"><value>Passwort kurzzeitig anzeigen</value></data>
+  <data name="Vault.Locked.Unlock" xml:space="preserve"><value>Entsperren und sicher fortsetzen</value></data>
+  <data name="Vault.Unlocked.Title" xml:space="preserve"><value>Tresor entsperrt</value></data>
+  <data name="Vault.Unlocked.Description" xml:space="preserve"><value>Der verschlüsselte Arbeitsbereich ist verfügbar. Der Assistent setzt an einem sicheren Prüfpunkt fort und nimmt niemals automatisch an, dass eine externe Anbieteraktion erfolgreich war.</value></data>
+  <data name="Vault.Unlocked.Continue" xml:space="preserve"><value>Zur Wiederherstellungssitzung</value></data>
+  <data name="Vault.Unlocked.ChangePassword" xml:space="preserve"><value>Tresorpasswort ändern</value></data>
+  <data name="Vault.Change.Title" xml:space="preserve"><value>Tresorpasswort ändern</value></data>
+  <data name="Vault.Change.Current" xml:space="preserve"><value>Aktuelles Tresorpasswort</value></data>
+  <data name="Vault.Change.New" xml:space="preserve"><value>Neues Tresorpasswort</value></data>
+  <data name="Vault.Change.Confirm" xml:space="preserve"><value>Neues Tresorpasswort bestätigen</value></data>
+  <data name="Vault.Change.Reveal" xml:space="preserve"><value>Passwörter kurzzeitig anzeigen</value></data>
+  <data name="Vault.Change.Submit" xml:space="preserve"><value>Passwort ändern</value></data>
+  <data name="Vault.Change.Cancel" xml:space="preserve"><value>Abbrechen</value></data>
+  <data name="Vault.Recent.Title" xml:space="preserve"><value>Zuletzt verwendete Tresore</value></data>
+  <data name="Vault.Recent.Empty" xml:space="preserve"><value>Auf diesem Gerät sind keine zuletzt verwendeten Tresorverweise gespeichert.</value></data>
+  <data name="Vault.Recent.Open" xml:space="preserve"><value>Ausgewählten Tresor verwenden</value></data>
+  <data name="Vault.Recent.Remove" xml:space="preserve"><value>Verweis entfernen</value></data>
+  <data name="Vault.Recent.Delete" xml:space="preserve"><value>Tresordatei löschen</value></data>
+  <data name="Vault.Recent.Item" xml:space="preserve"><value>{0} — zuletzt geöffnet {1:g}</value></data>
+  <data name="Vault.Password.Guidance.Empty" xml:space="preserve"><value>Nutze eine lange, eindeutige Passphrase. Das Einfügen aus einem Passwortmanager wird unterstützt.</value></data>
+  <data name="Vault.Password.Guidance.Short" xml:space="preserve"><value>Dieses Passwort ist kurz. Nutze mindestens 12 Zeichen; besondere Zeichenregeln sind nicht erforderlich.</value></data>
+  <data name="Vault.Password.Guidance.Good" xml:space="preserve"><value>Die Passwortlänge ist ausreichend. Empfohlen wird eine eindeutige Passphrase aus einem Passwortmanager.</value></data>
+  <data name="Vault.Validation.PathRequired" xml:space="preserve"><value>Wähle eine Tresordatei aus.</value></data>
+  <data name="Vault.Validation.PasswordRequired" xml:space="preserve"><value>Gib das Tresorpasswort ein.</value></data>
+  <data name="Vault.Validation.PasswordTooShort" xml:space="preserve"><value>Nutze für ein neues Tresorpasswort mindestens 12 Zeichen.</value></data>
+  <data name="Vault.Validation.PasswordMismatch" xml:space="preserve"><value>Die Passwortbestätigung stimmt nicht überein.</value></data>
+  <data name="Vault.Validation.AcknowledgementRequired" xml:space="preserve"><value>Bestätige, dass das Tresorpasswort nicht wiederhergestellt werden kann.</value></data>
+  <data name="Vault.Result.Created.Title" xml:space="preserve"><value>Tresor erstellt</value></data>
+  <data name="Vault.Result.Created.Message" xml:space="preserve"><value>Der verschlüsselte Tresor wurde erstellt und der Assistent kann fortfahren.</value></data>
+  <data name="Vault.Result.Opened.Title" xml:space="preserve"><value>Tresor entsperrt</value></data>
+  <data name="Vault.Result.Opened.Message" xml:space="preserve"><value>Der Assistent wurde an einem sicheren Prüfpunkt fortgesetzt.</value></data>
+  <data name="Vault.Result.PasswordChanged.Title" xml:space="preserve"><value>Tresorpasswort geändert</value></data>
+  <data name="Vault.Result.PasswordChanged.Message" xml:space="preserve"><value>Der Tresordaten-Schlüssel wurde mit dem neuen Passwort neu verpackt.</value></data>
+  <data name="Vault.Result.ReferenceRemoved.Title" xml:space="preserve"><value>Zuletzt-verwendet-Verweis entfernt</value></data>
+  <data name="Vault.Result.ReferenceRemoved.Message" xml:space="preserve"><value>Die Tresordatei wurde nicht gelöscht.</value></data>
+  <data name="Vault.Result.FileDeleted.Title" xml:space="preserve"><value>Tresordatei gelöscht</value></data>
+  <data name="Vault.Result.FileDeleted.Message" xml:space="preserve"><value>Die ausgewählte lokale Tresordatei wurde gelöscht. Dies ist keine Zusage einer forensischen Löschung.</value></data>
+  <data name="Vault.Failure.Title" xml:space="preserve"><value>Tresoraktion fehlgeschlagen</value></data>
+  <data name="Vault.Failure.InvalidInput" xml:space="preserve"><value>Prüfe den ausgewählten Pfad und die Pflichtfelder.</value></data>
+  <data name="Vault.Failure.AlreadyExists" xml:space="preserve"><value>Am ausgewählten Speicherort existiert bereits ein Tresor. Wähle eine andere Datei oder öffne den vorhandenen Tresor.</value></data>
+  <data name="Vault.Failure.NotFound" xml:space="preserve"><value>Die ausgewählte Tresordatei wurde nicht gefunden.</value></data>
+  <data name="Vault.Failure.AccessDenied" xml:space="preserve"><value>Die Anwendung hat keine Berechtigung für den ausgewählten Speicherort.</value></data>
+  <data name="Vault.Failure.UnsupportedVersion" xml:space="preserve"><value>Diese Tresorversion wird von der installierten Anwendung nicht unterstützt.</value></data>
+  <data name="Vault.Failure.AuthenticationOrIntegrity" xml:space="preserve"><value>Der Tresor konnte nicht entsperrt werden. Das Passwort ist möglicherweise falsch oder der Tresor wurde beschädigt oder verändert.</value></data>
+  <data name="Vault.Failure.IoFailure" xml:space="preserve"><value>Die Tresordatei konnte nicht sicher gelesen oder geschrieben werden.</value></data>
+  <data name="Vault.Failure.CurrentVaultInUse" xml:space="preserve"><value>Sperre den aktuellen Tresor, bevor seine Datei gelöscht wird.</value></data>
+  <data name="Vault.Command.Error" xml:space="preserve"><value>Die Tresoraktion konnte nicht abgeschlossen werden.</value></data>
+  <data name="Vault.FilePicker.Create.Title" xml:space="preserve"><value>Wiederherstellungstresor erstellen</value></data>
+  <data name="Vault.FilePicker.Open.Title" xml:space="preserve"><value>Wiederherstellungstresor öffnen</value></data>
+  <data name="Vault.FilePicker.Type" xml:space="preserve"><value>unpwn-Wiederherstellungstresore</value></data>
+  <data name="Vault.Confirm.Remove.Action" xml:space="preserve"><value>Zuletzt-verwendet-Verweis entfernen</value></data>
+  <data name="Vault.Confirm.Remove.Consequence" xml:space="preserve"><value>Es wird nur der lokale Verweis entfernt. Die Tresordatei bleibt unverändert.</value></data>
+  <data name="Vault.Confirm.Remove.Button" xml:space="preserve"><value>Verweis entfernen</value></data>
+  <data name="Vault.Confirm.Delete.Action" xml:space="preserve"><value>Lokale Tresordatei löschen</value></data>
+  <data name="Vault.Confirm.Delete.Consequence" xml:space="preserve"><value>Die ausgewählte Datei wird gelöscht. Ein vergessenes Passwort kann nicht wiederhergestellt und eine forensische Löschung nicht garantiert werden.</value></data>
+  <data name="Vault.Confirm.Delete.Button" xml:space="preserve"><value>Datei löschen</value></data>
+  <data name="Vault.Inactivity.Warning.Title" xml:space="preserve"><value>Tresor wird bald gesperrt</value></data>
+  <data name="Vault.Inactivity.Warning.Message" xml:space="preserve"><value>Der Wiederherstellungstresor wird um {0:t} gesperrt, sofern keine Aktivität erfolgt.</value></data>
+  <data name="Vault.Inactivity.Locked.Title" xml:space="preserve"><value>Tresor wegen Inaktivität gesperrt</value></data>
+  <data name="Vault.Inactivity.Locked.Message" xml:space="preserve"><value>Entsperre den Tresor, um an einem sicheren Prüfpunkt fortzufahren.</value></data>
+</root>
