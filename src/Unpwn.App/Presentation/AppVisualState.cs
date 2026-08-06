@@ -1,3 +1,5 @@
+using Unpwn.App.Localization;
+
 namespace Unpwn.App.Presentation;
 
 public enum AppVisualState
@@ -17,22 +19,32 @@ public sealed record VisualStatusViewModel(
     string Title,
     string Message)
 {
-    public static VisualStatusViewModel Create(AppVisualState state, string title, string message)
+    public static VisualStatusViewModel Create(
+        AppVisualState state,
+        ILocalizationService localization,
+        string titleKey,
+        string messageKey)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(title);
-        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+        ArgumentNullException.ThrowIfNull(localization);
+        ArgumentException.ThrowIfNullOrWhiteSpace(titleKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(messageKey);
 
-        var (kindLabel, symbol) = state switch
+        var (kindKey, symbol) = state switch
         {
-            AppVisualState.Normal => ("Status", "i"),
-            AppVisualState.Warning => ("Warning", "!"),
-            AppVisualState.Blocked => ("Blocked", "⛔"),
-            AppVisualState.Error => ("Failed", "×"),
-            AppVisualState.Success => ("Success", "✓"),
-            AppVisualState.UnresolvedRisk => ("Unresolved risk", "⚠"),
+            AppVisualState.Normal => ("Status.Normal", "i"),
+            AppVisualState.Warning => ("Status.Warning", "!"),
+            AppVisualState.Blocked => ("Status.Blocked", "⛔"),
+            AppVisualState.Error => ("Status.Error", "×"),
+            AppVisualState.Success => ("Status.Success", "✓"),
+            AppVisualState.UnresolvedRisk => ("Status.UnresolvedRisk", "⚠"),
             _ => throw new ArgumentOutOfRangeException(nameof(state)),
         };
 
-        return new VisualStatusViewModel(state, kindLabel, symbol, title, message);
+        return new VisualStatusViewModel(
+            state,
+            localization.GetString(kindKey),
+            symbol,
+            localization.GetString(titleKey),
+            localization.GetString(messageKey));
     }
 }

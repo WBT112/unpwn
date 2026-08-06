@@ -1,3 +1,5 @@
+using System.Globalization;
+using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
 using Xunit;
@@ -43,6 +45,21 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void LanguageChangeRefreshesShellNavigationAndCurrentScreen()
+    {
+        var localization = CreateLocalization();
+        var shell = CreateShell(new TestShellContextService(), localization);
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts);
+
+        shell.SelectedLanguage = shell.LanguageOptions.Single(option => option.Code == "de");
+
+        Assert.Equal("de", localization.CurrentLanguageCode);
+        Assert.Equal("Kein Tresor entsperrt", shell.VaultContextLabel);
+        Assert.Equal("Konten", shell.SelectedNavigation.Label);
+        Assert.Equal("Konten", shell.CurrentScreen.Title);
+    }
+
+    [Fact]
     public async Task GlobalLockIsAvailableOnlyForUnlockedVaultAndReturnsToVaultEntry()
     {
         var shellContext = new TestShellContextService();
@@ -76,7 +93,10 @@ public sealed class ShellViewModelTests
         });
         var shellContext = new TestShellContextService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
-        var viewModel = new CompletionScreenViewModel(confirmation, shellContext);
+        var viewModel = new CompletionScreenViewModel(
+            confirmation,
+            shellContext,
+            CreateLocalization());
 
         var firstExecution = viewModel.ReviewCompletionCommand.ExecuteAsync();
         await started.Task;
@@ -95,20 +115,22 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
-    public async Task FailedCompletionCommandExposesOnlyStaticSafeMessage()
+    public async Task FailedCompletionCommandUsesCurrentLanguageAndExposesNoSourceMessage()
     {
         const string sourceError = "UNPWN_TEST_SECRET_dialog-failure";
         var confirmation = new TestConfirmationDialogService((_, _) =>
             Task.FromException<bool>(new InvalidOperationException(sourceError)));
         var shellContext = new TestShellContextService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
-        var viewModel = new CompletionScreenViewModel(confirmation, shellContext);
+        var localization = CreateLocalization();
+        var viewModel = new CompletionScreenViewModel(confirmation, shellContext, localization);
+        localization.SetLanguage("de");
 
         var outcome = await viewModel.ReviewCompletionCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Failed, outcome);
         Assert.Equal(
-            "The completion confirmation could not be opened.",
+            "Die Abschlussbestätigung konnte nicht geöffnet werden.",
             viewModel.ReviewCompletionCommand.LastErrorMessage);
         Assert.DoesNotContain(sourceError, viewModel.ReviewCompletionCommand.LastErrorMessage, StringComparison.Ordinal);
         Assert.True(viewModel.ReviewCompletionCommand.HasError);
@@ -116,7 +138,7 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
-    public async Task ConfirmationNamesExactActionAndAffectedItem()
+    public async Task ConfirmationNamesExactLocalizedActionAndAffectedItem()
     {
         SensitiveConfirmationRequest? observedRequest = null;
         var confirmation = new TestConfirmationDialogService((request, _) =>
@@ -126,22 +148,30 @@ public sealed class ShellViewModelTests
         });
         var shellContext = new TestShellContextService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
-        var viewModel = new CompletionScreenViewModel(confirmation, shellContext);
+        var localization = CreateLocalization();
+        localization.SetLanguage("de");
+        var viewModel = new CompletionScreenViewModel(confirmation, shellContext, localization);
 
         var outcome = await viewModel.ReviewCompletionCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
         Assert.NotNull(observedRequest);
-        Assert.Equal("Complete recovery session", observedRequest.Action);
+        Assert.Equal("Wiederherstellungssitzung abschließen", observedRequest.Action);
         Assert.Equal("Synthetic recovery session", observedRequest.AffectedItem);
+        Assert.Equal("SICHERHEITSRELEVANTE AKTION", observedRequest.RiskLabel);
         Assert.Equal(AppVisualState.Normal, viewModel.Status.State);
     }
 
     [Fact]
-    public void RiskStatesHaveTextAndSymbolsThatDoNotDependOnColor()
+    public void RiskStatesHaveLocalizedTextAndDistinctSymbols()
     {
+        var localization = CreateLocalization();
         var states = Enum.GetValues<AppVisualState>()
-            .Select(state => VisualStatusViewModel.Create(state, "Synthetic title", "Synthetic message"))
+            .Select(state => VisualStatusViewModel.Create(
+                state,
+                localization,
+                "Screen.Vault.StatusTitle",
+                "Screen.Vault.StatusMessage"))
             .ToArray();
 
         Assert.Equal(states.Length, states.Select(state => state.KindLabel).Distinct(StringComparer.Ordinal).Count());
@@ -153,10 +183,19 @@ public sealed class ShellViewModelTests
             state => state.State == AppVisualState.UnresolvedRisk && state.KindLabel == "Unresolved risk");
     }
 
-    private static ShellViewModel CreateShell(TestShellContextService shellContext)
+    private static ResourceLocalizationService CreateLocalization() =>
+        new(CultureInfo.GetCultureInfo("en"));
+
+    private static ShellViewModel CreateShell(
+        TestShellContextService shellContext,
+        ResourceLocalizationService? localization = null)
     {
+        localization ??= CreateLocalization();
         var confirmation = new TestConfirmationDialogService((_, _) => Task.FromResult(false));
-        return new ShellViewModel(new AppScreenFactory(confirmation, shellContext), shellContext);
+        return new ShellViewModel(
+            new AppScreenFactory(confirmation, shellContext, localization),
+            shellContext,
+            localization);
     }
 
     private sealed class TestConfirmationDialogService(

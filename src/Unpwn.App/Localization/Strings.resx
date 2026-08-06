@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="App.WindowTitle" xml:space="preserve"><value>unpwn — Recovery workspace</value></data>
+  <data name="Common.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Common.Failed" xml:space="preserve"><value>FAILED</value></data>
+  <data name="Completion.Canceled.Message" xml:space="preserve"><value>No recovery-session state was changed.</value></data>
+  <data name="Completion.Canceled.Title" xml:space="preserve"><value>Completion canceled</value></data>
+  <data name="Completion.Command.Error" xml:space="preserve"><value>The completion confirmation could not be opened.</value></data>
+  <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Complete recovery session</value></data>
+  <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Continue to completion review</value></data>
+  <data name="Completion.Confirmation.Consequence" xml:space="preserve"><value>Blocked work and unresolved risks will remain recorded in the final recovery status.</value></data>
+  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>This placeholder confirms only the UI flow; functional session completion is not implemented yet.</value></data>
+  <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Confirmation recorded</value></data>
+  <data name="Completion.Review.Button" xml:space="preserve"><value>Review completion confirmation</value></data>
+  <data name="Completion.Section.Description" xml:space="preserve"><value>The confirmation names the exact action and affected recovery session. Functional completion remains out of scope.</value></data>
+  <data name="Completion.Section.Title" xml:space="preserve"><value>Sensitive confirmation foundation</value></data>
+  <data name="Completion.UnlockHint" xml:space="preserve"><value>Unlock a vault before reviewing session completion.</value></data>
+  <data name="Confirmation.AffectedItem" xml:space="preserve"><value>AFFECTED ITEM</value></data>
+  <data name="Confirmation.Consequence" xml:space="preserve"><value>CONSEQUENCE</value></data>
+  <data name="Confirmation.PageTitle" xml:space="preserve"><value>Confirm action</value></data>
+  <data name="Confirmation.Risk.Destructive" xml:space="preserve"><value>DESTRUCTIVE ACTION</value></data>
+  <data name="Confirmation.Risk.Sensitive" xml:space="preserve"><value>SENSITIVE ACTION</value></data>
+  <data name="Confirmation.WindowTitle" xml:space="preserve"><value>Confirm sensitive action</value></data>
+  <data name="Import.Candidate.Duplicate" xml:space="preserve"><value> — possible duplicate ({0})</value></data>
+  <data name="Import.Candidate.Row" xml:space="preserve"><value>Row {0}: {1} — {2}{3}</value></data>
+  <data name="Import.ChooseFile.Button" xml:space="preserve"><value>Choose CSV file</value></data>
+  <data name="Import.Diagnostic.DuplicateHeader" xml:space="preserve"><value>The CSV header contains duplicate column names.</value></data>
+  <data name="Import.Diagnostic.InvalidAccountUrl" xml:space="preserve"><value>The row contains an invalid or unsupported account URL.</value></data>
+  <data name="Import.Diagnostic.MalformedHeader" xml:space="preserve"><value>The CSV header is malformed or contains an empty column name.</value></data>
+  <data name="Import.Diagnostic.MalformedRow" xml:space="preserve"><value>The row is malformed or has an unexpected number of columns.</value></data>
+  <data name="Import.Diagnostic.MissingAccountMapping" xml:space="preserve"><value>Map either a login identifier or an account name column.</value></data>
+  <data name="Import.Diagnostic.MissingAccountValue" xml:space="preserve"><value>The row does not contain a login identifier or account name.</value></data>
+  <data name="Import.Diagnostic.MissingHeader" xml:space="preserve"><value>The CSV source does not contain a header row.</value></data>
+  <data name="Import.Diagnostic.MissingMappedColumn" xml:space="preserve"><value>The mapping references a column that is not present in the CSV header.</value></data>
+  <data name="Import.Diagnostic.MissingServiceMapping" xml:space="preserve"><value>Map either a service name or an account URL column.</value></data>
+  <data name="Import.Diagnostic.MissingServiceValue" xml:space="preserve"><value>The row does not contain a service name or account URL.</value></data>
+  <data name="Import.Diagnostic.PasswordColumnMapped" xml:space="preserve"><value>A detected password column cannot be mapped to an account field.</value></data>
+  <data name="Import.Diagnostic.PasswordColumnNotExcluded" xml:space="preserve"><value>Every detected password column must be explicitly excluded before previewing the import.</value></data>
+  <data name="Import.Diagnostic.PasswordColumnsDetected" xml:space="preserve"><value>The source contains password columns. Old passwords are excluded and will not be imported.</value></data>
+  <data name="Import.Diagnostic.RepeatedMappedColumn" xml:space="preserve"><value>A source column cannot be mapped to more than one account field.</value></data>
+  <data name="Import.Diagnostic.WithRow" xml:space="preserve"><value>{0}: row {1}: {2}</value></data>
+  <data name="Import.Diagnostic.WithoutRow" xml:space="preserve"><value>{0}: {1}</value></data>
+  <data name="Import.Duplicate.ExistingAccount" xml:space="preserve"><value>existing account</value></data>
+  <data name="Import.Duplicate.WithinAndExisting" xml:space="preserve"><value>within import and existing account</value></data>
+  <data name="Import.Duplicate.WithinImport" xml:space="preserve"><value>within import</value></data>
+  <data name="Import.FilePicker.Title" xml:space="preserve"><value>Choose account CSV file</value></data>
+  <data name="Import.FilePicker.Type" xml:space="preserve"><value>CSV files</value></data>
+  <data name="Import.Mapping.Account" xml:space="preserve"><value>Account name</value></data>
+  <data name="Import.Mapping.Login" xml:space="preserve"><value>Username or email</value></data>
+  <data name="Import.Mapping.None" xml:space="preserve"><value>(not mapped)</value></data>
+  <data name="Import.Mapping.Service" xml:space="preserve"><value>Service name</value></data>
+  <data name="Import.Mapping.Url" xml:space="preserve"><value>Account URL</value></data>
+  <data name="Import.NoFile" xml:space="preserve"><value>No file selected</value></data>
+  <data name="Import.Password.Exclude" xml:space="preserve"><value>Exclude all detected password columns from this import</value></data>
+  <data name="Import.Password.Warning" xml:space="preserve"><value>The source contains password columns. Old passwords are excluded and will not be imported. Detected: {0}</value></data>
+  <data name="Import.Preview.Create" xml:space="preserve"><value>Create import preview</value></data>
+  <data name="Import.Preview.Initial" xml:space="preserve"><value>Select a CSV file and create a preview.</value></data>
+  <data name="Import.Preview.MappingReview" xml:space="preserve"><value>Review the mapping, then create the import preview.</value></data>
+  <data name="Import.Preview.NotReady" xml:space="preserve"><value>The preview is not ready to import. Review the diagnostics and mapping.</value></data>
+  <data name="Import.Preview.ValidAccounts.One" xml:space="preserve"><value>{0} valid account; {1} duplicate candidate(s). No old passwords will be imported.</value></data>
+  <data name="Import.Preview.ValidAccounts.Other" xml:space="preserve"><value>{0} valid accounts; {1} duplicate candidate(s). No old passwords will be imported.</value></data>
+  <data name="Import.Preview.ValidAccounts.Zero" xml:space="preserve"><value>No valid accounts; {1} duplicate candidate(s). No old passwords will be imported.</value></data>
+  <data name="Import.ReadFailure" xml:space="preserve"><value>The selected CSV file could not be read.</value></data>
+  <data name="Import.SelectAnother" xml:space="preserve"><value>Select another CSV file.</value></data>
+  <data name="Import.Severity.Error" xml:space="preserve"><value>Error</value></data>
+  <data name="Import.Severity.Information" xml:space="preserve"><value>Information</value></data>
+  <data name="Import.Severity.Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Import.Step.Mapping" xml:space="preserve"><value>2. Map columns</value></data>
+  <data name="Import.Step.Review" xml:space="preserve"><value>3. Review preview</value></data>
+  <data name="Import.Step.Source" xml:space="preserve"><value>1. Select source</value></data>
+  <data name="Import.UnknownAccount" xml:space="preserve"><value>(unknown account)</value></data>
+  <data name="Import.UnknownService" xml:space="preserve"><value>(unknown service)</value></data>
+  <data name="Language.English" xml:space="preserve"><value>English</value></data>
+  <data name="Language.German" xml:space="preserve"><value>Deutsch</value></data>
+  <data name="Language.Pseudo" xml:space="preserve"><value>Pseudo</value></data>
+  <data name="Screen.Accounts.Description" xml:space="preserve"><value>Review imported accounts, priorities, and recovery dependencies.</value></data>
+  <data name="Screen.Accounts.StatusMessage" xml:space="preserve"><value>No account data is loaded while the vault is locked.</value></data>
+  <data name="Screen.Accounts.StatusTitle" xml:space="preserve"><value>Account inventory placeholder</value></data>
+  <data name="Screen.Accounts.Title" xml:space="preserve"><value>Accounts</value></data>
+  <data name="Screen.Completion.Description" xml:space="preserve"><value>Review incomplete work, unresolved risks, and remaining credential exports before ending the session.</value></data>
+  <data name="Screen.Completion.StatusMessage" xml:space="preserve"><value>A session can be completed with unresolved risks only after an explicit confirmation.</value></data>
+  <data name="Screen.Completion.StatusTitle" xml:space="preserve"><value>Completion requires review</value></data>
+  <data name="Screen.Completion.Title" xml:space="preserve"><value>Complete recovery</value></data>
+  <data name="Screen.Credentials.Description" xml:space="preserve"><value>Review newly generated credentials and export them to an established password manager.</value></data>
+  <data name="Screen.Credentials.StatusMessage" xml:space="preserve"><value>Export destinations and cleanup must be explicitly confirmed.</value></data>
+  <data name="Screen.Credentials.StatusTitle" xml:space="preserve"><value>Plaintext exports require care</value></data>
+  <data name="Screen.Credentials.Title" xml:space="preserve"><value>Credentials and export</value></data>
+  <data name="Screen.Dashboard.Description" xml:space="preserve"><value>Critical-account readiness, progress, and blocked work will be summarized here.</value></data>
+  <data name="Screen.Dashboard.StatusMessage" xml:space="preserve"><value>Unlock a recovery vault to load session progress.</value></data>
+  <data name="Screen.Dashboard.StatusTitle" xml:space="preserve"><value>Dashboard placeholder</value></data>
+  <data name="Screen.Dashboard.Title" xml:space="preserve"><value>Recovery dashboard</value></data>
+  <data name="Screen.Import.Description" xml:space="preserve"><value>Map account fields from a CSV file without importing old passwords.</value></data>
+  <data name="Screen.Import.StatusMessage" xml:space="preserve"><value>The import preview requires explicit exclusion of every detected password column.</value></data>
+  <data name="Screen.Import.StatusTitle" xml:space="preserve"><value>Password columns are excluded</value></data>
+  <data name="Screen.Import.Title" xml:space="preserve"><value>Import account inventory</value></data>
+  <data name="Screen.Vault.Description" xml:space="preserve"><value>Create or unlock a local recovery vault to begin. No recovery data is loaded while the vault is locked.</value></data>
+  <data name="Screen.Vault.StatusMessage" xml:space="preserve"><value>unpwn cannot detect or remove malware. Begin recovery only after moving to a device you trust.</value></data>
+  <data name="Screen.Vault.StatusTitle" xml:space="preserve"><value>Use a trusted device</value></data>
+  <data name="Screen.Vault.Title" xml:space="preserve"><value>Open your recovery workspace</value></data>
+  <data name="Screen.Workflow.Description" xml:space="preserve"><value>Work through required actions with dependencies and user-visible automation boundaries.</value></data>
+  <data name="Screen.Workflow.StatusMessage" xml:space="preserve"><value>Select an account from an unlocked recovery session before starting a workflow.</value></data>
+  <data name="Screen.Workflow.StatusTitle" xml:space="preserve"><value>Workflow unavailable</value></data>
+  <data name="Screen.Workflow.Title" xml:space="preserve"><value>Recovery workflow</value></data>
+  <data name="Shell.Context.NoSession" xml:space="preserve"><value>No recovery session</value></data>
+  <data name="Shell.Context.NoVault" xml:space="preserve"><value>No vault unlocked</value></data>
+  <data name="Shell.Language.Label" xml:space="preserve"><value>Language</value></data>
+  <data name="Shell.Lock.Button" xml:space="preserve"><value>Lock vault</value></data>
+  <data name="Shell.Lock.Error" xml:space="preserve"><value>The recovery vault could not be locked.</value></data>
+  <data name="Shell.Lock.FailedTitle" xml:space="preserve"><value>Vault lock failed</value></data>
+  <data name="Shell.Lock.StatusMessage" xml:space="preserve"><value>Recovery data is no longer available in the application shell.</value></data>
+  <data name="Shell.Lock.StatusTitle" xml:space="preserve"><value>Vault locked</value></data>
+  <data name="Shell.Navigation.Accounts.Description" xml:space="preserve"><value>Inventory and priorities</value></data>
+  <data name="Shell.Navigation.Accounts.Label" xml:space="preserve"><value>Accounts</value></data>
+  <data name="Shell.Navigation.Completion.Description" xml:space="preserve"><value>Final review</value></data>
+  <data name="Shell.Navigation.Completion.Label" xml:space="preserve"><value>Completion</value></data>
+  <data name="Shell.Navigation.Credentials.Description" xml:space="preserve"><value>New credentials and export</value></data>
+  <data name="Shell.Navigation.Credentials.Label" xml:space="preserve"><value>Credentials</value></data>
+  <data name="Shell.Navigation.Dashboard.Description" xml:space="preserve"><value>Recovery overview</value></data>
+  <data name="Shell.Navigation.Dashboard.Label" xml:space="preserve"><value>Dashboard</value></data>
+  <data name="Shell.Navigation.Import.Description" xml:space="preserve"><value>Import account inventory</value></data>
+  <data name="Shell.Navigation.Import.Label" xml:space="preserve"><value>CSV import</value></data>
+  <data name="Shell.Navigation.Vault.Description" xml:space="preserve"><value>Open or create workspace</value></data>
+  <data name="Shell.Navigation.Vault.Label" xml:space="preserve"><value>Vault</value></data>
+  <data name="Shell.Navigation.Workflow.Description" xml:space="preserve"><value>Recovery actions</value></data>
+  <data name="Shell.Navigation.Workflow.Label" xml:space="preserve"><value>Workflow</value></data>
+  <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>RECOVERY WORKSPACE</value></data>
+  <data name="Status.Blocked" xml:space="preserve"><value>Blocked</value></data>
+  <data name="Status.Error" xml:space="preserve"><value>Failed</value></data>
+  <data name="Status.Normal" xml:space="preserve"><value>Status</value></data>
+  <data name="Status.Success" xml:space="preserve"><value>Success</value></data>
+  <data name="Status.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk</value></data>
+  <data name="Status.Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Vault.Create.Button" xml:space="preserve"><value>Create vault</value></data>
+  <data name="Vault.Create.Tooltip" xml:space="preserve"><value>Vault creation is not implemented in this shell issue.</value></data>
+  <data name="Vault.Open.Button" xml:space="preserve"><value>Open existing vault</value></data>
+  <data name="Vault.Open.Tooltip" xml:space="preserve"><value>Vault unlock is not implemented in this shell issue.</value></data>
+  <data name="Vault.Section.Description" xml:space="preserve"><value>Vault creation and unlock operations will be connected in the dedicated vault-entry implementation.</value></data>
+  <data name="Vault.Section.Title" xml:space="preserve"><value>Recovery vault</value></data>
+</root>

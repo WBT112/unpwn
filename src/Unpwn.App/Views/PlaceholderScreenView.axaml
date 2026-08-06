@@ -11,15 +11,5 @@
     </StackPanel>
 
     <views:StatusBannerView DataContext="{Binding Status}" />
-
-    <Border Padding="20"
-            CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="8">
-        <TextBlock Classes="section-title" Text="MVP route placeholder" />
-        <TextBlock Text="This route is part of the stable shell. Functional recovery behavior remains in its dedicated application use case."
-                   TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
   </StackPanel>
 </UserControl>

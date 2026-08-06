@@ -3,7 +3,7 @@
         xmlns:services="using:Unpwn.App.Services"
         x:Class="Unpwn.App.Views.ConfirmationDialog"
         x:DataType="services:SensitiveConfirmationRequest"
-        Title="Confirm sensitive action"
+        Title="{DynamicResource Confirmation.WindowTitle}"
         Width="520"
         Height="330"
         MinWidth="420"
@@ -13,7 +13,7 @@
         WindowStartupLocation="CenterOwner">
   <Grid Margin="24" RowDefinitions="*,Auto" RowSpacing="20">
     <StackPanel Grid.Row="0" Spacing="12">
-      <TextBlock Classes="page-title" Text="Confirm action" />
+      <TextBlock Classes="page-title" Text="{DynamicResource Confirmation.PageTitle}" />
       <Border Padding="14"
               BorderBrush="#B26A00"
               BorderThickness="5,1,1,1"
@@ -21,9 +21,9 @@
         <StackPanel Spacing="8">
           <TextBlock FontSize="12" FontWeight="Bold" Text="{Binding RiskLabel}" />
           <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding Action}" TextWrapping="Wrap" />
-          <TextBlock FontSize="12" FontWeight="Bold" Text="AFFECTED ITEM" />
+          <TextBlock FontSize="12" FontWeight="Bold" Text="{DynamicResource Confirmation.AffectedItem}" />
           <TextBlock Text="{Binding AffectedItem}" TextWrapping="Wrap" />
-          <TextBlock FontSize="12" FontWeight="Bold" Text="CONSEQUENCE" />
+          <TextBlock FontSize="12" FontWeight="Bold" Text="{DynamicResource Confirmation.Consequence}" />
           <TextBlock Text="{Binding Consequence}" TextWrapping="Wrap" />
         </StackPanel>
       </Border>
@@ -32,7 +32,9 @@
                 HorizontalAlignment="Right"
                 Orientation="Horizontal"
                 Spacing="10">
-      <Button TabIndex="0" Click="CancelButton_OnClick" Content="Cancel" />
+      <Button TabIndex="0"
+              Click="CancelButton_OnClick"
+              Content="{DynamicResource Common.Cancel}" />
       <Button TabIndex="1"
               Click="ConfirmButton_OnClick"
               Content="{Binding ConfirmLabel}" />

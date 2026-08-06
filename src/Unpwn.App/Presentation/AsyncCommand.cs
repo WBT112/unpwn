@@ -19,7 +19,7 @@ public sealed class AsyncCommand : ObservableObject, ICommand
 {
     private readonly Func<CancellationToken, Task> _execute;
     private readonly Func<bool>? _canExecute;
-    private readonly string _safeFailureMessage;
+    private readonly Func<string> _safeFailureMessageProvider;
     private readonly RelayCommand _cancelCommand;
     private CancellationTokenSource? _cancellation;
     private int _executionGate;
@@ -31,12 +31,21 @@ public sealed class AsyncCommand : ObservableObject, ICommand
         Func<CancellationToken, Task> execute,
         string safeFailureMessage,
         Func<bool>? canExecute = null)
+        : this(execute, () => safeFailureMessage, canExecute)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(safeFailureMessage);
+    }
+
+    public AsyncCommand(
+        Func<CancellationToken, Task> execute,
+        Func<string> safeFailureMessageProvider,
+        Func<bool>? canExecute = null)
     {
         ArgumentNullException.ThrowIfNull(execute);
-        ArgumentException.ThrowIfNullOrWhiteSpace(safeFailureMessage);
+        ArgumentNullException.ThrowIfNull(safeFailureMessageProvider);
 
         _execute = execute;
-        _safeFailureMessage = safeFailureMessage;
+        _safeFailureMessageProvider = safeFailureMessageProvider;
         _canExecute = canExecute;
         _cancelCommand = new RelayCommand(Cancel, () => CanBeCanceled);
     }
@@ -119,7 +128,10 @@ public sealed class AsyncCommand : ObservableObject, ICommand
         }
         catch (Exception)
         {
-            LastErrorMessage = _safeFailureMessage;
+            var safeFailureMessage = _safeFailureMessageProvider();
+            LastErrorMessage = string.IsNullOrWhiteSpace(safeFailureMessage)
+                ? throw new InvalidOperationException("The safe failure message provider returned no message.")
+                : safeFailureMessage;
             outcome = AsyncCommandOutcome.Failed;
         }
         finally

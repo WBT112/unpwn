@@ -1,21 +1,33 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Unpwn.App.Localization;
+using Unpwn.App.Presentation;
 using Unpwn.Import.Csv;
 
 namespace Unpwn.App.Views;
 
 public partial class CsvImportView : UserControl
 {
-    private const string NoMapping = "(not mapped)";
     private IStorageFile? _selectedFile;
     private CsvImportAnalysis? _analysis;
+    private ILocalizationService? _localization;
+    private IReadOnlyList<CsvImportDiagnostic> _lastDiagnostics = [];
+    private IReadOnlyList<ImportAccountCandidate> _lastCandidates = [];
+    private PreviewSummaryState _previewSummaryState = PreviewSummaryState.Initial;
+    private int _validCandidateCount;
+    private int _duplicateCandidateCount;
+    private bool _hasReadFailure;
 
     public CsvImportView()
     {
         InitializeComponent();
-        SetMappingOptions([]);
+        DataContextChanged += CsvImportView_OnDataContextChanged;
+        SetEmptyMappingOptions();
     }
+
+    private ILocalizationService Localization => _localization
+        ?? throw new InvalidOperationException("CSV import localization is unavailable.");
 
     private async void OpenCsvButton_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
@@ -28,11 +40,11 @@ public partial class CsvImportView : UserControl
 
         var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
-            Title = "Choose account CSV file",
+            Title = Localization.GetString("Import.FilePicker.Title"),
             AllowMultiple = false,
             FileTypeFilter =
             [
-                new FilePickerFileType("CSV files")
+                new FilePickerFileType(Localization.GetString("Import.FilePicker.Type"))
                 {
                     Patterns = ["*.csv"],
                     MimeTypes = ["text/csv", "text/plain"],
@@ -63,21 +75,23 @@ public partial class CsvImportView : UserControl
             return;
         }
 
+        _hasReadFailure = false;
         SelectedFileText.Text = _selectedFile.Name;
         ExcludePasswordsCheckBox.IsChecked = false;
         PasswordWarningBorder.IsVisible = _analysis.ContainsPasswordColumns;
-        PasswordWarningText.Text = _analysis.ContainsPasswordColumns
-            ? $"{CsvImportAnalysis.PasswordWarning} Detected: {string.Join(", ", _analysis.DetectedPasswordColumns)}"
-            : string.Empty;
+        RefreshPasswordWarning();
 
         SetMappingOptions(_analysis.Headers);
         SelectMapping(ServiceNameColumnCombo, _analysis.SuggestedMapping.ServiceNameColumn);
         SelectMapping(AccountNameColumnCombo, _analysis.SuggestedMapping.AccountNameColumn);
         SelectMapping(LoginIdentifierColumnCombo, _analysis.SuggestedMapping.LoginIdentifierColumn);
         SelectMapping(AccountUrlColumnCombo, _analysis.SuggestedMapping.AccountUrlColumn);
-        ShowDiagnostics(_analysis.Diagnostics);
+        _lastDiagnostics = _analysis.Diagnostics;
+        _lastCandidates = [];
+        ShowDiagnostics();
         PreviewItems.ItemsSource = null;
-        PreviewSummaryText.Text = "Review the mapping, then create the import preview.";
+        _previewSummaryState = PreviewSummaryState.MappingReview;
+        RefreshPreviewSummary();
         RefreshPreviewButton();
     }
 
@@ -116,12 +130,80 @@ public partial class CsvImportView : UserControl
             return;
         }
 
-        ShowDiagnostics(preview.Diagnostics);
-        PreviewItems.ItemsSource = preview.Candidates.Select(FormatCandidate).ToArray();
-        var duplicateCount = preview.Candidates.Count(candidate => candidate.DuplicateKind != CsvDuplicateKind.None);
-        PreviewSummaryText.Text = preview.CanImport
-            ? $"{preview.Candidates.Count} valid account(s); {duplicateCount} duplicate candidate(s). No old passwords will be imported."
-            : "The preview is not ready to import. Review the diagnostics and mapping.";
+        _lastDiagnostics = preview.Diagnostics;
+        _lastCandidates = preview.Candidates;
+        ShowDiagnostics();
+        ShowCandidates();
+        _validCandidateCount = preview.Candidates.Count;
+        _duplicateCandidateCount = preview.Candidates.Count(candidate =>
+            candidate.DuplicateKind != CsvDuplicateKind.None);
+        _previewSummaryState = preview.CanImport
+            ? PreviewSummaryState.Valid
+            : PreviewSummaryState.NotReady;
+        RefreshPreviewSummary();
+    }
+
+    private void CsvImportView_OnDataContextChanged(object? sender, EventArgs eventArgs)
+    {
+        if (_localization is { } previousLocalization)
+        {
+            previousLocalization.CultureChanged -= Localization_OnCultureChanged;
+        }
+
+        _localization = (DataContext as CsvImportScreenViewModel)?.Localization;
+        if (_localization is null)
+        {
+            SetEmptyMappingOptions();
+            return;
+        }
+
+        _localization.CultureChanged += Localization_OnCultureChanged;
+        SetMappingOptions(_analysis?.Headers ?? []);
+        RefreshLocalizedContent();
+    }
+
+    private void Localization_OnCultureChanged(object? sender, EventArgs eventArgs)
+    {
+        var serviceMapping = GetMapping(ServiceNameColumnCombo);
+        var accountMapping = GetMapping(AccountNameColumnCombo);
+        var loginMapping = GetMapping(LoginIdentifierColumnCombo);
+        var urlMapping = GetMapping(AccountUrlColumnCombo);
+
+        SetMappingOptions(_analysis?.Headers ?? []);
+        SelectMapping(ServiceNameColumnCombo, serviceMapping);
+        SelectMapping(AccountNameColumnCombo, accountMapping);
+        SelectMapping(LoginIdentifierColumnCombo, loginMapping);
+        SelectMapping(AccountUrlColumnCombo, urlMapping);
+        RefreshLocalizedContent();
+    }
+
+    private void RefreshLocalizedContent()
+    {
+        if (_localization is null)
+        {
+            return;
+        }
+
+        if (_selectedFile is null)
+        {
+            SelectedFileText.Text = Localization.GetString(
+                _hasReadFailure ? "Import.ReadFailure" : "Import.NoFile");
+        }
+
+        RefreshPasswordWarning();
+        ShowDiagnostics();
+        ShowCandidates();
+        RefreshPreviewSummary();
+        RefreshPreviewButton();
+    }
+
+    private void RefreshPasswordWarning()
+    {
+        PasswordWarningText.Text = _analysis?.ContainsPasswordColumns == true
+            ? Localization.Format(
+                "Import.Password.Warning",
+                string.Join(", ", _analysis.DetectedPasswordColumns))
+            : string.Empty;
     }
 
     private void ExcludePasswordsCheckBox_OnIsCheckedChanged(object? sender, RoutedEventArgs eventArgs) =>
@@ -130,9 +212,26 @@ public partial class CsvImportView : UserControl
     private void MappingCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs eventArgs) =>
         RefreshPreviewButton();
 
+    private void SetEmptyMappingOptions()
+    {
+        var options = Array.Empty<string>();
+        ServiceNameColumnCombo.ItemsSource = options;
+        AccountNameColumnCombo.ItemsSource = options;
+        LoginIdentifierColumnCombo.ItemsSource = options;
+        AccountUrlColumnCombo.ItemsSource = options;
+    }
+
     private void SetMappingOptions(IReadOnlyList<string> headers)
     {
-        var options = new[] { NoMapping }.Concat(headers).ToArray();
+        if (_localization is null)
+        {
+            SetEmptyMappingOptions();
+            return;
+        }
+
+        var options = new[] { Localization.GetString("Import.Mapping.None") }
+            .Concat(headers)
+            .ToArray();
         ServiceNameColumnCombo.ItemsSource = options;
         AccountNameColumnCombo.ItemsSource = options;
         LoginIdentifierColumnCombo.ItemsSource = options;
@@ -144,11 +243,22 @@ public partial class CsvImportView : UserControl
         AccountUrlColumnCombo.SelectedIndex = 0;
     }
 
-    private static void SelectMapping(ComboBox comboBox, string? mapping) =>
-        comboBox.SelectedItem = mapping ?? NoMapping;
+    private static void SelectMapping(ComboBox comboBox, string? mapping)
+    {
+        if (mapping is null)
+        {
+            comboBox.SelectedIndex = 0;
+            return;
+        }
+
+        var options = comboBox.ItemsSource?.Cast<string>().ToArray() ?? [];
+        var index = Array.FindIndex(options, option =>
+            string.Equals(option, mapping, StringComparison.Ordinal));
+        comboBox.SelectedIndex = index >= 1 ? index : 0;
+    }
 
     private static string? GetMapping(ComboBox comboBox) =>
-        comboBox.SelectedItem as string is { } selected && selected != NoMapping ? selected : null;
+        comboBox.SelectedIndex > 0 ? comboBox.SelectedItem as string : null;
 
     private void RefreshPreviewButton()
     {
@@ -160,34 +270,122 @@ public partial class CsvImportView : UserControl
         CreatePreviewButton.IsEnabled = _selectedFile is not null && hasRequiredMapping && passwordsConfirmed;
     }
 
-    private void ShowDiagnostics(IReadOnlyList<CsvImportDiagnostic> diagnostics)
+    private void ShowDiagnostics()
     {
-        DiagnosticsItems.ItemsSource = diagnostics
-            .Select(diagnostic => diagnostic.RowNumber is { } rowNumber
-                ? $"{diagnostic.Severity}: row {rowNumber}: {diagnostic.Message}"
-                : $"{diagnostic.Severity}: {diagnostic.Message}")
+        if (_localization is null)
+        {
+            return;
+        }
+
+        DiagnosticsItems.ItemsSource = _lastDiagnostics
+            .Select(FormatDiagnostic)
             .ToArray();
+    }
+
+    private string FormatDiagnostic(CsvImportDiagnostic diagnostic)
+    {
+        var severity = Localization.GetString($"Import.Severity.{diagnostic.Severity}");
+        var message = diagnostic.Code == "ReadFailure"
+            ? Localization.GetString("Import.ReadFailure")
+            : Localization.GetString($"Import.Diagnostic.{diagnostic.Code}");
+        return diagnostic.RowNumber is { } rowNumber
+            ? Localization.Format("Import.Diagnostic.WithRow", severity, rowNumber, message)
+            : Localization.Format("Import.Diagnostic.WithoutRow", severity, message);
+    }
+
+    private void ShowCandidates()
+    {
+        if (_localization is null)
+        {
+            return;
+        }
+
+        PreviewItems.ItemsSource = _lastCandidates.Select(FormatCandidate).ToArray();
+    }
+
+    private void RefreshPreviewSummary()
+    {
+        if (_localization is null)
+        {
+            return;
+        }
+
+        PreviewSummaryText.Text = _previewSummaryState switch
+        {
+            PreviewSummaryState.Initial => Localization.GetString("Import.Preview.Initial"),
+            PreviewSummaryState.MappingReview => Localization.GetString("Import.Preview.MappingReview"),
+            PreviewSummaryState.Valid => Localization.FormatPlural(
+                "Import.Preview.ValidAccounts",
+                _validCandidateCount,
+                _validCandidateCount,
+                _duplicateCandidateCount),
+            PreviewSummaryState.NotReady => Localization.GetString("Import.Preview.NotReady"),
+            PreviewSummaryState.SelectAnother => Localization.GetString("Import.SelectAnother"),
+            _ => throw new ArgumentOutOfRangeException(),
+        };
     }
 
     private void ShowReadFailure()
     {
         _selectedFile = null;
         _analysis = null;
-        SelectedFileText.Text = "The selected CSV file could not be read.";
+        _hasReadFailure = true;
+        _lastCandidates = [];
+        _lastDiagnostics =
+        [
+            new CsvImportDiagnostic(
+                CsvImportDiagnosticSeverity.Error,
+                "ReadFailure",
+                string.Empty),
+        ];
+        SelectedFileText.Text = Localization.GetString("Import.ReadFailure");
         PasswordWarningBorder.IsVisible = false;
         PreviewItems.ItemsSource = null;
-        DiagnosticsItems.ItemsSource = new[] { "Error: The selected CSV file could not be read." };
-        PreviewSummaryText.Text = "Select another CSV file.";
+        DiagnosticsItems.ItemsSource = new[]
+        {
+            Localization.Format(
+                "Import.Diagnostic.WithoutRow",
+                Localization.GetString("Import.Severity.Error"),
+                Localization.GetString("Import.ReadFailure")),
+        };
+        _previewSummaryState = PreviewSummaryState.SelectAnother;
+        RefreshPreviewSummary();
+        SetMappingOptions([]);
         RefreshPreviewButton();
     }
 
-    private static string FormatCandidate(ImportAccountCandidate candidate)
+    private string FormatCandidate(ImportAccountCandidate candidate)
     {
-        var service = candidate.ServiceName ?? candidate.AccountUrl ?? "(unknown service)";
-        var account = candidate.LoginIdentifier ?? candidate.AccountName ?? "(unknown account)";
+        var service = candidate.ServiceName ?? candidate.AccountUrl ??
+            Localization.GetString("Import.UnknownService");
+        var account = candidate.LoginIdentifier ?? candidate.AccountName ??
+            Localization.GetString("Import.UnknownAccount");
         var duplicate = candidate.DuplicateKind == CsvDuplicateKind.None
             ? string.Empty
-            : $" — possible duplicate ({candidate.DuplicateKind})";
-        return $"Row {candidate.RowNumber}: {service} — {account}{duplicate}";
+            : Localization.Format(
+                "Import.Candidate.Duplicate",
+                Localization.GetString(candidate.DuplicateKind switch
+                {
+                    CsvDuplicateKind.WithinImport => "Import.Duplicate.WithinImport",
+                    CsvDuplicateKind.ExistingAccount => "Import.Duplicate.ExistingAccount",
+                    CsvDuplicateKind.WithinImport | CsvDuplicateKind.ExistingAccount =>
+                        "Import.Duplicate.WithinAndExisting",
+                    _ => throw new ArgumentOutOfRangeException(nameof(candidate)),
+                }));
+        return Localization.Format(
+            "Import.Candidate.Row",
+            candidate.RowNumber,
+            service,
+            account,
+            duplicate);
+    }
+
+    private enum PreviewSummaryState
+    {
+        Initial,
+        MappingReview,
+        Valid,
+        NotReady,
+        SelectAnother,
     }
 }
