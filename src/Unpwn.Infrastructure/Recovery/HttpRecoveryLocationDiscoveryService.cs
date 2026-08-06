@@ -89,7 +89,9 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                 []);
         }
 
-        var allowedOrigins = CreateAllowedOrigins(normalizedAccountUri, providerLocation);
+        var allowedOrigins = CreateAllowedOrigins(
+            normalizedAccountUri,
+            providerHandoffAvailable ? providerHandoff.ExpectedOrigins : []);
         var wellKnownResult = await DiscoverWellKnownAsync(
             normalizedAccountUri,
             allowedOrigins,
@@ -255,25 +257,15 @@ public sealed class HttpRecoveryLocationDiscoveryService(
 
     private static HashSet<string> CreateAllowedOrigins(
         Uri normalizedAccountUri,
-        RecoveryLocationDefinition? providerLocation)
+        IReadOnlyList<string> providerExpectedOrigins)
     {
         HashSet<string> origins = new(StringComparer.OrdinalIgnoreCase)
         {
             RecoveryLocationUriNormalizer.GetOrigin(normalizedAccountUri),
         };
-        if (providerLocation is null)
+        foreach (var expectedOrigin in providerExpectedOrigins)
         {
-            return origins;
-        }
-
-        foreach (var expectedOrigin in providerLocation.ExpectedOrigins)
-        {
-            if (RecoveryLocationUriNormalizer.TryNormalizeOrigin(
-                    expectedOrigin,
-                    out var normalizedOrigin))
-            {
-                origins.Add(normalizedOrigin);
-            }
+            origins.Add(expectedOrigin);
         }
 
         return origins;
