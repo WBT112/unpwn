@@ -116,19 +116,16 @@ public sealed class AccountInventoryScreenViewModelTests
         }
     }
 
-    private sealed class TestAccountInventoryService : IAccountInventoryService
+    private sealed class TestAccountInventoryService(AccountInventoryEntry[] accounts)
+        : IAccountInventoryService
     {
-        public TestAccountInventoryService(AccountInventoryEntry[] accounts)
-        {
-            CurrentInventory = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
-                .ReplaceAccounts(accounts, DateTimeOffset.UnixEpoch.AddSeconds(1));
-        }
-
         public event EventHandler? InventoryChanged;
 
         public AccountInventoryLoadState LoadState => AccountInventoryLoadState.Loaded;
 
-        public AccountInventoryState? CurrentInventory { get; private set; }
+        public AccountInventoryState? CurrentInventory { get; private set; } =
+            AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
+                .ReplaceAccounts(accounts, DateTimeOffset.UnixEpoch.AddSeconds(1));
 
         public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan(IncidentIndicator.None);
 
@@ -147,18 +144,19 @@ public sealed class AccountInventoryScreenViewModelTests
             CancellationToken cancellationToken)
         {
             LastRoleDecision = (accountId, role, decision);
-            var accounts = CurrentInventory!.Accounts.ToArray();
-            var index = Array.FindIndex(accounts, account => account.Id == accountId);
-            var account = accounts[index];
-            accounts[index] = account with
+            AccountInventoryEntry[] currentAccounts = [.. CurrentInventory!.Accounts];
+            var index = Array.FindIndex(currentAccounts, account => account.Id == accountId);
+            var account = currentAccounts[index];
+            currentAccounts[index] = account with
             {
-                Roles = account.Roles
-                    .Where(candidate => candidate.Role != role)
-                    .Append(new AccountRoleState(role, decision))
-                    .ToArray(),
+                Roles =
+                [
+                    .. account.Roles.Where(candidate => candidate.Role != role),
+                    new AccountRoleState(role, decision),
+                ],
             };
             CurrentInventory = CurrentInventory.ReplaceAccounts(
-                accounts,
+                currentAccounts,
                 CurrentInventory.UpdatedAt.AddSeconds(1));
             InventoryChanged?.Invoke(this, EventArgs.Empty);
             return Task.FromResult(AccountInventoryOperationResult.Success());
