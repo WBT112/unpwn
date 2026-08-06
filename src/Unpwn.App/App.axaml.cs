@@ -19,15 +19,18 @@ public partial class App : Avalonia.Application
             var localization = new ResourceLocalizationService();
             _ = new AvaloniaLocalizationResourceBridge(localization);
             var wizard = new RecoveryWizardSessionService();
+            var workspaceMutations = new WorkspaceMutationCoordinator();
             var vaultLifecycle = new RecoveryVaultLifecycleService(
                 new JsonRecentVaultStore(),
                 wizard);
             var recoverySession = new RecoverySessionService(
                 vaultLifecycle,
-                vaultLifecycle);
+                vaultLifecycle,
+                mutationCoordinator: workspaceMutations);
             var accountInventory = new AccountInventoryService(
                 vaultLifecycle,
-                recoverySession);
+                recoverySession,
+                mutationCoordinator: workspaceMutations);
             var sessionVaultBridge = new RecoverySessionVaultBridge(
                 vaultLifecycle,
                 recoverySession,
@@ -52,12 +55,30 @@ public partial class App : Avalonia.Application
                 sessionVaultBridge.Dispose();
                 accountInventory.Dispose();
                 recoverySession.Dispose();
+                workspaceMutations.Dispose();
                 vaultLifecycle.Dispose();
             };
             desktop.MainWindow = mainWindow;
-            _ = vaultLifecycle.InitializeAsync(CancellationToken.None);
+            _ = InitializeVaultReferencesAsync(vaultLifecycle);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static async Task InitializeVaultReferencesAsync(
+        IVaultLifecycleService vaultLifecycle)
+    {
+        try
+        {
+            await vaultLifecycle.InitializeAsync(CancellationToken.None);
+        }
+        catch (IOException)
+        {
+            // Recent-vault references are convenience metadata; vault entry remains usable.
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Recent-vault references are convenience metadata; vault entry remains usable.
+        }
     }
 }
