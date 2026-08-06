@@ -420,27 +420,35 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     private void BuildStaticOptions()
     {
-        Priorities = Enum.GetValues<AccountInventoryPriority>()
-            .OrderByDescending(value => value)
-            .Select(value => new AccountInventoryOption<AccountInventoryPriority>(
-                value,
-                Localization.GetString($"Accounts.Priority.{value}")))
-            .ToArray();
-        Filters = Enum.GetValues<AccountInventoryFilter>()
-            .Select(value => new AccountInventoryOption<AccountInventoryFilter>(
-                value,
-                Localization.GetString($"Accounts.Filter.{value}")))
-            .ToArray();
-        Sorts = Enum.GetValues<AccountInventorySort>()
-            .Select(value => new AccountInventoryOption<AccountInventorySort>(
-                value,
-                Localization.GetString($"Accounts.Sort.{value}")))
-            .ToArray();
-        DependencyKinds = Enum.GetValues<AccountDependencyKind>()
-            .Select(value => new AccountInventoryOption<AccountDependencyKind>(
-                value,
-                Localization.GetString($"Accounts.Dependency.Kind.{value}")))
-            .ToArray();
+        Priorities =
+        [
+            .. Enum.GetValues<AccountInventoryPriority>()
+                .OrderByDescending(value => value)
+                .Select(value => new AccountInventoryOption<AccountInventoryPriority>(
+                    value,
+                    Localization.GetString($"Accounts.Priority.{value}"))),
+        ];
+        Filters =
+        [
+            .. Enum.GetValues<AccountInventoryFilter>()
+                .Select(value => new AccountInventoryOption<AccountInventoryFilter>(
+                    value,
+                    Localization.GetString($"Accounts.Filter.{value}"))),
+        ];
+        Sorts =
+        [
+            .. Enum.GetValues<AccountInventorySort>()
+                .Select(value => new AccountInventoryOption<AccountInventorySort>(
+                    value,
+                    Localization.GetString($"Accounts.Sort.{value}"))),
+        ];
+        DependencyKinds =
+        [
+            .. Enum.GetValues<AccountDependencyKind>()
+                .Select(value => new AccountInventoryOption<AccountDependencyKind>(
+                    value,
+                    Localization.GetString($"Accounts.Dependency.Kind.{value}"))),
+        ];
         OnPropertyChanged(nameof(Priorities));
         OnPropertyChanged(nameof(Filters));
         OnPropertyChanged(nameof(Sorts));
@@ -448,7 +456,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         SelectedPriority ??= Priorities.Single(option => option.Value == AccountInventoryPriority.Normal);
         SelectedFilter ??= Filters.Single(option => option.Value == AccountInventoryFilter.All);
         SelectedSort ??= Sorts.Single(option => option.Value == AccountInventorySort.RecoveryOrder);
-        SelectedDependencyKind ??= DependencyKinds.First();
+        SelectedDependencyKind ??= DependencyKinds[0];
     }
 
     private void RefreshFromService()
@@ -489,8 +497,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         var inventory = _inventory.CurrentInventory;
         var plan = _inventory.CurrentPlan;
-        var planByAccount = plan?.Items.ToDictionary(item => item.AccountId) ?? [];
-        var accounts = inventory?.Accounts.AsEnumerable() ?? [];
+        Dictionary<Guid, AccountInventoryPlanItem> planByAccount =
+            plan?.Items.ToDictionary(item => item.AccountId) ?? [];
+        IEnumerable<AccountInventoryEntry> accounts = inventory?.Accounts ?? [];
         if (!string.IsNullOrWhiteSpace(SearchText))
         {
             var search = SearchText.Trim();
@@ -527,18 +536,20 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             AccountInventorySort.Updated => accounts.OrderByDescending(account => account.UpdatedAt),
             _ => accounts,
         };
-        Accounts = accounts.Select(account => CreateListItem(account, planByAccount)).ToArray();
+        Accounts = [.. accounts.Select(account => CreateListItem(account, planByAccount))];
         OnPropertyChanged(nameof(HasSelectedAccount));
     }
 
     private AccountInventoryListItem CreateListItem(
         AccountInventoryEntry account,
-        IReadOnlyDictionary<Guid, AccountInventoryPlanItem> planByAccount)
+        Dictionary<Guid, AccountInventoryPlanItem> planByAccount)
     {
-        var roles = account.Roles
-            .Where(role => role.Decision == AccountRoleDecision.Confirmed)
-            .Select(role => Localization.GetString($"Accounts.Role.{role.Role}"))
-            .ToArray();
+        string[] roles =
+        [
+            .. account.Roles
+                .Where(role => role.Decision == AccountRoleDecision.Confirmed)
+                .Select(role => Localization.GetString($"Accounts.Role.{role.Role}")),
+        ];
         var planText = planByAccount.TryGetValue(account.Id, out var planItem)
             ? Localization.GetString($"Accounts.Plan.Status.{planItem.Status}")
             : Localization.GetString("Accounts.Plan.Status.PlannedLater");
@@ -557,20 +568,25 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private void RefreshPlan()
     {
         var inventory = _inventory.CurrentInventory;
-        var byId = inventory?.Accounts.ToDictionary(account => account.Id) ?? [];
-        PlanItems = _inventory.CurrentPlan?.Items
-            .OrderBy(item => item.Order)
-            .Select(item => new AccountInventoryPlanDisplayItem(
-                item.Order,
-                item.AccountId,
-                Localization.Format(
-                    "Accounts.Plan.Item",
-                    item.Order,
-                    byId.GetValueOrDefault(item.AccountId)?.ProviderId ?? item.ProviderId,
-                    Localization.GetString($"Accounts.Plan.Status.{item.Status}"),
-                    Localization.GetString($"Accounts.Plan.Reason.{item.ReasonCode}")),
-                item.Status))
-            .ToArray() ?? [];
+        Dictionary<Guid, AccountInventoryEntry> byId =
+            inventory?.Accounts.ToDictionary(account => account.Id) ?? [];
+        PlanItems = _inventory.CurrentPlan is { } plan
+            ?
+            [
+                .. plan.Items
+                    .OrderBy(item => item.Order)
+                    .Select(item => new AccountInventoryPlanDisplayItem(
+                        item.Order,
+                        item.AccountId,
+                        Localization.Format(
+                            "Accounts.Plan.Item",
+                            item.Order,
+                            byId.GetValueOrDefault(item.AccountId)?.ProviderId ?? item.ProviderId,
+                            Localization.GetString($"Accounts.Plan.Status.{item.Status}"),
+                            Localization.GetString($"Accounts.Plan.Reason.{item.ReasonCode}")),
+                        item.Status)),
+            ]
+            : [];
     }
 
     private void LoadSelectedAccount()
@@ -595,21 +611,30 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     private void RefreshAccountDetails(AccountInventoryEntry account)
     {
-        SuggestedRoles = account.Roles
-            .Where(role => role.Decision == AccountRoleDecision.Suggested)
-            .Select(role => RoleOption(role.Role))
-            .ToArray();
-        ConfirmedRoles = account.Roles
-            .Where(role => role.Decision == AccountRoleDecision.Confirmed)
-            .Select(role => RoleOption(role.Role))
-            .ToArray();
-        AvailableRoles = IndividualRoles
-            .Where(role => account.Roles.All(existing =>
-                existing.Role != role || existing.Decision != AccountRoleDecision.Confirmed))
-            .Select(RoleOption)
-            .ToArray();
-        var accountsById = _inventory.CurrentInventory?.Accounts.ToDictionary(candidate => candidate.Id) ?? [];
-        Dependencies = account.Dependencies.Select(dependency => new AccountInventoryDependencyItem(
+        SuggestedRoles =
+        [
+            .. account.Roles
+                .Where(role => role.Decision == AccountRoleDecision.Suggested)
+                .Select(role => RoleOption(role.Role)),
+        ];
+        ConfirmedRoles =
+        [
+            .. account.Roles
+                .Where(role => role.Decision == AccountRoleDecision.Confirmed)
+                .Select(role => RoleOption(role.Role)),
+        ];
+        AvailableRoles =
+        [
+            .. IndividualRoles
+                .Where(role => account.Roles.All(existing =>
+                    existing.Role != role || existing.Decision != AccountRoleDecision.Confirmed))
+                .Select(RoleOption),
+        ];
+        Dictionary<Guid, AccountInventoryEntry> accountsById =
+            _inventory.CurrentInventory?.Accounts.ToDictionary(candidate => candidate.Id) ?? [];
+        Dependencies =
+        [
+            .. account.Dependencies.Select(dependency => new AccountInventoryDependencyItem(
                 dependency.DependsOnAccountId,
                 dependency.Kind,
                 Localization.Format(
@@ -621,20 +646,22 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                         ? Localization.GetString("Accounts.Dependency.OverrideMarker")
                         : string.Empty),
                 dependency.IsOverride,
-                dependency.OverrideReason))
-            .ToArray();
-        DependencyTargets = (_inventory.CurrentInventory?.Accounts ?? [])
-            .Where(candidate => candidate.Id != account.Id)
-            .OrderBy(candidate => candidate.ProviderId, StringComparer.OrdinalIgnoreCase)
-            .Select(candidate => new AccountInventoryOption<Guid>(
-                candidate.Id,
-                candidate.AccountName ?? candidate.LoginIdentifier ?? candidate.ProviderId))
-            .ToArray();
-        SelectedSuggestedRole = SuggestedRoles.FirstOrDefault();
-        SelectedConfirmedRole = ConfirmedRoles.FirstOrDefault();
-        SelectedRoleToAdd = AvailableRoles.FirstOrDefault();
-        SelectedDependencyTarget = DependencyTargets.FirstOrDefault();
-        SelectedDependency = Dependencies.FirstOrDefault();
+                dependency.OverrideReason)),
+        ];
+        DependencyTargets =
+        [
+            .. (_inventory.CurrentInventory?.Accounts ?? [])
+                .Where(candidate => candidate.Id != account.Id)
+                .OrderBy(candidate => candidate.ProviderId, StringComparer.OrdinalIgnoreCase)
+                .Select(candidate => new AccountInventoryOption<Guid>(
+                    candidate.Id,
+                    candidate.AccountName ?? candidate.LoginIdentifier ?? candidate.ProviderId)),
+        ];
+        SelectedSuggestedRole = SuggestedRoles.Count == 0 ? null : SuggestedRoles[0];
+        SelectedConfirmedRole = ConfirmedRoles.Count == 0 ? null : ConfirmedRoles[0];
+        SelectedRoleToAdd = AvailableRoles.Count == 0 ? null : AvailableRoles[0];
+        SelectedDependencyTarget = DependencyTargets.Count == 0 ? null : DependencyTargets[0];
+        SelectedDependency = Dependencies.Count == 0 ? null : Dependencies[0];
     }
 
     private void BeginNewAccount()
@@ -649,16 +676,18 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         SelectedPriority = Priorities.Single(option => option.Value == AccountInventoryPriority.Normal);
         SuggestedRoles = [];
         ConfirmedRoles = [];
-        AvailableRoles = IndividualRoles.Select(RoleOption).ToArray();
+        AvailableRoles = [.. IndividualRoles.Select(RoleOption)];
         Dependencies = [];
-        DependencyTargets = (_inventory.CurrentInventory?.Accounts ?? [])
-            .OrderBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase)
-            .Select(account => new AccountInventoryOption<Guid>(
-                account.Id,
-                account.AccountName ?? account.LoginIdentifier ?? account.ProviderId))
-            .ToArray();
-        SelectedRoleToAdd = AvailableRoles.FirstOrDefault();
-        SelectedDependencyTarget = DependencyTargets.FirstOrDefault();
+        DependencyTargets =
+        [
+            .. (_inventory.CurrentInventory?.Accounts ?? [])
+                .OrderBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase)
+                .Select(account => new AccountInventoryOption<Guid>(
+                    account.Id,
+                    account.AccountName ?? account.LoginIdentifier ?? account.ProviderId)),
+        ];
+        SelectedRoleToAdd = AvailableRoles.Count == 0 ? null : AvailableRoles[0];
+        SelectedDependencyTarget = DependencyTargets.Count == 0 ? null : DependencyTargets[0];
         ValidationMessage = null;
         OnPropertyChanged(nameof(HasSelectedAccount));
         RaiseCommandStates();
