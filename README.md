@@ -53,7 +53,9 @@ The vault uses a user-defined vault password, Argon2id key derivation, and AES-2
 
 Every new or resumed flow begins with an explicit trusted-device decision. Declining or expressing uncertainty ends before a vault is created or unlocked. Explicit and inactivity locking preserve a conservative encrypted wizard-resume point, and recent-vault metadata contains only local file references rather than recovery content or passwords.
 
-See [Trusted Device and Vault Entry](docs/VAULT_ENTRY.md) and [Vault Security](docs/VAULT_SECURITY.md).
+Logically related workspace records are committed through one encrypted SQLite transaction. Recovery-session and wizard transitions, and account-inventory changes with their dashboard projection, therefore persist together or roll back together. Superseded reloads are cancelled during rapid lock and unlock changes.
+
+See [Trusted Device and Vault Entry](docs/VAULT_ENTRY.md), [Workspace Persistence and Interrupted Work](docs/WORKSPACE_PERSISTENCE.md), and [Vault Security](docs/VAULT_SECURITY.md).
 
 ## Guided Recovery Wizard
 
@@ -148,6 +150,7 @@ See:
 - [Application Shell and UI Foundation](docs/UI_FOUNDATION.md)
 - [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md)
 - [Trusted Device and Vault Entry](docs/VAULT_ENTRY.md)
+- [Workspace Persistence and Interrupted Work](docs/WORKSPACE_PERSISTENCE.md)
 - [Recovery Session Intake and Dashboard](docs/RECOVERY_SESSION_DASHBOARD.md)
 - [Account Inventory and Recovery Planning](docs/ACCOUNT_INVENTORY.md)
 - [Localization and Multilingual GUI](docs/LOCALIZATION.md)
