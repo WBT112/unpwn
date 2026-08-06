@@ -11,22 +11,17 @@ public interface IRecentVaultStore
         CancellationToken cancellationToken);
 }
 
-public sealed class JsonRecentVaultStore : IRecentVaultStore
+public sealed class JsonRecentVaultStore(string? path = null) : IRecentVaultStore
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
     {
         WriteIndented = true,
     };
 
-    private readonly string _path;
-
-    public JsonRecentVaultStore(string? path = null)
-    {
-        _path = path ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "unpwn",
-            "recent-vaults.json");
-    }
+    private readonly string _path = path ?? Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "unpwn",
+        "recent-vaults.json");
 
     public async Task<IReadOnlyList<RecentVaultReference>> LoadAsync(
         CancellationToken cancellationToken)
