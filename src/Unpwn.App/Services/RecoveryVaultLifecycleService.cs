@@ -64,7 +64,8 @@ public sealed class RecoveryVaultLifecycleService :
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(descriptor);
-        if (_vault is null || _vault.IsLocked)
+        var vault = _vault;
+        if (vault is null || vault.IsLocked)
         {
             throw new InvalidOperationException("The recovery vault is locked.");
         }
@@ -72,7 +73,7 @@ public sealed class RecoveryVaultLifecycleService :
         return await Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            using var record = _vault.ReadRecord(descriptor.RecordType, descriptor.RecordId);
+            using var record = vault.ReadRecord(descriptor.RecordType, descriptor.RecordId);
             return record?.Plaintext.ToArray();
         }, cancellationToken);
     }
@@ -84,7 +85,8 @@ public sealed class RecoveryVaultLifecycleService :
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(descriptor);
-        if (_vault is null || _vault.IsLocked)
+        var vault = _vault;
+        if (vault is null || vault.IsLocked)
         {
             throw new InvalidOperationException("The recovery vault is locked.");
         }
@@ -92,7 +94,7 @@ public sealed class RecoveryVaultLifecycleService :
         await Task.Run(() =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            _vault.UpsertRecord(descriptor, plaintext.Span);
+            vault.UpsertRecord(descriptor, plaintext.Span);
         }, cancellationToken);
     }
 
@@ -101,7 +103,8 @@ public sealed class RecoveryVaultLifecycleService :
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        if (_vault is null || _vault.IsLocked)
+        var vault = _vault;
+        if (vault is null || vault.IsLocked)
         {
             throw new InvalidOperationException("The recovery vault is locked.");
         }
@@ -113,16 +116,16 @@ public sealed class RecoveryVaultLifecycleService :
             switch (transition)
             {
                 case RecoverySessionWizardTransition.CompleteIncidentIntake:
-                    _wizard.CompleteIncidentIntake(_vault, occurredAt);
+                    _wizard.CompleteIncidentIntake(vault, occurredAt);
                     break;
                 case RecoverySessionWizardTransition.Pause:
-                    _wizard.Pause(_vault, occurredAt);
+                    _wizard.Pause(vault, occurredAt);
                     break;
                 case RecoverySessionWizardTransition.Resume:
-                    _wizard.Resume(_vault, occurredAt);
+                    _wizard.Resume(vault, occurredAt);
                     break;
                 case RecoverySessionWizardTransition.Archive:
-                    _wizard.Archive(_vault, occurredAt);
+                    _wizard.Archive(vault, occurredAt);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(transition), transition, "Unknown session transition.");
