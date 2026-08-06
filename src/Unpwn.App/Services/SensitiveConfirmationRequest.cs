@@ -7,17 +7,20 @@ public sealed class SensitiveConfirmationRequest
         string affectedItem,
         string consequence,
         string confirmLabel,
+        string riskLabel,
         bool isDestructive)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
         ArgumentException.ThrowIfNullOrWhiteSpace(affectedItem);
         ArgumentException.ThrowIfNullOrWhiteSpace(consequence);
         ArgumentException.ThrowIfNullOrWhiteSpace(confirmLabel);
+        ArgumentException.ThrowIfNullOrWhiteSpace(riskLabel);
 
         Action = action;
         AffectedItem = affectedItem;
         Consequence = consequence;
         ConfirmLabel = confirmLabel;
+        RiskLabel = riskLabel;
         IsDestructive = isDestructive;
     }
 
@@ -29,7 +32,7 @@ public sealed class SensitiveConfirmationRequest
 
     public string ConfirmLabel { get; }
 
-    public bool IsDestructive { get; }
+    public string RiskLabel { get; }
 
-    public string RiskLabel => IsDestructive ? "DESTRUCTIVE ACTION" : "SENSITIVE ACTION";
+    public bool IsDestructive { get; }
 }
