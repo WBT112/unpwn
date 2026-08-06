@@ -7,8 +7,7 @@ namespace Unpwn.App.Presentation;
 public sealed class ShellViewModel : ObservableObject
 {
     private readonly IScreenFactory _screenFactory;
-    private readonly IShellContextService _shellContext;
-    private readonly IVaultLifecycleService? _vaultLifecycle;
+    private readonly IVaultLifecycleService _vaultLifecycle;
     private readonly ILocalizationService _localization;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
     private LanguageOptionViewModel[] _languageOptions;
@@ -19,16 +18,15 @@ public sealed class ShellViewModel : ObservableObject
 
     public ShellViewModel(
         IScreenFactory screenFactory,
-        IShellContextService shellContext,
+        IVaultLifecycleService vaultLifecycle,
         ILocalizationService localization)
     {
         ArgumentNullException.ThrowIfNull(screenFactory);
-        ArgumentNullException.ThrowIfNull(shellContext);
+        ArgumentNullException.ThrowIfNull(vaultLifecycle);
         ArgumentNullException.ThrowIfNull(localization);
 
         _screenFactory = screenFactory;
-        _shellContext = shellContext;
-        _vaultLifecycle = shellContext as IVaultLifecycleService;
+        _vaultLifecycle = vaultLifecycle;
         _localization = localization;
         _navigationItems = BuildNavigationItems();
         _languageOptions = BuildLanguageOptions();
@@ -43,12 +41,8 @@ public sealed class ShellViewModel : ObservableObject
             () => _localization.GetString("Shell.Lock.Error"),
             () => IsVaultUnlocked);
         LockCommand.PropertyChanged += LockCommand_OnPropertyChanged;
-        _shellContext.ContextChanged += ShellContext_OnContextChanged;
-        if (_vaultLifecycle is not null)
-        {
-            _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
-        }
-
+        _vaultLifecycle.ContextChanged += ShellContext_OnContextChanged;
+        _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
 
@@ -110,23 +104,23 @@ public sealed class ShellViewModel : ObservableObject
         private set => SetProperty(ref _currentStatus, value);
     }
 
-    public bool IsVaultUnlocked => _shellContext.Current.IsVaultUnlocked;
+    public bool IsVaultUnlocked => _vaultLifecycle.Current.IsVaultUnlocked;
 
-    public string VaultContextLabel => _shellContext.Current.IsVaultUnlocked
-        ? _shellContext.Current.VaultDisplayName
+    public string VaultContextLabel => _vaultLifecycle.Current.IsVaultUnlocked
+        ? _vaultLifecycle.Current.VaultDisplayName
         : _localization.GetString("Shell.Context.NoVault");
 
     public string SessionContextLabel =>
-        _shellContext.Current.IsVaultUnlocked &&
-        !string.IsNullOrWhiteSpace(_shellContext.Current.SessionDisplayName)
-            ? _shellContext.Current.SessionDisplayName
+        _vaultLifecycle.Current.IsVaultUnlocked &&
+        !string.IsNullOrWhiteSpace(_vaultLifecycle.Current.SessionDisplayName)
+            ? _vaultLifecycle.Current.SessionDisplayName
             : _localization.GetString("Shell.Context.NoSession");
 
     public AsyncCommand LockCommand { get; }
 
     private async Task LockAsync(CancellationToken cancellationToken)
     {
-        await _shellContext.LockAsync(cancellationToken);
+        await _vaultLifecycle.LockAsync(cancellationToken);
         NavigateTo(AppRoute.VaultEntry);
         CurrentStatus = VisualStatusViewModel.Create(
             AppVisualState.Success,
@@ -199,11 +193,6 @@ public sealed class ShellViewModel : ObservableObject
 
     private void VaultLifecycle_OnStateChanged(object? sender, EventArgs eventArgs)
     {
-        if (_vaultLifecycle is null)
-        {
-            return;
-        }
-
         var snapshot = _vaultLifecycle.Snapshot;
         if (snapshot.IsInactivityWarningVisible && snapshot.InactivityLocksAt is { } locksAt)
         {
@@ -243,7 +232,7 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
 
-        if (_vaultLifecycle?.Snapshot is
+        if (_vaultLifecycle.Snapshot is
             { IsInactivityWarningVisible: true, InactivityLocksAt: { } locksAt })
         {
             CurrentStatus = new VisualStatusViewModel(
