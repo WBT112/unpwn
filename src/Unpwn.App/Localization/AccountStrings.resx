@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Accounts.Error.Command" xml:space="preserve"><value>The account operation could not be completed safely.</value></data>
+  <data name="Accounts.Priority.Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Accounts.Priority.Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Accounts.Priority.High" xml:space="preserve"><value>High</value></data>
+  <data name="Accounts.Priority.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Accounts.Filter.All" xml:space="preserve"><value>All accounts</value></data>
+  <data name="Accounts.Filter.Critical" xml:space="preserve"><value>Critical accounts</value></data>
+  <data name="Accounts.Filter.RecoveryChannels" xml:space="preserve"><value>Recovery channels</value></data>
+  <data name="Accounts.Filter.NeedsRoleConfirmation" xml:space="preserve"><value>Role confirmation needed</value></data>
+  <data name="Accounts.Filter.Blocked" xml:space="preserve"><value>Blocked dependencies</value></data>
+  <data name="Accounts.Sort.RecoveryOrder" xml:space="preserve"><value>Recovery order</value></data>
+  <data name="Accounts.Sort.Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Accounts.Sort.Provider" xml:space="preserve"><value>Provider</value></data>
+  <data name="Accounts.Sort.Updated" xml:space="preserve"><value>Last updated</value></data>
+  <data name="Accounts.Dependency.Kind.PasswordReset" xml:space="preserve"><value>Password reset</value></data>
+  <data name="Accounts.Dependency.Kind.Mfa" xml:space="preserve"><value>MFA channel</value></data>
+  <data name="Accounts.Dependency.Kind.IdentityProvider" xml:space="preserve"><value>Identity provider</value></data>
+  <data name="Accounts.Dependency.Kind.RecoveryContact" xml:space="preserve"><value>Recovery contact</value></data>
+  <data name="Accounts.Dependency.Kind.PasswordManager" xml:space="preserve"><value>Password manager</value></data>
+  <data name="Accounts.Dependency.Kind.OrganizationManagedSignIn" xml:space="preserve"><value>Organization-managed sign-in</value></data>
+  <data name="Accounts.State.Locked" xml:space="preserve"><value>Unlock the recovery vault to view the account inventory.</value></data>
+  <data name="Accounts.State.Loading" xml:space="preserve"><value>Loading the encrypted account inventory.</value></data>
+  <data name="Accounts.State.Corrupted" xml:space="preserve"><value>The encrypted account inventory could not be read. It was not replaced.</value></data>
+  <data name="Accounts.State.Empty" xml:space="preserve"><value>No recovery session is available for an account inventory.</value></data>
+  <data name="Accounts.Summary.Count.Zero" xml:space="preserve"><value>No accounts recorded.</value></data>
+  <data name="Accounts.Summary.Count.One" xml:space="preserve"><value>{0} account recorded.</value></data>
+  <data name="Accounts.Summary.Count.Other" xml:space="preserve"><value>{0} accounts recorded.</value></data>
+  <data name="Accounts.Plan.Issues.Zero" xml:space="preserve"><value>No unresolved dependency issues.</value></data>
+  <data name="Accounts.Plan.Issues.One" xml:space="preserve"><value>{0} unresolved dependency issue.</value></data>
+  <data name="Accounts.Plan.Issues.Other" xml:space="preserve"><value>{0} unresolved dependency issues.</value></data>
+  <data name="Accounts.Status.Blocked.Title" xml:space="preserve"><value>Dependency review required</value></data>
+  <data name="Accounts.Status.Blocked.Message" xml:space="preserve"><value>Missing dependencies, cycles, or justified overrides remain visible until reviewed.</value></data>
+  <data name="Accounts.Role.EmailMailbox" xml:space="preserve"><value>Email mailbox</value></data>
+  <data name="Accounts.Role.PasswordManager" xml:space="preserve"><value>Password manager</value></data>
+  <data name="Accounts.Role.IdentityProvider" xml:space="preserve"><value>Identity provider</value></data>
+  <data name="Accounts.Role.RecoveryEmail" xml:space="preserve"><value>Recovery email</value></data>
+  <data name="Accounts.Role.TelephoneRecovery" xml:space="preserve"><value>Telephone recovery channel</value></data>
+  <data name="Accounts.Role.OrganizationManagedSignIn" xml:space="preserve"><value>Organization-managed sign-in</value></data>
+  <data name="Accounts.Role.NoneConfirmed" xml:space="preserve"><value>No confirmed role</value></data>
+  <data name="Accounts.Plan.Status.ReadyNow" xml:space="preserve"><value>Ready now</value></data>
+  <data name="Accounts.Plan.Status.PlannedLater" xml:space="preserve"><value>Planned after dependencies</value></data>
+  <data name="Accounts.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Blocked by missing dependency</value></data>
+  <data name="Accounts.Plan.Status.BlockedCycle" xml:space="preserve"><value>Blocked by dependency cycle</value></data>
+  <data name="Accounts.Plan.Reason.RecoveryChannelFirst" xml:space="preserve"><value>Recovery channel or identity root</value></data>
+  <data name="Accounts.Plan.Reason.CriticalPriority" xml:space="preserve"><value>Critical priority</value></data>
+  <data name="Accounts.Plan.Reason.DependencyRoot" xml:space="preserve"><value>No unresolved predecessor</value></data>
+  <data name="Accounts.Plan.Reason.WaitingForDependency" xml:space="preserve"><value>Waits for another account</value></data>
+  <data name="Accounts.Plan.Reason.MissingDependency" xml:space="preserve"><value>References an account that is not in the inventory</value></data>
+  <data name="Accounts.Plan.Reason.DependencyCycle" xml:space="preserve"><value>Part of a dependency cycle</value></data>
+  <data name="Accounts.Plan.Reason.UserOverridePresent" xml:space="preserve"><value>User override recorded; underlying risk remains</value></data>
+  <data name="Accounts.Plan.Item" xml:space="preserve"><value>{0}. {1} — {2}. Reason: {3}</value></data>
+  <data name="Accounts.Dependency.Item" xml:space="preserve"><value>{0} — {1} {2}</value></data>
+  <data name="Accounts.Dependency.Missing" xml:space="preserve"><value>Missing account</value></data>
+  <data name="Accounts.Dependency.OverrideMarker" xml:space="preserve"><value>(override; risk remains)</value></data>
+  <data name="Accounts.Action.New" xml:space="preserve"><value>New account</value></data>
+  <data name="Accounts.Action.Refresh" xml:space="preserve"><value>Refresh</value></data>
+  <data name="Accounts.Search.Placeholder" xml:space="preserve"><value>Search provider, account, login, or URL</value></data>
+  <data name="Accounts.List.Title" xml:space="preserve"><value>Account inventory</value></data>
+  <data name="Accounts.Editor.Title" xml:space="preserve"><value>Account details</value></data>
+  <data name="Accounts.Field.Provider" xml:space="preserve"><value>Provider or service</value></data>
+  <data name="Accounts.Field.Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Accounts.Field.Name" xml:space="preserve"><value>Account name</value></data>
+  <data name="Accounts.Field.Login" xml:space="preserve"><value>Login identifier or email</value></data>
+  <data name="Accounts.Field.Url" xml:space="preserve"><value>Account URL</value></data>
+  <data name="Accounts.Action.Save" xml:space="preserve"><value>Save account</value></data>
+  <data name="Accounts.Action.Delete" xml:space="preserve"><value>Remove account</value></data>
+  <data name="Accounts.Roles.Title" xml:space="preserve"><value>Identity and recovery roles</value></data>
+  <data name="Accounts.Roles.Help" xml:space="preserve"><value>Suggestions never become canonical automatically. Accept, reject, add, or remove each role explicitly.</value></data>
+  <data name="Accounts.Roles.Accept" xml:space="preserve"><value>Accept suggestion</value></data>
+  <data name="Accounts.Roles.Reject" xml:space="preserve"><value>Reject suggestion</value></data>
+  <data name="Accounts.Roles.Remove" xml:space="preserve"><value>Remove confirmed role</value></data>
+  <data name="Accounts.Roles.Add" xml:space="preserve"><value>Add role</value></data>
+  <data name="Accounts.Dependency.Title" xml:space="preserve"><value>Recovery dependencies</value></data>
+  <data name="Accounts.Dependency.Help" xml:space="preserve"><value>Record which account or channel must be secured first. A cycle requires a written override reason and remains an unresolved risk.</value></data>
+  <data name="Accounts.Dependency.OverridePlaceholder" xml:space="preserve"><value>Override reason, required only when this link creates a cycle</value></data>
+  <data name="Accounts.Dependency.Add" xml:space="preserve"><value>Add dependency</value></data>
+  <data name="Accounts.Dependency.Remove" xml:space="preserve"><value>Remove selected dependency</value></data>
+  <data name="Accounts.Plan.Title" xml:space="preserve"><value>Recommended recovery order</value></data>
+  <data name="Accounts.Plan.Help" xml:space="preserve"><value>The order is deterministic and uses confirmed dependencies, priority, confirmed recovery roles, and incident indicators. It is advisory and is recalculated after each change.</value></data>
+  <data name="Accounts.Delete.Action" xml:space="preserve"><value>Remove this account from the recovery session</value></data>
+  <data name="Accounts.Delete.Consequence" xml:space="preserve"><value>{0} other account(s) currently reference this account. Their dependency will remain visible as missing after removal.</value></data>
+  <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Remove account</value></data>
+  <data name="Accounts.Operation.Saved" xml:space="preserve"><value>The encrypted account inventory was updated.</value></data>
+  <data name="Accounts.Error.Locked" xml:space="preserve"><value>Unlock the vault before changing the account inventory.</value></data>
+  <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Review the account fields. A provider and an account name or login are required, and URLs must use HTTP or HTTPS.</value></data>
+  <data name="Accounts.Error.NotFound" xml:space="preserve"><value>The selected account or dependency no longer exists.</value></data>
+  <data name="Accounts.Error.Conflict" xml:space="preserve"><value>The requested change conflicts with the current inventory.</value></data>
+  <data name="Accounts.Error.RequiresConfirmation" xml:space="preserve"><value>Resolve the duplicate or dependency impact explicitly before continuing.</value></data>
+  <data name="Accounts.Error.RequiresOverrideReason" xml:space="preserve"><value>This dependency creates a cycle. Enter a specific override reason or change the dependency.</value></data>
+  <data name="Accounts.Error.Corrupted" xml:space="preserve"><value>The encrypted inventory is unreadable and was not overwritten.</value></data>
+  <data name="Accounts.Error.IoFailure" xml:space="preserve"><value>The inventory could not be saved. Do not assume the change was persisted.</value></data>
+  <data name="Confirmation.Risk.Destructive" xml:space="preserve"><value>Destructive change</value></data>
+  <data name="Import.Resolution.Label" xml:space="preserve"><value>Duplicate resolution</value></data>
+  <data name="Import.Resolution.Required" xml:space="preserve"><value>Choose how duplicate candidates should be handled before importing.</value></data>
+  <data name="Import.Resolution.Skip" xml:space="preserve"><value>Skip all duplicate candidates</value></data>
+  <data name="Import.Resolution.Separate" xml:space="preserve"><value>Import duplicates as separate accounts</value></data>
+  <data name="Import.Action.Import" xml:space="preserve"><value>Import reviewed accounts</value></data>
+  <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
+  <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
+</root>
