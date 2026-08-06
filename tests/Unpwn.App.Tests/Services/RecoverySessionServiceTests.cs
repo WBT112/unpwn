@@ -36,8 +36,16 @@ public sealed class RecoverySessionServiceTests
         await reloaded.InitializeAsync(CancellationToken.None);
 
         Assert.Equal(RecoverySessionLoadState.Loaded, reloaded.LoadState);
-        Assert.Equal(service.CurrentSession, reloaded.CurrentSession);
-        Assert.Equal("Recovery session", reloaded.CurrentSession?.Name);
+        var expected = Assert.IsType<RecoverySessionWorkspace>(service.CurrentSession);
+        var actual = Assert.IsType<RecoverySessionWorkspace>(reloaded.CurrentSession);
+        Assert.Equal(expected.Id, actual.Id);
+        Assert.Equal(expected.Name, actual.Name);
+        Assert.Equal(expected.Incident, actual.Incident);
+        Assert.Equal(expected.Status, actual.Status);
+        Assert.Equal(expected.CreatedAt, actual.CreatedAt);
+        Assert.Equal(expected.UpdatedAt, actual.UpdatedAt);
+        Assert.Equal(expected.Revision, actual.Revision);
+        Assert.Equal(expected.Accounts, actual.Accounts);
     }
 
     [Fact]
