@@ -7,7 +7,7 @@ using Unpwn.Vault.Storage;
 
 namespace Unpwn.App.Services;
 
-public sealed class RecoveryWizardSessionService
+public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = null)
 {
     private const string WizardRecordId = "0f654bae-1267-468a-bebf-90ee286e1d86";
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General);
@@ -16,16 +16,11 @@ public sealed class RecoveryWizardSessionService
         WizardRecordId,
         1);
 
-    public RecoveryWizardSessionService(DateTimeOffset? createdAt = null)
-    {
-        Current = RecoveryWizardOrchestrator.Start(
-            Guid.NewGuid(),
-            createdAt ?? DateTimeOffset.UtcNow);
-    }
-
     public event EventHandler? StateChanged;
 
-    public RecoveryWizardState Current { get; private set; }
+    public RecoveryWizardState Current { get; private set; } = RecoveryWizardOrchestrator.Start(
+        Guid.NewGuid(),
+        createdAt ?? DateTimeOffset.UtcNow);
 
     public void Reset(DateTimeOffset occurredAt) =>
         SetCurrent(RecoveryWizardOrchestrator.Start(Guid.NewGuid(), occurredAt));
@@ -104,12 +99,8 @@ public sealed class RecoveryWizardSessionService
     public void ResumeAfterUnlock(RecoveryVault vault, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(vault);
-        var persisted = TryRead(vault);
-        if (persisted is null)
-        {
-            throw new InvalidOperationException("The recovery wizard state is unavailable.");
-        }
-
+        var persisted = TryRead(vault)
+            ?? throw new InvalidOperationException("The recovery wizard state is unavailable.");
         SetCurrent(Restore(persisted, occurredAt));
         Persist(vault);
     }
