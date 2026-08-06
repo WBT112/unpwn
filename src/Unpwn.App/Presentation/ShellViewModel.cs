@@ -8,6 +8,7 @@ public sealed class ShellViewModel : ObservableObject
 {
     private readonly IScreenFactory _screenFactory;
     private readonly IShellContextService _shellContext;
+    private readonly IVaultLifecycleService? _vaultLifecycle;
     private readonly ILocalizationService _localization;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
     private LanguageOptionViewModel[] _languageOptions;
@@ -27,6 +28,7 @@ public sealed class ShellViewModel : ObservableObject
 
         _screenFactory = screenFactory;
         _shellContext = shellContext;
+        _vaultLifecycle = shellContext as IVaultLifecycleService;
         _localization = localization;
         _navigationItems = BuildNavigationItems();
         _languageOptions = BuildLanguageOptions();
@@ -34,7 +36,7 @@ public sealed class ShellViewModel : ObservableObject
             option.Code == _localization.CurrentLanguageCode);
         _selectedNavigation = _navigationItems[0];
         _currentScreen = _screenFactory.Create(_selectedNavigation.Route);
-        _currentScreen.PropertyChanged += CurrentScreen_OnPropertyChanged;
+        SubscribeToScreen(_currentScreen);
         _currentStatus = _currentScreen.Status;
         LockCommand = new AsyncCommand(
             LockAsync,
@@ -42,6 +44,11 @@ public sealed class ShellViewModel : ObservableObject
             () => IsVaultUnlocked);
         LockCommand.PropertyChanged += LockCommand_OnPropertyChanged;
         _shellContext.ContextChanged += ShellContext_OnContextChanged;
+        if (_vaultLifecycle is not null)
+        {
+            _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
+        }
+
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
 
@@ -90,9 +97,9 @@ public sealed class ShellViewModel : ObservableObject
                 return;
             }
 
-            _currentScreen.PropertyChanged -= CurrentScreen_OnPropertyChanged;
+            UnsubscribeFromScreen(_currentScreen);
             _currentScreen = value;
-            _currentScreen.PropertyChanged += CurrentScreen_OnPropertyChanged;
+            SubscribeToScreen(_currentScreen);
             OnPropertyChanged();
         }
     }
@@ -109,22 +116,27 @@ public sealed class ShellViewModel : ObservableObject
         ? _shellContext.Current.VaultDisplayName
         : _localization.GetString("Shell.Context.NoVault");
 
-    public string SessionContextLabel => _shellContext.Current.IsVaultUnlocked
-        ? _shellContext.Current.SessionDisplayName
-        : _localization.GetString("Shell.Context.NoSession");
+    public string SessionContextLabel =>
+        _shellContext.Current.IsVaultUnlocked &&
+        !string.IsNullOrWhiteSpace(_shellContext.Current.SessionDisplayName)
+            ? _shellContext.Current.SessionDisplayName
+            : _localization.GetString("Shell.Context.NoSession");
 
     public AsyncCommand LockCommand { get; }
 
     private async Task LockAsync(CancellationToken cancellationToken)
     {
         await _shellContext.LockAsync(cancellationToken);
-        SelectedNavigation = NavigationItems[0];
+        NavigateTo(AppRoute.VaultEntry);
         CurrentStatus = VisualStatusViewModel.Create(
             AppVisualState.Success,
             _localization,
             "Shell.Lock.StatusTitle",
             "Shell.Lock.StatusMessage");
     }
+
+    private void NavigateTo(AppRoute route) =>
+        SelectedNavigation = NavigationItems.Single(item => item.Route == route);
 
     private IReadOnlyList<NavigationItemViewModel> BuildNavigationItems() =>
     [
@@ -178,6 +190,40 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
         LockCommand.RaiseCanExecuteChanged();
+
+        if (!IsVaultUnlocked && CurrentScreen.Route != AppRoute.VaultEntry)
+        {
+            NavigateTo(AppRoute.VaultEntry);
+        }
+    }
+
+    private void VaultLifecycle_OnStateChanged(object? sender, EventArgs eventArgs)
+    {
+        if (_vaultLifecycle is null)
+        {
+            return;
+        }
+
+        var snapshot = _vaultLifecycle.Snapshot;
+        if (snapshot.IsInactivityWarningVisible && snapshot.InactivityLocksAt is { } locksAt)
+        {
+            CurrentStatus = new VisualStatusViewModel(
+                AppVisualState.Warning,
+                _localization.GetString("Status.Warning"),
+                "!",
+                _localization.GetString("Vault.Inactivity.Warning.Title"),
+                _localization.Format("Vault.Inactivity.Warning.Message", locksAt));
+        }
+        else if (snapshot.Status == VaultLifecycleStatus.Locked &&
+                 snapshot.LastLockReason == VaultLockReason.Inactivity)
+        {
+            NavigateTo(AppRoute.VaultEntry);
+            CurrentStatus = VisualStatusViewModel.Create(
+                AppVisualState.Warning,
+                _localization,
+                "Vault.Inactivity.Locked.Title",
+                "Vault.Inactivity.Locked.Message");
+        }
     }
 
     private void Localization_OnCultureChanged(object? sender, EventArgs eventArgs)
@@ -197,7 +243,17 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
 
-        if (LockCommand.LastOutcome == AsyncCommandOutcome.Failed)
+        if (_vaultLifecycle?.Snapshot is
+            { IsInactivityWarningVisible: true, InactivityLocksAt: { } locksAt })
+        {
+            CurrentStatus = new VisualStatusViewModel(
+                AppVisualState.Warning,
+                _localization.GetString("Status.Warning"),
+                "!",
+                _localization.GetString("Vault.Inactivity.Warning.Title"),
+                _localization.Format("Vault.Inactivity.Warning.Message", locksAt));
+        }
+        else if (LockCommand.LastOutcome == AsyncCommandOutcome.Failed)
         {
             CurrentStatus = VisualStatusViewModel.Create(
                 AppVisualState.Error,
@@ -212,6 +268,27 @@ public sealed class ShellViewModel : ObservableObject
         if (eventArgs.PropertyName == nameof(ScreenViewModel.Status))
         {
             CurrentStatus = CurrentScreen.Status;
+        }
+    }
+
+    private void VaultEntry_OnContinueRequested(object? sender, EventArgs eventArgs) =>
+        NavigateTo(AppRoute.Dashboard);
+
+    private void SubscribeToScreen(ScreenViewModel screen)
+    {
+        screen.PropertyChanged += CurrentScreen_OnPropertyChanged;
+        if (screen is VaultEntryScreenViewModel vaultEntry)
+        {
+            vaultEntry.ContinueRequested += VaultEntry_OnContinueRequested;
+        }
+    }
+
+    private void UnsubscribeFromScreen(ScreenViewModel screen)
+    {
+        screen.PropertyChanged -= CurrentScreen_OnPropertyChanged;
+        if (screen is VaultEntryScreenViewModel vaultEntry)
+        {
+            vaultEntry.ContinueRequested -= VaultEntry_OnContinueRequested;
         }
     }
 
