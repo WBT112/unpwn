@@ -105,15 +105,6 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
     private void Localization_OnCultureChanged(object? sender, EventArgs eventArgs) => RefreshLocalization();
 }
 
-public sealed class VaultEntryScreenViewModel(ILocalizationService localization) : LocalizedScreenViewModel(
-    AppRoute.VaultEntry,
-    localization,
-    "Screen.Vault.Title",
-    "Screen.Vault.Description",
-    AppVisualState.Warning,
-    "Screen.Vault.StatusTitle",
-    "Screen.Vault.StatusMessage");
-
 public sealed class PlaceholderScreenViewModel(
     AppRoute route,
     ILocalizationService localization,
@@ -179,7 +170,7 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
         var confirmed = await _confirmationDialog.ConfirmAsync(
             new SensitiveConfirmationRequest(
                 Localization.GetString("Completion.Confirmation.Action"),
-                context.SessionDisplayName,
+                context.SessionDisplayName ?? Localization.GetString("Shell.Context.NoSession"),
                 Localization.GetString("Completion.Confirmation.Consequence"),
                 Localization.GetString("Completion.Confirmation.Confirm"),
                 Localization.GetString("Confirmation.Risk.Sensitive"),

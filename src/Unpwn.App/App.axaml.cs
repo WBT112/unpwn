@@ -18,16 +18,26 @@ public partial class App : Avalonia.Application
             MainWindow? mainWindow = null;
             var localization = new ResourceLocalizationService();
             _ = new AvaloniaLocalizationResourceBridge(localization);
-            var shellContext = new LockedShellContextService();
+            var wizard = new RecoveryWizardSessionService();
+            var vaultLifecycle = new RecoveryVaultLifecycleService(
+                new JsonRecentVaultStore(),
+                wizard);
             var confirmationDialog = new AvaloniaConfirmationDialogService(() => mainWindow);
-            var screenFactory = new AppScreenFactory(confirmationDialog, shellContext, localization);
-            var shell = new ShellViewModel(screenFactory, shellContext, localization);
+            var screenFactory = new AppScreenFactory(
+                confirmationDialog,
+                vaultLifecycle,
+                wizard,
+                localization);
+            var shell = new ShellViewModel(screenFactory, vaultLifecycle, localization);
 
             mainWindow = new MainWindow
             {
                 DataContext = shell,
             };
+            mainWindow.AttachInactivityMonitor(vaultLifecycle);
+            desktop.Exit += (_, _) => vaultLifecycle.Dispose();
             desktop.MainWindow = mainWindow;
+            _ = vaultLifecycle.InitializeAsync(CancellationToken.None);
         }
 
         base.OnFrameworkInitializationCompleted();

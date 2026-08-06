@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Vault.Welcome.Title" xml:space="preserve"><value>Regain control step by step</value></data>
+  <data name="Vault.Welcome.Description" xml:space="preserve"><value>unpwn guides you through account recovery. It does not detect malware and cannot prove that a device or account is secure.</value></data>
+  <data name="Vault.Welcome.Begin" xml:space="preserve"><value>Begin recovery</value></data>
+  <data name="Vault.Trusted.Title" xml:space="preserve"><value>Are you using a device you trust?</value></data>
+  <data name="Vault.Trusted.Description" xml:space="preserve"><value>Use a different, updated device if this computer may still be controlled by an attacker. Your answer is a safety decision, not a malware scan.</value></data>
+  <data name="Vault.Trusted.Yes" xml:space="preserve"><value>Yes, continue on this device</value></data>
+  <data name="Vault.Trusted.No" xml:space="preserve"><value>No, this device is not trusted</value></data>
+  <data name="Vault.Trusted.Unsure" xml:space="preserve"><value>I am unsure</value></data>
+  <data name="Vault.Trusted.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Vault.Guidance.Title" xml:space="preserve"><value>Move to a safer device first</value></data>
+  <data name="Vault.Guidance.Description" xml:space="preserve"><value>Do not enter account or vault credentials here. Use another device you trust, install operating-system and browser updates, and avoid suspicious browser extensions. Then start unpwn again on that device.</value></data>
+  <data name="Vault.Guidance.End" xml:space="preserve"><value>End safely</value></data>
+  <data name="Vault.Guidance.Reconsider" xml:space="preserve"><value>Review my answer</value></data>
+  <data name="Vault.SafetyStopped.Title" xml:space="preserve"><value>No recovery data was collected</value></data>
+  <data name="Vault.SafetyStopped.Description" xml:space="preserve"><value>This recovery attempt ended before a vault was created or opened. Continue only from a device you trust.</value></data>
+  <data name="Vault.SafetyStopped.Restart" xml:space="preserve"><value>Start a new safety check</value></data>
+  <data name="Vault.Choice.Title" xml:space="preserve"><value>Choose your recovery vault</value></data>
+  <data name="Vault.Choice.Description" xml:space="preserve"><value>The encrypted vault stores recovery progress and newly generated credentials locally. It is temporary recovery workspace, not a password manager.</value></data>
+  <data name="Vault.Choice.Create" xml:space="preserve"><value>Create a new vault</value></data>
+  <data name="Vault.Choice.Open" xml:space="preserve"><value>Open an existing vault</value></data>
+  <data name="Vault.Choice.Back" xml:space="preserve"><value>Review device safety</value></data>
+  <data name="Vault.Create.Title" xml:space="preserve"><value>Create encrypted recovery vault</value></data>
+  <data name="Vault.Create.Path" xml:space="preserve"><value>Vault file</value></data>
+  <data name="Vault.Create.Browse" xml:space="preserve"><value>Choose location</value></data>
+  <data name="Vault.Create.Password" xml:space="preserve"><value>Vault password</value></data>
+  <data name="Vault.Create.ConfirmPassword" xml:space="preserve"><value>Confirm vault password</value></data>
+  <data name="Vault.Create.Reveal" xml:space="preserve"><value>Temporarily show passwords</value></data>
+  <data name="Vault.Create.NonRecoverable" xml:space="preserve"><value>I understand that unpwn cannot recover a forgotten vault password.</value></data>
+  <data name="Vault.Create.Submit" xml:space="preserve"><value>Create and unlock vault</value></data>
+  <data name="Vault.Create.Back" xml:space="preserve"><value>Back to vault choice</value></data>
+  <data name="Vault.Open.Title" xml:space="preserve"><value>Open encrypted recovery vault</value></data>
+  <data name="Vault.Open.Path" xml:space="preserve"><value>Vault file</value></data>
+  <data name="Vault.Open.Browse" xml:space="preserve"><value>Choose vault file</value></data>
+  <data name="Vault.Open.Password" xml:space="preserve"><value>Vault password</value></data>
+  <data name="Vault.Open.Reveal" xml:space="preserve"><value>Temporarily show password</value></data>
+  <data name="Vault.Open.Submit" xml:space="preserve"><value>Unlock vault</value></data>
+  <data name="Vault.Open.Back" xml:space="preserve"><value>Back to vault choice</value></data>
+  <data name="Vault.Locked.Title" xml:space="preserve"><value>Recovery vault is locked</value></data>
+  <data name="Vault.Locked.Description" xml:space="preserve"><value>Account names, progress, notes, incident details, and generated credentials are hidden until the vault is unlocked again.</value></data>
+  <data name="Vault.Locked.Password" xml:space="preserve"><value>Vault password</value></data>
+  <data name="Vault.Locked.Reveal" xml:space="preserve"><value>Temporarily show password</value></data>
+  <data name="Vault.Locked.Unlock" xml:space="preserve"><value>Unlock and resume safely</value></data>
+  <data name="Vault.Unlocked.Title" xml:space="preserve"><value>Vault unlocked</value></data>
+  <data name="Vault.Unlocked.Description" xml:space="preserve"><value>The encrypted recovery workspace is available. The assistant will resume at a safe review point and will not assume that an external provider action succeeded.</value></data>
+  <data name="Vault.Unlocked.Continue" xml:space="preserve"><value>Continue to recovery session</value></data>
+  <data name="Vault.Unlocked.ChangePassword" xml:space="preserve"><value>Change vault password</value></data>
+  <data name="Vault.Change.Title" xml:space="preserve"><value>Change vault password</value></data>
+  <data name="Vault.Change.Current" xml:space="preserve"><value>Current vault password</value></data>
+  <data name="Vault.Change.New" xml:space="preserve"><value>New vault password</value></data>
+  <data name="Vault.Change.Confirm" xml:space="preserve"><value>Confirm new vault password</value></data>
+  <data name="Vault.Change.Reveal" xml:space="preserve"><value>Temporarily show passwords</value></data>
+  <data name="Vault.Change.Submit" xml:space="preserve"><value>Change password</value></data>
+  <data name="Vault.Change.Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Vault.Recent.Title" xml:space="preserve"><value>Recent vaults</value></data>
+  <data name="Vault.Recent.Empty" xml:space="preserve"><value>No recent vault references are stored on this device.</value></data>
+  <data name="Vault.Recent.Open" xml:space="preserve"><value>Use selected vault</value></data>
+  <data name="Vault.Recent.Remove" xml:space="preserve"><value>Remove reference</value></data>
+  <data name="Vault.Recent.Delete" xml:space="preserve"><value>Delete vault file</value></data>
+  <data name="Vault.Recent.Item" xml:space="preserve"><value>{0} — last opened {1:g}</value></data>
+  <data name="Vault.Password.Guidance.Empty" xml:space="preserve"><value>Use a long, unique passphrase. Password-manager paste is supported.</value></data>
+  <data name="Vault.Password.Guidance.Short" xml:space="preserve"><value>This password is short. Use at least 12 characters; no special composition rule is required.</value></data>
+  <data name="Vault.Password.Guidance.Good" xml:space="preserve"><value>The password length is acceptable. A unique passphrase stored in a password manager is recommended.</value></data>
+  <data name="Vault.Validation.PathRequired" xml:space="preserve"><value>Choose a vault file.</value></data>
+  <data name="Vault.Validation.PasswordRequired" xml:space="preserve"><value>Enter the vault password.</value></data>
+  <data name="Vault.Validation.PasswordTooShort" xml:space="preserve"><value>Use at least 12 characters for a new vault password.</value></data>
+  <data name="Vault.Validation.PasswordMismatch" xml:space="preserve"><value>The password confirmation does not match.</value></data>
+  <data name="Vault.Validation.AcknowledgementRequired" xml:space="preserve"><value>Confirm that the vault password cannot be recovered.</value></data>
+  <data name="Vault.Result.Created.Title" xml:space="preserve"><value>Vault created</value></data>
+  <data name="Vault.Result.Created.Message" xml:space="preserve"><value>The encrypted vault was created and the assistant is ready to continue.</value></data>
+  <data name="Vault.Result.Opened.Title" xml:space="preserve"><value>Vault unlocked</value></data>
+  <data name="Vault.Result.Opened.Message" xml:space="preserve"><value>The assistant resumed at a safe review point.</value></data>
+  <data name="Vault.Result.PasswordChanged.Title" xml:space="preserve"><value>Vault password changed</value></data>
+  <data name="Vault.Result.PasswordChanged.Message" xml:space="preserve"><value>The vault data key was re-wrapped with the new password.</value></data>
+  <data name="Vault.Result.ReferenceRemoved.Title" xml:space="preserve"><value>Recent reference removed</value></data>
+  <data name="Vault.Result.ReferenceRemoved.Message" xml:space="preserve"><value>The vault file was not deleted.</value></data>
+  <data name="Vault.Result.FileDeleted.Title" xml:space="preserve"><value>Vault file deleted</value></data>
+  <data name="Vault.Result.FileDeleted.Message" xml:space="preserve"><value>The selected local vault file was deleted. This does not claim forensic erasure.</value></data>
+  <data name="Vault.Failure.Title" xml:space="preserve"><value>Vault operation failed</value></data>
+  <data name="Vault.Failure.InvalidInput" xml:space="preserve"><value>Review the selected path and required fields.</value></data>
+  <data name="Vault.Failure.AlreadyExists" xml:space="preserve"><value>A vault already exists at the selected location. Choose another file or open the existing vault.</value></data>
+  <data name="Vault.Failure.NotFound" xml:space="preserve"><value>The selected vault file was not found.</value></data>
+  <data name="Vault.Failure.AccessDenied" xml:space="preserve"><value>The application does not have permission to access the selected location.</value></data>
+  <data name="Vault.Failure.UnsupportedVersion" xml:space="preserve"><value>This vault version is not supported by the installed application.</value></data>
+  <data name="Vault.Failure.AuthenticationOrIntegrity" xml:space="preserve"><value>The vault could not be unlocked. The password may be incorrect, or the vault may be damaged or modified.</value></data>
+  <data name="Vault.Failure.IoFailure" xml:space="preserve"><value>The vault file could not be read or written safely.</value></data>
+  <data name="Vault.Failure.CurrentVaultInUse" xml:space="preserve"><value>Lock the current vault before deleting its file.</value></data>
+  <data name="Vault.Command.Error" xml:space="preserve"><value>The vault operation could not be completed.</value></data>
+  <data name="Vault.FilePicker.Create.Title" xml:space="preserve"><value>Create recovery vault</value></data>
+  <data name="Vault.FilePicker.Open.Title" xml:space="preserve"><value>Open recovery vault</value></data>
+  <data name="Vault.FilePicker.Type" xml:space="preserve"><value>unpwn recovery vaults</value></data>
+  <data name="Vault.Confirm.Remove.Action" xml:space="preserve"><value>Remove recent vault reference</value></data>
+  <data name="Vault.Confirm.Remove.Consequence" xml:space="preserve"><value>This removes only the local recent-item reference. The vault file remains unchanged.</value></data>
+  <data name="Vault.Confirm.Remove.Button" xml:space="preserve"><value>Remove reference</value></data>
+  <data name="Vault.Confirm.Delete.Action" xml:space="preserve"><value>Delete local vault file</value></data>
+  <data name="Vault.Confirm.Delete.Consequence" xml:space="preserve"><value>This deletes the selected file and cannot recover a forgotten password or guarantee forensic erasure.</value></data>
+  <data name="Vault.Confirm.Delete.Button" xml:space="preserve"><value>Delete file</value></data>
+  <data name="Vault.Inactivity.Warning.Title" xml:space="preserve"><value>Vault will lock soon</value></data>
+  <data name="Vault.Inactivity.Warning.Message" xml:space="preserve"><value>The recovery vault will lock at {0:t} unless activity resumes.</value></data>
+  <data name="Vault.Inactivity.Locked.Title" xml:space="preserve"><value>Vault locked after inactivity</value></data>
+  <data name="Vault.Inactivity.Locked.Message" xml:space="preserve"><value>Unlock the vault to resume at a safe review point.</value></data>
+</root>

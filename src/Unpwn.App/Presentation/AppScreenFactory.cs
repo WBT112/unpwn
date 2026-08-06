@@ -9,16 +9,22 @@ public sealed class AppScreenFactory : IScreenFactory
 
     public AppScreenFactory(
         IConfirmationDialogService confirmationDialog,
-        IShellContextService shellContext,
+        IVaultLifecycleService vaultLifecycle,
+        RecoveryWizardSessionService wizard,
         ILocalizationService localization)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
-        ArgumentNullException.ThrowIfNull(shellContext);
+        ArgumentNullException.ThrowIfNull(vaultLifecycle);
+        ArgumentNullException.ThrowIfNull(wizard);
         ArgumentNullException.ThrowIfNull(localization);
 
         _screens = new Dictionary<AppRoute, ScreenViewModel>
         {
-            [AppRoute.VaultEntry] = new VaultEntryScreenViewModel(localization),
+            [AppRoute.VaultEntry] = new VaultEntryScreenViewModel(
+                vaultLifecycle,
+                wizard,
+                confirmationDialog,
+                localization),
             [AppRoute.Dashboard] = new PlaceholderScreenViewModel(
                 AppRoute.Dashboard,
                 localization,
@@ -53,7 +59,7 @@ public sealed class AppScreenFactory : IScreenFactory
                 "Screen.Credentials.StatusMessage"),
             [AppRoute.Completion] = new CompletionScreenViewModel(
                 confirmationDialog,
-                shellContext,
+                vaultLifecycle,
                 localization),
             [AppRoute.CsvImport] = new CsvImportScreenViewModel(localization),
         };

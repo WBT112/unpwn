@@ -11,7 +11,7 @@ public sealed class ShellViewModelTests
     [Fact]
     public void ShellStartsLockedWithoutRecoveryContext()
     {
-        var shellContext = new TestShellContextService();
+        var shellContext = new TestVaultLifecycleService();
         var shell = CreateShell(shellContext);
 
         Assert.False(shell.IsVaultUnlocked);
@@ -24,7 +24,7 @@ public sealed class ShellViewModelTests
     [Fact]
     public void NavigationExposesEveryMvpRouteAndChangesCurrentScreen()
     {
-        var shell = CreateShell(new TestShellContextService());
+        var shell = CreateShell(new TestVaultLifecycleService());
         AppRoute[] expectedRoutes =
         [
             AppRoute.VaultEntry,
@@ -48,7 +48,7 @@ public sealed class ShellViewModelTests
     public void LanguageChangeRefreshesShellNavigationAndCurrentScreen()
     {
         var localization = CreateLocalization();
-        var shell = CreateShell(new TestShellContextService(), localization);
+        var shell = CreateShell(new TestVaultLifecycleService(), localization);
         shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts);
 
         shell.SelectedLanguage = shell.LanguageOptions.Single(option => option.Code == "de");
@@ -62,7 +62,7 @@ public sealed class ShellViewModelTests
     [Fact]
     public async Task GlobalLockIsAvailableOnlyForUnlockedVaultAndReturnsToVaultEntry()
     {
-        var shellContext = new TestShellContextService();
+        var shellContext = new TestVaultLifecycleService();
         var shell = CreateShell(shellContext);
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
         shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Dashboard);
@@ -91,7 +91,7 @@ public sealed class ShellViewModelTests
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
             return true;
         });
-        var shellContext = new TestShellContextService();
+        var shellContext = new TestVaultLifecycleService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
         var viewModel = new CompletionScreenViewModel(
             confirmation,
@@ -120,7 +120,7 @@ public sealed class ShellViewModelTests
         const string sourceError = "UNPWN_TEST_SECRET_dialog-failure";
         var confirmation = new TestConfirmationDialogService((_, _) =>
             Task.FromException<bool>(new InvalidOperationException(sourceError)));
-        var shellContext = new TestShellContextService();
+        var shellContext = new TestVaultLifecycleService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
         var localization = CreateLocalization();
         var viewModel = new CompletionScreenViewModel(confirmation, shellContext, localization);
@@ -146,7 +146,7 @@ public sealed class ShellViewModelTests
             observedRequest = request;
             return Task.FromResult(false);
         });
-        var shellContext = new TestShellContextService();
+        var shellContext = new TestVaultLifecycleService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
         var localization = CreateLocalization();
         localization.SetLanguage("de");
@@ -187,13 +187,17 @@ public sealed class ShellViewModelTests
         new(CultureInfo.GetCultureInfo("en"));
 
     private static ShellViewModel CreateShell(
-        TestShellContextService shellContext,
+        TestVaultLifecycleService shellContext,
         ResourceLocalizationService? localization = null)
     {
         localization ??= CreateLocalization();
         var confirmation = new TestConfirmationDialogService((_, _) => Task.FromResult(false));
         return new ShellViewModel(
-            new AppScreenFactory(confirmation, shellContext, localization),
+            new AppScreenFactory(
+                confirmation,
+                shellContext,
+                new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+                localization),
             shellContext,
             localization);
     }
@@ -207,24 +211,81 @@ public sealed class ShellViewModelTests
             CancellationToken cancellationToken) => confirm(request, cancellationToken);
     }
 
-    private sealed class TestShellContextService : IShellContextService
+    private sealed class TestVaultLifecycleService : IVaultLifecycleService
     {
         public event EventHandler? ContextChanged;
 
+        public event EventHandler? VaultStateChanged;
+
         public ShellContext Current { get; private set; } = ShellContext.Locked;
+
+        public VaultLifecycleSnapshot Snapshot { get; private set; } = VaultLifecycleSnapshot.Empty;
+
+        public IReadOnlyList<RecentVaultReference> RecentVaults { get; } = [];
+
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<VaultOperationResult> CreateAsync(
+            string path,
+            string vaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task<VaultOperationResult> OpenAsync(
+            string path,
+            string vaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task<VaultOperationResult> UnlockCurrentAsync(
+            string vaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task<VaultOperationResult> ChangePasswordAsync(
+            string currentVaultPassword,
+            string newVaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
 
         public Task LockAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Current = ShellContext.Locked;
+            Snapshot = Snapshot with { Status = VaultLifecycleStatus.Locked };
             ContextChanged?.Invoke(this, EventArgs.Empty);
+            VaultStateChanged?.Invoke(this, EventArgs.Empty);
             return Task.CompletedTask;
         }
+
+        public Task RemoveRecentReferenceAsync(
+            string path,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<VaultOperationResult> DeleteVaultFileAsync(
+            string path,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public void RecordUserActivity(DateTimeOffset occurredAt)
+        {
+        }
+
+        public Task CheckInactivityAsync(
+            DateTimeOffset occurredAt,
+            CancellationToken cancellationToken) => Task.CompletedTask;
 
         public void Unlock(string vaultDisplayName, string sessionDisplayName)
         {
             Current = ShellContext.Unlocked(vaultDisplayName, sessionDisplayName);
+            Snapshot = new VaultLifecycleSnapshot(
+                VaultLifecycleStatus.Unlocked,
+                "synthetic.db",
+                vaultDisplayName,
+                VaultLockReason.None,
+                IsInactivityWarningVisible: false,
+                InactivityLocksAt: null);
             ContextChanged?.Invoke(this, EventArgs.Empty);
+            VaultStateChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void Dispose()
+        {
         }
     }
 }
