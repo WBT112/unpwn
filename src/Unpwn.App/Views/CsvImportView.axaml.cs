@@ -145,9 +145,9 @@ public partial class CsvImportView : UserControl
 
     private void CsvImportView_OnDataContextChanged(object? sender, EventArgs eventArgs)
     {
-        if (_localization is not null)
+        if (_localization is { } previousLocalization)
         {
-            _localization.CultureChanged -= Localization_OnCultureChanged;
+            previousLocalization.CultureChanged -= Localization_OnCultureChanged;
         }
 
         _localization = (DataContext as CsvImportScreenViewModel)?.Localization;
@@ -285,7 +285,9 @@ public partial class CsvImportView : UserControl
     private string FormatDiagnostic(CsvImportDiagnostic diagnostic)
     {
         var severity = Localization.GetString($"Import.Severity.{diagnostic.Severity}");
-        var message = Localization.GetString($"Import.Diagnostic.{diagnostic.Code}");
+        var message = diagnostic.Code == "ReadFailure"
+            ? Localization.GetString("Import.ReadFailure")
+            : Localization.GetString($"Import.Diagnostic.{diagnostic.Code}");
         return diagnostic.RowNumber is { } rowNumber
             ? Localization.Format("Import.Diagnostic.WithRow", severity, rowNumber, message)
             : Localization.Format("Import.Diagnostic.WithoutRow", severity, message);
@@ -339,13 +341,13 @@ public partial class CsvImportView : UserControl
         SelectedFileText.Text = Localization.GetString("Import.ReadFailure");
         PasswordWarningBorder.IsVisible = false;
         PreviewItems.ItemsSource = null;
-        DiagnosticsItems.ItemsSource =
-        [
+        DiagnosticsItems.ItemsSource = new[]
+        {
             Localization.Format(
                 "Import.Diagnostic.WithoutRow",
                 Localization.GetString("Import.Severity.Error"),
                 Localization.GetString("Import.ReadFailure")),
-        ];
+        };
         _previewSummaryState = PreviewSummaryState.SelectAnother;
         RefreshPreviewSummary();
         SetMappingOptions([]);
