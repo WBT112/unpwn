@@ -126,6 +126,11 @@ public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
 {
     private readonly IAccountInventoryService _inventory;
 
+    public CsvImportScreenViewModel(ILocalizationService localization)
+        : this(new UnavailableAccountInventoryService(), localization)
+    {
+    }
+
     public CsvImportScreenViewModel(
         IAccountInventoryService inventory,
         ILocalizationService localization)
