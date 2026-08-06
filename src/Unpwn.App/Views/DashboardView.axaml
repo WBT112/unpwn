@@ -55,13 +55,13 @@
           <TextBlock Text="{DynamicResource Dashboard.Intake.NameLabel}"
                      FontWeight="SemiBold" />
           <TextBox Text="{Binding SessionName, Mode=TwoWay}"
-                   Watermark="{DynamicResource Dashboard.Intake.NameWatermark}"
+                   PlaceholderText="{DynamicResource Dashboard.Intake.NameWatermark}"
                    MaxLength="120" />
 
           <TextBlock Text="{DynamicResource Dashboard.Intake.DescriptionLabel}"
                      FontWeight="SemiBold" />
           <TextBox Text="{Binding IncidentDescription, Mode=TwoWay}"
-                   Watermark="{DynamicResource Dashboard.Intake.DescriptionWatermark}"
+                   PlaceholderText="{DynamicResource Dashboard.Intake.DescriptionWatermark}"
                    MaxLength="500"
                    MinHeight="100"
                    AcceptsReturn="True"
