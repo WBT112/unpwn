@@ -22,11 +22,18 @@ public partial class App : Avalonia.Application
             var vaultLifecycle = new RecoveryVaultLifecycleService(
                 new JsonRecentVaultStore(),
                 wizard);
+            var recoverySession = new RecoverySessionService(
+                vaultLifecycle,
+                vaultLifecycle);
+            var sessionVaultBridge = new RecoverySessionVaultBridge(
+                vaultLifecycle,
+                recoverySession);
             var confirmationDialog = new AvaloniaConfirmationDialogService(() => mainWindow);
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
                 wizard,
+                recoverySession,
                 localization);
             var shell = new ShellViewModel(screenFactory, vaultLifecycle, localization);
 
@@ -35,7 +42,12 @@ public partial class App : Avalonia.Application
                 DataContext = shell,
             };
             mainWindow.AttachInactivityMonitor(vaultLifecycle);
-            desktop.Exit += (_, _) => vaultLifecycle.Dispose();
+            desktop.Exit += (_, _) =>
+            {
+                sessionVaultBridge.Dispose();
+                recoverySession.Dispose();
+                vaultLifecycle.Dispose();
+            };
             desktop.MainWindow = mainWindow;
             _ = vaultLifecycle.InitializeAsync(CancellationToken.None);
         }

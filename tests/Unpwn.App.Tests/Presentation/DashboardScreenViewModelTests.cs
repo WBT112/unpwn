@@ -1,0 +1,327 @@
+using System.Globalization;
+using Unpwn.App.Localization;
+using Unpwn.App.Presentation;
+using Unpwn.App.Services;
+using Unpwn.Core;
+using Xunit;
+
+namespace Unpwn.App.Tests.Presentation;
+
+public sealed class DashboardScreenViewModelTests
+{
+    [Fact]
+    public async Task OptionalIncidentDetailsCanBeSkippedWhenCreatingSession()
+    {
+        var sessionService = new TestRecoverySessionService();
+        var viewModel = CreateViewModel(sessionService);
+        viewModel.SessionName = "Minimal recovery";
+        viewModel.SecurityWarningAcknowledged = true;
+
+        var outcome = await viewModel.CreateSessionCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.NotNull(sessionService.LastCreateRequest);
+        Assert.Null(sessionService.LastCreateRequest.IncidentDescription);
+        Assert.Equal(IncidentIndicator.None, sessionService.LastCreateRequest.Indicators);
+        Assert.True(viewModel.IsDashboardState);
+        Assert.False(viewModel.HasValidationMessage);
+    }
+
+    [Fact]
+    public async Task SecretLikeIncidentDescriptionIsRejectedBeforeServiceCall()
+    {
+        const string secret = "UNPWN_TEST_SECRET_dashboard-input";
+        var sessionService = new TestRecoverySessionService();
+        var viewModel = CreateViewModel(sessionService);
+        viewModel.SessionName = "Unsafe intake";
+        viewModel.IncidentDescription = $"token: {secret}";
+        viewModel.SecurityWarningAcknowledged = true;
+
+        var outcome = await viewModel.CreateSessionCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Null(sessionService.LastCreateRequest);
+        Assert.Equal(
+            "Remove credentials, links, tokens, recovery codes, cookies, or secret-like values from the incident description.",
+            viewModel.ValidationMessage);
+        Assert.DoesNotContain(secret, viewModel.ValidationMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EmergencyRecommendationRemainsSemanticAcrossLanguageChange()
+    {
+        var localization = CreateLocalization();
+        var session = RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Recovery channel review",
+            new RecoveryIncidentIntake(
+                IncidentIndicator.CompromisedRecoveryChannel,
+                null),
+            DateTimeOffset.UnixEpoch);
+        var sessionService = new TestRecoverySessionService(session);
+        var viewModel = CreateViewModel(sessionService, localization);
+
+        Assert.True(viewModel.HasEmergencyAdvisory);
+        Assert.Contains("primary email", viewModel.RecommendationText, StringComparison.OrdinalIgnoreCase);
+
+        localization.SetLanguage("de");
+
+        Assert.True(viewModel.HasEmergencyAdvisory);
+        Assert.Equal(
+            IncidentIndicator.CompromisedRecoveryChannel,
+            sessionService.CurrentSession?.Incident.Indicators);
+        Assert.Contains("primäre E-Mail-Adresse", viewModel.RecommendationText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BlockedSummaryNavigatesToAffectedAccountAndAction()
+    {
+        var accountId = Guid.NewGuid();
+        var session = RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Blocked work",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [
+                new RecoveryAccountDashboardEntry(
+                    accountId,
+                    "primary-email",
+                    AccountCriticality.Critical,
+                    AccountRecoveryStatus.NotFullySecured,
+                    RequiredActionsCompleted: 0,
+                    RequiredActionsTotal: 1,
+                    CompletedRequiredWeight: 0,
+                    TotalRequiredWeight: 5,
+                    BlockedRequiredActions: 1,
+                    FailedRequiredActions: 0,
+                    UnresolvedRisks: 0,
+                    AccessLost: false,
+                    CredentialsAwaitingExport: 0,
+                    CredentialsAwaitingDeletion: 0,
+                    RecommendedActionId: "reset-password",
+                    DependencyDepth: 0,
+                    WaitingForAccountIds: []),
+            ],
+            DateTimeOffset.UnixEpoch.AddMinutes(1));
+        var viewModel = CreateViewModel(new TestRecoverySessionService(session));
+        DashboardNavigationRequest? request = null;
+        viewModel.NavigationRequested += (_, eventArgs) => request = eventArgs;
+
+        viewModel.OpenBlockedCommand.Execute(null);
+
+        Assert.NotNull(request);
+        Assert.Equal(AppRoute.Workflow, request.Route);
+        Assert.Equal(accountId, request.AccountId);
+        Assert.Equal("reset-password", request.ActionId);
+    }
+
+    [Fact]
+    public void CompletionEntryIsExplicitNavigationAndDoesNotMutateSession()
+    {
+        var session = RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Completion review",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch);
+        var sessionService = new TestRecoverySessionService(session);
+        var viewModel = CreateViewModel(sessionService);
+        DashboardNavigationRequest? request = null;
+        viewModel.NavigationRequested += (_, eventArgs) => request = eventArgs;
+
+        viewModel.OpenCompletionCommand.Execute(null);
+
+        Assert.NotNull(request);
+        Assert.Equal(AppRoute.Completion, request.Route);
+        Assert.Equal(RecoveryWorkspaceLifecycleStatus.Active, sessionService.CurrentSession?.Status);
+        Assert.Equal(0, sessionService.ArchiveCalls);
+    }
+
+    private static ResourceLocalizationService CreateLocalization() =>
+        new(CultureInfo.GetCultureInfo("en"));
+
+    private static DashboardScreenViewModel CreateViewModel(
+        TestRecoverySessionService sessionService,
+        ResourceLocalizationService? localization = null)
+    {
+        localization ??= CreateLocalization();
+        return new DashboardScreenViewModel(
+            sessionService,
+            new TestVaultLifecycleService(),
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            new TestConfirmationDialogService(),
+            localization);
+    }
+
+    private sealed class TestConfirmationDialogService : IConfirmationDialogService
+    {
+        public Task<bool> ConfirmAsync(
+            SensitiveConfirmationRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(false);
+        }
+    }
+
+    private sealed class TestRecoverySessionService(RecoverySessionWorkspace? session = null)
+        : IRecoverySessionService
+    {
+        public event EventHandler? SessionChanged;
+
+        public RecoverySessionLoadState LoadState { get; private set; } = session is null
+            ? RecoverySessionLoadState.Empty
+            : RecoverySessionLoadState.Loaded;
+
+        public RecoverySessionWorkspace? CurrentSession { get; private set; } = session;
+
+        public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();
+
+        public RecoverySessionCreateRequest? LastCreateRequest { get; private set; }
+
+        public int ArchiveCalls { get; private set; }
+
+        public Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
+
+        public Task<RecoverySessionOperationResult> CreateAsync(
+            RecoverySessionCreateRequest request,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            LastCreateRequest = request with
+            {
+                IncidentDescription = string.IsNullOrWhiteSpace(request.IncidentDescription)
+                    ? null
+                    : request.IncidentDescription,
+            };
+            CurrentSession = RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                request.Name,
+                new RecoveryIncidentIntake(request.Indicators, request.IncidentDescription),
+                DateTimeOffset.UnixEpoch);
+            LoadState = RecoverySessionLoadState.Loaded;
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public Task<RecoverySessionOperationResult> PauseAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CurrentSession = CurrentSession?.Pause(CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CurrentSession = CurrentSession?.Resume(CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArchiveCalls++;
+            CurrentSession = CurrentSession?.Archive(CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
+            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            CurrentSession = CurrentSession?.ReplaceAccounts(
+                accounts,
+                CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public void ClearForLock()
+        {
+            LoadState = RecoverySessionLoadState.Locked;
+            CurrentSession = null;
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private sealed class TestVaultLifecycleService : IVaultLifecycleService
+    {
+        public event EventHandler? ContextChanged;
+
+        public event EventHandler? VaultStateChanged;
+
+        public ShellContext Current { get; private set; } =
+            ShellContext.Unlocked("Synthetic vault", "Synthetic session");
+
+        public VaultLifecycleSnapshot Snapshot { get; private set; } = new(
+            VaultLifecycleStatus.Unlocked,
+            "synthetic.db",
+            "Synthetic vault",
+            VaultLockReason.None,
+            IsInactivityWarningVisible: false,
+            InactivityLocksAt: null);
+
+        public IReadOnlyList<RecentVaultReference> RecentVaults { get; } = [];
+
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<VaultOperationResult> CreateAsync(
+            string path,
+            string vaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task<VaultOperationResult> OpenAsync(
+            string path,
+            string vaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task<VaultOperationResult> UnlockCurrentAsync(
+            string vaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task<VaultOperationResult> ChangePasswordAsync(
+            string currentVaultPassword,
+            string newVaultPassword,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public Task LockAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Current = ShellContext.Locked;
+            Snapshot = Snapshot with { Status = VaultLifecycleStatus.Locked };
+            ContextChanged?.Invoke(this, EventArgs.Empty);
+            VaultStateChanged?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
+
+        public Task RemoveRecentReferenceAsync(
+            string path,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<VaultOperationResult> DeleteVaultFileAsync(
+            string path,
+            CancellationToken cancellationToken) => Task.FromResult(VaultOperationResult.Success);
+
+        public void RecordUserActivity(DateTimeOffset occurredAt)
+        {
+        }
+
+        public Task CheckInactivityAsync(
+            DateTimeOffset occurredAt,
+            CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void Dispose()
+        {
+        }
+    }
+}

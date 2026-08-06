@@ -81,6 +81,37 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
         Persist(vault);
     }
 
+    public void CompleteIncidentIntake(RecoveryVault vault, DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(vault);
+        SetCurrent(RecoveryWizardOrchestrator.Continue(
+            Current,
+            RecoveryWizardStepId.AccountInventory,
+            occurredAt));
+        Persist(vault);
+    }
+
+    public void Pause(RecoveryVault vault, DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(vault);
+        SetCurrent(RecoveryWizardOrchestrator.Pause(Current, occurredAt));
+        Persist(vault);
+    }
+
+    public void Resume(RecoveryVault vault, DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(vault);
+        SetCurrent(RecoveryWizardOrchestrator.Resume(Current, occurredAt));
+        Persist(vault);
+    }
+
+    public void Archive(RecoveryVault vault, DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(vault);
+        SetCurrent(RecoveryWizardOrchestrator.Archive(Current, occurredAt));
+        Persist(vault);
+    }
+
     public void PrepareForLock(RecoveryVault vault, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(vault);

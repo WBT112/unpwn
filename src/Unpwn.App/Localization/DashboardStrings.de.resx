@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Dashboard.Command.Error" xml:space="preserve"><value>Die Aktion für die Wiederherstellungssitzung konnte nicht abgeschlossen werden.</value></data>
+  <data name="Dashboard.Refresh" xml:space="preserve"><value>Sitzung neu laden</value></data>
+  <data name="Dashboard.State.Locked" xml:space="preserve"><value>Entsperre den Wiederherstellungstresor, um das Sitzungs-Dashboard zu laden.</value></data>
+  <data name="Dashboard.State.Loading" xml:space="preserve"><value>Die verschlüsselte Wiederherstellungssitzung wird geladen…</value></data>
+  <data name="Dashboard.State.Empty.Title" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
+  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Erfasse nur beobachtbare Vorfallhinweise. unpwn erkennt keine Schadsoftware und bestätigt nicht, dass ein Konto kompromittiert wurde.</value></data>
+  <data name="Dashboard.State.Corrupted.Title" xml:space="preserve"><value>Sitzungsdatensatz konnte nicht geladen werden</value></data>
+  <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>Im verschlüsselten Sitzungsdatensatz fehlen erforderliche Daten oder die sichere Integritätsprüfung ist fehlgeschlagen. Er wurde nicht überschrieben.</value></data>
+  <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Name der Sitzung</value></data>
+  <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Zum Beispiel: Wiederherstellung nach Phishing-Meldung</value></data>
+  <data name="Dashboard.Intake.DescriptionLabel" xml:space="preserve"><value>Optionale Beschreibung des Vorfalls</value></data>
+  <data name="Dashboard.Intake.DescriptionWatermark" xml:space="preserve"><value>Beschreibe ausschließlich deine Beobachtungen</value></data>
+  <data name="Dashboard.Intake.DescriptionHelp" xml:space="preserve"><value>Keine alten Passwörter, Zurücksetzlinks, Token, MFA-Geheimnisse, Wiederherstellungscodes, Cookies oder Browserdaten eingeben.</value></data>
+  <data name="Dashboard.Intake.DescriptionCounter" xml:space="preserve"><value>{0} von {1} Zeichen</value></data>
+  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Was hast du beobachtet?</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Diese Angaben ändern nur die empfohlene Reihenfolge. Sie sind keine automatische Feststellung einer Kompromittierung.</value></data>
+  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>Ich habe den Zugriff auf mindestens ein Konto verloren</value></data>
+  <data name="Dashboard.Intake.Indicator.UnexpectedPassword" xml:space="preserve"><value>Ein Passwort wurde unerwartet geändert</value></data>
+  <data name="Dashboard.Intake.Indicator.UnexpectedMfa" xml:space="preserve"><value>MFA- oder Wiederherstellungseinstellungen wurden unerwartet geändert</value></data>
+  <data name="Dashboard.Intake.Indicator.UnknownSessions" xml:space="preserve"><value>Ich habe unbekannte Sitzungen oder Geräte gesehen</value></data>
+  <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>Eine primäre E-Mail-Adresse oder ein Wiederherstellungskanal könnte unter fremder Kontrolle stehen</value></data>
+  <data name="Dashboard.Intake.Indicator.UntrustedDevice" xml:space="preserve"><value>Das während des Vorfalls verwendete Gerät könnte nicht vertrauenswürdig sein</value></data>
+  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Vorfallangaben werden im verschlüsselten Tresor gespeichert. Geheime Zugangsdaten gehören dennoch nicht in dieses Formular.</value></data>
+  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>Ich verstehe, dass unpwn keine Schadsoftware erkennt, und habe keine Zugangsdaten oder Wiederherstellungsgeheimnisse eingegeben.</value></data>
+  <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Sitzung anlegen und Prioritäten prüfen</value></data>
+  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Alle Vorfallhinweise sind optional. Lasse sie deaktiviert, um ohne Vorfalldetails fortzufahren.</value></data>
+  <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Aktiv</value></data>
+  <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Pausiert</value></data>
+  <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archiviert</value></data>
+  <data name="Dashboard.Session.Status.None" xml:space="preserve"><value>Keine Sitzung</value></data>
+  <data name="Dashboard.Session.LastSaved" xml:space="preserve"><value>Zuletzt gespeichert: {0:g}</value></data>
+  <data name="Dashboard.Session.LastSaved.None" xml:space="preserve"><value>Noch nicht gespeichert</value></data>
+  <data name="Dashboard.Session.Vault" xml:space="preserve"><value>Tresor: {0}</value></data>
+  <data name="Dashboard.Session.WizardPhase" xml:space="preserve"><value>Aktuelle Phase: {0}</value></data>
+  <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Wiederherstellungskanal zuerst prüfen</value></data>
+  <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Deine Angaben deuten darauf hin, dass ein primärer Wiederherstellungskanal oder ein kritischer Zugriff sofortige Aufmerksamkeit benötigen könnte. Das ist eine beratende Priorisierung und kein automatisches Erkennungsergebnis.</value></data>
+  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Bereitschaft kritischer Konten</value></data>
+  <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} von {1} kritischen Konten sind vollständig geprüft, ohne erfasste Blockaden oder ungelöste Risiken.</value></data>
+  <data name="Dashboard.Accounts.Title" xml:space="preserve"><value>Kontenabdeckung</value></data>
+  <data name="Dashboard.Accounts.Coverage" xml:space="preserve"><value>{0} von {1} Konten sind vollständig geprüft.</value></data>
+  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Gewichteter Fortschritt erforderlicher Aktionen</value></data>
+  <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>{0:P0} des Gewichts der anwendbaren erforderlichen Aktionen ist abgeschlossen.</value></data>
+  <data name="Dashboard.Progress.Disclaimer" xml:space="preserve"><value>Fortschritt ist kein Sicherheitsurteil. Zugriffsverlust, Blockaden, Fehlschläge und ungelöste Risiken bleiben getrennt sichtbar.</value></data>
+  <data name="Dashboard.Metric.Unavailable" xml:space="preserve"><value>Keine Sitzungsdaten verfügbar.</value></data>
+  <data name="Dashboard.Alert.SectionTitle" xml:space="preserve"><value>Arbeit mit weiterem Handlungsbedarf</value></data>
+  <data name="Dashboard.Alert.Blocked.Title" xml:space="preserve"><value>Blockierte erforderliche Aktionen</value></data>
+  <data name="Dashboard.Alert.Blocked.Count" xml:space="preserve"><value>{0} blockierte erforderliche Aktion(en)</value></data>
+  <data name="Dashboard.Alert.Failed.Title" xml:space="preserve"><value>Fehlgeschlagene erforderliche Aktionen</value></data>
+  <data name="Dashboard.Alert.Failed.Count" xml:space="preserve"><value>{0} fehlgeschlagene erforderliche Aktion(en)</value></data>
+  <data name="Dashboard.Alert.Unresolved.Title" xml:space="preserve"><value>Ungelöste Risiken</value></data>
+  <data name="Dashboard.Alert.Unresolved.Count" xml:space="preserve"><value>{0} ungelöste(s) Risiko/Risiken</value></data>
+  <data name="Dashboard.Alert.LostAccess.Title" xml:space="preserve"><value>Konten mit verlorenem Zugriff</value></data>
+  <data name="Dashboard.Alert.LostAccess.Count" xml:space="preserve"><value>{0} Konto/Konten mit verlorenem Zugriff</value></data>
+  <data name="Dashboard.Alert.Export.Title" xml:space="preserve"><value>Zugangsdaten warten auf Export</value></data>
+  <data name="Dashboard.Alert.Export.Count" xml:space="preserve"><value>{0} Zugangsdaten warten auf Export</value></data>
+  <data name="Dashboard.Alert.Deletion.Title" xml:space="preserve"><value>Exportierte Zugangsdaten warten auf Löschung</value></data>
+  <data name="Dashboard.Alert.Deletion.Count" xml:space="preserve"><value>{0} Zugangsdaten warten auf Löschung</value></data>
+  <data name="Dashboard.Alert.Open" xml:space="preserve"><value>Betroffene Arbeit öffnen</value></data>
+  <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Empfohlener nächster Schritt</value></data>
+  <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Empfehlung öffnen</value></data>
+  <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>Keine Empfehlung verfügbar.</value></data>
+  <data name="Dashboard.Recommendation.WithProvider" xml:space="preserve"><value>{0} Ziel: {1}.</value></data>
+  <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Importiere oder ergänze das Konteninventar, damit Abhängigkeiten und kritische Identitäten geprüft werden können.</value></data>
+  <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Prüfe und sichere die primäre E-Mail-Adresse oder den Wiederherstellungskanal vor abhängigen Konten.</value></data>
+  <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Stelle den Zugriff auf das kritische Konto wieder her, bevor du mit abhängigen Konten fortfährst.</value></data>
+  <data name="Dashboard.Recommendation.ResolveCriticalBlocker" xml:space="preserve"><value>Behebe die erfasste Blockade oder den Fehlschlag beim kritischen Konto.</value></data>
+  <data name="Dashboard.Recommendation.AddressUnresolvedRisk" xml:space="preserve"><value>Prüfe das ungelöste Risiko und erfasse die nächste sichere Aktion.</value></data>
+  <data name="Dashboard.Recommendation.ExportGeneratedCredentials" xml:space="preserve"><value>Exportiere erzeugte Zugangsdaten in einen etablierten Passwortmanager und bestätige die Bereinigung.</value></data>
+  <data name="Dashboard.Recommendation.ReviewCriticalAccount" xml:space="preserve"><value>Prüfe das nächste kritische Konto und seine erforderlichen Wiederherstellungsaktionen.</value></data>
+  <data name="Dashboard.Recommendation.ReviewNextAccount" xml:space="preserve"><value>Fahre mit dem nächsten durch die gespeicherte Wiederherstellungsreihenfolge erlaubten Konto fort.</value></data>
+  <data name="Dashboard.Recommendation.ResumeSession" xml:space="preserve"><value>Setze die pausierte Sitzung fort, bevor du den Wiederherstellungszustand änderst.</value></data>
+  <data name="Dashboard.Recommendation.ArchivedSession" xml:space="preserve"><value>Diese Sitzung ist archiviert und nimmt keine Änderungen am Wiederherstellungszustand mehr an.</value></data>
+  <data name="Dashboard.Action.Pause" xml:space="preserve"><value>Sitzung pausieren</value></data>
+  <data name="Dashboard.Action.Resume" xml:space="preserve"><value>Sitzung fortsetzen</value></data>
+  <data name="Dashboard.Action.Archive" xml:space="preserve"><value>Sitzung archivieren</value></data>
+  <data name="Dashboard.Action.Completion" xml:space="preserve"><value>Abschlussprüfung öffnen</value></data>
+  <data name="Dashboard.Archive.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungssitzung archivieren</value></data>
+  <data name="Dashboard.Archive.Confirmation.Consequence" xml:space="preserve"><value>Die Sitzung bleibt verschlüsselt und lesbar, Änderungen am Wiederherstellungszustand werden jedoch beendet. Konten werden dadurch nicht als sicher oder abgeschlossen markiert.</value></data>
+  <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Sitzung archivieren</value></data>
+  <data name="Dashboard.Validation.NameRequired" xml:space="preserve"><value>Gib einen Sitzungsnamen ein.</value></data>
+  <data name="Dashboard.Validation.AcknowledgementRequired" xml:space="preserve"><value>Bestätige den Sicherheitshinweis, bevor du die Sitzung anlegst.</value></data>
+  <data name="Dashboard.Validation.DescriptionUnsafe" xml:space="preserve"><value>Entferne Zugangsdaten, Links, Token, Wiederherstellungscodes, Cookies oder geheimnisähnliche Werte aus der Vorfallbeschreibung.</value></data>
+  <data name="Dashboard.Validation.Locked" xml:space="preserve"><value>Der Tresor ist gesperrt.</value></data>
+  <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Prüfe Sitzungsnamen, Vorfallbeschreibung und Sicherheitsbestätigung.</value></data>
+  <data name="Dashboard.Validation.Corrupted" xml:space="preserve"><value>Der vorhandene Sitzungsdatensatz ist beschädigt und wurde nicht ersetzt.</value></data>
+  <data name="Dashboard.Validation.Conflict" xml:space="preserve"><value>Die Wiederherstellungssitzung wurde geändert oder befindet sich nicht im erforderlichen Lebenszykluszustand.</value></data>
+  <data name="Dashboard.Validation.PersistenceFailure" xml:space="preserve"><value>Die verschlüsselte Wiederherstellungssitzung konnte nicht gespeichert werden.</value></data>
+  <data name="Dashboard.Status.Locked.Title" xml:space="preserve"><value>Wiederherstellungssitzung gesperrt</value></data>
+  <data name="Dashboard.Status.Locked.Message" xml:space="preserve"><value>Solange der Tresor gesperrt ist, sind keine Sitzungs- oder Vorfalldaten verfügbar.</value></data>
+  <data name="Dashboard.Status.Loading.Title" xml:space="preserve"><value>Wiederherstellungssitzung wird geladen</value></data>
+  <data name="Dashboard.Status.Loading.Message" xml:space="preserve"><value>Der verschlüsselte Sitzungsdatensatz wird aus dem aktuellen Tresor gelesen.</value></data>
+  <data name="Dashboard.Status.Empty.Title" xml:space="preserve"><value>Noch keine Wiederherstellungssitzung</value></data>
+  <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Lege eine Sitzung an und erfasse optional strukturierte Vorfallhinweise.</value></data>
+  <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Wiederherstellungssitzung nicht verfügbar</value></data>
+  <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>Der verschlüsselte Datensatz konnte nicht sicher verarbeitet werden und blieb unverändert.</value></data>
+  <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Wiederherstellungssitzung aktiv</value></data>
+  <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>Prüfe die Bereitschaft kritischer Konten und die nächste Empfehlung, bevor du dich auf den Gesamtfortschritt verlässt.</value></data>
+  <data name="Dashboard.Status.Paused.Title" xml:space="preserve"><value>Wiederherstellungssitzung pausiert</value></data>
+  <data name="Dashboard.Status.Paused.Message" xml:space="preserve"><value>Setze die Sitzung fort, bevor du den Wiederherstellungszustand änderst.</value></data>
+  <data name="Dashboard.Status.Archived.Title" xml:space="preserve"><value>Wiederherstellungssitzung archiviert</value></data>
+  <data name="Dashboard.Status.Archived.Message" xml:space="preserve"><value>Der verschlüsselte Datensatz bleibt zur Prüfung verfügbar, Zustandsänderungen sind jedoch deaktiviert.</value></data>
+  <data name="Dashboard.Status.Emergency.Title" xml:space="preserve"><value>Wirkungsstarker Wiederherstellungskanal muss geprüft werden</value></data>
+  <data name="Dashboard.Status.Emergency.Message" xml:space="preserve"><value>Die Vorfallangaben erzeugen eine beratende Priorität. Sie beweisen keine Kompromittierung eines Kontos oder Geräts.</value></data>
+  <data name="Dashboard.Status.Created.Title" xml:space="preserve"><value>Wiederherstellungssitzung angelegt</value></data>
+  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Fahre mit dem Konteninventar fort.</value></data>
+  <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Sitzungsaktion fehlgeschlagen</value></data>
+  <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>Es wurden weder eine Quellfehlermeldung noch geheime Werte angezeigt. Prüfe die sichere Validierungsmeldung.</value></data>
+  <data name="Dashboard.WizardStep.Welcome" xml:space="preserve"><value>Willkommen</value></data>
+  <data name="Dashboard.WizardStep.TrustedDeviceCheck" xml:space="preserve"><value>Prüfung des vertrauenswürdigen Geräts</value></data>
+  <data name="Dashboard.WizardStep.TrustedDeviceGuidance" xml:space="preserve"><value>Hinweise zum vertrauenswürdigen Gerät</value></data>
+  <data name="Dashboard.WizardStep.VaultEntry" xml:space="preserve"><value>Tresoreinstieg</value></data>
+  <data name="Dashboard.WizardStep.IncidentIntake" xml:space="preserve"><value>Vorfallaufnahme</value></data>
+  <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Konteninventar</value></data>
+  <data name="Dashboard.WizardStep.IdentityReview" xml:space="preserve"><value>Prüfung von Identitäten und Wiederherstellungswegen</value></data>
+  <data name="Dashboard.WizardStep.RecoveryPlan" xml:space="preserve"><value>Wiederherstellungsplan</value></data>
+  <data name="Dashboard.WizardStep.AccountRecovery" xml:space="preserve"><value>Kontowiederherstellung</value></data>
+  <data name="Dashboard.WizardStep.CredentialExport" xml:space="preserve"><value>Export von Zugangsdaten</value></data>
+  <data name="Dashboard.WizardStep.CompletionPreflight" xml:space="preserve"><value>Vorprüfung des Abschlusses</value></data>
+  <data name="Dashboard.WizardStep.FinalReport" xml:space="preserve"><value>Abschlussbericht</value></data>
+  <data name="Dashboard.WizardStep.Unknown" xml:space="preserve"><value>Unbekannte Phase</value></data>
+</root>

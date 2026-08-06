@@ -78,6 +78,11 @@ public static class RecoveryWizardOrchestrator
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Cancel(state, occurredAt);
 
+    public static RecoveryWizardState Archive(
+        RecoveryWizardState state,
+        DateTimeOffset occurredAt) =>
+        RecoveryWizardStateMachine.Archive(state, occurredAt);
+
     public static RecoveryWizardState Finish(
         RecoveryWizardState state,
         RecoveryWizardTerminalOutcome outcome,

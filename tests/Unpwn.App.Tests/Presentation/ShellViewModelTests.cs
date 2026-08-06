@@ -2,6 +2,7 @@ using System.Globalization;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.Core;
 using Xunit;
 
 namespace Unpwn.App.Tests.Presentation;
@@ -197,6 +198,7 @@ public sealed class ShellViewModelTests
                 confirmation,
                 shellContext,
                 new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+                new TestRecoverySessionService(),
                 localization),
             shellContext,
             localization);
@@ -209,6 +211,55 @@ public sealed class ShellViewModelTests
         public Task<bool> ConfirmAsync(
             SensitiveConfirmationRequest request,
             CancellationToken cancellationToken) => confirm(request, cancellationToken);
+    }
+
+    private sealed class TestRecoverySessionService : IRecoverySessionService
+    {
+        public event EventHandler? SessionChanged;
+
+        public RecoverySessionLoadState LoadState { get; private set; } = RecoverySessionLoadState.Locked;
+
+        public RecoverySessionWorkspace? CurrentSession { get; private set; }
+
+        public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();
+
+        public Task InitializeAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
+
+        public Task<RecoverySessionOperationResult> CreateAsync(
+            RecoverySessionCreateRequest request,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(RecoverySessionOperationResult.Failure(
+                RecoverySessionOperationFailureCode.Locked));
+
+        public Task<RecoverySessionOperationResult> PauseAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(RecoverySessionOperationResult.Failure(
+                RecoverySessionOperationFailureCode.Locked));
+
+        public Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(RecoverySessionOperationResult.Failure(
+                RecoverySessionOperationFailureCode.Locked));
+
+        public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(RecoverySessionOperationResult.Failure(
+                RecoverySessionOperationFailureCode.Locked));
+
+        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
+            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(RecoverySessionOperationResult.Failure(
+                RecoverySessionOperationFailureCode.Locked));
+
+        public void ClearForLock()
+        {
+            LoadState = RecoverySessionLoadState.Locked;
+            CurrentSession = null;
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private sealed class TestVaultLifecycleService : IVaultLifecycleService

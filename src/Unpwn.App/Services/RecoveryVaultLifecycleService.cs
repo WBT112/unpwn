@@ -6,7 +6,10 @@ using Unpwn.Vault.Storage;
 
 namespace Unpwn.App.Services;
 
-public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
+public sealed class RecoveryVaultLifecycleService :
+    IVaultLifecycleService,
+    IEncryptedVaultRecordStore,
+    IRecoveryWizardVaultCoordinator
 {
     private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase
@@ -44,11 +47,110 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
 
     public IReadOnlyList<RecentVaultReference> RecentVaults { get; private set; } = [];
 
+    public bool IsVaultUnlocked => _vault is { IsLocked: false };
+
+    public RecoveryWizardState CurrentWizard => _wizard.Current;
+
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
         RecentVaults = await _recentVaultStore.LoadAsync(cancellationToken);
         PublishState(contextChanged: false);
+    }
+
+    public async Task<byte[]?> ReadEncryptedRecordAsync(
+        VaultRecordDescriptor descriptor,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(descriptor);
+        var vault = _vault;
+        if (vault is null || vault.IsLocked)
+        {
+            throw new InvalidOperationException("The recovery vault is locked.");
+        }
+
+        return await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            using var record = vault.ReadRecord(descriptor.RecordType, descriptor.RecordId);
+            return record?.Plaintext.ToArray();
+        }, cancellationToken);
+    }
+
+    public async Task WriteEncryptedRecordAsync(
+        VaultRecordDescriptor descriptor,
+        ReadOnlyMemory<byte> plaintext,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(descriptor);
+        var vault = _vault;
+        if (vault is null || vault.IsLocked)
+        {
+            throw new InvalidOperationException("The recovery vault is locked.");
+        }
+
+        await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            vault.UpsertRecord(descriptor, plaintext.Span);
+        }, cancellationToken);
+    }
+
+    public async Task ApplyWizardTransitionAsync(
+        RecoverySessionWizardTransition transition,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        var vault = _vault;
+        if (vault is null || vault.IsLocked)
+        {
+            throw new InvalidOperationException("The recovery vault is locked.");
+        }
+
+        await Task.Run(() =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var occurredAt = _clock();
+            switch (transition)
+            {
+                case RecoverySessionWizardTransition.CompleteIncidentIntake:
+                    _wizard.CompleteIncidentIntake(vault, occurredAt);
+                    break;
+                case RecoverySessionWizardTransition.Pause:
+                    _wizard.Pause(vault, occurredAt);
+                    break;
+                case RecoverySessionWizardTransition.Resume:
+                    _wizard.Resume(vault, occurredAt);
+                    break;
+                case RecoverySessionWizardTransition.Archive:
+                    _wizard.Archive(vault, occurredAt);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(transition), transition, "Unknown session transition.");
+            }
+        }, cancellationToken);
+    }
+
+    public void SetSessionDisplayName(string? sessionDisplayName)
+    {
+        ThrowIfDisposed();
+        if (!Current.IsVaultUnlocked)
+        {
+            return;
+        }
+
+        var normalized = string.IsNullOrWhiteSpace(sessionDisplayName)
+            ? null
+            : sessionDisplayName.Trim();
+        if (string.Equals(Current.SessionDisplayName, normalized, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Current = ShellContext.Unlocked(Current.VaultDisplayName, normalized);
+        ContextChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public Task<VaultOperationResult> CreateAsync(
