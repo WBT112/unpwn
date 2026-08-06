@@ -99,7 +99,7 @@ public sealed class RecoverySessionWorkspaceTests
     }
 
     [Theory]
-    [InlineData("password: UNPWN_TEST_SECRET_value")]
+    [InlineData("password: synthetic-secret-value")]
     [InlineData("Reset link: https://example.invalid/reset")]
     [InlineData("token: abcdefghijklmnopqrstuvwxyz0123456789")]
     public void IncidentDescriptionRejectsSecretOrLinkMaterial(string description)
