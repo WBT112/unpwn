@@ -122,28 +122,24 @@ public sealed class PlaceholderScreenViewModel(
         statusTitleKey,
         statusMessageKey);
 
-public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
+public sealed class CsvImportScreenViewModel(
+    IAccountInventoryService inventory,
+    ILocalizationService localization)
+    : LocalizedScreenViewModel(
+        AppRoute.CsvImport,
+        localization,
+        "Screen.Import.Title",
+        "Screen.Import.Description",
+        AppVisualState.Warning,
+        "Screen.Import.StatusTitle",
+        "Screen.Import.StatusMessage")
 {
-    private readonly IAccountInventoryService _inventory;
+    private readonly IAccountInventoryService _inventory =
+        inventory ?? throw new ArgumentNullException(nameof(inventory));
 
     public CsvImportScreenViewModel(ILocalizationService localization)
         : this(new UnavailableAccountInventoryService(), localization)
     {
-    }
-
-    public CsvImportScreenViewModel(
-        IAccountInventoryService inventory,
-        ILocalizationService localization)
-        : base(
-            AppRoute.CsvImport,
-            localization,
-            "Screen.Import.Title",
-            "Screen.Import.Description",
-            AppVisualState.Warning,
-            "Screen.Import.StatusTitle",
-            "Screen.Import.StatusMessage")
-    {
-        _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
     }
 
     public IReadOnlyList<ExistingAccountReference> ExistingAccounts =>
