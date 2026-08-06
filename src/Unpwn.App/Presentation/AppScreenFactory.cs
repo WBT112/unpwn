@@ -12,6 +12,22 @@ public sealed class AppScreenFactory : IScreenFactory
         IVaultLifecycleService vaultLifecycle,
         RecoveryWizardSessionService wizard,
         IRecoverySessionService recoverySession,
+        ILocalizationService localization)
+        : this(
+            confirmationDialog,
+            vaultLifecycle,
+            wizard,
+            recoverySession,
+            new UnavailableAccountInventoryService(),
+            localization)
+    {
+    }
+
+    public AppScreenFactory(
+        IConfirmationDialogService confirmationDialog,
+        IVaultLifecycleService vaultLifecycle,
+        RecoveryWizardSessionService wizard,
+        IRecoverySessionService recoverySession,
         IAccountInventoryService accountInventory,
         ILocalizationService localization)
     {
