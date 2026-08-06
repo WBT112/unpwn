@@ -13,9 +13,15 @@ public sealed class ResourceLocalizationService : ILocalizationService
 
     private static readonly CultureInfo EnglishCulture = CultureInfo.GetCultureInfo("en");
     private static readonly CultureInfo GermanCulture = CultureInfo.GetCultureInfo("de");
-    private static readonly ResourceManager Resources = new(
-        "Unpwn.App.Localization.Strings",
-        typeof(ResourceLocalizationService).Assembly);
+    private static readonly ResourceManager[] ResourceManagers =
+    [
+        new(
+            "Unpwn.App.Localization.Strings",
+            typeof(ResourceLocalizationService).Assembly),
+        new(
+            "Unpwn.App.Localization.VaultStrings",
+            typeof(ResourceLocalizationService).Assembly),
+    ];
     private static readonly IReadOnlyList<LocalizationLanguage> Languages =
         new ReadOnlyCollection<LocalizationLanguage>(
         [
@@ -93,14 +99,12 @@ public sealed class ResourceLocalizationService : ILocalizationService
             "de" => GermanCulture,
             _ => throw new ArgumentOutOfRangeException(nameof(languageCode)),
         };
-        var resourceSet = Resources.GetResourceSet(culture, createIfNotExists: true, tryParents: false)
-            ?? throw new InvalidOperationException($"Resource set '{languageCode}' is unavailable.");
 
         return
         [
-            .. resourceSet
-                .Cast<DictionaryEntry>()
-                .Select(entry => (string)entry.Key)
+            .. ResourceManagers
+                .SelectMany(resourceManager => GetResourceKeys(resourceManager, culture))
+                .Distinct(StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal),
         ];
     }
@@ -150,9 +154,36 @@ public sealed class ResourceLocalizationService : ILocalizationService
         CultureChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private static string? GetResourceValue(CultureInfo culture, string key) =>
-        Resources.GetResourceSet(culture, createIfNotExists: true, tryParents: false)
-            ?.GetString(key, ignoreCase: false);
+    private static string? GetResourceValue(CultureInfo culture, string key)
+    {
+        foreach (var resourceManager in ResourceManagers)
+        {
+            var value = resourceManager
+                .GetResourceSet(culture, createIfNotExists: true, tryParents: false)
+                ?.GetString(key, ignoreCase: false);
+            if (value is not null)
+            {
+                return value;
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<string> GetResourceKeys(
+        ResourceManager resourceManager,
+        CultureInfo culture)
+    {
+        var resourceSet = resourceManager.GetResourceSet(
+            culture,
+            createIfNotExists: true,
+            tryParents: false);
+        return resourceSet is null
+            ? []
+            : resourceSet
+                .Cast<DictionaryEntry>()
+                .Select(entry => (string)entry.Key);
+    }
 
     private static string MissingKey(string key) => $"⟦{key}⟧";
 
