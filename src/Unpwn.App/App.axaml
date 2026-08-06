@@ -19,6 +19,9 @@
     <DataTemplate DataType="{x:Type vm:DashboardScreenViewModel}">
       <views:DashboardView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:AccountInventoryScreenViewModel}">
+      <views:AccountsView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vm:CompletionScreenViewModel}">
       <views:CompletionScreenView />
     </DataTemplate>
@@ -62,6 +65,5 @@
       <Setter Property="FontSize" Value="19" />
       <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
-
   </Application.Styles>
 </Application>
