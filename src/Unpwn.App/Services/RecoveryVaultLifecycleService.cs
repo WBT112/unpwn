@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
 using Unpwn.Vault.Storage;
 
@@ -141,9 +142,10 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         }
 
         var fullPath = Path.GetFullPath(path);
-        RecentVaults = RecentVaults
-            .Where(reference => !PathComparer.Equals(reference.Path, fullPath))
-            .ToArray();
+        RecentVaults =
+        [
+            .. RecentVaults.Where(reference => !PathComparer.Equals(reference.Path, fullPath)),
+        ];
         await SaveRecentVaultsBestEffortAsync(cancellationToken);
         PublishState(contextChanged: false);
     }
@@ -278,7 +280,11 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        if (string.IsNullOrEmpty(vaultPassword) || !TryNormalizePath(path, out var fullPath))
+        if (_wizard.Current.CurrentStep != RecoveryWizardStepId.VaultEntry ||
+            _wizard.Current.TrustedDeviceDecision != TrustedDeviceDecision.Trusted ||
+            _wizard.Current.HasVaultContext ||
+            string.IsNullOrEmpty(vaultPassword) ||
+            !TryNormalizePath(path, out var fullPath))
         {
             return VaultOperationResult.Failure(VaultOperationFailureCode.InvalidInput);
         }
@@ -320,6 +326,11 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
             exception is InvalidOperationException or JsonException or NotSupportedException)
         {
             openedVault.Dispose();
+            if (create)
+            {
+                TryDeleteCreatedVault(fullPath);
+            }
+
             return VaultOperationResult.Failure(VaultOperationFailureCode.AuthenticationOrIntegrity);
         }
 
@@ -458,6 +469,20 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
             exception is ArgumentException or NotSupportedException or PathTooLongException)
         {
             return false;
+        }
+    }
+
+    private static void TryDeleteCreatedVault(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
         }
     }
 
