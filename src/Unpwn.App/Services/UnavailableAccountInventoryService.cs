@@ -54,6 +54,8 @@ internal sealed class UnavailableAccountInventoryService : IAccountInventoryServ
 
     public void ClearForLock() => InventoryChanged?.Invoke(this, EventArgs.Empty);
 
+    public void MarkLoadFailed() => InventoryChanged?.Invoke(this, EventArgs.Empty);
+
     private static Task<AccountInventoryOperationResult> Failure(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
