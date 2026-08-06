@@ -27,11 +27,14 @@ public sealed class RecoveryWizardSessionService
 
     public RecoveryWizardState Current { get; private set; }
 
+    public void Reset(DateTimeOffset occurredAt) =>
+        SetCurrent(RecoveryWizardOrchestrator.Start(Guid.NewGuid(), occurredAt));
+
     public void BeginTrustedDeviceCheck(DateTimeOffset occurredAt)
     {
         if (Current.IsTerminal || Current.HasVaultContext)
         {
-            Current = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), occurredAt);
+            Reset(occurredAt);
         }
 
         if (Current.CurrentStep == RecoveryWizardStepId.Welcome)
