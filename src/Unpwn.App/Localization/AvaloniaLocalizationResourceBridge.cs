@@ -3,10 +3,9 @@ using Avalonia.Threading;
 
 namespace Unpwn.App.Localization;
 
-public sealed class AvaloniaLocalizationResourceBridge : IDisposable
+public sealed class AvaloniaLocalizationResourceBridge
 {
     private readonly ILocalizationService _localization;
-    private bool _isDisposed;
 
     public AvaloniaLocalizationResourceBridge(ILocalizationService localization)
     {
@@ -14,17 +13,6 @@ public sealed class AvaloniaLocalizationResourceBridge : IDisposable
         _localization = localization;
         _localization.CultureChanged += Localization_OnCultureChanged;
         ApplyResources();
-    }
-
-    public void Dispose()
-    {
-        if (_isDisposed)
-        {
-            return;
-        }
-
-        _localization.CultureChanged -= Localization_OnCultureChanged;
-        _isDisposed = true;
     }
 
     private void Localization_OnCultureChanged(object? sender, EventArgs eventArgs)
