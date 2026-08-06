@@ -108,5 +108,7 @@ public interface IRecoverySessionService
 
     void ClearForLock();
 
-    void MarkLoadFailed();
+    void MarkLoadFailed()
+    {
+    }
 }
