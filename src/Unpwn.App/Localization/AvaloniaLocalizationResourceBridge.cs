@@ -1,4 +1,3 @@
-using Avalonia;
 using Avalonia.Threading;
 
 namespace Unpwn.App.Localization;
@@ -28,7 +27,7 @@ public sealed class AvaloniaLocalizationResourceBridge
 
     private void ApplyResources()
     {
-        var application = Application.Current
+        var application = global::Avalonia.Application.Current
             ?? throw new InvalidOperationException("Avalonia application resources are unavailable.");
         foreach (var key in _localization.GetResourceKeys(ResourceLocalizationService.DefaultLanguageCode))
         {
