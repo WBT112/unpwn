@@ -88,6 +88,10 @@ Possible assistance layers include:
 
 Critical actions remain under user control.
 
+Recovery-location discovery can use a reviewed provider URL or the standard `/.well-known/change-password` endpoint. Redirects are followed only across explicitly expected HTTPS origins, and discovery requests do not transmit credentials, cookies, referrers, request bodies, or account-specific path and query data. A successful result is a visible navigation handoff, not evidence that the external recovery action succeeded.
+
+See [Recovery Location Discovery](docs/RECOVERY_LOCATION_DISCOVERY.md).
+
 ## Multilingual GUI
 
 The GUI is designed so additional languages can be added without changing recovery logic, workflow semantics, encrypted vault data, or machine-readable formats.
@@ -149,6 +153,7 @@ See:
 - [Localization and Multilingual GUI](docs/LOCALIZATION.md)
 - [CSV Import](docs/IMPORT.md)
 - [Recovery Workflows](docs/RECOVERY_WORKFLOWS.md)
+- [Recovery Location Discovery](docs/RECOVERY_LOCATION_DISCOVERY.md)
 - [Data Model](docs/DATA_MODEL.md)
 - [Vault Security](docs/VAULT_SECURITY.md)
 - [Threat Model](docs/THREAT_MODEL.md)

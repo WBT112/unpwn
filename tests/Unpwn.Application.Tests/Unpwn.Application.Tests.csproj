@@ -20,5 +20,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Unpwn.Application/Unpwn.Application.csproj" />
     <ProjectReference Include="../../src/Unpwn.Core/Unpwn.Core.csproj" />
+    <ProjectReference Include="../../src/Unpwn.Infrastructure/Unpwn.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
