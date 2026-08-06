@@ -25,66 +25,66 @@ public sealed record RecoveryWizardRecommendation(
     RecoveryWizardStepId StepId,
     RecoveryWizardRecommendationCode ReasonCode);
 
-public sealed class RecoveryWizardOrchestrator
+public static class RecoveryWizardOrchestrator
 {
-    public RecoveryWizardState Start(Guid wizardId, DateTimeOffset createdAt) =>
+    public static RecoveryWizardState Start(Guid wizardId, DateTimeOffset createdAt) =>
         RecoveryWizardState.Create(wizardId, createdAt);
 
-    public RecoveryWizardState Continue(
+    public static RecoveryWizardState Continue(
         RecoveryWizardState state,
         RecoveryWizardStepId nextStep,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Advance(state, nextStep, occurredAt);
 
-    public RecoveryWizardState GoBack(
+    public static RecoveryWizardState GoBack(
         RecoveryWizardState state,
         RecoveryWizardStepId previousStep,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.GoBack(state, previousStep, occurredAt);
 
-    public RecoveryWizardState RecordTrustedDeviceDecision(
+    public static RecoveryWizardState RecordTrustedDeviceDecision(
         RecoveryWizardState state,
         TrustedDeviceDecision decision,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.RecordTrustedDeviceDecision(state, decision, occurredAt);
 
-    public RecoveryWizardState StopAfterTrustedDeviceGuidance(
+    public static RecoveryWizardState StopAfterTrustedDeviceGuidance(
         RecoveryWizardState state,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.AcknowledgeTrustedDeviceGuidance(state, occurredAt);
 
-    public RecoveryWizardState ConfirmVaultReady(
+    public static RecoveryWizardState ConfirmVaultReady(
         RecoveryWizardState state,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.ConfirmVaultReady(state, occurredAt);
 
-    public RecoveryWizardState Pause(
+    public static RecoveryWizardState Pause(
         RecoveryWizardState state,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Pause(state, occurredAt);
 
-    public RecoveryWizardState Lock(
+    public static RecoveryWizardState Lock(
         RecoveryWizardState state,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Lock(state, occurredAt);
 
-    public RecoveryWizardState Resume(
+    public static RecoveryWizardState Resume(
         RecoveryWizardState state,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Resume(state, occurredAt);
 
-    public RecoveryWizardState Cancel(
+    public static RecoveryWizardState Cancel(
         RecoveryWizardState state,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Cancel(state, occurredAt);
 
-    public RecoveryWizardState Finish(
+    public static RecoveryWizardState Finish(
         RecoveryWizardState state,
         RecoveryWizardTerminalOutcome outcome,
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Finish(state, outcome, occurredAt);
 
-    public RecoveryWizardRecommendation GetRecommendation(RecoveryWizardState state)
+    public static RecoveryWizardRecommendation GetRecommendation(RecoveryWizardState state)
     {
         ArgumentNullException.ThrowIfNull(state);
 
