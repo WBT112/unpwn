@@ -3,25 +3,17 @@ using Unpwn.App.Services;
 
 namespace Unpwn.App.Presentation;
 
-public abstract class ScreenViewModel : ObservableObject
+public abstract class ScreenViewModel(
+    AppRoute route,
+    string title,
+    string description,
+    VisualStatusViewModel status) : ObservableObject
 {
-    private string _title;
-    private string _description;
-    private VisualStatusViewModel _status;
+    private string _title = title;
+    private string _description = description;
+    private VisualStatusViewModel _status = status;
 
-    protected ScreenViewModel(
-        AppRoute route,
-        string title,
-        string description,
-        VisualStatusViewModel status)
-    {
-        Route = route;
-        _title = title;
-        _description = description;
-        _status = status;
-    }
-
-    public AppRoute Route { get; }
+    public AppRoute Route { get; } = route;
 
     public string Title
     {
