@@ -63,7 +63,9 @@ The wizard begins with a trusted-device gate before a vault is created or unlock
 
 Wizard steps, lifecycle states, and recommendation reasons use stable language-neutral codes. Display text is localized only in the presentation layer. Opening an external provider page or returning to the application never marks an action complete automatically.
 
-See [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md).
+The encrypted recovery session records optional structured incident observations and provides a dashboard that keeps critical-account readiness, blocked work, failed actions, unresolved risks, lost access, and credential cleanup visible independently of weighted progress. Emergency ordering remains advisory and is derived only from user-provided observations.
+
+See [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md) and [Recovery Session Intake and Dashboard](docs/RECOVERY_SESSION_DASHBOARD.md).
 
 ## Automation Philosophy
 
@@ -134,6 +136,7 @@ See:
 - [Application Shell and UI Foundation](docs/UI_FOUNDATION.md)
 - [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md)
 - [Trusted Device and Vault Entry](docs/VAULT_ENTRY.md)
+- [Recovery Session Intake and Dashboard](docs/RECOVERY_SESSION_DASHBOARD.md)
 - [Localization and Multilingual GUI](docs/LOCALIZATION.md)
 - [CSV Import](docs/IMPORT.md)
 - [Recovery Workflows](docs/RECOVERY_WORKFLOWS.md)
