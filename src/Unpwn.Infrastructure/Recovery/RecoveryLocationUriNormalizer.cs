@@ -33,6 +33,7 @@ internal static class RecoveryLocationUriNormalizer
     {
         normalizedOrigin = string.Empty;
         if (!Uri.TryCreate(value, UriKind.Absolute, out var origin) ||
+            !string.IsNullOrEmpty(origin.Fragment) ||
             !TryNormalizeHttps(origin, out var normalized) ||
             normalized.AbsolutePath != "/" ||
             !string.IsNullOrEmpty(normalized.Query))
