@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Unpwn.Vault.Cryptography;
 using Unpwn.Vault.Storage;
 
@@ -83,7 +84,8 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         {
             _wizard.ResumeAfterUnlock(_vault, _clock());
         }
-        catch (InvalidOperationException)
+        catch (Exception exception) when (
+            exception is InvalidOperationException or JsonException or NotSupportedException)
         {
             _vault.Lock();
             return VaultOperationResult.Failure(VaultOperationFailureCode.AuthenticationOrIntegrity);
@@ -97,7 +99,8 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
             IsInactivityWarningVisible = false,
             InactivityLocksAt = null,
         };
-        Current = ShellContext.Unlocked(Snapshot.CurrentDisplayName ?? Path.GetFileName(Snapshot.CurrentPath));
+        Current = ShellContext.Unlocked(
+            Snapshot.CurrentDisplayName ?? Path.GetFileName(Snapshot.CurrentPath));
         PublishState(contextChanged: true);
         return VaultOperationResult.Success;
     }
@@ -121,10 +124,10 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
             cancellationToken);
     }
 
-    public async Task LockAsync(CancellationToken cancellationToken)
+    public Task LockAsync(CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        await LockInternalAsync(VaultLockReason.User, _clock(), cancellationToken);
+        return LockInternalAsync(VaultLockReason.User, _clock(), cancellationToken);
     }
 
     public async Task RemoveRecentReferenceAsync(
@@ -150,12 +153,16 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        if (string.IsNullOrWhiteSpace(path))
+        if (!TryNormalizePath(path, out var fullPath))
         {
             return VaultOperationResult.Failure(VaultOperationFailureCode.InvalidInput);
         }
 
-        var fullPath = Path.GetFullPath(path);
+        if (!File.Exists(fullPath))
+        {
+            return VaultOperationResult.Failure(VaultOperationFailureCode.NotFound);
+        }
+
         if (Snapshot.IsUnlocked &&
             Snapshot.CurrentPath is not null &&
             PathComparer.Equals(Snapshot.CurrentPath, fullPath))
@@ -271,19 +278,19 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         CancellationToken cancellationToken)
     {
         ThrowIfDisposed();
-        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrEmpty(vaultPassword))
+        if (string.IsNullOrEmpty(vaultPassword) || !TryNormalizePath(path, out var fullPath))
         {
             return VaultOperationResult.Failure(VaultOperationFailureCode.InvalidInput);
         }
 
-        string fullPath;
-        try
+        if (create && File.Exists(fullPath))
         {
-            fullPath = Path.GetFullPath(path);
+            return VaultOperationResult.Failure(VaultOperationFailureCode.AlreadyExists);
         }
-        catch (Exception exception) when (exception is ArgumentException or NotSupportedException or PathTooLongException)
+
+        if (!create && !File.Exists(fullPath))
         {
-            return VaultOperationResult.Failure(VaultOperationFailureCode.InvalidInput);
+            return VaultOperationResult.Failure(VaultOperationFailureCode.NotFound);
         }
 
         RecoveryVault? openedVault = null;
@@ -309,7 +316,8 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
                 _wizard.AttachExistingVault(openedVault, _clock());
             }
         }
-        catch (Exception exception) when (exception is InvalidOperationException or JsonException or NotSupportedException)
+        catch (Exception exception) when (
+            exception is InvalidOperationException or JsonException or NotSupportedException)
         {
             openedVault.Dispose();
             return VaultOperationResult.Failure(VaultOperationFailureCode.AuthenticationOrIntegrity);
@@ -332,7 +340,7 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         return VaultOperationResult.Success;
     }
 
-    private async Task LockInternalAsync(
+    private Task LockInternalAsync(
         VaultLockReason reason,
         DateTimeOffset occurredAt,
         CancellationToken cancellationToken)
@@ -340,7 +348,7 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         cancellationToken.ThrowIfCancellationRequested();
         if (_vault is null || _vault.IsLocked)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         _wizard.PrepareForLock(_vault, occurredAt);
@@ -354,7 +362,7 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
             InactivityLocksAt = null,
         };
         PublishState(contextChanged: true);
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     private async Task AddRecentVaultAsync(
@@ -404,7 +412,6 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 operation();
-                cancellationToken.ThrowIfCancellationRequested();
             }, cancellationToken);
             return VaultOperationResult.Success;
         }
@@ -424,10 +431,6 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         {
             return VaultOperationResult.Failure(VaultOperationFailureCode.UnsupportedVersion);
         }
-        catch (IOException exception) when (exception.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
-        {
-            return VaultOperationResult.Failure(VaultOperationFailureCode.AlreadyExists);
-        }
         catch (InvalidOperationException)
         {
             return VaultOperationResult.Failure(VaultOperationFailureCode.AuthenticationOrIntegrity);
@@ -435,6 +438,26 @@ public sealed class RecoveryVaultLifecycleService : IVaultLifecycleService
         catch (Exception)
         {
             return VaultOperationResult.Failure(VaultOperationFailureCode.IoFailure);
+        }
+    }
+
+    private static bool TryNormalizePath(string path, out string fullPath)
+    {
+        fullPath = string.Empty;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            fullPath = Path.GetFullPath(path);
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
         }
     }
 
