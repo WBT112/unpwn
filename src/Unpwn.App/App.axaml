@@ -16,6 +16,9 @@
     <DataTemplate DataType="{x:Type vm:VaultEntryScreenViewModel}">
       <views:VaultEntryView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:DashboardScreenViewModel}">
+      <views:DashboardView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vm:CompletionScreenViewModel}">
       <views:CompletionScreenView />
     </DataTemplate>
