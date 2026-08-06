@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -65,6 +66,10 @@ public partial class App : Avalonia.Application
         base.OnFrameworkInitializationCompleted();
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Recent-vault references are non-sensitive convenience metadata; startup must remain usable if that metadata is unavailable or malformed.")]
     private static async Task InitializeVaultReferencesAsync(
         IVaultLifecycleService vaultLifecycle)
     {
@@ -72,13 +77,9 @@ public partial class App : Avalonia.Application
         {
             await vaultLifecycle.InitializeAsync(CancellationToken.None);
         }
-        catch (IOException)
+        catch (Exception)
         {
-            // Recent-vault references are convenience metadata; vault entry remains usable.
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // Recent-vault references are convenience metadata; vault entry remains usable.
+            // Vault selection and creation remain usable without recent-vault convenience metadata.
         }
     }
 }
