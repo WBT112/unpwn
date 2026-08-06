@@ -96,11 +96,13 @@ public sealed class ResourceLocalizationService : ILocalizationService
         var resourceSet = Resources.GetResourceSet(culture, createIfNotExists: true, tryParents: false)
             ?? throw new InvalidOperationException($"Resource set '{languageCode}' is unavailable.");
 
-        return resourceSet
-            .Cast<DictionaryEntry>()
-            .Select(entry => (string)entry.Key)
-            .Order(StringComparer.Ordinal)
-            .ToArray();
+        return
+        [
+            .. resourceSet
+                .Cast<DictionaryEntry>()
+                .Select(entry => (string)entry.Key)
+                .Order(StringComparer.Ordinal),
+        ];
     }
 
     public void SetCulture(CultureInfo culture)
@@ -114,11 +116,8 @@ public sealed class ResourceLocalizationService : ILocalizationService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(languageCode);
         var language = Languages.SingleOrDefault(candidate =>
-            string.Equals(candidate.Code, languageCode, StringComparison.OrdinalIgnoreCase));
-        if (language is null)
-        {
-            throw new ArgumentOutOfRangeException(nameof(languageCode));
-        }
+            string.Equals(candidate.Code, languageCode, StringComparison.OrdinalIgnoreCase))
+            ?? throw new ArgumentOutOfRangeException(nameof(languageCode));
 
         SetResolvedCulture(language.Code, language.FormattingCulture);
     }
