@@ -6,7 +6,11 @@ using Unpwn.Vault.Cryptography;
 
 namespace Unpwn.App.Services;
 
-public sealed class RecoverySessionService : IRecoverySessionService, IDisposable
+public sealed class RecoverySessionService(
+    IEncryptedVaultRecordStore recordStore,
+    IRecoveryWizardVaultCoordinator wizardCoordinator,
+    Func<DateTimeOffset>? clock = null)
+    : IRecoverySessionService, IDisposable
 {
     private const string SessionRecordId = "8cf13bd9-2ccc-4b71-958a-439fefc90ac6";
     private static readonly VaultRecordDescriptor SessionDescriptor = new(
@@ -15,21 +19,13 @@ public sealed class RecoverySessionService : IRecoverySessionService, IDisposabl
         1);
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General);
 
-    private readonly IEncryptedVaultRecordStore _recordStore;
-    private readonly IRecoveryWizardVaultCoordinator _wizardCoordinator;
-    private readonly Func<DateTimeOffset> _clock;
+    private readonly IEncryptedVaultRecordStore _recordStore =
+        recordStore ?? throw new ArgumentNullException(nameof(recordStore));
+    private readonly IRecoveryWizardVaultCoordinator _wizardCoordinator =
+        wizardCoordinator ?? throw new ArgumentNullException(nameof(wizardCoordinator));
+    private readonly Func<DateTimeOffset> _clock = clock ?? (() => DateTimeOffset.UtcNow);
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _disposed;
-
-    public RecoverySessionService(
-        IEncryptedVaultRecordStore recordStore,
-        IRecoveryWizardVaultCoordinator wizardCoordinator,
-        Func<DateTimeOffset>? clock = null)
-    {
-        _recordStore = recordStore ?? throw new ArgumentNullException(nameof(recordStore));
-        _wizardCoordinator = wizardCoordinator ?? throw new ArgumentNullException(nameof(wizardCoordinator));
-        _clock = clock ?? (() => DateTimeOffset.UtcNow);
-    }
 
     public event EventHandler? SessionChanged;
 
