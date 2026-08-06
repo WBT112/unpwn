@@ -3,6 +3,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
+using Unpwn.App.Services;
 using Unpwn.Import.Csv;
 
 namespace Unpwn.App.Views;
@@ -18,6 +19,8 @@ public partial class CsvImportView : UserControl
     private int _validCandidateCount;
     private int _duplicateCandidateCount;
     private bool _hasReadFailure;
+    private bool _previewCanImport;
+    private string? _importResultKey;
 
     public CsvImportView()
     {
@@ -28,6 +31,8 @@ public partial class CsvImportView : UserControl
 
     private ILocalizationService Localization => _localization
         ?? throw new InvalidOperationException("CSV import localization is unavailable.");
+
+    private CsvImportScreenViewModel? ViewModel => DataContext as CsvImportScreenViewModel;
 
     private async void OpenCsvButton_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
@@ -88,11 +93,16 @@ public partial class CsvImportView : UserControl
         SelectMapping(AccountUrlColumnCombo, _analysis.SuggestedMapping.AccountUrlColumn);
         _lastDiagnostics = _analysis.Diagnostics;
         _lastCandidates = [];
+        _previewCanImport = false;
+        _duplicateCandidateCount = 0;
+        _importResultKey = null;
         ShowDiagnostics();
         PreviewItems.ItemsSource = null;
         _previewSummaryState = PreviewSummaryState.MappingReview;
         RefreshPreviewSummary();
+        ResetDuplicateResolution();
         RefreshPreviewButton();
+        RefreshImportControls();
     }
 
     private async void CreatePreviewButton_OnClick(object? sender, RoutedEventArgs eventArgs)
@@ -117,7 +127,11 @@ public partial class CsvImportView : UserControl
         {
             await using var stream = await _selectedFile.OpenReadAsync();
             using var reader = new StreamReader(stream);
-            preview = CsvAccountImportService.CreatePreview(reader, mapping, delimiter: _analysis.Delimiter);
+            preview = CsvAccountImportService.CreatePreview(
+                reader,
+                mapping,
+                ViewModel?.ExistingAccounts ?? [],
+                delimiter: _analysis.Delimiter);
         }
         catch (IOException)
         {
@@ -132,6 +146,8 @@ public partial class CsvImportView : UserControl
 
         _lastDiagnostics = preview.Diagnostics;
         _lastCandidates = preview.Candidates;
+        _previewCanImport = preview.CanImport;
+        _importResultKey = null;
         ShowDiagnostics();
         ShowCandidates();
         _validCandidateCount = preview.Candidates.Count;
@@ -141,6 +157,36 @@ public partial class CsvImportView : UserControl
             ? PreviewSummaryState.Valid
             : PreviewSummaryState.NotReady;
         RefreshPreviewSummary();
+        ResetDuplicateResolution();
+        RefreshImportControls();
+    }
+
+    private async void ImportReviewedButton_OnClick(object? sender, RoutedEventArgs eventArgs)
+    {
+        if (ViewModel is null || !_previewCanImport || _lastCandidates.Count == 0)
+        {
+            return;
+        }
+
+        ImportDuplicateResolution? resolution = DuplicateResolutionCombo.SelectedIndex switch
+        {
+            1 => ImportDuplicateResolution.SkipDuplicates,
+            2 => ImportDuplicateResolution.ImportAsSeparateAccounts,
+            _ => null,
+        };
+        var result = await ViewModel.ImportAsync(
+            _lastCandidates,
+            resolution,
+            CancellationToken.None);
+        _importResultKey = result.Succeeded
+            ? "Import.Result.Success"
+            : "Import.Result.Failure";
+        if (result.Succeeded)
+        {
+            _previewCanImport = false;
+        }
+
+        RefreshImportControls();
     }
 
     private void CsvImportView_OnDataContextChanged(object? sender, EventArgs eventArgs)
@@ -150,7 +196,7 @@ public partial class CsvImportView : UserControl
             previousLocalization.CultureChanged -= Localization_OnCultureChanged;
         }
 
-        _localization = (DataContext as CsvImportScreenViewModel)?.Localization;
+        _localization = ViewModel?.Localization;
         if (_localization is null)
         {
             SetEmptyMappingOptions();
@@ -168,12 +214,15 @@ public partial class CsvImportView : UserControl
         var accountMapping = GetMapping(AccountNameColumnCombo);
         var loginMapping = GetMapping(LoginIdentifierColumnCombo);
         var urlMapping = GetMapping(AccountUrlColumnCombo);
+        var duplicateResolution = DuplicateResolutionCombo.SelectedIndex;
 
         SetMappingOptions(_analysis?.Headers ?? []);
         SelectMapping(ServiceNameColumnCombo, serviceMapping);
         SelectMapping(AccountNameColumnCombo, accountMapping);
         SelectMapping(LoginIdentifierColumnCombo, loginMapping);
         SelectMapping(AccountUrlColumnCombo, urlMapping);
+        SetDuplicateResolutionOptions();
+        DuplicateResolutionCombo.SelectedIndex = duplicateResolution;
         RefreshLocalizedContent();
     }
 
@@ -195,6 +244,7 @@ public partial class CsvImportView : UserControl
         ShowCandidates();
         RefreshPreviewSummary();
         RefreshPreviewButton();
+        RefreshImportControls();
     }
 
     private void RefreshPasswordWarning()
@@ -212,6 +262,10 @@ public partial class CsvImportView : UserControl
     private void MappingCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs eventArgs) =>
         RefreshPreviewButton();
 
+    private void DuplicateResolutionCombo_OnSelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs eventArgs) => RefreshImportControls();
+
     private void SetEmptyMappingOptions()
     {
         var options = Array.Empty<string>();
@@ -219,6 +273,7 @@ public partial class CsvImportView : UserControl
         AccountNameColumnCombo.ItemsSource = options;
         LoginIdentifierColumnCombo.ItemsSource = options;
         AccountUrlColumnCombo.ItemsSource = options;
+        DuplicateResolutionCombo.ItemsSource = options;
     }
 
     private void SetMappingOptions(IReadOnlyList<string> headers)
@@ -241,6 +296,30 @@ public partial class CsvImportView : UserControl
         AccountNameColumnCombo.SelectedIndex = 0;
         LoginIdentifierColumnCombo.SelectedIndex = 0;
         AccountUrlColumnCombo.SelectedIndex = 0;
+        SetDuplicateResolutionOptions();
+    }
+
+    private void SetDuplicateResolutionOptions()
+    {
+        if (_localization is null)
+        {
+            DuplicateResolutionCombo.ItemsSource = Array.Empty<string>();
+            return;
+        }
+
+        DuplicateResolutionCombo.ItemsSource = new[]
+        {
+            Localization.GetString("Import.Resolution.Required"),
+            Localization.GetString("Import.Resolution.Skip"),
+            Localization.GetString("Import.Resolution.Separate"),
+        };
+    }
+
+    private void ResetDuplicateResolution()
+    {
+        SetDuplicateResolutionOptions();
+        DuplicateResolutionPanel.IsVisible = _duplicateCandidateCount > 0;
+        DuplicateResolutionCombo.SelectedIndex = _duplicateCandidateCount > 0 ? 0 : -1;
     }
 
     private static void SelectMapping(ComboBox comboBox, string? mapping)
@@ -268,6 +347,16 @@ public partial class CsvImportView : UserControl
         var passwordsConfirmed =
             _analysis?.ContainsPasswordColumns != true || ExcludePasswordsCheckBox.IsChecked == true;
         CreatePreviewButton.IsEnabled = _selectedFile is not null && hasRequiredMapping && passwordsConfirmed;
+    }
+
+    private void RefreshImportControls()
+    {
+        var duplicateResolutionComplete =
+            _duplicateCandidateCount == 0 || DuplicateResolutionCombo.SelectedIndex is 1 or 2;
+        ImportReviewedButton.IsEnabled = _previewCanImport && duplicateResolutionComplete;
+        ImportResultText.Text = _importResultKey is null
+            ? string.Empty
+            : Localization.GetString(_importResultKey);
     }
 
     private void ShowDiagnostics()
@@ -338,6 +427,9 @@ public partial class CsvImportView : UserControl
                 "ReadFailure",
                 string.Empty),
         ];
+        _previewCanImport = false;
+        _duplicateCandidateCount = 0;
+        _importResultKey = null;
         SelectedFileText.Text = Localization.GetString("Import.ReadFailure");
         PasswordWarningBorder.IsVisible = false;
         PreviewItems.ItemsSource = null;
@@ -351,7 +443,9 @@ public partial class CsvImportView : UserControl
         _previewSummaryState = PreviewSummaryState.SelectAnother;
         RefreshPreviewSummary();
         SetMappingOptions([]);
+        ResetDuplicateResolution();
         RefreshPreviewButton();
+        RefreshImportControls();
     }
 
     private string FormatCandidate(ImportAccountCandidate candidate)
