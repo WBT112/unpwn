@@ -170,25 +170,13 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                             redirectChain);
                     }
 
-                    if (response.Headers.Location is null)
+                    if (!TryGetRedirectTarget(
+                            response.Headers,
+                            current,
+                            out var redirectTarget,
+                            out var redirectFailure))
                     {
-                        return Failure(
-                            RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation,
-                            redirectChain);
-                    }
-
-                    Uri redirectTarget;
-                    try
-                    {
-                        redirectTarget = response.Headers.Location.IsAbsoluteUri
-                            ? response.Headers.Location
-                            : new Uri(current, response.Headers.Location);
-                    }
-                    catch (UriFormatException)
-                    {
-                        return Failure(
-                            RecoveryLocationDiscoveryFailureCode.InvalidRedirectLocation,
-                            redirectChain);
+                        return Failure(redirectFailure, redirectChain);
                     }
 
                     if (!RecoveryLocationUriNormalizer.TryNormalizeHttps(
@@ -234,6 +222,40 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                     handoff,
                     RecoveryLocationUriNormalizer.SanitizeOrigins(redirectChain));
             }
+        }
+    }
+
+    private static bool TryGetRedirectTarget(
+        HttpResponseHeaders headers,
+        Uri current,
+        out Uri redirectTarget,
+        out RecoveryLocationDiscoveryFailureCode failureCode)
+    {
+        redirectTarget = null!;
+        failureCode = RecoveryLocationDiscoveryFailureCode.None;
+        if (!headers.TryGetValues("Location", out var values))
+        {
+            failureCode = RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation;
+            return false;
+        }
+
+        var materialized = values.ToArray();
+        if (materialized.Length != 1 || string.IsNullOrWhiteSpace(materialized[0]) ||
+            !Uri.TryCreate(materialized[0], UriKind.RelativeOrAbsolute, out var location))
+        {
+            failureCode = RecoveryLocationDiscoveryFailureCode.InvalidRedirectLocation;
+            return false;
+        }
+
+        try
+        {
+            redirectTarget = location.IsAbsoluteUri ? location : new Uri(current, location);
+            return true;
+        }
+        catch (UriFormatException)
+        {
+            failureCode = RecoveryLocationDiscoveryFailureCode.InvalidRedirectLocation;
+            return false;
         }
     }
 
