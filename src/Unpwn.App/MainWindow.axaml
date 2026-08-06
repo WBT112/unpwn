@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         d:DesignWidth="1080"
         d:DesignHeight="720"
-        Title="unpwn"
+        Title="{DynamicResource App.WindowTitle}"
         Width="1080"
         Height="720"
         MinWidth="760"
@@ -29,11 +29,27 @@
           <TextBlock FontWeight="SemiBold" Text="{Binding VaultContextLabel}" />
           <TextBlock FontSize="12" Opacity="0.75" Text="{Binding SessionContextLabel}" />
         </StackPanel>
-        <Button Grid.Column="2"
-                TabIndex="0"
-                IsVisible="{Binding IsVaultUnlocked}"
-                Command="{Binding LockCommand}"
-                Content="Lock vault" />
+        <StackPanel Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="10">
+          <TextBlock VerticalAlignment="Center"
+                     Text="{DynamicResource Shell.Language.Label}" />
+          <ComboBox Width="120"
+                    TabIndex="0"
+                    ItemsSource="{Binding LanguageOptions}"
+                    SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:LanguageOptionViewModel">
+                <TextBlock Text="{Binding DisplayName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <Button TabIndex="1"
+                  IsVisible="{Binding IsVaultUnlocked}"
+                  Command="{Binding LockCommand}"
+                  Content="{DynamicResource Shell.Lock.Button}" />
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -50,9 +66,9 @@
                      FontSize="13"
                      FontWeight="SemiBold"
                      Opacity="0.75"
-                     Text="RECOVERY WORKSPACE" />
+                     Text="{DynamicResource Shell.WorkspaceHeading}" />
           <ListBox Grid.Row="1"
-                   TabIndex="1"
+                   TabIndex="2"
                    ItemsSource="{Binding NavigationItems}"
                    SelectedItem="{Binding SelectedNavigation, Mode=TwoWay}"
                    Background="Transparent"
@@ -85,7 +101,7 @@
         </Grid>
       </Border>
 
-      <ScrollViewer Grid.Row="0" Grid.Column="1" TabIndex="2">
+      <ScrollViewer Grid.Row="0" Grid.Column="1" TabIndex="3">
         <ContentControl Margin="28,24"
                         MaxWidth="900"
                         HorizontalAlignment="Stretch"
