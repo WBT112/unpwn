@@ -13,11 +13,29 @@ public sealed class AppScreenFactory : IScreenFactory
         RecoveryWizardSessionService wizard,
         IRecoverySessionService recoverySession,
         ILocalizationService localization)
+        : this(
+            confirmationDialog,
+            vaultLifecycle,
+            wizard,
+            recoverySession,
+            new UnavailableAccountInventoryService(),
+            localization)
+    {
+    }
+
+    public AppScreenFactory(
+        IConfirmationDialogService confirmationDialog,
+        IVaultLifecycleService vaultLifecycle,
+        RecoveryWizardSessionService wizard,
+        IRecoverySessionService recoverySession,
+        IAccountInventoryService accountInventory,
+        ILocalizationService localization)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
         ArgumentNullException.ThrowIfNull(wizard);
         ArgumentNullException.ThrowIfNull(recoverySession);
+        ArgumentNullException.ThrowIfNull(accountInventory);
         ArgumentNullException.ThrowIfNull(localization);
 
         _screens = new Dictionary<AppRoute, ScreenViewModel>
@@ -33,14 +51,10 @@ public sealed class AppScreenFactory : IScreenFactory
                 wizard,
                 confirmationDialog,
                 localization),
-            [AppRoute.Accounts] = new PlaceholderScreenViewModel(
-                AppRoute.Accounts,
-                localization,
-                "Screen.Accounts.Title",
-                "Screen.Accounts.Description",
-                AppVisualState.Normal,
-                "Screen.Accounts.StatusTitle",
-                "Screen.Accounts.StatusMessage"),
+            [AppRoute.Accounts] = new AccountInventoryScreenViewModel(
+                accountInventory,
+                confirmationDialog,
+                localization),
             [AppRoute.Workflow] = new PlaceholderScreenViewModel(
                 AppRoute.Workflow,
                 localization,
@@ -61,7 +75,7 @@ public sealed class AppScreenFactory : IScreenFactory
                 confirmationDialog,
                 vaultLifecycle,
                 localization),
-            [AppRoute.CsvImport] = new CsvImportScreenViewModel(localization),
+            [AppRoute.CsvImport] = new CsvImportScreenViewModel(accountInventory, localization),
         };
     }
 

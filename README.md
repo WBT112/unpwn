@@ -67,6 +67,14 @@ The encrypted recovery session records optional structured incident observations
 
 See [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md) and [Recovery Session Intake and Dashboard](docs/RECOVERY_SESSION_DASHBOARD.md).
 
+## Account Inventory and Recovery Planning
+
+Accounts can be entered manually or imported through the reviewed CSV flow. Old password columns are explicitly excluded before preview creation, duplicate candidates require an explicit resolution, and only reviewed account fields enter the encrypted inventory.
+
+Email mailboxes, password managers, identity providers, recovery contacts, telephone channels, and organization-managed sign-ins may be suggested from account metadata. Suggestions do not affect recovery ordering until the user explicitly confirms them. Confirmed dependencies, priorities, roles, and incident indicators produce a deterministic advisory recovery plan. Missing dependencies and cycles remain blocked; a justified override remains visible as unresolved risk.
+
+See [Account Inventory and Recovery Planning](docs/ACCOUNT_INVENTORY.md) and [CSV Import](docs/IMPORT.md).
+
 ## Automation Philosophy
 
 unpwn uses automation as assistance, not as an uncontrolled account bot.
@@ -137,6 +145,7 @@ See:
 - [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md)
 - [Trusted Device and Vault Entry](docs/VAULT_ENTRY.md)
 - [Recovery Session Intake and Dashboard](docs/RECOVERY_SESSION_DASHBOARD.md)
+- [Account Inventory and Recovery Planning](docs/ACCOUNT_INVENTORY.md)
 - [Localization and Multilingual GUI](docs/LOCALIZATION.md)
 - [CSV Import](docs/IMPORT.md)
 - [Recovery Workflows](docs/RECOVERY_WORKFLOWS.md)

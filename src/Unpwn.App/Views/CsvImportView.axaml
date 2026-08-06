@@ -91,6 +91,17 @@
         <TextBlock x:Name="PreviewSummaryText"
                    Text="{DynamicResource Import.Preview.Initial}"
                    TextWrapping="Wrap" />
+        <StackPanel x:Name="DuplicateResolutionPanel" IsVisible="False" Spacing="6">
+          <TextBlock Text="{DynamicResource Import.Resolution.Label}" FontWeight="SemiBold" />
+          <ComboBox x:Name="DuplicateResolutionCombo"
+                    SelectionChanged="DuplicateResolutionCombo_OnSelectionChanged" />
+        </StackPanel>
+        <Button x:Name="ImportReviewedButton"
+                HorizontalAlignment="Left"
+                IsEnabled="False"
+                Click="ImportReviewedButton_OnClick"
+                Content="{DynamicResource Import.Action.Import}" />
+        <TextBlock x:Name="ImportResultText" TextWrapping="Wrap" />
       </StackPanel>
     </Border>
   </StackPanel>

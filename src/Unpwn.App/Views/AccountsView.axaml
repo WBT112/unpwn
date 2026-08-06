@@ -1,0 +1,209 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unpwn.App.Presentation"
+             xmlns:views="using:Unpwn.App.Views"
+             x:Class="Unpwn.App.Views.AccountsView"
+             x:DataType="vm:AccountInventoryScreenViewModel">
+  <StackPanel Spacing="20">
+    <StackPanel Spacing="8">
+      <TextBlock Classes="page-title" Text="{Binding Title}" />
+      <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
+    </StackPanel>
+
+    <views:StatusBannerView DataContext="{Binding Status}" />
+
+    <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+        <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+          <TextBlock FontWeight="SemiBold" Text="{Binding InventorySummary}" />
+          <TextBlock Text="{Binding PlanSummary}" TextWrapping="Wrap" />
+        </StackPanel>
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
+          <Button Content="{DynamicResource Accounts.Action.New}" Command="{Binding NewAccountCommand}" />
+          <Button Content="{DynamicResource Accounts.Action.Refresh}" Command="{Binding RefreshCommand}" />
+        </StackPanel>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="2*,*,*" ColumnSpacing="12">
+          <TextBox Grid.Column="0"
+                   Text="{Binding SearchText, Mode=TwoWay}"
+                   PlaceholderText="{DynamicResource Accounts.Search.Placeholder}" />
+          <ComboBox Grid.Column="1"
+                    ItemsSource="{Binding Filters}"
+                    SelectedItem="{Binding SelectedFilter, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <ComboBox Grid.Column="2"
+                    ItemsSource="{Binding Sorts}"
+                    SelectedItem="{Binding SelectedSort, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Grid ColumnDefinitions="300,*" ColumnSpacing="18">
+      <Border Grid.Column="0" Padding="12" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="section-title" Text="{DynamicResource Accounts.List.Title}" />
+          <ListBox ItemsSource="{Binding Accounts}"
+                   SelectedItem="{Binding SelectedAccount, Mode=TwoWay}"
+                   MinHeight="420">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:AccountInventoryListItem">
+                <StackPanel Margin="4" Spacing="3">
+                  <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                  <TextBlock FontSize="12" Text="{Binding ProviderId}" />
+                  <TextBlock FontSize="12" Text="{Binding PriorityText}" />
+                  <TextBlock FontSize="12" Text="{Binding RoleText}" TextWrapping="Wrap" />
+                  <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding PlanText}" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </StackPanel>
+      </Border>
+
+      <StackPanel Grid.Column="1" Spacing="18">
+        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Editor.Title}" />
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="10">
+              <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
+                <TextBlock Text="{DynamicResource Accounts.Field.Provider}" />
+                <TextBox Text="{Binding ProviderId, Mode=TwoWay}" MaxLength="160" />
+              </StackPanel>
+              <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
+                <TextBlock Text="{DynamicResource Accounts.Field.Priority}" />
+                <ComboBox ItemsSource="{Binding Priorities}"
+                          SelectedItem="{Binding SelectedPriority, Mode=TwoWay}">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="0" Spacing="4">
+                <TextBlock Text="{DynamicResource Accounts.Field.Name}" />
+                <TextBox Text="{Binding AccountName, Mode=TwoWay}" MaxLength="200" />
+              </StackPanel>
+              <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                <TextBlock Text="{DynamicResource Accounts.Field.Login}" />
+                <TextBox Text="{Binding LoginIdentifier, Mode=TwoWay}" MaxLength="320" />
+              </StackPanel>
+              <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="4">
+                <TextBlock Text="{DynamicResource Accounts.Field.Url}" />
+                <TextBox Text="{Binding AccountUrl, Mode=TwoWay}" MaxLength="2048" />
+              </StackPanel>
+            </Grid>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Content="{DynamicResource Accounts.Action.Save}" Command="{Binding SaveAccountCommand}" />
+              <Button Content="{DynamicResource Accounts.Action.Delete}" Command="{Binding DeleteAccountCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Roles.Title}" />
+            <TextBlock Text="{DynamicResource Accounts.Roles.Help}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+              <ComboBox Grid.Column="0"
+                        ItemsSource="{Binding SuggestedRoles}"
+                        SelectedItem="{Binding SelectedSuggestedRole, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Grid.Column="1" Content="{DynamicResource Accounts.Roles.Accept}" Command="{Binding AcceptSuggestedRoleCommand}" />
+              <Button Grid.Column="2" Content="{DynamicResource Accounts.Roles.Reject}" Command="{Binding RejectSuggestedRoleCommand}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <ComboBox Grid.Column="0"
+                        ItemsSource="{Binding ConfirmedRoles}"
+                        SelectedItem="{Binding SelectedConfirmedRole, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Grid.Column="1" Content="{DynamicResource Accounts.Roles.Remove}" Command="{Binding RemoveRoleCommand}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <ComboBox Grid.Column="0"
+                        ItemsSource="{Binding AvailableRoles}"
+                        SelectedItem="{Binding SelectedRoleToAdd, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <Button Grid.Column="1" Content="{DynamicResource Accounts.Roles.Add}" Command="{Binding AddRoleCommand}" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Dependency.Title}" />
+            <TextBlock Text="{DynamicResource Accounts.Dependency.Help}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+              <ComboBox Grid.Column="0"
+                        ItemsSource="{Binding DependencyTargets}"
+                        SelectedItem="{Binding SelectedDependencyTarget, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+              <ComboBox Grid.Column="1"
+                        ItemsSource="{Binding DependencyKinds}"
+                        SelectedItem="{Binding SelectedDependencyKind, Mode=TwoWay}">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </Grid>
+            <TextBox Text="{Binding OverrideReason, Mode=TwoWay}"
+                     PlaceholderText="{DynamicResource Accounts.Dependency.OverridePlaceholder}"
+                     MaxLength="500" />
+            <Button HorizontalAlignment="Left"
+                    Content="{DynamicResource Accounts.Dependency.Add}"
+                    Command="{Binding AddDependencyCommand}" />
+            <ListBox ItemsSource="{Binding Dependencies}"
+                     SelectedItem="{Binding SelectedDependency, Mode=TwoWay}"
+                     MaxHeight="180">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:AccountInventoryDependencyItem">
+                  <TextBlock Margin="4" Text="{Binding DisplayText}" TextWrapping="Wrap" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <Button HorizontalAlignment="Left"
+                    Content="{DynamicResource Accounts.Dependency.Remove}"
+                    Command="{Binding RemoveDependencyCommand}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+
+    <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Plan.Title}" />
+        <TextBlock Text="{DynamicResource Accounts.Plan.Help}" TextWrapping="Wrap" />
+        <ListBox ItemsSource="{Binding PlanItems}" MaxHeight="260">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:AccountInventoryPlanDisplayItem">
+              <TextBlock Margin="4" Text="{Binding DisplayText}" TextWrapping="Wrap" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding HasValidationMessage}"
+            Padding="12"
+            CornerRadius="8"
+            Background="#FFF4E5">
+      <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+    </Border>
+  </StackPanel>
+</UserControl>

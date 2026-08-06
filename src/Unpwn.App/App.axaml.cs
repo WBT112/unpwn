@@ -25,15 +25,20 @@ public partial class App : Avalonia.Application
             var recoverySession = new RecoverySessionService(
                 vaultLifecycle,
                 vaultLifecycle);
-            var sessionVaultBridge = new RecoverySessionVaultBridge(
+            var accountInventory = new AccountInventoryService(
                 vaultLifecycle,
                 recoverySession);
+            var sessionVaultBridge = new RecoverySessionVaultBridge(
+                vaultLifecycle,
+                recoverySession,
+                accountInventory);
             var confirmationDialog = new AvaloniaConfirmationDialogService(() => mainWindow);
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
                 wizard,
                 recoverySession,
+                accountInventory,
                 localization);
             var shell = new ShellViewModel(screenFactory, vaultLifecycle, localization);
 
@@ -45,6 +50,7 @@ public partial class App : Avalonia.Application
             desktop.Exit += (_, _) =>
             {
                 sessionVaultBridge.Dispose();
+                accountInventory.Dispose();
                 recoverySession.Dispose();
                 vaultLifecycle.Dispose();
             };
