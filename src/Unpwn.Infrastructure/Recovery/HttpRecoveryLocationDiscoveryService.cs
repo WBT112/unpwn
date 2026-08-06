@@ -207,9 +207,10 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                         redirectChain);
                 }
 
-                var expectedOrigins = allowedOrigins
-                    .Order(StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
+                string[] expectedOrigins =
+                [
+                    .. allowedOrigins.Order(StringComparer.OrdinalIgnoreCase),
+                ];
                 var handoff = new RecoveryNavigationHandoff(
                     current,
                     RecoveryLocationUriNormalizer.GetOrigin(current),
@@ -324,34 +325,41 @@ public sealed class HttpRecoveryLocationDiscoveryService(
             return false;
         }
 
+        string[] normalizedExpectedOrigins =
+        [
+            .. expectedOrigins.Order(StringComparer.OrdinalIgnoreCase),
+        ];
         handoff = new RecoveryNavigationHandoff(
             normalizedDestination,
             destinationOrigin,
-            expectedOrigins.Order(StringComparer.OrdinalIgnoreCase).ToArray(),
+            normalizedExpectedOrigins,
             source,
             RequiresVisibleConfirmation: true);
         return true;
     }
 
     private static RecoveryLocationFallbackReason MapFallbackReason(
-        RecoveryLocationDiscoveryFailureCode failureCode) => failureCode switch
+        RecoveryLocationDiscoveryFailureCode failureCode)
     {
-        RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin =>
-            RecoveryLocationFallbackReason.InsecureAccountOrigin,
-        RecoveryLocationDiscoveryFailureCode.NetworkFailure =>
-            RecoveryLocationFallbackReason.NetworkFailure,
-        RecoveryLocationDiscoveryFailureCode.UnsupportedResponse =>
-            RecoveryLocationFallbackReason.UnsupportedResponse,
-        RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation =>
-            RecoveryLocationFallbackReason.MissingRedirectLocation,
-        RecoveryLocationDiscoveryFailureCode.InsecureRedirect =>
-            RecoveryLocationFallbackReason.InsecureRedirect,
-        RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin =>
-            RecoveryLocationFallbackReason.UnexpectedRedirectOrigin,
-        RecoveryLocationDiscoveryFailureCode.RedirectLimitExceeded =>
-            RecoveryLocationFallbackReason.RedirectLimitExceeded,
-        _ => RecoveryLocationFallbackReason.None,
-    };
+        return failureCode switch
+        {
+            RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin =>
+                RecoveryLocationFallbackReason.InsecureAccountOrigin,
+            RecoveryLocationDiscoveryFailureCode.NetworkFailure =>
+                RecoveryLocationFallbackReason.NetworkFailure,
+            RecoveryLocationDiscoveryFailureCode.UnsupportedResponse =>
+                RecoveryLocationFallbackReason.UnsupportedResponse,
+            RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation =>
+                RecoveryLocationFallbackReason.MissingRedirectLocation,
+            RecoveryLocationDiscoveryFailureCode.InsecureRedirect =>
+                RecoveryLocationFallbackReason.InsecureRedirect,
+            RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin =>
+                RecoveryLocationFallbackReason.UnexpectedRedirectOrigin,
+            RecoveryLocationDiscoveryFailureCode.RedirectLimitExceeded =>
+                RecoveryLocationFallbackReason.RedirectLimitExceeded,
+            _ => RecoveryLocationFallbackReason.None,
+        };
+    }
 
     private static bool TryValidateRequest(RecoveryLocationDiscoveryRequest? request) =>
         request is not null &&
