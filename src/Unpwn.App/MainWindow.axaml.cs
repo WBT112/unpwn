@@ -28,19 +28,19 @@ public partial class MainWindow : Window
         _inactivityTimer.Start();
     }
 
-    protected override void OnKeyDown(KeyEventArgs eventArgs)
+    protected override void OnKeyDown(KeyEventArgs e)
     {
         _vaultLifecycle?.RecordUserActivity(DateTimeOffset.UtcNow);
-        base.OnKeyDown(eventArgs);
+        base.OnKeyDown(e);
     }
 
-    protected override void OnPointerPressed(PointerPressedEventArgs eventArgs)
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
     {
         _vaultLifecycle?.RecordUserActivity(DateTimeOffset.UtcNow);
-        base.OnPointerPressed(eventArgs);
+        base.OnPointerPressed(e);
     }
 
-    protected override void OnClosed(EventArgs eventArgs)
+    protected override void OnClosed(EventArgs e)
     {
         if (_inactivityTimer is not null)
         {
@@ -49,7 +49,7 @@ public partial class MainWindow : Window
             _inactivityTimer = null;
         }
 
-        base.OnClosed(eventArgs);
+        base.OnClosed(e);
     }
 
     private async void InactivityTimer_OnTick(object? sender, EventArgs eventArgs)
