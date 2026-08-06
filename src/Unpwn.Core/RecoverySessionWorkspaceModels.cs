@@ -286,12 +286,12 @@ public sealed record RecoverySessionWorkspace(
         var alerts = new List<RecoveryDashboardAlert>();
         foreach (var account in Accounts)
         {
-            AddAlert(RecoveryDashboardAlertKind.BlockedAction, account, account.BlockedRequiredActions);
-            AddAlert(RecoveryDashboardAlertKind.FailedAction, account, account.FailedRequiredActions);
-            AddAlert(RecoveryDashboardAlertKind.UnresolvedRisk, account, account.UnresolvedRisks);
-            AddAlert(RecoveryDashboardAlertKind.LostAccess, account, account.AccessLost ? 1 : 0);
-            AddAlert(RecoveryDashboardAlertKind.CredentialExport, account, account.CredentialsAwaitingExport);
-            AddAlert(RecoveryDashboardAlertKind.CredentialDeletion, account, account.CredentialsAwaitingDeletion);
+            AddAlert(alerts, RecoveryDashboardAlertKind.BlockedAction, account, account.BlockedRequiredActions);
+            AddAlert(alerts, RecoveryDashboardAlertKind.FailedAction, account, account.FailedRequiredActions);
+            AddAlert(alerts, RecoveryDashboardAlertKind.UnresolvedRisk, account, account.UnresolvedRisks);
+            AddAlert(alerts, RecoveryDashboardAlertKind.LostAccess, account, account.AccessLost ? 1 : 0);
+            AddAlert(alerts, RecoveryDashboardAlertKind.CredentialExport, account, account.CredentialsAwaitingExport);
+            AddAlert(alerts, RecoveryDashboardAlertKind.CredentialDeletion, account, account.CredentialsAwaitingDeletion);
         }
 
         return alerts;
