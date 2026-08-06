@@ -104,5 +104,7 @@ public interface IAccountInventoryService
 
     void ClearForLock();
 
-    void MarkLoadFailed();
+    void MarkLoadFailed()
+    {
+    }
 }
