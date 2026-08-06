@@ -4,14 +4,11 @@ using System.Text.Json;
 using Unpwn.Core;
 using Unpwn.Import.Csv;
 using Unpwn.Vault.Cryptography;
+using Unpwn.Vault.Storage;
 
 namespace Unpwn.App.Services;
 
-public sealed class AccountInventoryService(
-    IEncryptedVaultRecordStore recordStore,
-    IRecoverySessionService recoverySession,
-    Func<DateTimeOffset>? clock = null)
-    : IAccountInventoryService, IDisposable
+public sealed class AccountInventoryService : IAccountInventoryService, IDisposable
 {
     private const string InventoryRecordId = "b3ed4b71-55ad-4e47-af52-ed0c04454de2";
     private static readonly VaultRecordDescriptor InventoryDescriptor = new(
@@ -29,13 +26,28 @@ public sealed class AccountInventoryService(
         AccountInventoryRole.OrganizationManagedSignIn,
     ];
 
-    private readonly IEncryptedVaultRecordStore _recordStore =
-        recordStore ?? throw new ArgumentNullException(nameof(recordStore));
-    private readonly IRecoverySessionService _recoverySession =
-        recoverySession ?? throw new ArgumentNullException(nameof(recoverySession));
-    private readonly Func<DateTimeOffset> _clock = clock ?? (() => DateTimeOffset.UtcNow);
+    private readonly IEncryptedVaultRecordStore _recordStore;
+    private readonly IRecoverySessionService _recoverySession;
+    private readonly IRecoverySessionProjectionCoordinator? _projectionCoordinator;
+    private readonly Func<DateTimeOffset> _clock;
+    private readonly WorkspaceMutationCoordinator _mutationCoordinator;
+    private readonly bool _ownsMutationCoordinator;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private bool _disposed;
+
+    public AccountInventoryService(
+        IEncryptedVaultRecordStore recordStore,
+        IRecoverySessionService recoverySession,
+        Func<DateTimeOffset>? clock = null,
+        WorkspaceMutationCoordinator? mutationCoordinator = null)
+    {
+        _recordStore = recordStore ?? throw new ArgumentNullException(nameof(recordStore));
+        _recoverySession = recoverySession ?? throw new ArgumentNullException(nameof(recoverySession));
+        _projectionCoordinator = recoverySession as IRecoverySessionProjectionCoordinator;
+        _clock = clock ?? (() => DateTimeOffset.UtcNow);
+        _mutationCoordinator = mutationCoordinator ?? new WorkspaceMutationCoordinator();
+        _ownsMutationCoordinator = mutationCoordinator is null;
+    }
 
     public event EventHandler? InventoryChanged;
 
@@ -46,71 +58,14 @@ public sealed class AccountInventoryService(
     public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan(
         _recoverySession.CurrentSession?.Incident.Indicators ?? IncidentIndicator.None);
 
-    public async Task InitializeAsync(CancellationToken cancellationToken)
-    {
-        ThrowIfDisposed();
-        await _gate.WaitAsync(cancellationToken);
-        try
-        {
-            if (!_recordStore.IsVaultUnlocked)
+    public Task InitializeAsync(CancellationToken cancellationToken) =>
+        _mutationCoordinator.ExecuteAsync(
+            async token =>
             {
-                SetState(AccountInventoryLoadState.Locked, null);
-                return;
-            }
-
-            var session = _recoverySession.CurrentSession;
-            if (session is null)
-            {
-                SetState(AccountInventoryLoadState.Empty, null);
-                return;
-            }
-
-            SetState(AccountInventoryLoadState.Loading, null);
-            byte[]? plaintext = null;
-            try
-            {
-                plaintext = await _recordStore.ReadEncryptedRecordAsync(
-                    InventoryDescriptor,
-                    cancellationToken);
-                if (plaintext is null)
-                {
-                    var empty = AccountInventoryState.Empty(session.Id, _clock());
-                    SetState(AccountInventoryLoadState.Empty, empty);
-                    await SyncDashboardAsync(empty, cancellationToken);
-                    return;
-                }
-
-                var inventory = JsonSerializer.Deserialize<AccountInventoryState>(
-                    plaintext,
-                    SerializerOptions)
-                    ?? throw new JsonException("The account inventory record is empty.");
-                inventory.Validate();
-                if (inventory.SessionId != session.Id)
-                {
-                    throw new InvalidOperationException("The account inventory belongs to another recovery session.");
-                }
-
-                SetState(AccountInventoryLoadState.Loaded, inventory);
-                await SyncDashboardAsync(inventory, cancellationToken);
-            }
-            catch (Exception exception) when (
-                exception is JsonException or InvalidOperationException or ArgumentException or NotSupportedException)
-            {
-                SetState(AccountInventoryLoadState.Corrupted, null);
-            }
-            finally
-            {
-                if (plaintext is not null)
-                {
-                    CryptographicOperations.ZeroMemory(plaintext);
-                }
-            }
-        }
-        finally
-        {
-            _gate.Release();
-        }
-    }
+                await InitializeCoreAsync(token);
+                return true;
+            },
+            cancellationToken);
 
     public Task<AccountInventoryOperationResult> UpsertAsync(
         AccountInventoryUpsertRequest request,
@@ -380,6 +335,12 @@ public sealed class AccountInventoryService(
         SetState(AccountInventoryLoadState.Locked, null);
     }
 
+    public void MarkLoadFailed()
+    {
+        ThrowIfDisposed();
+        SetState(AccountInventoryLoadState.LoadFailed, null);
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -389,16 +350,97 @@ public sealed class AccountInventoryService(
 
         CurrentInventory = null;
         _gate.Dispose();
+        if (_ownsMutationCoordinator)
+        {
+            _mutationCoordinator.Dispose();
+        }
+
         _disposed = true;
     }
 
-    private async Task<AccountInventoryOperationResult> MutateAsync(
+    private async Task InitializeCoreAsync(CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!_recordStore.IsVaultUnlocked)
+            {
+                SetState(AccountInventoryLoadState.Locked, null);
+                return;
+            }
+
+            var session = _recoverySession.CurrentSession;
+            if (session is null)
+            {
+                SetState(AccountInventoryLoadState.Empty, null);
+                return;
+            }
+
+            SetState(AccountInventoryLoadState.Loading, null);
+            byte[]? plaintext = null;
+            try
+            {
+                plaintext = await _recordStore.ReadEncryptedRecordAsync(
+                    InventoryDescriptor,
+                    cancellationToken);
+                var inventory = plaintext is null
+                    ? AccountInventoryState.Empty(session.Id, _clock())
+                    : JsonSerializer.Deserialize<AccountInventoryState>(plaintext, SerializerOptions)
+                        ?? throw new JsonException("The account inventory record is empty.");
+                inventory.Validate();
+                if (inventory.SessionId != session.Id)
+                {
+                    throw new InvalidOperationException("The account inventory belongs to another recovery session.");
+                }
+
+                var projectionResult = await ReconcileDashboardAsync(inventory, cancellationToken);
+                if (!projectionResult.Succeeded)
+                {
+                    SetState(AccountInventoryLoadState.LoadFailed, null);
+                    return;
+                }
+
+                SetState(
+                    plaintext is null ? AccountInventoryLoadState.Empty : AccountInventoryLoadState.Loaded,
+                    inventory);
+            }
+            catch (Exception exception) when (
+                exception is JsonException or InvalidOperationException or ArgumentException or NotSupportedException)
+            {
+                SetState(AccountInventoryLoadState.Corrupted, null);
+            }
+            finally
+            {
+                if (plaintext is not null)
+                {
+                    CryptographicOperations.ZeroMemory(plaintext);
+                }
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private Task<AccountInventoryOperationResult> MutateAsync(
         Func<AccountInventoryState, AccountInventoryState> mutation,
         CancellationToken cancellationToken,
         int affectedAccounts = 1)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(mutation);
+        return _mutationCoordinator.ExecuteAsync(
+            token => MutateCoreAsync(mutation, affectedAccounts, token),
+            cancellationToken);
+    }
+
+    private async Task<AccountInventoryOperationResult> MutateCoreAsync(
+        Func<AccountInventoryState, AccountInventoryState> mutation,
+        int affectedAccounts,
+        CancellationToken cancellationToken)
+    {
         await _gate.WaitAsync(cancellationToken);
         try
         {
@@ -410,6 +452,11 @@ public sealed class AccountInventoryService(
             if (LoadState == AccountInventoryLoadState.Corrupted)
             {
                 return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.Corrupted);
+            }
+
+            if (LoadState == AccountInventoryLoadState.LoadFailed)
+            {
+                return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.IoFailure);
             }
 
             var inventory = CurrentInventory;
@@ -435,17 +482,14 @@ public sealed class AccountInventoryService(
                 return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.InvalidInput);
             }
 
-            var persisted = await PersistAsync(updated, cancellationToken);
+            var persisted = await PersistInventoryAndProjectionAsync(updated, cancellationToken);
             if (!persisted.Succeeded)
             {
                 return persisted;
             }
 
             SetState(AccountInventoryLoadState.Loaded, updated);
-            var dashboardResult = await SyncDashboardAsync(updated, cancellationToken);
-            return dashboardResult.Succeeded
-                ? AccountInventoryOperationResult.Success(affectedAccounts)
-                : dashboardResult;
+            return AccountInventoryOperationResult.Success(affectedAccounts);
         }
         finally
         {
@@ -453,11 +497,96 @@ public sealed class AccountInventoryService(
         }
     }
 
+    private async Task<AccountInventoryOperationResult> PersistInventoryAndProjectionAsync(
+        AccountInventoryState inventory,
+        CancellationToken cancellationToken)
+    {
+        if (_projectionCoordinator is null)
+        {
+            var inventoryResult = await PersistInventoryOnlyAsync(inventory, cancellationToken);
+            if (!inventoryResult.Succeeded)
+            {
+                return inventoryResult;
+            }
+
+            return await SyncDashboardLegacyAsync(inventory, cancellationToken);
+        }
+
+        var summaries = BuildDashboardSummaries(inventory);
+        PreparedRecoverySessionUpdate sessionUpdate;
+        try
+        {
+            sessionUpdate = await _projectionCoordinator.PrepareAccountSummaryUpdateAsync(
+                summaries,
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+        {
+            return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.Conflict);
+        }
+
+        using (sessionUpdate)
+        {
+            var inventoryPlaintext = JsonSerializer.SerializeToUtf8Bytes(inventory, SerializerOptions);
+            try
+            {
+                await _recordStore.WriteEncryptedRecordsAtomicallyAsync(
+                    [
+                        new VaultRecordWrite(InventoryDescriptor, inventoryPlaintext),
+                        sessionUpdate.ToWrite(),
+                    ],
+                    cancellationToken);
+                _projectionCoordinator.CommitPreparedUpdate(sessionUpdate);
+                return AccountInventoryOperationResult.Success();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.IoFailure);
+            }
+            finally
+            {
+                CryptographicOperations.ZeroMemory(inventoryPlaintext);
+            }
+        }
+    }
+
+    private async Task<AccountInventoryOperationResult> ReconcileDashboardAsync(
+        AccountInventoryState inventory,
+        CancellationToken cancellationToken)
+    {
+        if (_projectionCoordinator is null)
+        {
+            return await SyncDashboardLegacyAsync(inventory, cancellationToken);
+        }
+
+        using var update = await _projectionCoordinator.PrepareAccountSummaryUpdateAsync(
+            BuildDashboardSummaries(inventory),
+            cancellationToken);
+        try
+        {
+            await _recordStore.WriteEncryptedRecordsAtomicallyAsync([update.ToWrite()], cancellationToken);
+            _projectionCoordinator.CommitPreparedUpdate(update);
+            return AccountInventoryOperationResult.Success();
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.IoFailure);
+        }
+    }
+
     [SuppressMessage(
         "Design",
         "CA1031:Do not catch general exception types",
         Justification = "This encrypted persistence boundary must not expose source exception details.")]
-    private async Task<AccountInventoryOperationResult> PersistAsync(
+    private async Task<AccountInventoryOperationResult> PersistInventoryOnlyAsync(
         AccountInventoryState inventory,
         CancellationToken cancellationToken)
     {
@@ -484,14 +613,31 @@ public sealed class AccountInventoryService(
         }
     }
 
-    private async Task<AccountInventoryOperationResult> SyncDashboardAsync(
+    private async Task<AccountInventoryOperationResult> SyncDashboardLegacyAsync(
         AccountInventoryState inventory,
         CancellationToken cancellationToken)
+    {
+        var result = await _recoverySession.ReplaceAccountSummariesAsync(
+            BuildDashboardSummaries(inventory),
+            cancellationToken);
+        return result.Succeeded
+            ? AccountInventoryOperationResult.Success()
+            : AccountInventoryOperationResult.Failure(result.FailureCode switch
+            {
+                RecoverySessionOperationFailureCode.Locked => AccountInventoryFailureCode.Locked,
+                RecoverySessionOperationFailureCode.Corrupted => AccountInventoryFailureCode.Corrupted,
+                RecoverySessionOperationFailureCode.InvalidInput => AccountInventoryFailureCode.InvalidInput,
+                RecoverySessionOperationFailureCode.Conflict => AccountInventoryFailureCode.Conflict,
+                _ => AccountInventoryFailureCode.IoFailure,
+            });
+    }
+
+    private RecoveryAccountDashboardEntry[] BuildDashboardSummaries(AccountInventoryState inventory)
     {
         var plan = inventory.CreatePlan(
             _recoverySession.CurrentSession?.Incident.Indicators ?? IncidentIndicator.None);
         var planByAccount = plan.Items.ToDictionary(item => item.AccountId);
-        var summaries = inventory.Accounts.Select(account =>
+        return inventory.Accounts.Select(account =>
         {
             var planItem = planByAccount[account.Id];
             var isBlocked = planItem.Status is
@@ -516,17 +662,6 @@ public sealed class AccountInventoryService(
                 planItem.DependencyDepth,
                 planItem.WaitingForAccountIds);
         }).ToArray();
-        var result = await _recoverySession.ReplaceAccountSummariesAsync(summaries, cancellationToken);
-        return result.Succeeded
-            ? AccountInventoryOperationResult.Success()
-            : AccountInventoryOperationResult.Failure(result.FailureCode switch
-            {
-                RecoverySessionOperationFailureCode.Locked => AccountInventoryFailureCode.Locked,
-                RecoverySessionOperationFailureCode.Corrupted => AccountInventoryFailureCode.Corrupted,
-                RecoverySessionOperationFailureCode.InvalidInput => AccountInventoryFailureCode.InvalidInput,
-                RecoverySessionOperationFailureCode.Conflict => AccountInventoryFailureCode.Conflict,
-                _ => AccountInventoryFailureCode.IoFailure,
-            });
     }
 
     private static string ResolveProviderId(ImportAccountCandidate candidate)
