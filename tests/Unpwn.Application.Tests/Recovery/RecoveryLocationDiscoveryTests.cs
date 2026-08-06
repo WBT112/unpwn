@@ -226,6 +226,52 @@ public sealed class RecoveryLocationDiscoveryTests
     }
 
     [Fact]
+    public async Task InvalidProviderDefinitionCannotExpandRedirectAllowlist()
+    {
+        var location = new RecoveryLocationDefinition(
+            "settings",
+            new Uri("http://example.test/security"),
+            ["https://attacker.example"]);
+        var handler = new RecordingHandler(_ => Redirect("https://attacker.example/change-password"));
+        using var service = CreateService(handler);
+
+        var result = await service.DiscoverAsync(
+            CreateRequest(
+                RecoveryLocationSelectionPolicy.WellKnownFirst,
+                accountUri: new Uri("https://example.test/account"),
+                location: location),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Null(result.Handoff);
+        Assert.Equal(
+            RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin,
+            result.FailureCode);
+    }
+
+    [Fact]
+    public async Task ProviderOriginWithFragmentFailsClosed()
+    {
+        var location = new RecoveryLocationDefinition(
+            "settings",
+            new Uri("https://example.test/security"),
+            ["https://example.test#decorated"]);
+        var handler = new RecordingHandler(_ => Success());
+        using var service = CreateService(handler);
+
+        var result = await service.DiscoverAsync(
+            CreateRequest(
+                RecoveryLocationSelectionPolicy.ProviderDefinedOnly,
+                accountUri: null,
+                location: location),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(RecoveryLocationDiscoveryFailureCode.ProviderLocationInvalid, result.FailureCode);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
     public async Task NetworkFailureFallsBackWithoutExposingExceptionDetails()
     {
         var handler = new RecordingHandler(_ => throw new HttpRequestException("sensitive transport detail"));
