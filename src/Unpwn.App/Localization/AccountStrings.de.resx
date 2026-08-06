@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Accounts.Error.Command" xml:space="preserve"><value>Die Kontoaktion konnte nicht sicher abgeschlossen werden.</value></data>
+  <data name="Accounts.Priority.Low" xml:space="preserve"><value>Niedrig</value></data>
+  <data name="Accounts.Priority.Normal" xml:space="preserve"><value>Normal</value></data>
+  <data name="Accounts.Priority.High" xml:space="preserve"><value>Hoch</value></data>
+  <data name="Accounts.Priority.Critical" xml:space="preserve"><value>Kritisch</value></data>
+  <data name="Accounts.Filter.All" xml:space="preserve"><value>Alle Konten</value></data>
+  <data name="Accounts.Filter.Critical" xml:space="preserve"><value>Kritische Konten</value></data>
+  <data name="Accounts.Filter.RecoveryChannels" xml:space="preserve"><value>Wiederherstellungskanäle</value></data>
+  <data name="Accounts.Filter.NeedsRoleConfirmation" xml:space="preserve"><value>Rollenbestätigung erforderlich</value></data>
+  <data name="Accounts.Filter.Blocked" xml:space="preserve"><value>Blockierte Abhängigkeiten</value></data>
+  <data name="Accounts.Sort.RecoveryOrder" xml:space="preserve"><value>Wiederherstellungsreihenfolge</value></data>
+  <data name="Accounts.Sort.Priority" xml:space="preserve"><value>Priorität</value></data>
+  <data name="Accounts.Sort.Provider" xml:space="preserve"><value>Anbieter</value></data>
+  <data name="Accounts.Sort.Updated" xml:space="preserve"><value>Zuletzt geändert</value></data>
+  <data name="Accounts.Dependency.Kind.PasswordReset" xml:space="preserve"><value>Passwortzurücksetzung</value></data>
+  <data name="Accounts.Dependency.Kind.Mfa" xml:space="preserve"><value>MFA-Kanal</value></data>
+  <data name="Accounts.Dependency.Kind.IdentityProvider" xml:space="preserve"><value>Identitätsanbieter</value></data>
+  <data name="Accounts.Dependency.Kind.RecoveryContact" xml:space="preserve"><value>Wiederherstellungskontakt</value></data>
+  <data name="Accounts.Dependency.Kind.PasswordManager" xml:space="preserve"><value>Passwortmanager</value></data>
+  <data name="Accounts.Dependency.Kind.OrganizationManagedSignIn" xml:space="preserve"><value>Organisationsverwaltete Anmeldung</value></data>
+  <data name="Accounts.State.Locked" xml:space="preserve"><value>Entsperre den Recovery-Vault, um das Konteninventar anzuzeigen.</value></data>
+  <data name="Accounts.State.Loading" xml:space="preserve"><value>Das verschlüsselte Konteninventar wird geladen.</value></data>
+  <data name="Accounts.State.Corrupted" xml:space="preserve"><value>Das verschlüsselte Konteninventar konnte nicht gelesen werden. Es wurde nicht ersetzt.</value></data>
+  <data name="Accounts.State.Empty" xml:space="preserve"><value>Für ein Konteninventar ist keine Recovery-Session verfügbar.</value></data>
+  <data name="Accounts.Summary.Count.Zero" xml:space="preserve"><value>Keine Konten erfasst.</value></data>
+  <data name="Accounts.Summary.Count.One" xml:space="preserve"><value>{0} Konto erfasst.</value></data>
+  <data name="Accounts.Summary.Count.Other" xml:space="preserve"><value>{0} Konten erfasst.</value></data>
+  <data name="Accounts.Plan.Issues.Zero" xml:space="preserve"><value>Keine ungelösten Abhängigkeitsprobleme.</value></data>
+  <data name="Accounts.Plan.Issues.One" xml:space="preserve"><value>{0} ungelöstes Abhängigkeitsproblem.</value></data>
+  <data name="Accounts.Plan.Issues.Other" xml:space="preserve"><value>{0} ungelöste Abhängigkeitsprobleme.</value></data>
+  <data name="Accounts.Status.Blocked.Title" xml:space="preserve"><value>Abhängigkeiten müssen geprüft werden</value></data>
+  <data name="Accounts.Status.Blocked.Message" xml:space="preserve"><value>Fehlende Abhängigkeiten, Zyklen oder begründete Overrides bleiben bis zur Prüfung sichtbar.</value></data>
+  <data name="Accounts.Role.EmailMailbox" xml:space="preserve"><value>E-Mail-Postfach</value></data>
+  <data name="Accounts.Role.PasswordManager" xml:space="preserve"><value>Passwortmanager</value></data>
+  <data name="Accounts.Role.IdentityProvider" xml:space="preserve"><value>Identitätsanbieter</value></data>
+  <data name="Accounts.Role.RecoveryEmail" xml:space="preserve"><value>Wiederherstellungs-E-Mail</value></data>
+  <data name="Accounts.Role.TelephoneRecovery" xml:space="preserve"><value>Telefonischer Wiederherstellungskanal</value></data>
+  <data name="Accounts.Role.OrganizationManagedSignIn" xml:space="preserve"><value>Organisationsverwaltete Anmeldung</value></data>
+  <data name="Accounts.Role.NoneConfirmed" xml:space="preserve"><value>Keine bestätigte Rolle</value></data>
+  <data name="Accounts.Plan.Status.ReadyNow" xml:space="preserve"><value>Jetzt bereit</value></data>
+  <data name="Accounts.Plan.Status.PlannedLater" xml:space="preserve"><value>Nach Abhängigkeiten geplant</value></data>
+  <data name="Accounts.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Durch fehlende Abhängigkeit blockiert</value></data>
+  <data name="Accounts.Plan.Status.BlockedCycle" xml:space="preserve"><value>Durch Abhängigkeitszyklus blockiert</value></data>
+  <data name="Accounts.Plan.Reason.RecoveryChannelFirst" xml:space="preserve"><value>Wiederherstellungskanal oder Identitätswurzel</value></data>
+  <data name="Accounts.Plan.Reason.CriticalPriority" xml:space="preserve"><value>Kritische Priorität</value></data>
+  <data name="Accounts.Plan.Reason.DependencyRoot" xml:space="preserve"><value>Kein ungelöster Vorgänger</value></data>
+  <data name="Accounts.Plan.Reason.WaitingForDependency" xml:space="preserve"><value>Wartet auf ein anderes Konto</value></data>
+  <data name="Accounts.Plan.Reason.MissingDependency" xml:space="preserve"><value>Verweist auf ein nicht erfasstes Konto</value></data>
+  <data name="Accounts.Plan.Reason.DependencyCycle" xml:space="preserve"><value>Teil eines Abhängigkeitszyklus</value></data>
+  <data name="Accounts.Plan.Reason.UserOverridePresent" xml:space="preserve"><value>Override dokumentiert; das zugrunde liegende Risiko bleibt bestehen</value></data>
+  <data name="Accounts.Plan.Item" xml:space="preserve"><value>{0}. {1} — {2}. Grund: {3}</value></data>
+  <data name="Accounts.Dependency.Item" xml:space="preserve"><value>{0} — {1} {2}</value></data>
+  <data name="Accounts.Dependency.Missing" xml:space="preserve"><value>Fehlendes Konto</value></data>
+  <data name="Accounts.Dependency.OverrideMarker" xml:space="preserve"><value>(Override; Risiko bleibt bestehen)</value></data>
+  <data name="Accounts.Action.New" xml:space="preserve"><value>Neues Konto</value></data>
+  <data name="Accounts.Action.Refresh" xml:space="preserve"><value>Aktualisieren</value></data>
+  <data name="Accounts.Search.Placeholder" xml:space="preserve"><value>Anbieter, Konto, Login oder URL durchsuchen</value></data>
+  <data name="Accounts.List.Title" xml:space="preserve"><value>Konteninventar</value></data>
+  <data name="Accounts.Editor.Title" xml:space="preserve"><value>Kontodetails</value></data>
+  <data name="Accounts.Field.Provider" xml:space="preserve"><value>Anbieter oder Dienst</value></data>
+  <data name="Accounts.Field.Priority" xml:space="preserve"><value>Priorität</value></data>
+  <data name="Accounts.Field.Name" xml:space="preserve"><value>Kontoname</value></data>
+  <data name="Accounts.Field.Login" xml:space="preserve"><value>Login-Kennung oder E-Mail</value></data>
+  <data name="Accounts.Field.Url" xml:space="preserve"><value>Konto-URL</value></data>
+  <data name="Accounts.Action.Save" xml:space="preserve"><value>Konto speichern</value></data>
+  <data name="Accounts.Action.Delete" xml:space="preserve"><value>Konto entfernen</value></data>
+  <data name="Accounts.Roles.Title" xml:space="preserve"><value>Identitäts- und Wiederherstellungsrollen</value></data>
+  <data name="Accounts.Roles.Help" xml:space="preserve"><value>Vorschläge werden nie automatisch verbindlich. Bestätige, verwerfe, ergänze oder entferne jede Rolle ausdrücklich.</value></data>
+  <data name="Accounts.Roles.Accept" xml:space="preserve"><value>Vorschlag bestätigen</value></data>
+  <data name="Accounts.Roles.Reject" xml:space="preserve"><value>Vorschlag verwerfen</value></data>
+  <data name="Accounts.Roles.Remove" xml:space="preserve"><value>Bestätigte Rolle entfernen</value></data>
+  <data name="Accounts.Roles.Add" xml:space="preserve"><value>Rolle hinzufügen</value></data>
+  <data name="Accounts.Dependency.Title" xml:space="preserve"><value>Recovery-Abhängigkeiten</value></data>
+  <data name="Accounts.Dependency.Help" xml:space="preserve"><value>Lege fest, welches Konto oder welcher Kanal zuerst abgesichert werden muss. Ein Zyklus verlangt eine schriftliche Override-Begründung und bleibt als ungelöstes Risiko sichtbar.</value></data>
+  <data name="Accounts.Dependency.OverridePlaceholder" xml:space="preserve"><value>Override-Begründung, nur erforderlich wenn diese Verbindung einen Zyklus erzeugt</value></data>
+  <data name="Accounts.Dependency.Add" xml:space="preserve"><value>Abhängigkeit hinzufügen</value></data>
+  <data name="Accounts.Dependency.Remove" xml:space="preserve"><value>Ausgewählte Abhängigkeit entfernen</value></data>
+  <data name="Accounts.Plan.Title" xml:space="preserve"><value>Empfohlene Wiederherstellungsreihenfolge</value></data>
+  <data name="Accounts.Plan.Help" xml:space="preserve"><value>Die Reihenfolge ist deterministisch und berücksichtigt bestätigte Abhängigkeiten, Priorität, bestätigte Recovery-Rollen und Vorfallindikatoren. Sie ist beratend und wird nach jeder Änderung neu berechnet.</value></data>
+  <data name="Accounts.Delete.Action" xml:space="preserve"><value>Dieses Konto aus der Recovery-Session entfernen</value></data>
+  <data name="Accounts.Delete.Consequence" xml:space="preserve"><value>{0} andere Konten verweisen derzeit auf dieses Konto. Deren Abhängigkeit bleibt nach dem Entfernen als fehlend sichtbar.</value></data>
+  <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Konto entfernen</value></data>
+  <data name="Accounts.Operation.Saved" xml:space="preserve"><value>Das verschlüsselte Konteninventar wurde aktualisiert.</value></data>
+  <data name="Accounts.Error.Locked" xml:space="preserve"><value>Entsperre den Vault, bevor du das Konteninventar änderst.</value></data>
+  <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Prüfe die Kontofelder. Ein Anbieter und ein Kontoname oder Login sind erforderlich; URLs müssen HTTP oder HTTPS verwenden.</value></data>
+  <data name="Accounts.Error.NotFound" xml:space="preserve"><value>Das ausgewählte Konto oder die Abhängigkeit existiert nicht mehr.</value></data>
+  <data name="Accounts.Error.Conflict" xml:space="preserve"><value>Die gewünschte Änderung steht im Konflikt mit dem aktuellen Inventar.</value></data>
+  <data name="Accounts.Error.RequiresConfirmation" xml:space="preserve"><value>Löse das Duplikat oder die Auswirkung auf Abhängigkeiten ausdrücklich, bevor du fortfährst.</value></data>
+  <data name="Accounts.Error.RequiresOverrideReason" xml:space="preserve"><value>Diese Abhängigkeit erzeugt einen Zyklus. Gib eine konkrete Override-Begründung ein oder ändere die Abhängigkeit.</value></data>
+  <data name="Accounts.Error.Corrupted" xml:space="preserve"><value>Das verschlüsselte Inventar ist nicht lesbar und wurde nicht überschrieben.</value></data>
+  <data name="Accounts.Error.IoFailure" xml:space="preserve"><value>Das Inventar konnte nicht gespeichert werden. Gehe nicht davon aus, dass die Änderung persistiert wurde.</value></data>
+  <data name="Confirmation.Risk.Destructive" xml:space="preserve"><value>Destruktive Änderung</value></data>
+  <data name="Import.Resolution.Label" xml:space="preserve"><value>Duplikatauflösung</value></data>
+  <data name="Import.Resolution.Required" xml:space="preserve"><value>Lege vor dem Import fest, wie Duplikatkandidaten behandelt werden sollen.</value></data>
+  <data name="Import.Resolution.Skip" xml:space="preserve"><value>Alle Duplikatkandidaten überspringen</value></data>
+  <data name="Import.Resolution.Separate" xml:space="preserve"><value>Duplikate als getrennte Konten importieren</value></data>
+  <data name="Import.Action.Import" xml:space="preserve"><value>Geprüfte Konten importieren</value></data>
+  <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
+  <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Löse die Duplikatauswahl oder prüfe den Inventarzustand.</value></data>
+</root>
