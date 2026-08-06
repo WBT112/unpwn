@@ -16,18 +16,18 @@
             CornerRadius="8"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="16">
-        <TextBlock Classes="section-title" Text="Recovery vault" />
-        <TextBlock Text="Vault creation and unlock operations will be connected in the dedicated vault-entry implementation."
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Section.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Section.Description}"
                    TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button TabIndex="3"
-                  IsEnabled="False"
-                  ToolTip.Tip="Vault creation is not implemented in this shell issue."
-                  Content="Create vault" />
           <Button TabIndex="4"
                   IsEnabled="False"
-                  ToolTip.Tip="Vault unlock is not implemented in this shell issue."
-                  Content="Open existing vault" />
+                  ToolTip.Tip="{DynamicResource Vault.Create.Tooltip}"
+                  Content="{DynamicResource Vault.Create.Button}" />
+          <Button TabIndex="5"
+                  IsEnabled="False"
+                  ToolTip.Tip="{DynamicResource Vault.Open.Tooltip}"
+                  Content="{DynamicResource Vault.Open.Button}" />
         </StackPanel>
       </StackPanel>
     </Border>
