@@ -128,12 +128,15 @@ public sealed class VaultEntryScreenViewModelTests
 
     private static RelayCommand GetDecisionCommand(
         VaultEntryScreenViewModel viewModel,
-        TrustedDeviceDecision decision) => decision switch
+        TrustedDeviceDecision decision)
     {
-        TrustedDeviceDecision.NotTrusted => viewModel.TrustedDeviceNoCommand,
-        TrustedDeviceDecision.Unsure => viewModel.TrustedDeviceUnsureCommand,
-        _ => throw new ArgumentOutOfRangeException(nameof(decision)),
-    };
+        return decision switch
+        {
+            TrustedDeviceDecision.NotTrusted => viewModel.TrustedDeviceNoCommand,
+            TrustedDeviceDecision.Unsure => viewModel.TrustedDeviceUnsureCommand,
+            _ => throw new ArgumentOutOfRangeException(nameof(decision)),
+        };
+    }
 
     private static ResourceLocalizationService CreateLocalization() =>
         new(CultureInfo.GetCultureInfo("en"));
@@ -143,12 +146,12 @@ public sealed class VaultEntryScreenViewModelTests
         RecoveryWizardSessionService wizard,
         ResourceLocalizationService? localization = null,
         TimeSpan? passwordRevealDuration = null) =>
-            new(
-                lifecycle,
-                wizard,
-                new TestConfirmationDialogService(),
-                localization ?? CreateLocalization(),
-                passwordRevealDuration);
+        new(
+            lifecycle,
+            wizard,
+            new TestConfirmationDialogService(),
+            localization ?? CreateLocalization(),
+            passwordRevealDuration);
 
     private sealed class TestConfirmationDialogService : IConfirmationDialogService
     {
