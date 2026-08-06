@@ -71,7 +71,8 @@ public sealed class AccountInventoryScreenViewModelTests
         var service = new TestAccountInventoryService([account]);
         var viewModel = CreateViewModel(service);
         viewModel.SelectedAccount = viewModel.Accounts.Single();
-        viewModel.SelectedSuggestedRole = viewModel.SuggestedRoles.Single();
+        viewModel.SelectedSuggestedRole = viewModel.SuggestedRoles.Single(option =>
+            option.Value == AccountInventoryRole.EmailMailbox);
 
         var outcome = await viewModel.AcceptSuggestedRoleCommand.ExecuteAsync();
 
