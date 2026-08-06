@@ -26,11 +26,13 @@ public sealed class AccountInventoryTests
 
         var confirmed = account with
         {
-            Roles = account.Roles.Select(role =>
+            Roles =
+            [
+                .. account.Roles.Select(role =>
                     role.Role == AccountInventoryRole.EmailMailbox
                         ? role with { Decision = AccountRoleDecision.Confirmed }
-                        : role)
-                .ToArray(),
+                        : role),
+            ],
         };
 
         Assert.True(confirmed.HasConfirmedRecoveryRole);
