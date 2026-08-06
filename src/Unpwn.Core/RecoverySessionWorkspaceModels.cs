@@ -281,7 +281,7 @@ public sealed record RecoverySessionWorkspace(
         }
     }
 
-    private IReadOnlyList<RecoveryDashboardAlert> BuildAlerts()
+    private List<RecoveryDashboardAlert> BuildAlerts()
     {
         var alerts = new List<RecoveryDashboardAlert>();
         foreach (var account in Accounts)
