@@ -12,22 +12,257 @@
 
     <views:StatusBannerView DataContext="{Binding Status}" />
 
-    <Border Padding="20"
+    <Border IsVisible="{Binding HasValidationMessage}"
+            Padding="14"
             CornerRadius="8"
+            BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+            BorderThickness="2">
+      <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+    </Border>
+
+    <Border IsVisible="{Binding IsWelcomeVisible}"
+            Padding="24"
+            CornerRadius="10"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="16">
-        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Section.Title}" />
-        <TextBlock Text="{DynamicResource Vault.Section.Description}"
-                   TextWrapping="Wrap" />
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Welcome.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Welcome.Description}" TextWrapping="Wrap" />
+        <Button HorizontalAlignment="Left"
+                Command="{Binding BeginCommand}"
+                Content="{DynamicResource Vault.Welcome.Begin}" />
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsTrustedDeviceCheckVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Trusted.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Trusted.Description}" TextWrapping="Wrap" />
+        <StackPanel Spacing="10">
+          <Button HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Left"
+                  Command="{Binding TrustedDeviceYesCommand}"
+                  Content="{DynamicResource Vault.Trusted.Yes}" />
+          <Button HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Left"
+                  Command="{Binding TrustedDeviceNoCommand}"
+                  Content="{DynamicResource Vault.Trusted.No}" />
+          <Button HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Left"
+                  Command="{Binding TrustedDeviceUnsureCommand}"
+                  Content="{DynamicResource Vault.Trusted.Unsure}" />
+        </StackPanel>
+        <Button HorizontalAlignment="Left"
+                Command="{Binding BackToWelcomeCommand}"
+                Content="{DynamicResource Vault.Trusted.Back}" />
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsTrustedDeviceGuidanceVisible}"
+            Padding="24"
+            CornerRadius="10"
+            BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+            BorderThickness="2">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Guidance.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Guidance.Description}" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button TabIndex="4"
-                  IsEnabled="False"
-                  ToolTip.Tip="{DynamicResource Vault.Create.Tooltip}"
-                  Content="{DynamicResource Vault.Create.Button}" />
-          <Button TabIndex="5"
-                  IsEnabled="False"
-                  ToolTip.Tip="{DynamicResource Vault.Open.Tooltip}"
-                  Content="{DynamicResource Vault.Open.Button}" />
+          <Button Command="{Binding EndForDeviceSafetyCommand}"
+                  Content="{DynamicResource Vault.Guidance.End}" />
+          <Button Command="{Binding BackToTrustedDeviceCommand}"
+                  Content="{DynamicResource Vault.Guidance.Reconsider}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsSafetyStoppedVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.SafetyStopped.Title}" />
+        <TextBlock Text="{DynamicResource Vault.SafetyStopped.Description}" TextWrapping="Wrap" />
+        <Button HorizontalAlignment="Left"
+                Command="{Binding RestartSafetyCheckCommand}"
+                Content="{DynamicResource Vault.SafetyStopped.Restart}" />
+      </StackPanel>
+    </Border>
+
+    <StackPanel IsVisible="{Binding IsVaultChoiceVisible}" Spacing="18">
+      <Border Padding="24"
+              CornerRadius="10"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <StackPanel Spacing="16">
+          <TextBlock Classes="section-title" Text="{DynamicResource Vault.Choice.Title}" />
+          <TextBlock Text="{DynamicResource Vault.Choice.Description}" TextWrapping="Wrap" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Command="{Binding ShowCreateVaultCommand}"
+                    Content="{DynamicResource Vault.Choice.Create}" />
+            <Button Command="{Binding ShowOpenVaultCommand}"
+                    Content="{DynamicResource Vault.Choice.Open}" />
+          </StackPanel>
+          <Button HorizontalAlignment="Left"
+                  Command="{Binding BackToTrustedDeviceCommand}"
+                  Content="{DynamicResource Vault.Choice.Back}" />
+        </StackPanel>
+      </Border>
+
+      <Border Padding="20"
+              CornerRadius="10"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="section-title" Text="{DynamicResource Vault.Recent.Title}" />
+          <TextBlock IsVisible="{Binding !HasRecentVaults}"
+                     Text="{DynamicResource Vault.Recent.Empty}"
+                     TextWrapping="Wrap" />
+          <ListBox IsVisible="{Binding HasRecentVaults}"
+                   ItemsSource="{Binding RecentVaults}"
+                   SelectedItem="{Binding SelectedRecentVault, Mode=TwoWay}"
+                   MaxHeight="180">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:RecentVaultReferenceViewModel">
+                <StackPanel Margin="6" Spacing="2">
+                  <TextBlock FontWeight="SemiBold" Text="{Binding DisplayText}" />
+                  <TextBlock FontSize="11" Opacity="0.72" Text="{Binding Path}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <StackPanel IsVisible="{Binding HasRecentVaults}" Orientation="Horizontal" Spacing="10">
+            <Button Command="{Binding UseRecentVaultCommand}"
+                    Content="{DynamicResource Vault.Recent.Open}" />
+            <Button Command="{Binding RemoveRecentReferenceCommand}"
+                    Content="{DynamicResource Vault.Recent.Remove}" />
+            <Button Command="{Binding DeleteRecentVaultCommand}"
+                    Content="{DynamicResource Vault.Recent.Delete}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+
+    <Border IsVisible="{Binding IsCreateVaultVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Create.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Create.Path}" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBox Grid.Column="0" Text="{Binding CreatePath, Mode=TwoWay}" />
+          <Button Grid.Column="1"
+                  Click="ChooseCreatePathButton_OnClick"
+                  Content="{DynamicResource Vault.Create.Browse}" />
+        </Grid>
+        <TextBlock Text="{DynamicResource Vault.Create.Password}" />
+        <TextBox Text="{Binding CreatePassword, Mode=TwoWay}"
+                 PasswordChar="{Binding CreatePasswordCharacter}" />
+        <TextBlock FontSize="12" Opacity="0.78" Text="{Binding CreatePasswordGuidance}" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Vault.Create.ConfirmPassword}" />
+        <TextBox Text="{Binding ConfirmCreatePassword, Mode=TwoWay}"
+                 PasswordChar="{Binding CreatePasswordCharacter}" />
+        <CheckBox IsChecked="{Binding IsCreatePasswordRevealed, Mode=TwoWay}"
+                  Content="{DynamicResource Vault.Create.Reveal}" />
+        <CheckBox IsChecked="{Binding AcknowledgesNonRecoverability, Mode=TwoWay}"
+                  Content="{DynamicResource Vault.Create.NonRecoverable}" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Command="{Binding CreateVaultCommand}"
+                  Content="{DynamicResource Vault.Create.Submit}" />
+          <Button Command="{Binding BackToVaultChoiceCommand}"
+                  Content="{DynamicResource Vault.Create.Back}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsOpenVaultVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Open.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Open.Path}" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBox Grid.Column="0" Text="{Binding OpenPath, Mode=TwoWay}" />
+          <Button Grid.Column="1"
+                  Click="ChooseOpenPathButton_OnClick"
+                  Content="{DynamicResource Vault.Open.Browse}" />
+        </Grid>
+        <TextBlock Text="{DynamicResource Vault.Open.Password}" />
+        <TextBox Text="{Binding OpenPassword, Mode=TwoWay}"
+                 PasswordChar="{Binding OpenPasswordCharacter}" />
+        <CheckBox IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
+                  Content="{DynamicResource Vault.Open.Reveal}" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Command="{Binding OpenVaultCommand}"
+                  Content="{DynamicResource Vault.Open.Submit}" />
+          <Button Command="{Binding BackToVaultChoiceCommand}"
+                  Content="{DynamicResource Vault.Open.Back}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsLockedVaultVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Locked.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Locked.Description}" TextWrapping="Wrap" />
+        <TextBlock FontWeight="SemiBold" Text="{Binding CurrentVaultDisplayName}" />
+        <TextBlock FontSize="12" Opacity="0.72" Text="{Binding CurrentVaultPath}" TextTrimming="CharacterEllipsis" />
+        <TextBlock Text="{DynamicResource Vault.Locked.Password}" />
+        <TextBox Text="{Binding OpenPassword, Mode=TwoWay}"
+                 PasswordChar="{Binding OpenPasswordCharacter}" />
+        <CheckBox IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
+                  Content="{DynamicResource Vault.Locked.Reveal}" />
+        <Button HorizontalAlignment="Left"
+                Command="{Binding UnlockCurrentVaultCommand}"
+                Content="{DynamicResource Vault.Locked.Unlock}" />
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsUnlockedVaultVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Unlocked.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Unlocked.Description}" TextWrapping="Wrap" />
+        <TextBlock FontWeight="SemiBold" Text="{Binding CurrentVaultDisplayName}" />
+        <TextBlock FontSize="12" Opacity="0.72" Text="{Binding CurrentVaultPath}" TextTrimming="CharacterEllipsis" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Command="{Binding ContinueCommand}"
+                  Content="{DynamicResource Vault.Unlocked.Continue}" />
+          <Button Command="{Binding ShowChangePasswordCommand}"
+                  Content="{DynamicResource Vault.Unlocked.ChangePassword}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsChangePasswordVisible}"
+            Padding="24"
+            CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="14">
+        <TextBlock Classes="section-title" Text="{DynamicResource Vault.Change.Title}" />
+        <TextBlock Text="{DynamicResource Vault.Change.Current}" />
+        <TextBox Text="{Binding CurrentPassword, Mode=TwoWay}"
+                 PasswordChar="{Binding ChangePasswordCharacter}" />
+        <TextBlock Text="{DynamicResource Vault.Change.New}" />
+        <TextBox Text="{Binding NewPassword, Mode=TwoWay}"
+                 PasswordChar="{Binding ChangePasswordCharacter}" />
+        <TextBlock FontSize="12" Opacity="0.78" Text="{Binding NewPasswordGuidance}" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Vault.Change.Confirm}" />
+        <TextBox Text="{Binding ConfirmNewPassword, Mode=TwoWay}"
+                 PasswordChar="{Binding ChangePasswordCharacter}" />
+        <CheckBox IsChecked="{Binding IsChangePasswordRevealed, Mode=TwoWay}"
+                  Content="{DynamicResource Vault.Change.Reveal}" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <Button Command="{Binding ChangePasswordCommand}"
+                  Content="{DynamicResource Vault.Change.Submit}" />
+          <Button Command="{Binding CancelChangePasswordCommand}"
+                  Content="{DynamicResource Vault.Change.Cancel}" />
         </StackPanel>
       </StackPanel>
     </Border>
