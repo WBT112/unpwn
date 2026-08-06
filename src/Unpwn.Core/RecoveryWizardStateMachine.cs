@@ -207,6 +207,27 @@ public static class RecoveryWizardStateMachine
         };
     }
 
+    public static RecoveryWizardState Archive(
+        RecoveryWizardState state,
+        DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(state);
+        if (state.Status is not RecoveryWizardLifecycleStatus.Active and not RecoveryWizardLifecycleStatus.Paused)
+        {
+            throw new InvalidOperationException($"Cannot archive a recovery wizard in the {state.Status} state.");
+        }
+
+        ValidateVaultContext(state);
+        ValidateTimestamp(state, occurredAt);
+
+        return state with
+        {
+            Status = RecoveryWizardLifecycleStatus.Archived,
+            Revision = state.Revision + 1,
+            UpdatedAt = occurredAt,
+        };
+    }
+
     public static RecoveryWizardState Finish(
         RecoveryWizardState state,
         RecoveryWizardTerminalOutcome outcome,
