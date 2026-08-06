@@ -43,10 +43,10 @@ public sealed class RecoverySessionServiceTests
     [Fact]
     public async Task CorruptedRecordIsReportedAndNeverOverwrittenByCreate()
     {
-        var original = new byte[] { 0x01, 0x02, 0x03, 0x04 };
+        byte[] original = [0x01, 0x02, 0x03, 0x04];
         var store = new TestEncryptedRecordStore
         {
-            StoredRecord = original.ToArray(),
+            StoredRecord = [.. original],
         };
         var coordinator = new TestWizardCoordinator(DateTimeOffset.UnixEpoch);
         using var service = new RecoverySessionService(store, coordinator, () => DateTimeOffset.UnixEpoch);
