@@ -237,26 +237,23 @@ public sealed class AccountInventoryServiceTests
         }
     }
 
-    private sealed class TestRecoverySessionService : IRecoverySessionService
+    private sealed class TestRecoverySessionService(
+        IncidentIndicator indicators = IncidentIndicator.None) : IRecoverySessionService
     {
-        public TestRecoverySessionService(IncidentIndicator indicators = IncidentIndicator.None)
-        {
-            CurrentSession = RecoverySessionWorkspace.Create(
-                Guid.NewGuid(),
-                "Synthetic session",
-                new RecoveryIncidentIntake(indicators, null),
-                DateTimeOffset.UnixEpoch);
-        }
-
         public event EventHandler? SessionChanged;
 
         public RecoverySessionLoadState LoadState => RecoverySessionLoadState.Loaded;
 
-        public RecoverySessionWorkspace? CurrentSession { get; private set; }
+        public RecoverySessionWorkspace? CurrentSession { get; private set; } =
+            RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Synthetic session",
+                new RecoveryIncidentIntake(indicators, null),
+                DateTimeOffset.UnixEpoch);
 
         public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();
 
-        public IReadOnlyList<RecoveryAccountDashboardEntry> LastSummaries { get; private set; } = [];
+        public RecoveryAccountDashboardEntry[] LastSummaries { get; private set; } = [];
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -283,7 +280,7 @@ public sealed class AccountInventoryServiceTests
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            LastSummaries = accounts.ToArray();
+            LastSummaries = [.. accounts];
             CurrentSession = CurrentSession!.ReplaceAccounts(accounts, CurrentSession.UpdatedAt.AddSeconds(1));
             SessionChanged?.Invoke(this, EventArgs.Empty);
             return Task.FromResult(RecoverySessionOperationResult.Success);
