@@ -69,6 +69,8 @@ public interface IRecoveryWizardVaultCoordinator
     Task ApplyWizardTransitionAsync(
         RecoverySessionWizardTransition transition,
         CancellationToken cancellationToken);
+
+    void SetSessionDisplayName(string? sessionDisplayName);
 }
 
 public interface IRecoverySessionService
