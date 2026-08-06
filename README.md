@@ -51,6 +51,16 @@ unpwn uses an encrypted local **Recovery Vault** to maintain a recovery session 
 
 The vault uses a user-defined vault password, Argon2id key derivation, and AES-256-GCM authenticated encryption. It stores recovery state, generated credentials, tasks, and export information. It is a recovery workspace, not a replacement for a dedicated password manager.
 
+## Guided Recovery Wizard
+
+The desktop application guides users through one resumable recovery process instead of exposing unrelated feature screens.
+
+The wizard begins with a trusted-device gate before a vault is created or unlocked. It then coordinates incident intake, account inventory, identity and recovery dependencies, the recommended recovery plan, guided account actions, generated-credential export, completion review, and the final report.
+
+Wizard steps, lifecycle states, and recommendation reasons use stable language-neutral codes. Display text is localized only in the presentation layer. Opening an external provider page or returning to the application never marks an action complete automatically.
+
+See [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md).
+
 ## Automation Philosophy
 
 unpwn uses automation as assistance, not as an uncontrolled account bot.
@@ -118,6 +128,7 @@ See:
 - [Project Vision](docs/VISION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Application Shell and UI Foundation](docs/UI_FOUNDATION.md)
+- [Guided Recovery Wizard](docs/RECOVERY_WIZARD.md)
 - [Localization and Multilingual GUI](docs/LOCALIZATION.md)
 - [CSV Import](docs/IMPORT.md)
 - [Recovery Workflows](docs/RECOVERY_WORKFLOWS.md)
