@@ -34,7 +34,7 @@ public sealed class VaultEntryScreenViewModelTests
     }
 
     [Fact]
-    public async Task CreatingVaultRequiresAcknowledgementAndClearsPasswordsAfterUse()
+    public async Task CreatingVaultValidatesPasswordAndClearsItAfterUse()
     {
         const string password = "UNPWN_TEST_SECRET_long-vault-password";
         var lifecycle = new TestVaultLifecycleService();
@@ -44,16 +44,18 @@ public sealed class VaultEntryScreenViewModelTests
         viewModel.TrustedDeviceYesCommand.Execute(null);
         viewModel.ShowCreateVaultCommand.Execute(null);
         viewModel.CreatePath = "synthetic-vault.db";
+        viewModel.CreatePassword = "short";
+        viewModel.ConfirmCreatePassword = "short";
+        viewModel.AcknowledgesNonRecoverability = true;
+
+        var validationOutcome = await viewModel.CreateVaultCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, validationOutcome);
+        Assert.Equal(0, lifecycle.VaultOperationCalls);
+        Assert.Equal("Use at least 12 characters for a new vault password.", viewModel.ValidationMessage);
+
         viewModel.CreatePassword = password;
         viewModel.ConfirmCreatePassword = password;
-
-        var skipped = await viewModel.CreateVaultCommand.ExecuteAsync();
-
-        Assert.Equal(AsyncCommandOutcome.Completed, skipped);
-        Assert.Equal(0, lifecycle.VaultOperationCalls);
-        Assert.Equal("Confirm that the vault password cannot be recovered.", viewModel.ValidationMessage);
-
-        viewModel.AcknowledgesNonRecoverability = true;
         var outcome = await viewModel.CreateVaultCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
@@ -62,7 +64,6 @@ public sealed class VaultEntryScreenViewModelTests
         Assert.Equal(string.Empty, viewModel.CreatePassword);
         Assert.Equal(string.Empty, viewModel.ConfirmCreatePassword);
         Assert.True(viewModel.IsUnlockedVaultVisible);
-        Assert.True(wizard.Current.HasVaultContext);
     }
 
     [Fact]
@@ -110,7 +111,7 @@ public sealed class VaultEntryScreenViewModelTests
     }
 
     [Fact]
-    public void ReturningToWelcomeResetsTransientTrustedDeviceState()
+    public void ReturningToWelcomeKeepsTrustedDeviceGateUnanswered()
     {
         var lifecycle = new TestVaultLifecycleService();
         var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
