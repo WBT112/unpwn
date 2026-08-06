@@ -90,6 +90,7 @@ A provider workflow contains:
 - automation support level
 - completion criteria
 - verification date and tests
+- stable localization keys for user-facing guidance where applicable
 
 Example actions:
 
@@ -108,6 +109,35 @@ Example actions:
 The canonical workflow and action types live in `Unpwn.Core`. Provider catalogs, contract validation, and runtime action instances must use these same types rather than parallel provider-only and runtime-only models.
 
 An action may support one or more recovery paths. Prerequisites must be executable on the same path. The initial catalog deliberately uses path-specific action definitions where prerequisite chains differ, avoiding ambiguous OR-prerequisites between authenticated change and password reset.
+
+## Language-neutral semantics
+
+Workflow execution uses only canonical identifiers and structured fields:
+
+- workflow, provider, action, and location identifiers
+- recovery paths
+- prerequisites
+- requirement and importance values
+- automation support
+- URLs and expected origins
+- completion state and structured diagnostic codes
+
+User-facing workflow titles, descriptions, warnings, manual instructions, and completion guidance are presentation resources. They are represented by stable localization keys plus typed formatting arguments rather than one embedded display-language sentence.
+
+Translated text must never:
+
+- select a recovery path
+- identify an action or prerequisite
+- change an expected origin or provider URL
+- determine whether an action is complete
+- authorize browser automation
+- change a workflow version or `VerifiedAt` date
+
+A translation-only change therefore does not alter workflow semantics or provider verification metadata.
+
+Existing catalog strings that are intended for display should be migrated to resource keys while the provider set is small. Machine-readable completion rules remain canonical and should not require natural-language comparison.
+
+See [Localization and Multilingual GUI](LOCALIZATION.md).
 
 ## Action Status
 
@@ -130,6 +160,8 @@ A required action cannot be silently skipped.
 
 When the user decides not to complete a required action, unpwn records an unresolved risk. The account is not shown as fully secured.
 
+Status values remain language-neutral. The UI maps them to reviewed localized labels and descriptions without persisting the translated text.
+
 ## Completion Rules
 
 An account is **fully reviewed** when every applicable required action is completed and every excluded action is explicitly documented as truly not applicable.
@@ -142,7 +174,7 @@ An account is **not fully secured** when:
 - the user accepted an unresolved risk
 - access to the account could not be restored
 
-These distinctions must remain visible in the UI and exported recovery report.
+These distinctions must remain visible in the UI and exported recovery report in every supported language. Missing translation resources fall back to complete English warnings rather than hiding a condition.
 
 ## Automation Levels
 
@@ -157,6 +189,8 @@ The support level describes technical capability, not permission to bypass provi
 
 unpwn does not bypass CAPTCHA, MFA, identity verification, or account-ownership checks.
 
+Localized button labels and instructions never identify or authorize the automation operation; the structured action and explicit confirmation do.
+
 ## Contribution Model
 
 Recovery workflows are maintained in the unpwn repository.
@@ -165,11 +199,13 @@ New workflows and updates are submitted through pull requests and must include:
 
 - a clear description of the provider and supported account type
 - documented recovery actions and URLs
+- stable localization keys for display guidance
 - tests for machine-readable definitions or code
+- localization key coverage where user-facing resources are introduced
 - a verification date
 - no embedded secrets or personal account data
 
-unpwn does not download or execute third-party provider plugins at runtime.
+unpwn does not download or execute third-party provider plugins or language packs at runtime.
 
 ## Repository Workflow Definitions
 
@@ -178,5 +214,7 @@ Repository-controlled workflow definitions are represented in code as immutable 
 The validation boundary for these definitions is `RecoveryWorkflowValidator`. It rejects missing required metadata, a verification date later than the supplied or current validation date, duplicate location or action identifiers, invalid HTTPS locations or origins, missing or duplicate recovery paths, missing prerequisite targets, prerequisite cycles, required actions without non-empty completion criteria, and claims of fully automated recovery. Fully automated recovery is intentionally disallowed at this stage because repository workflows may guide or navigate, but they must not bypass user-visible security decisions.
 
 Provider contract scenarios additionally prove that every expected action supports the scenario path, all prerequisites are present earlier on that path, expectations match the workflow definition, and a scenario claiming full security includes every required action for that path.
+
+Localization validation separately verifies that referenced display keys exist in the complete English resources and that shipped translations preserve required keys and formatting placeholders. It does not replace structural, semantic, or provider contract validation.
 
 The shipped provider catalog validates all repository workflows through `RepositoryWorkflowCatalog.ValidateAll()`. Provider workflow changes should add or update catalog entries and regression tests that prove the definition remains structurally and semantically safe.
