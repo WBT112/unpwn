@@ -10,6 +10,28 @@ public sealed class RecoveryVaultLifecycleServiceTests
     private const string NewPassword = "UNPWN_TEST_SECRET_replacement-vault-password";
 
     [Fact]
+    public async Task VaultCreationCannotBypassTrustedDeviceGate()
+    {
+        using var directory = new TemporaryDirectory();
+        var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
+        using var lifecycle = new RecoveryVaultLifecycleService(
+            new JsonRecentVaultStore(Path.Combine(directory.Path, "recent.json")),
+            wizard,
+            clock: () => DateTimeOffset.UnixEpoch);
+        var vaultPath = Path.Combine(directory.Path, "recovery.db");
+
+        var result = await lifecycle.CreateAsync(
+            vaultPath,
+            OriginalPassword,
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(VaultOperationFailureCode.InvalidInput, result.FailureCode);
+        Assert.False(File.Exists(vaultPath));
+        Assert.False(wizard.Current.HasVaultContext);
+    }
+
+    [Fact]
     public async Task InactivityLocksVaultAndCorrectPasswordResumesAtSafeStep()
     {
         using var directory = new TemporaryDirectory();
@@ -72,9 +94,10 @@ public sealed class RecoveryVaultLifecycleServiceTests
         using var directory = new TemporaryDirectory();
         var currentTime = DateTimeOffset.UnixEpoch;
         var recentPath = Path.Combine(directory.Path, "recent.json");
+        var recentStore = new JsonRecentVaultStore(recentPath);
         var wizard = PrepareWizard(currentTime);
         using var lifecycle = new RecoveryVaultLifecycleService(
-            new JsonRecentVaultStore(recentPath),
+            recentStore,
             wizard,
             clock: () => currentTime);
         var vaultPath = Path.Combine(directory.Path, "recovery.db");
@@ -110,7 +133,8 @@ public sealed class RecoveryVaultLifecycleServiceTests
         var recentJson = await File.ReadAllTextAsync(recentPath);
         Assert.DoesNotContain(OriginalPassword, recentJson, StringComparison.Ordinal);
         Assert.DoesNotContain(NewPassword, recentJson, StringComparison.Ordinal);
-        Assert.Contains(Path.GetFullPath(vaultPath), recentJson, StringComparison.Ordinal);
+        var storedReference = Assert.Single(await recentStore.LoadAsync(CancellationToken.None));
+        Assert.Equal(Path.GetFullPath(vaultPath), storedReference.Path);
     }
 
     [Fact]
