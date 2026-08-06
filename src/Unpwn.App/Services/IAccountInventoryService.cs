@@ -49,7 +49,8 @@ public sealed record AccountInventoryUpsertRequest(
     string? AccountName,
     string? LoginIdentifier,
     string? AccountUrl,
-    AccountInventoryPriority Priority);
+    AccountInventoryPriority Priority,
+    AccountInventoryRole ConfirmedRoles);
 
 public sealed record AccountDependencyRequest(
     Guid AccountId,
