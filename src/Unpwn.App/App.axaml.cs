@@ -71,7 +71,7 @@ public partial class App : Avalonia.Application
         "CA1031:Do not catch general exception types",
         Justification = "Recent-vault references are non-sensitive convenience metadata; startup must remain usable if that metadata is unavailable or malformed.")]
     private static async Task InitializeVaultReferencesAsync(
-        IVaultLifecycleService vaultLifecycle)
+        RecoveryVaultLifecycleService vaultLifecycle)
     {
         try
         {
