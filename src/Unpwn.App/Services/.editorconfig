@@ -1,0 +1,4 @@
+[AccountRecoveryExecutionService.cs]
+# The explicit constructor keeps dependency validation, optional shared mutation
+# coordination, and disposal ownership visible for this stateful persistence service.
+dotnet_diagnostic.IDE0290.severity = none
