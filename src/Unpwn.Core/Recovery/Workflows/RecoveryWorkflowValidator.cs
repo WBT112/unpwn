@@ -11,7 +11,9 @@ public sealed class RecoveryWorkflowValidator
         ArgumentNullException.ThrowIfNull(workflow);
 
         List<WorkflowValidationDiagnostic> diagnostics = [];
-        string workflowId = string.IsNullOrWhiteSpace(workflow.WorkflowId) ? "<unknown>" : workflow.WorkflowId;
+        var workflowId = string.IsNullOrWhiteSpace(workflow.WorkflowId)
+            ? "<unknown>"
+            : workflow.WorkflowId;
         var validationDate = currentDate ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         RequireText(workflow.WorkflowId, null, "workflow-id-required", "WorkflowId is required.", diagnostics, workflowId);
@@ -32,7 +34,9 @@ public sealed class RecoveryWorkflowValidator
         ValidateLocations(workflow, workflowId, diagnostics);
         ValidateActions(workflow, workflowId, diagnostics);
 
-        return diagnostics.Count == 0 ? WorkflowValidationResult.Valid : WorkflowValidationResult.FromDiagnostics(diagnostics);
+        return diagnostics.Count == 0
+            ? WorkflowValidationResult.Valid
+            : WorkflowValidationResult.FromDiagnostics(diagnostics);
     }
 
     private static void ValidateLocations(
@@ -47,7 +51,7 @@ public sealed class RecoveryWorkflowValidator
         }
 
         HashSet<string> locationIds = new(StringComparer.Ordinal);
-        foreach (RecoveryLocationDefinition location in workflow.RecoveryLocations)
+        foreach (var location in workflow.RecoveryLocations)
         {
             if (string.IsNullOrWhiteSpace(location.Id))
             {
@@ -69,11 +73,14 @@ public sealed class RecoveryWorkflowValidator
                 continue;
             }
 
-            foreach (string expectedOrigin in location.ExpectedOrigins)
+            foreach (var expectedOrigin in location.ExpectedOrigins)
             {
                 if (!Uri.TryCreate(expectedOrigin, UriKind.Absolute, out var expectedUri) ||
                     expectedUri.Scheme != Uri.UriSchemeHttps ||
-                    !string.Equals(expectedUri.GetLeftPart(UriPartial.Authority), expectedOrigin.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                    !string.Equals(
+                        expectedUri.GetLeftPart(UriPartial.Authority),
+                        expectedOrigin.TrimEnd('/'),
+                        StringComparison.OrdinalIgnoreCase))
                 {
                     diagnostics.Add(new(workflowId, null, "expected-origin-invalid", $"Recovery location '{location.Id}' contains an invalid HTTPS origin."));
                 }
@@ -81,7 +88,7 @@ public sealed class RecoveryWorkflowValidator
 
             if (location.Url.IsAbsoluteUri)
             {
-                string actualOrigin = location.Url.GetLeftPart(UriPartial.Authority);
+                var actualOrigin = location.Url.GetLeftPart(UriPartial.Authority);
                 if (!location.ExpectedOrigins.Contains(actualOrigin, StringComparer.OrdinalIgnoreCase))
                 {
                     diagnostics.Add(new(workflowId, null, "location-origin-mismatch", $"Recovery location '{location.Id}' URL origin must be listed in ExpectedOrigins."));
@@ -102,7 +109,7 @@ public sealed class RecoveryWorkflowValidator
         }
 
         HashSet<string> actionIds = new(StringComparer.Ordinal);
-        foreach (RecoveryActionDefinition action in workflow.Actions)
+        foreach (var action in workflow.Actions)
         {
             if (string.IsNullOrWhiteSpace(action.Id))
             {
@@ -128,15 +135,48 @@ public sealed class RecoveryWorkflowValidator
                 diagnostics.Add(new(workflowId, action.Id, "required-action-completion-criteria", "Required actions must declare non-empty completion criteria."));
             }
 
+            if (action.CompletionCriteria.Any(criterion =>
+                    !RecoveryActionGuidanceKeys.IsResourceKey(criterion)))
+            {
+                diagnostics.Add(new(
+                    workflowId,
+                    action.Id,
+                    "completion-criterion-resource-key-required",
+                    "Recovery action completion criteria must be stable presentation resource keys."));
+            }
+
+            try
+            {
+                action.Guidance.Validate();
+                if (!action.Guidance.CompletionCriteriaKeys.SequenceEqual(
+                        action.CompletionCriteria,
+                        StringComparer.Ordinal))
+                {
+                    diagnostics.Add(new(
+                        workflowId,
+                        action.Id,
+                        "guidance-criteria-mismatch",
+                        "Recovery action guidance criteria must match the canonical completion criteria keys."));
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                diagnostics.Add(new(
+                    workflowId,
+                    action.Id,
+                    "workflow-guidance-invalid",
+                    "Recovery action guidance must contain stable resource keys."));
+            }
+
             if (action.AutomationSupport == AutomationSupport.Automated)
             {
                 diagnostics.Add(new(workflowId, action.Id, "automation-support-too-high", "Repository workflows cannot claim fully automated recovery support."));
             }
         }
 
-        foreach (RecoveryActionDefinition action in workflow.Actions)
+        foreach (var action in workflow.Actions)
         {
-            foreach (string prerequisite in action.Prerequisites)
+            foreach (var prerequisite in action.Prerequisites)
             {
                 if (!actionIds.Contains(prerequisite))
                 {
@@ -153,21 +193,21 @@ public sealed class RecoveryWorkflowValidator
         string workflowId,
         List<WorkflowValidationDiagnostic> diagnostics)
     {
-        Dictionary<string, RecoveryActionDefinition> actions = workflow.Actions
+        var actions = workflow.Actions
             .Where(action => !string.IsNullOrWhiteSpace(action.Id))
             .GroupBy(action => action.Id, StringComparer.Ordinal)
             .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
         HashSet<string> visiting = new(StringComparer.Ordinal);
         HashSet<string> visited = new(StringComparer.Ordinal);
 
-        foreach (RecoveryActionDefinition action in workflow.Actions)
+        foreach (var action in workflow.Actions)
         {
             Visit(action.Id);
         }
 
         void Visit(string actionId)
         {
-            if (visited.Contains(actionId) || !actions.TryGetValue(actionId, out RecoveryActionDefinition? action))
+            if (visited.Contains(actionId) || !actions.TryGetValue(actionId, out var action))
             {
                 return;
             }
@@ -178,7 +218,7 @@ public sealed class RecoveryWorkflowValidator
                 return;
             }
 
-            foreach (string prerequisite in action.Prerequisites)
+            foreach (var prerequisite in action.Prerequisites)
             {
                 Visit(prerequisite);
             }

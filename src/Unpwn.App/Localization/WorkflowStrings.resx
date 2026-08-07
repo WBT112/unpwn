@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Workflow.GitHub.Action.identify-account-auth.Title" xml:space="preserve"><value>Identify the affected account</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-auth.Instruction" xml:space="preserve"><value>Confirm the exact GitHub account and that the currently signed-in session belongs to it.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-auth.Warning" xml:space="preserve"><value>Do not enter passwords, reset links, MFA secrets, recovery codes, cookies, or browser storage into unpwn.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-auth.Completion" xml:space="preserve"><value>Account identification recorded</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-auth.Criterion.1" xml:space="preserve"><value>The affected account has been identified.</value></data>
+  <data name="Workflow.GitHub.Action.change-password.Title" xml:space="preserve"><value>Change the password</value></data>
+  <data name="Workflow.GitHub.Action.change-password.Instruction" xml:space="preserve"><value>Open the official authenticated security settings and choose a new generated credential for this account.</value></data>
+  <data name="Workflow.GitHub.Action.change-password.Warning" xml:space="preserve"><value>Confirm the displayed destination and origin before opening the browser. Returning to unpwn does not prove that the password changed.</value></data>
+  <data name="Workflow.GitHub.Action.change-password.Completion" xml:space="preserve"><value>Password change recorded</value></data>
+  <data name="Workflow.GitHub.Action.change-password.Criterion.1" xml:space="preserve"><value>The account password has been changed through the official authenticated flow.</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-auth.Title" xml:space="preserve"><value>Review MFA and passkeys</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-auth.Instruction" xml:space="preserve"><value>Review registered MFA methods, passkeys, security keys, and recovery codes. Remove or replace anything you do not recognize.</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-auth.Warning" xml:space="preserve"><value>Do not copy MFA secrets or recovery codes into unpwn notes.</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-auth.Completion" xml:space="preserve"><value>MFA review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-auth.Criterion.1" xml:space="preserve"><value>MFA methods and recovery codes have been reviewed or an unresolved risk has been recorded.</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-auth.Title" xml:space="preserve"><value>Review and revoke sessions</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-auth.Instruction" xml:space="preserve"><value>Review active sessions and trusted devices and revoke access that is unknown or no longer required.</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-auth.Warning" xml:space="preserve"><value>Opening the provider page does not confirm that sessions were revoked.</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-auth.Completion" xml:space="preserve"><value>Session review recorded</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-auth.Criterion.1" xml:space="preserve"><value>Active sessions and trusted devices have been reviewed and revoked where appropriate.</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-auth.Title" xml:space="preserve"><value>Review recovery options</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-auth.Instruction" xml:space="preserve"><value>Review recovery email addresses, telephone numbers, and other recovery methods and correct unauthorized or outdated entries.</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-auth.Warning" xml:space="preserve"><value>Do not enter verification codes, reset links, or recovery secrets into unpwn.</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-auth.Completion" xml:space="preserve"><value>Recovery options review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-auth.Criterion.1" xml:space="preserve"><value>Recovery methods have been reviewed and corrected where possible.</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-auth.Title" xml:space="preserve"><value>Review connected applications</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-auth.Instruction" xml:space="preserve"><value>Review connected applications and integrations and revoke access that is unknown or no longer required.</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-auth.Warning" xml:space="preserve"><value>Do not authorize a new application merely because it appears during recovery.</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-auth.Completion" xml:space="preserve"><value>Connected application review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-auth.Criterion.1" xml:space="preserve"><value>Connected applications have been reviewed and unauthorized access has been revoked.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Title" xml:space="preserve"><value>Review tokens and keys</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Instruction" xml:space="preserve"><value>Review personal access tokens, SSH keys, and signing keys and revoke or rotate anything unauthorized or exposed.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Warning" xml:space="preserve"><value>Do not paste token or private-key values into unpwn.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Completion" xml:space="preserve"><value>Token and key review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Criterion.1" xml:space="preserve"><value>Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-auth.Title" xml:space="preserve"><value>Review the account outcome</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-auth.Instruction" xml:space="preserve"><value>Review every required action and record any blocked work, lost access, or unresolved risk before leaving this account.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-auth.Warning" xml:space="preserve"><value>Completion means the review was documented; it is not proof that the device or account is secure.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-auth.Completion" xml:space="preserve"><value>Account outcome documented</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-auth.Criterion.1" xml:space="preserve"><value>Completion records remaining unresolved risks without claiming unsupported security guarantees.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-reset.Title" xml:space="preserve"><value>Identify the account and reset channel</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-reset.Instruction" xml:space="preserve"><value>Confirm the exact GitHub account and the already secured email or other reset channel that will receive the recovery message.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-reset.Warning" xml:space="preserve"><value>Do not store reset links, email codes, or recovery tokens in unpwn.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-reset.Completion" xml:space="preserve"><value>Account and reset channel recorded</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-reset.Criterion.1" xml:space="preserve"><value>The affected account and its secured reset channel have been identified.</value></data>
+  <data name="Workflow.GitHub.Action.reset-password.Title" xml:space="preserve"><value>Reset the password</value></data>
+  <data name="Workflow.GitHub.Action.reset-password.Instruction" xml:space="preserve"><value>Open the official password-reset location and complete the reset using a secured recovery channel and a new generated credential.</value></data>
+  <data name="Workflow.GitHub.Action.reset-password.Warning" xml:space="preserve"><value>Confirm the destination and origin. A sent email, opened page, or return to unpwn does not prove that the password was reset.</value></data>
+  <data name="Workflow.GitHub.Action.reset-password.Completion" xml:space="preserve"><value>Password reset recorded</value></data>
+  <data name="Workflow.GitHub.Action.reset-password.Criterion.1" xml:space="preserve"><value>The account password has been reset through the official provider flow.</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-reset.Title" xml:space="preserve"><value>Review MFA and passkeys</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-reset.Instruction" xml:space="preserve"><value>After access is restored, review registered MFA methods, passkeys, security keys, and recovery codes.</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-reset.Warning" xml:space="preserve"><value>Do not copy MFA secrets or recovery codes into unpwn notes.</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-reset.Completion" xml:space="preserve"><value>MFA review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-mfa-reset.Criterion.1" xml:space="preserve"><value>MFA methods and recovery codes have been reviewed or an unresolved risk has been recorded.</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-reset.Title" xml:space="preserve"><value>Review and revoke sessions</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-reset.Instruction" xml:space="preserve"><value>After the reset, review active sessions and trusted devices and revoke access that is unknown or no longer required.</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-reset.Warning" xml:space="preserve"><value>A password reset may not revoke every existing session automatically.</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-reset.Completion" xml:space="preserve"><value>Session review recorded</value></data>
+  <data name="Workflow.GitHub.Action.invalidate-sessions-reset.Criterion.1" xml:space="preserve"><value>Active sessions and trusted devices have been reviewed and revoked where appropriate.</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-reset.Title" xml:space="preserve"><value>Review recovery options</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-reset.Instruction" xml:space="preserve"><value>Review recovery email addresses, telephone numbers, and other recovery methods after regaining access.</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-reset.Warning" xml:space="preserve"><value>Do not enter verification codes, reset links, or recovery secrets into unpwn.</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-reset.Completion" xml:space="preserve"><value>Recovery options review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-recovery-options-reset.Criterion.1" xml:space="preserve"><value>Recovery methods have been reviewed and corrected where possible.</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-reset.Title" xml:space="preserve"><value>Review connected applications</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-reset.Instruction" xml:space="preserve"><value>Review connected applications and integrations after regaining access and revoke unauthorized access.</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-reset.Warning" xml:space="preserve"><value>Do not authorize a new application merely because it appears during recovery.</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-reset.Completion" xml:space="preserve"><value>Connected application review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-connected-apps-reset.Criterion.1" xml:space="preserve"><value>Connected applications have been reviewed and unauthorized access has been revoked.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Title" xml:space="preserve"><value>Review tokens and keys</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Instruction" xml:space="preserve"><value>Review personal access tokens, SSH keys, and signing keys after regaining access and revoke or rotate exposed credentials.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Warning" xml:space="preserve"><value>Do not paste token or private-key values into unpwn.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Completion" xml:space="preserve"><value>Token and key review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Criterion.1" xml:space="preserve"><value>Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-reset.Title" xml:space="preserve"><value>Review the account outcome</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-reset.Instruction" xml:space="preserve"><value>Review every required action and record any blocked work, lost access, or unresolved risk before leaving this account.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-reset.Warning" xml:space="preserve"><value>Completion means the review was documented; it is not proof that the device or account is secure.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-reset.Completion" xml:space="preserve"><value>Account outcome documented</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-reset.Criterion.1" xml:space="preserve"><value>Completion records remaining unresolved risks without claiming unsupported security guarantees.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-manual.Title" xml:space="preserve"><value>Identify the account and available evidence</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-manual.Instruction" xml:space="preserve"><value>Confirm the exact GitHub account and record only non-secret information needed to follow the provider's manual recovery process.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-manual.Warning" xml:space="preserve"><value>Do not enter passwords, reset links, MFA secrets, recovery codes, identity documents, cookies, or browser storage into notes.</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-manual.Completion" xml:space="preserve"><value>Account and available recovery evidence recorded</value></data>
+  <data name="Workflow.GitHub.Action.identify-account-manual.Criterion.1" xml:space="preserve"><value>The affected account and available recovery evidence have been identified.</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Title" xml:space="preserve"><value>Follow manual recovery</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Instruction" xml:space="preserve"><value>Follow the official provider guidance, record whether access is pending, restored, denied, or lost, and preserve unresolved risks.</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Warning" xml:space="preserve"><value>unpwn cannot bypass identity verification, MFA, CAPTCHA, or provider ownership checks.</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Completion" xml:space="preserve"><value>Manual recovery outcome recorded</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Criterion.1" xml:space="preserve"><value>The provider's manual recovery outcome has been recorded.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-manual.Title" xml:space="preserve"><value>Review the manual recovery outcome</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-manual.Instruction" xml:space="preserve"><value>Review the recorded outcome and keep all unavailable controls, denied access, and unresolved risks visible.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-manual.Warning" xml:space="preserve"><value>Documenting the result does not mean that access was restored or the account is secure.</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-manual.Completion" xml:space="preserve"><value>Manual recovery outcome documented</value></data>
+  <data name="Workflow.GitHub.Action.document-completion-manual.Criterion.1" xml:space="preserve"><value>The manual recovery result and all unresolved risks have been recorded.</value></data>
+</root>

@@ -5,6 +5,7 @@ namespace Unpwn.Providers.Workflows;
 
 public static class RepositoryWorkflowCatalog
 {
+    private const string GuidancePrefix = "Workflow.GitHub.Action";
     private static readonly RecoveryPath[] AuthenticatedPath = [RecoveryPath.AuthenticatedChange];
     private static readonly RecoveryPath[] PasswordResetPath = [RecoveryPath.PasswordReset];
     private static readonly RecoveryPath[] ManualPath = [RecoveryPath.ManualRecovery];
@@ -26,30 +27,30 @@ public static class RepositoryWorkflowCatalog
                 new(
                     "password-reset",
                     new Uri("https://github.com/password_reset"),
-                    ["https://github.com"])
+                    ["https://github.com"]),
             ],
             [
-                Required("identify-account-auth", RecoveryActionType.IdentifyAccount, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.None, [], "The affected account has been identified."),
-                Required("change-password", RecoveryActionType.ChangePassword, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-auth"], "The account password has been changed through the official authenticated flow."),
-                Required("review-mfa-auth", RecoveryActionType.ReviewMfa, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["change-password"], "MFA methods and recovery codes have been reviewed or an unresolved risk has been recorded."),
-                Required("invalidate-sessions-auth", RecoveryActionType.InvalidateSessions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Active sessions and trusted devices have been reviewed and revoked where appropriate."),
-                Required("review-recovery-options-auth", RecoveryActionType.ReviewRecoveryOptions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Recovery methods have been reviewed and corrected where possible."),
-                Required("review-connected-apps-auth", RecoveryActionType.ReviewConnectedApplications, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Connected applications have been reviewed and unauthorized access has been revoked."),
-                Required("review-api-tokens-auth", RecoveryActionType.ReviewApiTokens, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate."),
-                Required("document-completion-auth", RecoveryActionType.DocumentCompletion, AuthenticatedPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth"], "Completion records remaining unresolved risks without claiming unsupported security guarantees."),
+                Required("identify-account-auth", RecoveryActionType.IdentifyAccount, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
+                Required("change-password", RecoveryActionType.ChangePassword, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-auth"]),
+                Required("review-mfa-auth", RecoveryActionType.ReviewMfa, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["change-password"]),
+                Required("invalidate-sessions-auth", RecoveryActionType.InvalidateSessions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"]),
+                Required("review-recovery-options-auth", RecoveryActionType.ReviewRecoveryOptions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"]),
+                Required("review-connected-apps-auth", RecoveryActionType.ReviewConnectedApplications, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"]),
+                Required("review-api-tokens-auth", RecoveryActionType.ReviewApiTokens, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"]),
+                Required("document-completion-auth", RecoveryActionType.DocumentCompletion, AuthenticatedPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-mfa-auth", "invalidate-sessions-auth", "review-recovery-options-auth", "review-connected-apps-auth", "review-api-tokens-auth"]),
 
-                Required("identify-account-reset", RecoveryActionType.IdentifyAccount, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.None, [], "The affected account and its secured reset channel have been identified."),
-                Required("reset-password", RecoveryActionType.ResetPassword, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-reset"], "The account password has been reset through the official provider flow."),
-                Required("review-mfa-reset", RecoveryActionType.ReviewMfa, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["reset-password"], "MFA methods and recovery codes have been reviewed or an unresolved risk has been recorded."),
-                Required("invalidate-sessions-reset", RecoveryActionType.InvalidateSessions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Active sessions and trusted devices have been reviewed and revoked where appropriate."),
-                Required("review-recovery-options-reset", RecoveryActionType.ReviewRecoveryOptions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Recovery methods have been reviewed and corrected where possible."),
-                Required("review-connected-apps-reset", RecoveryActionType.ReviewConnectedApplications, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Connected applications have been reviewed and unauthorized access has been revoked."),
-                Required("review-api-tokens-reset", RecoveryActionType.ReviewApiTokens, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate."),
-                Required("document-completion-reset", RecoveryActionType.DocumentCompletion, PasswordResetPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset"], "Completion records remaining unresolved risks without claiming unsupported security guarantees."),
+                Required("identify-account-reset", RecoveryActionType.IdentifyAccount, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
+                Required("reset-password", RecoveryActionType.ResetPassword, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-reset"]),
+                Required("review-mfa-reset", RecoveryActionType.ReviewMfa, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["reset-password"]),
+                Required("invalidate-sessions-reset", RecoveryActionType.InvalidateSessions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"]),
+                Required("review-recovery-options-reset", RecoveryActionType.ReviewRecoveryOptions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"]),
+                Required("review-connected-apps-reset", RecoveryActionType.ReviewConnectedApplications, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"]),
+                Required("review-api-tokens-reset", RecoveryActionType.ReviewApiTokens, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"]),
+                Required("document-completion-reset", RecoveryActionType.DocumentCompletion, PasswordResetPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-mfa-reset", "invalidate-sessions-reset", "review-recovery-options-reset", "review-connected-apps-reset", "review-api-tokens-reset"]),
 
-                Required("identify-account-manual", RecoveryActionType.IdentifyAccount, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, [], "The affected account and available recovery evidence have been identified."),
-                Required("manual-recovery", RecoveryActionType.ManualRecovery, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, ["identify-account-manual"], "The provider's manual recovery outcome has been recorded."),
-                Required("document-completion-manual", RecoveryActionType.DocumentCompletion, ManualPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["manual-recovery"], "The manual recovery result and all unresolved risks have been recorded.")
+                Required("identify-account-manual", RecoveryActionType.IdentifyAccount, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
+                Required("manual-recovery", RecoveryActionType.ManualRecovery, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, ["identify-account-manual"]),
+                Required("document-completion-manual", RecoveryActionType.DocumentCompletion, ManualPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["manual-recovery"]),
             ])
     ];
 
@@ -156,7 +157,7 @@ public static class RepositoryWorkflowCatalog
     {
         List<ProviderContractValidationDiagnostic> diagnostics = [];
 
-        foreach (RecoveryWorkflowDefinition workflow in Workflows)
+        foreach (var workflow in Workflows)
         {
             var scenarios = ContractScenarios
                 .Where(scenario => string.Equals(scenario.WorkflowId, workflow.WorkflowId, StringComparison.Ordinal))
@@ -164,19 +165,23 @@ public static class RepositoryWorkflowCatalog
             diagnostics.AddRange(ProviderContractValidator.Validate(workflow, scenarios).Diagnostics);
         }
 
-        return diagnostics.Count == 0 ? ProviderContractValidationResult.Valid : new ProviderContractValidationResult(diagnostics);
+        return diagnostics.Count == 0
+            ? ProviderContractValidationResult.Valid
+            : new ProviderContractValidationResult(diagnostics);
     }
 
     public static WorkflowValidationResult ValidateAll(DateOnly? currentDate = null)
     {
         List<WorkflowValidationDiagnostic> diagnostics = [];
 
-        foreach (RecoveryWorkflowDefinition workflow in Workflows)
+        foreach (var workflow in Workflows)
         {
             diagnostics.AddRange(RecoveryWorkflowValidator.Validate(workflow, currentDate).Diagnostics);
         }
 
-        return diagnostics.Count == 0 ? WorkflowValidationResult.Valid : WorkflowValidationResult.FromDiagnostics(diagnostics);
+        return diagnostics.Count == 0
+            ? WorkflowValidationResult.Valid
+            : WorkflowValidationResult.FromDiagnostics(diagnostics);
     }
 
     private static RecoveryActionDefinition Required(
@@ -185,9 +190,11 @@ public static class RepositoryWorkflowCatalog
         IReadOnlyList<RecoveryPath> paths,
         RecoveryActionImportance importance,
         AutomationSupport automationSupport,
-        IReadOnlyList<string> prerequisites,
-        string completionCriterion) =>
-        new(
+        IReadOnlyList<string> prerequisites)
+    {
+        var prefix = $"{GuidancePrefix}.{id}";
+        var criteria = new[] { $"{prefix}.Criterion.1" };
+        return new RecoveryActionDefinition(
             id,
             type,
             paths,
@@ -195,7 +202,14 @@ public static class RepositoryWorkflowCatalog
             importance,
             automationSupport,
             prerequisites,
-            [completionCriterion]);
+            criteria,
+            new RecoveryActionGuidanceKeys(
+                $"{prefix}.Title",
+                $"{prefix}.Instruction",
+                $"{prefix}.Warning",
+                $"{prefix}.Completion",
+                criteria));
+    }
 
     private static ContractExpectationEntry Expected(
         string id,

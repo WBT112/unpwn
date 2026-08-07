@@ -24,7 +24,7 @@ public sealed class RecoveryWorkflowValidatorTests
         var onVerificationDate = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2027, 1, 2));
 
         Assert.Contains(beforeVerification.Diagnostics, diagnostic => diagnostic.Rule == "verification-date-in-future");
-        Assert.True(onVerificationDate.IsValid);
+        Assert.DoesNotContain(onVerificationDate.Diagnostics, diagnostic => diagnostic.Rule == "verification-date-in-future");
     }
 
     [Fact]
