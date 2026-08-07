@@ -47,6 +47,7 @@ public sealed class ProjectDependencyTests
             .Append("Unpwn.Application.Tests")
             .Append("Unpwn.Automation.Tests")
             .Append("Unpwn.Core.Tests")
+            .Append("Unpwn.Export.Tests")
             .Append("Unpwn.Import.Tests")
             .Append("Unpwn.SyntheticProvider.Tests")
             .Append("Unpwn.Vault.Tests")
