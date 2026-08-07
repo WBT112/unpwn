@@ -1,5 +1,6 @@
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
+using Unpwn.Vault.Storage;
 
 namespace Unpwn.App.Services;
 
@@ -10,6 +11,7 @@ public enum RecoverySessionLoadState
     Empty,
     Loaded,
     Corrupted,
+    LoadFailed,
 }
 
 public enum RecoverySessionOperationFailureCode
@@ -60,6 +62,11 @@ public interface IEncryptedVaultRecordStore
         VaultRecordDescriptor descriptor,
         ReadOnlyMemory<byte> plaintext,
         CancellationToken cancellationToken);
+
+    Task WriteEncryptedRecordsAtomicallyAsync(
+        IReadOnlyCollection<VaultRecordWrite> writes,
+        CancellationToken cancellationToken) =>
+        throw new NotSupportedException("The encrypted record store does not support atomic batch writes.");
 }
 
 public interface IRecoveryWizardVaultCoordinator
@@ -100,4 +107,8 @@ public interface IRecoverySessionService
         CancellationToken cancellationToken);
 
     void ClearForLock();
+
+    void MarkLoadFailed()
+    {
+    }
 }

@@ -106,32 +106,54 @@ public sealed class RecoveryVault : IDisposable
 
     public void UpsertRecord(VaultRecordDescriptor descriptor, ReadOnlySpan<byte> plaintext)
     {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(descriptor);
-        descriptor.Validate();
+        var copy = plaintext.ToArray();
+        try
+        {
+            UpsertRecords([new VaultRecordWrite(descriptor, copy)]);
+        }
+        finally
+        {
+            CryptographicOperations.ZeroMemory(copy);
+        }
+    }
 
+    public void UpsertRecords(IReadOnlyCollection<VaultRecordWrite> writes)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(writes);
+        if (writes.Count == 0)
+        {
+            throw new ArgumentException("At least one recovery vault record is required.", nameof(writes));
+        }
+
+        foreach (var write in writes)
+        {
+            ArgumentNullException.ThrowIfNull(write);
+            write.Validate();
+        }
+
+        if (writes
+            .Select(write => (write.Descriptor.RecordType, write.Descriptor.RecordId))
+            .Distinct()
+            .Count() != writes.Count)
+        {
+            throw new ArgumentException("An atomic recovery vault write cannot contain duplicate records.", nameof(writes));
+        }
+
+        var dataKey = GetDataKey();
         using var crypto = new VaultCryptoPrototype();
-        var encrypted = crypto.EncryptRecord(GetDataKey(), descriptor, plaintext);
+        var encryptedWrites = writes
+            .Select(write => crypto.EncryptRecord(dataKey, write.Descriptor, write.Plaintext.Span))
+            .ToArray();
         using var connection = OpenConnection(_path, SqliteOpenMode.ReadWrite);
-        using var command = connection.CreateCommand();
-        command.CommandText = """
-            INSERT INTO vault_records(record_type, record_id, schema_version, nonce, ciphertext, tag, updated_utc)
-            VALUES($record_type, $record_id, $schema_version, $nonce, $ciphertext, $tag, $updated_utc)
-            ON CONFLICT(record_type, record_id) DO UPDATE SET
-                schema_version = excluded.schema_version,
-                nonce = excluded.nonce,
-                ciphertext = excluded.ciphertext,
-                tag = excluded.tag,
-                updated_utc = excluded.updated_utc;
-            """;
-        command.Parameters.AddWithValue("$record_type", descriptor.RecordType);
-        command.Parameters.AddWithValue("$record_id", descriptor.RecordId);
-        command.Parameters.AddWithValue("$schema_version", descriptor.SchemaVersion);
-        command.Parameters.Add("$nonce", SqliteType.Blob).Value = encrypted.Nonce;
-        command.Parameters.Add("$ciphertext", SqliteType.Blob).Value = encrypted.Ciphertext;
-        command.Parameters.Add("$tag", SqliteType.Blob).Value = encrypted.Tag;
-        command.Parameters.AddWithValue("$updated_utc", DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
-        command.ExecuteNonQuery();
+        using var transaction = connection.BeginTransaction();
+        var updatedAt = DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture);
+        foreach (var encrypted in encryptedWrites)
+        {
+            UpsertEncryptedRecord(connection, transaction, encrypted, updatedAt);
+        }
+
+        transaction.Commit();
     }
 
     public VaultRecord? ReadRecord(string recordType, string recordId)
@@ -305,6 +327,34 @@ public sealed class RecoveryVault : IDisposable
         {
             throw new InvalidOperationException("Recovery vault key envelope could not be updated.");
         }
+    }
+
+    private static void UpsertEncryptedRecord(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        EncryptedVaultRecord encrypted,
+        string updatedAt)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO vault_records(record_type, record_id, schema_version, nonce, ciphertext, tag, updated_utc)
+            VALUES($record_type, $record_id, $schema_version, $nonce, $ciphertext, $tag, $updated_utc)
+            ON CONFLICT(record_type, record_id) DO UPDATE SET
+                schema_version = excluded.schema_version,
+                nonce = excluded.nonce,
+                ciphertext = excluded.ciphertext,
+                tag = excluded.tag,
+                updated_utc = excluded.updated_utc;
+            """;
+        command.Parameters.AddWithValue("$record_type", encrypted.Descriptor.RecordType);
+        command.Parameters.AddWithValue("$record_id", encrypted.Descriptor.RecordId);
+        command.Parameters.AddWithValue("$schema_version", encrypted.Descriptor.SchemaVersion);
+        command.Parameters.Add("$nonce", SqliteType.Blob).Value = encrypted.Nonce;
+        command.Parameters.Add("$ciphertext", SqliteType.Blob).Value = encrypted.Ciphertext;
+        command.Parameters.Add("$tag", SqliteType.Blob).Value = encrypted.Tag;
+        command.Parameters.AddWithValue("$updated_utc", updatedAt);
+        command.ExecuteNonQuery();
     }
 
     private static void AddEnvelopeParameters(SqliteCommand command, VaultKeyEnvelope envelope)

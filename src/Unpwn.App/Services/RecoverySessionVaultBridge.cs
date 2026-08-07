@@ -7,6 +7,9 @@ public sealed class RecoverySessionVaultBridge : IDisposable
     private readonly IVaultLifecycleService _vaultLifecycle;
     private readonly IRecoverySessionService _sessionService;
     private readonly IAccountInventoryService? _accountInventory;
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private CancellationTokenSource? _synchronizationCancellation;
+    private long _generation;
     private bool _disposed;
 
     public RecoverySessionVaultBridge(
@@ -28,35 +31,90 @@ public sealed class RecoverySessionVaultBridge : IDisposable
         }
 
         _vaultLifecycle.VaultStateChanged -= VaultLifecycle_OnStateChanged;
+        _synchronizationCancellation?.Cancel();
+        _synchronizationCancellation?.Dispose();
+        _synchronizationCancellation = null;
+        _gate.Dispose();
         _disposed = true;
+    }
+
+    private void VaultLifecycle_OnStateChanged(object? sender, EventArgs eventArgs)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _synchronizationCancellation?.Cancel();
+        _synchronizationCancellation?.Dispose();
+        _synchronizationCancellation = new CancellationTokenSource();
+        var generation = Interlocked.Increment(ref _generation);
+        _ = SynchronizeAsync(generation, _synchronizationCancellation.Token);
     }
 
     [SuppressMessage(
         "Design",
         "CA1031:Do not catch general exception types",
-        Justification = "This event boundary must not allow a workspace-load failure to crash the Avalonia UI thread.")]
-    private async void VaultLifecycle_OnStateChanged(object? sender, EventArgs eventArgs)
+        Justification = "This asynchronous event boundary converts unexpected workspace-load failures into explicit safe load states.")]
+    private async Task SynchronizeAsync(long generation, CancellationToken cancellationToken)
     {
         try
         {
-            if (_vaultLifecycle.Snapshot.IsUnlocked)
+            await _gate.WaitAsync(cancellationToken);
+            try
             {
-                await _sessionService.InitializeAsync(CancellationToken.None);
+                if (_disposed || generation != Volatile.Read(ref _generation))
+                {
+                    return;
+                }
+
+                if (!_vaultLifecycle.Snapshot.IsUnlocked)
+                {
+                    _accountInventory?.ClearForLock();
+                    _sessionService.ClearForLock();
+                    return;
+                }
+
+                await _sessionService.InitializeAsync(cancellationToken);
+                if (_disposed || generation != Volatile.Read(ref _generation) ||
+                    !_vaultLifecycle.Snapshot.IsUnlocked)
+                {
+                    return;
+                }
+
                 if (_accountInventory is not null)
                 {
-                    await _accountInventory.InitializeAsync(CancellationToken.None);
+                    await _accountInventory.InitializeAsync(cancellationToken);
                 }
+            }
+            finally
+            {
+                _gate.Release();
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (ObjectDisposedException) when (_disposed)
+        {
+        }
+        catch (Exception)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            if (_vaultLifecycle.Snapshot.IsUnlocked)
+            {
+                _sessionService.MarkLoadFailed();
+                _accountInventory?.MarkLoadFailed();
             }
             else
             {
                 _accountInventory?.ClearForLock();
                 _sessionService.ClearForLock();
             }
-        }
-        catch (Exception)
-        {
-            _accountInventory?.ClearForLock();
-            _sessionService.ClearForLock();
         }
     }
 }

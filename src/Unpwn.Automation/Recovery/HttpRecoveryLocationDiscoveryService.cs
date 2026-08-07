@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using Unpwn.Application.Recovery;
 using Unpwn.Core;
 
-namespace Unpwn.Infrastructure.Recovery;
+namespace Unpwn.Automation.Recovery;
 
 public sealed class HttpRecoveryLocationDiscoveryService(
     HttpMessageInvoker http,
@@ -106,7 +106,7 @@ public sealed class HttpRecoveryLocationDiscoveryService(
             providerHandoff,
             wellKnownResult.FailureCode,
             MapFallbackReason(wellKnownResult.FailureCode),
-            wellKnownResult.RedirectChain);
+            wellKnownResult.RedirectOrigins);
     }
 
     public void Dispose()
@@ -148,13 +148,13 @@ public sealed class HttpRecoveryLocationDiscoveryService(
             }
             catch (OperationCanceledException)
             {
-                return RecoveryLocationDiscoveryResult.Failure(
+                return Failure(
                     RecoveryLocationDiscoveryFailureCode.NetworkFailure,
                     redirectChain);
             }
             catch (HttpRequestException)
             {
-                return RecoveryLocationDiscoveryResult.Failure(
+                return Failure(
                     RecoveryLocationDiscoveryFailureCode.NetworkFailure,
                     redirectChain);
             }
@@ -165,26 +165,25 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                 {
                     if (redirectCount >= _maxRedirects)
                     {
-                        return RecoveryLocationDiscoveryResult.Failure(
+                        return Failure(
                             RecoveryLocationDiscoveryFailureCode.RedirectLimitExceeded,
                             redirectChain);
                     }
 
-                    if (response.Headers.Location is null)
+                    if (!TryGetRedirectTarget(
+                            response.Headers,
+                            current,
+                            out var redirectTarget,
+                            out var redirectFailure))
                     {
-                        return RecoveryLocationDiscoveryResult.Failure(
-                            RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation,
-                            redirectChain);
+                        return Failure(redirectFailure, redirectChain);
                     }
 
-                    var redirectTarget = response.Headers.Location.IsAbsoluteUri
-                        ? response.Headers.Location
-                        : new Uri(current, response.Headers.Location);
                     if (!RecoveryLocationUriNormalizer.TryNormalizeHttps(
                             redirectTarget,
                             out var normalizedRedirect))
                     {
-                        return RecoveryLocationDiscoveryResult.Failure(
+                        return Failure(
                             RecoveryLocationDiscoveryFailureCode.InsecureRedirect,
                             redirectChain);
                     }
@@ -192,7 +191,7 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                     if (!allowedOrigins.Contains(
                             RecoveryLocationUriNormalizer.GetOrigin(normalizedRedirect)))
                     {
-                        return RecoveryLocationDiscoveryResult.Failure(
+                        return Failure(
                             RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin,
                             redirectChain);
                     }
@@ -202,9 +201,9 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                     continue;
                 }
 
-                if (!response.IsSuccessStatusCode)
+                if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    return RecoveryLocationDiscoveryResult.Failure(
+                    return Failure(
                         RecoveryLocationDiscoveryFailureCode.UnsupportedResponse,
                         redirectChain);
                 }
@@ -219,8 +218,44 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                     expectedOrigins,
                     RecoveryLocationResolutionSource.WellKnownChangePassword,
                     RequiresVisibleConfirmation: true);
-                return RecoveryLocationDiscoveryResult.Success(handoff, redirectChain);
+                return RecoveryLocationDiscoveryResult.Success(
+                    handoff,
+                    RecoveryLocationUriNormalizer.SanitizeOrigins(redirectChain));
             }
+        }
+    }
+
+    private static bool TryGetRedirectTarget(
+        HttpResponseHeaders headers,
+        Uri current,
+        out Uri redirectTarget,
+        out RecoveryLocationDiscoveryFailureCode failureCode)
+    {
+        redirectTarget = null!;
+        failureCode = RecoveryLocationDiscoveryFailureCode.None;
+        if (!headers.TryGetValues("Location", out var values))
+        {
+            failureCode = RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation;
+            return false;
+        }
+
+        var materialized = values.ToArray();
+        if (materialized.Length != 1 || string.IsNullOrWhiteSpace(materialized[0]) ||
+            !Uri.TryCreate(materialized[0], UriKind.RelativeOrAbsolute, out var location))
+        {
+            failureCode = RecoveryLocationDiscoveryFailureCode.InvalidRedirectLocation;
+            return false;
+        }
+
+        try
+        {
+            redirectTarget = location.IsAbsoluteUri ? location : new Uri(current, location);
+            return true;
+        }
+        catch (UriFormatException)
+        {
+            failureCode = RecoveryLocationDiscoveryFailureCode.InvalidRedirectLocation;
+            return false;
         }
     }
 
@@ -242,18 +277,25 @@ public sealed class HttpRecoveryLocationDiscoveryService(
         RecoveryNavigationHandoff providerHandoff,
         RecoveryLocationDiscoveryFailureCode failureCode,
         RecoveryLocationFallbackReason fallbackReason,
-        IReadOnlyList<Uri> redirectChain)
+        IReadOnlyList<string> redirectOrigins)
     {
         if (!providerHandoffAvailable)
         {
-            return RecoveryLocationDiscoveryResult.Failure(failureCode, redirectChain);
+            return RecoveryLocationDiscoveryResult.Failure(failureCode, redirectOrigins);
         }
 
         return RecoveryLocationDiscoveryResult.Success(
             providerHandoff with { Source = RecoveryLocationResolutionSource.ProviderFallback },
-            redirectChain,
+            redirectOrigins,
             fallbackReason);
     }
+
+    private static RecoveryLocationDiscoveryResult Failure(
+        RecoveryLocationDiscoveryFailureCode failureCode,
+        IReadOnlyList<Uri> redirectChain) =>
+        RecoveryLocationDiscoveryResult.Failure(
+            failureCode,
+            RecoveryLocationUriNormalizer.SanitizeOrigins(redirectChain));
 
     private static HashSet<string> CreateAllowedOrigins(
         Uri normalizedAccountUri,
@@ -343,6 +385,8 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                 RecoveryLocationFallbackReason.UnsupportedResponse,
             RecoveryLocationDiscoveryFailureCode.MissingRedirectLocation =>
                 RecoveryLocationFallbackReason.MissingRedirectLocation,
+            RecoveryLocationDiscoveryFailureCode.InvalidRedirectLocation =>
+                RecoveryLocationFallbackReason.InvalidRedirectLocation,
             RecoveryLocationDiscoveryFailureCode.InsecureRedirect =>
                 RecoveryLocationFallbackReason.InsecureRedirect,
             RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin =>

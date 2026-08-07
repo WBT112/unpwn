@@ -1,4 +1,4 @@
-namespace Unpwn.Infrastructure.Recovery;
+namespace Unpwn.Automation.Recovery;
 
 internal static class RecoveryLocationUriNormalizer
 {
@@ -51,4 +51,7 @@ internal static class RecoveryLocationUriNormalizer
 
     public static Uri GetWellKnownChangePasswordUri(Uri uri) =>
         new(GetOriginUri(uri), ".well-known/change-password");
+
+    public static string[] SanitizeOrigins(IEnumerable<Uri> locations) =>
+        [.. locations.Select(GetOrigin)];
 }

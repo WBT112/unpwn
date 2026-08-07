@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -19,15 +20,18 @@ public partial class App : Avalonia.Application
             var localization = new ResourceLocalizationService();
             _ = new AvaloniaLocalizationResourceBridge(localization);
             var wizard = new RecoveryWizardSessionService();
+            var workspaceMutations = new WorkspaceMutationCoordinator();
             var vaultLifecycle = new RecoveryVaultLifecycleService(
                 new JsonRecentVaultStore(),
                 wizard);
             var recoverySession = new RecoverySessionService(
                 vaultLifecycle,
-                vaultLifecycle);
+                vaultLifecycle,
+                mutationCoordinator: workspaceMutations);
             var accountInventory = new AccountInventoryService(
                 vaultLifecycle,
-                recoverySession);
+                recoverySession,
+                mutationCoordinator: workspaceMutations);
             var sessionVaultBridge = new RecoverySessionVaultBridge(
                 vaultLifecycle,
                 recoverySession,
@@ -52,12 +56,30 @@ public partial class App : Avalonia.Application
                 sessionVaultBridge.Dispose();
                 accountInventory.Dispose();
                 recoverySession.Dispose();
+                workspaceMutations.Dispose();
                 vaultLifecycle.Dispose();
             };
             desktop.MainWindow = mainWindow;
-            _ = vaultLifecycle.InitializeAsync(CancellationToken.None);
+            _ = InitializeVaultReferencesAsync(vaultLifecycle);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Recent-vault references are non-sensitive convenience metadata; startup must remain usable if that metadata is unavailable or malformed.")]
+    private static async Task InitializeVaultReferencesAsync(
+        RecoveryVaultLifecycleService vaultLifecycle)
+    {
+        try
+        {
+            await vaultLifecycle.InitializeAsync(CancellationToken.None);
+        }
+        catch (Exception)
+        {
+            // Vault selection and creation remain usable without recent-vault convenience metadata.
+        }
     }
 }

@@ -1,10 +1,10 @@
 using System.Net;
 using Unpwn.Application.Recovery;
+using Unpwn.Automation.Recovery;
 using Unpwn.Core;
-using Unpwn.Infrastructure.Recovery;
 using Xunit;
 
-namespace Unpwn.Application.Tests.Recovery;
+namespace Unpwn.Automation.Tests.Recovery;
 
 public sealed class RecoveryLocationDiscoveryTests
 {
@@ -28,11 +28,11 @@ public sealed class RecoveryLocationDiscoveryTests
     }
 
     [Fact]
-    public async Task WellKnownRedirectWithinExpectedOriginIsAccepted()
+    public async Task WellKnownRedirectWithinExpectedOriginIsAcceptedWithSanitizedTrace()
     {
         var handler = new RecordingHandler(request => request.RequestUri?.AbsolutePath switch
         {
-            "/.well-known/change-password" => Redirect("/settings/password"),
+            "/.well-known/change-password" => Redirect("/settings/password?temporary=value"),
             "/settings/password" => Success(),
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
         });
@@ -46,9 +46,10 @@ public sealed class RecoveryLocationDiscoveryTests
 
         Assert.True(result.Succeeded);
         Assert.Equal(RecoveryLocationResolutionSource.WellKnownChangePassword, result.Handoff?.Source);
-        Assert.Equal(new Uri("https://github.com/settings/password"), result.Handoff?.Destination);
-        Assert.Equal(2, result.RedirectChain.Count);
-        Assert.Equal(RecoveryLocationFallbackReason.None, result.FallbackReason);
+        Assert.Equal(new Uri("https://github.com/settings/password?temporary=value"), result.Handoff?.Destination);
+        Assert.Equal(1, result.RedirectCount);
+        Assert.Equal(["https://github.com", "https://github.com"], result.RedirectOrigins);
+        Assert.DoesNotContain("temporary", string.Join('|', result.RedirectOrigins), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -76,14 +77,13 @@ public sealed class RecoveryLocationDiscoveryTests
         Assert.True(result.Succeeded);
         Assert.Equal(new Uri("https://accounts.example.test/change-password"), result.Handoff?.Destination);
         Assert.Equal("https://accounts.example.test", result.Handoff?.ExpectedOrigin);
-        Assert.Contains("https://example.test", result.Handoff!.ExpectedOrigins);
-        Assert.Contains("https://accounts.example.test", result.Handoff.ExpectedOrigins);
+        Assert.Equal(["https://example.test", "https://accounts.example.test"], result.RedirectOrigins);
     }
 
     [Fact]
-    public async Task UnexpectedCrossOriginRedirectIsRejectedAndUsesProviderFallback()
+    public async Task UnexpectedCrossOriginRedirectUsesReviewedProviderFallback()
     {
-        var handler = new RecordingHandler(_ => Redirect("https://attacker.example/change-password"));
+        var handler = new RecordingHandler(_ => Redirect("https://attacker.example/change-password?token=discarded"));
         using var service = CreateService(handler);
 
         var result = await service.DiscoverAsync(
@@ -95,14 +95,12 @@ public sealed class RecoveryLocationDiscoveryTests
         Assert.True(result.Succeeded);
         Assert.Equal(RecoveryLocationResolutionSource.ProviderFallback, result.Handoff?.Source);
         Assert.Equal(new Uri("https://github.com/settings/security"), result.Handoff?.Destination);
-        Assert.Equal(
-            RecoveryLocationFallbackReason.UnexpectedRedirectOrigin,
-            result.FallbackReason);
-        Assert.Single(result.RedirectChain);
+        Assert.Equal(RecoveryLocationFallbackReason.UnexpectedRedirectOrigin, result.FallbackReason);
+        Assert.Equal(["https://github.com"], result.RedirectOrigins);
     }
 
     [Fact]
-    public async Task InsecureRedirectIsRejectedAndUsesProviderFallback()
+    public async Task InsecureRedirectUsesReviewedProviderFallback()
     {
         var handler = new RecordingHandler(_ => Redirect("http://github.com/settings/password"));
         using var service = CreateService(handler);
@@ -123,9 +121,8 @@ public sealed class RecoveryLocationDiscoveryTests
     {
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound));
         using var service = CreateService(handler);
-        var workflow = CreateWorkflow([]);
         var request = new RecoveryLocationDiscoveryRequest(
-            workflow,
+            CreateWorkflow([]),
             ProviderLocationId: null,
             new Uri("https://example.test/account"));
 
@@ -153,6 +150,28 @@ public sealed class RecoveryLocationDiscoveryTests
     }
 
     [Fact]
+    public async Task InvalidRedirectLocationReturnsProviderFallbackReason()
+    {
+        var handler = new RecordingHandler(request =>
+        {
+            _ = request;
+            var response = new HttpResponseMessage(HttpStatusCode.Found);
+            response.Headers.TryAddWithoutValidation("Location", "https://[");
+            return response;
+        });
+        using var service = CreateService(handler);
+
+        var result = await service.DiscoverAsync(
+            CreateRequest(
+                RecoveryLocationSelectionPolicy.WellKnownFirst,
+                accountUri: new Uri("https://github.com/account")),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(RecoveryLocationFallbackReason.InvalidRedirectLocation, result.FallbackReason);
+    }
+
+    [Fact]
     public async Task RedirectLimitIsEnforcedBeforeFurtherNavigation()
     {
         var handler = new RecordingHandler(request => request.RequestUri?.AbsolutePath switch
@@ -162,18 +181,17 @@ public sealed class RecoveryLocationDiscoveryTests
             _ => Success(),
         });
         using var service = CreateService(handler, maxRedirects: 1);
-        var workflow = CreateWorkflow([]);
 
         var result = await service.DiscoverAsync(
             new RecoveryLocationDiscoveryRequest(
-                workflow,
+                CreateWorkflow([]),
                 ProviderLocationId: null,
                 new Uri("https://example.test/account")),
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
         Assert.Equal(RecoveryLocationDiscoveryFailureCode.RedirectLimitExceeded, result.FailureCode);
-        Assert.Equal(2, result.RedirectChain.Count);
+        Assert.Equal(1, result.RedirectCount);
         Assert.Equal(2, handler.Requests.Count);
     }
 
@@ -181,13 +199,12 @@ public sealed class RecoveryLocationDiscoveryTests
     public async Task DiscoveryRequestTransmitsNoCredentialsOrAccountPathData()
     {
         const string discardedQueryValue = "discarded-token-value";
-        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
+        var handler = new RecordingHandler(_ => Success());
         using var service = CreateService(handler);
-        var workflow = CreateWorkflow([]);
 
         var result = await service.DiscoverAsync(
             new RecoveryLocationDiscoveryRequest(
-                workflow,
+                CreateWorkflow([]),
                 ProviderLocationId: null,
                 new Uri($"https://example.test/private/account?reset_token={discardedQueryValue}")),
             CancellationToken.None);
@@ -201,6 +218,23 @@ public sealed class RecoveryLocationDiscoveryTests
         Assert.False(observed.HasReferrer);
         Assert.False(observed.HasContent);
         Assert.DoesNotContain(discardedQueryValue, observed.RequestUri.AbsoluteUri, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NoContentIsNotAcceptedAsRecoveryPage()
+    {
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.NoContent));
+        using var service = CreateService(handler);
+
+        var result = await service.DiscoverAsync(
+            new RecoveryLocationDiscoveryRequest(
+                CreateWorkflow([]),
+                ProviderLocationId: null,
+                new Uri("https://example.test/account")),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(RecoveryLocationDiscoveryFailureCode.UnsupportedResponse, result.FailureCode);
     }
 
     [Fact]
@@ -244,9 +278,7 @@ public sealed class RecoveryLocationDiscoveryTests
 
         Assert.False(result.Succeeded);
         Assert.Null(result.Handoff);
-        Assert.Equal(
-            RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin,
-            result.FailureCode);
+        Assert.Equal(RecoveryLocationDiscoveryFailureCode.UnexpectedRedirectOrigin, result.FailureCode);
     }
 
     [Fact]

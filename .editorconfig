@@ -20,3 +20,16 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
+
+# These stateful services intentionally keep explicit constructors so dependency
+# validation, optional shared-coordinator ownership, and disposal semantics remain
+# visible rather than being hidden in field initializers.
+[src/Unpwn.App/Services/RecoverySessionService.cs]
+dotnet_diagnostic.IDE0290.severity = none
+
+[src/Unpwn.App/Services/AccountInventoryService.cs]
+dotnet_diagnostic.IDE0290.severity = none
+dotnet_diagnostic.IDE0305.severity = none
+
+[src/Unpwn.App/Services/WorkspacePersistenceContracts.cs]
+dotnet_diagnostic.IDE0290.severity = none

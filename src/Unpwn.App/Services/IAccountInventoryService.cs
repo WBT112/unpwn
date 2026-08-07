@@ -10,6 +10,7 @@ public enum AccountInventoryLoadState
     Empty,
     Loaded,
     Corrupted,
+    LoadFailed,
 }
 
 public enum AccountInventoryFailureCode
@@ -102,4 +103,8 @@ public interface IAccountInventoryService
     IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences();
 
     void ClearForLock();
+
+    void MarkLoadFailed()
+    {
+    }
 }

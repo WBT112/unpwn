@@ -61,69 +61,88 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
     public void AttachNewVault(RecoveryVault vault, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(vault);
-        SetCurrent(RecoveryWizardOrchestrator.ConfirmVaultReady(Current, occurredAt));
-        Persist(vault);
+        var next = RecoveryWizardOrchestrator.ConfirmVaultReady(Current, occurredAt);
+        PersistState(vault, next);
+        SetCurrent(next);
     }
 
     public void AttachExistingVault(RecoveryVault vault, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(vault);
         var persisted = TryRead(vault);
-        if (persisted is null)
+        var next = persisted is null
+            ? RecoveryWizardOrchestrator.ConfirmVaultReady(Current, occurredAt)
+            : Restore(persisted, occurredAt);
+        PersistState(vault, next);
+        SetCurrent(next);
+    }
+
+    public void CompleteIncidentIntake(RecoveryVault vault, DateTimeOffset occurredAt) =>
+        ApplyPreparedTransition(vault, PrepareTransition(
+            RecoverySessionWizardTransition.CompleteIncidentIntake,
+            occurredAt));
+
+    public void Pause(RecoveryVault vault, DateTimeOffset occurredAt) =>
+        ApplyPreparedTransition(vault, PrepareTransition(RecoverySessionWizardTransition.Pause, occurredAt));
+
+    public void Resume(RecoveryVault vault, DateTimeOffset occurredAt) =>
+        ApplyPreparedTransition(vault, PrepareTransition(RecoverySessionWizardTransition.Resume, occurredAt));
+
+    public void Archive(RecoveryVault vault, DateTimeOffset occurredAt) =>
+        ApplyPreparedTransition(vault, PrepareTransition(RecoverySessionWizardTransition.Archive, occurredAt));
+
+    public PreparedRecoveryWizardUpdate PrepareTransition(
+        RecoverySessionWizardTransition transition,
+        DateTimeOffset occurredAt)
+    {
+        var next = transition switch
         {
-            SetCurrent(RecoveryWizardOrchestrator.ConfirmVaultReady(Current, occurredAt));
-            Persist(vault);
-            return;
+            RecoverySessionWizardTransition.CompleteIncidentIntake =>
+                RecoveryWizardOrchestrator.Continue(
+                    Current,
+                    RecoveryWizardStepId.AccountInventory,
+                    occurredAt),
+            RecoverySessionWizardTransition.Pause =>
+                RecoveryWizardOrchestrator.Pause(Current, occurredAt),
+            RecoverySessionWizardTransition.Resume =>
+                RecoveryWizardOrchestrator.Resume(Current, occurredAt),
+            RecoverySessionWizardTransition.Archive =>
+                RecoveryWizardOrchestrator.Archive(Current, occurredAt),
+            _ => throw new ArgumentOutOfRangeException(nameof(transition), transition, "Unknown session transition."),
+        };
+        return PrepareState(next, Current.Revision);
+    }
+
+    public void CommitPreparedTransition(PreparedRecoveryWizardUpdate update)
+    {
+        ArgumentNullException.ThrowIfNull(update);
+        if (Current.Revision != update.ExpectedRevision)
+        {
+            throw new InvalidOperationException("The recovery wizard changed before the prepared transition was committed.");
         }
 
-        var restored = Restore(persisted, occurredAt);
-        SetCurrent(restored);
-        Persist(vault);
-    }
-
-    public void CompleteIncidentIntake(RecoveryVault vault, DateTimeOffset occurredAt)
-    {
-        ArgumentNullException.ThrowIfNull(vault);
-        SetCurrent(RecoveryWizardOrchestrator.Continue(
-            Current,
-            RecoveryWizardStepId.AccountInventory,
-            occurredAt));
-        Persist(vault);
-    }
-
-    public void Pause(RecoveryVault vault, DateTimeOffset occurredAt)
-    {
-        ArgumentNullException.ThrowIfNull(vault);
-        SetCurrent(RecoveryWizardOrchestrator.Pause(Current, occurredAt));
-        Persist(vault);
-    }
-
-    public void Resume(RecoveryVault vault, DateTimeOffset occurredAt)
-    {
-        ArgumentNullException.ThrowIfNull(vault);
-        SetCurrent(RecoveryWizardOrchestrator.Resume(Current, occurredAt));
-        Persist(vault);
-    }
-
-    public void Archive(RecoveryVault vault, DateTimeOffset occurredAt)
-    {
-        ArgumentNullException.ThrowIfNull(vault);
-        SetCurrent(RecoveryWizardOrchestrator.Archive(Current, occurredAt));
-        Persist(vault);
+        SetCurrent(update.State);
     }
 
     public void PrepareForLock(RecoveryVault vault, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(vault);
+        var next = Current;
         if (Current.HasVaultContext &&
             Current.Status is RecoveryWizardLifecycleStatus.Active or RecoveryWizardLifecycleStatus.Paused)
         {
-            SetCurrent(RecoveryWizardOrchestrator.Lock(Current, occurredAt));
+            next = RecoveryWizardOrchestrator.Lock(Current, occurredAt);
         }
 
-        if (Current.HasVaultContext)
+        if (!next.HasVaultContext)
         {
-            Persist(vault);
+            return;
+        }
+
+        PersistState(vault, next);
+        if (!ReferenceEquals(next, Current) && next != Current)
+        {
+            SetCurrent(next);
         }
     }
 
@@ -132,8 +151,9 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
         ArgumentNullException.ThrowIfNull(vault);
         var persisted = TryRead(vault)
             ?? throw new InvalidOperationException("The recovery wizard state is unavailable.");
-        SetCurrent(Restore(persisted, occurredAt));
-        Persist(vault);
+        var next = Restore(persisted, occurredAt);
+        PersistState(vault, next);
+        SetCurrent(next);
     }
 
     private static RecoveryWizardState Restore(
@@ -188,17 +208,33 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
                 SerializerOptions);
     }
 
-    private void Persist(RecoveryVault vault)
+    private void ApplyPreparedTransition(
+        RecoveryVault vault,
+        PreparedRecoveryWizardUpdate update)
     {
-        var persisted = new PersistedRecoveryWizardState(
-            Current.Id,
-            Current.CurrentStep.Value,
-            Current.ResumeStep.Value,
-            Current.Status,
-            Current.HasVaultContext,
-            Current.Revision,
-            Current.UpdatedAt);
-        var plaintext = JsonSerializer.SerializeToUtf8Bytes(persisted, SerializerOptions);
+        ArgumentNullException.ThrowIfNull(vault);
+        using (update)
+        {
+            vault.UpsertRecord(update.Descriptor, update.Plaintext.Span);
+            CommitPreparedTransition(update);
+        }
+    }
+
+    private static PreparedRecoveryWizardUpdate PrepareState(
+        RecoveryWizardState state,
+        long expectedRevision)
+    {
+        var plaintext = Serialize(state);
+        return new PreparedRecoveryWizardUpdate(
+            state,
+            WizardDescriptor,
+            plaintext,
+            expectedRevision);
+    }
+
+    private static void PersistState(RecoveryVault vault, RecoveryWizardState state)
+    {
+        var plaintext = Serialize(state);
         try
         {
             vault.UpsertRecord(WizardDescriptor, plaintext);
@@ -207,6 +243,19 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
         {
             CryptographicOperations.ZeroMemory(plaintext);
         }
+    }
+
+    private static byte[] Serialize(RecoveryWizardState state)
+    {
+        var persisted = new PersistedRecoveryWizardState(
+            state.Id,
+            state.CurrentStep.Value,
+            state.ResumeStep.Value,
+            state.Status,
+            state.HasVaultContext,
+            state.Revision,
+            state.UpdatedAt);
+        return JsonSerializer.SerializeToUtf8Bytes(persisted, SerializerOptions);
     }
 
     private void SetCurrent(RecoveryWizardState state)

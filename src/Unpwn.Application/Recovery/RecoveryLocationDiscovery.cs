@@ -26,6 +26,7 @@ public enum RecoveryLocationDiscoveryFailureCode
     NetworkFailure,
     UnsupportedResponse,
     MissingRedirectLocation,
+    InvalidRedirectLocation,
     InsecureRedirect,
     UnexpectedRedirectOrigin,
     RedirectLimitExceeded,
@@ -38,6 +39,7 @@ public enum RecoveryLocationFallbackReason
     NetworkFailure,
     UnsupportedResponse,
     MissingRedirectLocation,
+    InvalidRedirectLocation,
     InsecureRedirect,
     UnexpectedRedirectOrigin,
     RedirectLimitExceeded,
@@ -61,11 +63,13 @@ public sealed record RecoveryLocationDiscoveryResult(
     RecoveryNavigationHandoff? Handoff,
     RecoveryLocationDiscoveryFailureCode FailureCode,
     RecoveryLocationFallbackReason FallbackReason,
-    IReadOnlyList<Uri> RedirectChain)
+    IReadOnlyList<string> RedirectOrigins)
 {
+    public int RedirectCount => Math.Max(0, RedirectOrigins.Count - 1);
+
     public static RecoveryLocationDiscoveryResult Success(
         RecoveryNavigationHandoff handoff,
-        IReadOnlyList<Uri>? redirectChain = null,
+        IReadOnlyList<string>? redirectOrigins = null,
         RecoveryLocationFallbackReason fallbackReason = RecoveryLocationFallbackReason.None)
     {
         ArgumentNullException.ThrowIfNull(handoff);
@@ -74,13 +78,13 @@ public sealed record RecoveryLocationDiscoveryResult(
             handoff,
             RecoveryLocationDiscoveryFailureCode.None,
             fallbackReason,
-            redirectChain ?? []);
+            redirectOrigins ?? []);
     }
 
     public static RecoveryLocationDiscoveryResult Failure(
         RecoveryLocationDiscoveryFailureCode failureCode,
-        IReadOnlyList<Uri>? redirectChain = null) =>
-        new(false, null, failureCode, RecoveryLocationFallbackReason.None, redirectChain ?? []);
+        IReadOnlyList<string>? redirectOrigins = null) =>
+        new(false, null, failureCode, RecoveryLocationFallbackReason.None, redirectOrigins ?? []);
 }
 
 public interface IRecoveryLocationDiscoveryService

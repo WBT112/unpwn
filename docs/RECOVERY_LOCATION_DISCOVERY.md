@@ -4,7 +4,7 @@
 
 Recovery-location discovery identifies a safe official destination for starting a credential change or recovery action. It does not perform the recovery action, submit forms, infer success, or transmit account credentials.
 
-The application contract is `IRecoveryLocationDiscoveryService`. It returns a structured `RecoveryNavigationHandoff` that a later workflow screen can display before opening an external browser.
+The application contract is `IRecoveryLocationDiscoveryService`. Its HTTP implementation belongs to `Unpwn.Automation`, because location discovery is an automation-assistance adapter rather than general infrastructure. The result is a structured `RecoveryNavigationHandoff` that a workflow screen can display before opening an external browser.
 
 ## Selection policies
 
@@ -34,6 +34,8 @@ Paths, queries, fragments, usernames, and other account-specific URL data are no
 - disables automatic redirects and cookie storage in the default HTTP handler
 - does not submit a password-reset request or trigger provider email
 
+A direct discovery result is accepted only for `200 OK`. Other successful status codes, including `204 No Content`, are not treated as a usable browser destination.
+
 Opening or resolving this endpoint never marks a recovery action complete.
 
 ## URL and redirect validation
@@ -44,10 +46,10 @@ Redirects are followed manually and are limited to a small bounded chain. Each t
 
 - remain HTTPS
 - match the account origin or one of the exact repository-reviewed expected origins
-- contain a valid redirect location
+- contain exactly one syntactically valid redirect location
 - remain within the configured redirect limit
 
-An insecure redirect, an unexpected origin, a missing `Location` header, an unsupported response, a timeout, or a transport failure is represented by a stable language-neutral code. Source exception messages are not exposed through the result.
+An insecure redirect, an unexpected origin, a missing or malformed `Location` header, an unsupported response, a timeout, or a transport failure is represented by a stable language-neutral code. Source exception messages are not exposed through the result.
 
 Exact origin matching is intentional. Subdomains are not trusted implicitly; a provider workflow must list every expected origin explicitly.
 
@@ -73,18 +75,25 @@ A successful result contains:
 
 The workflow UI must display the destination and expected origin before navigation. A browser open, browser return, redirect, or elapsed time is never evidence that the external action succeeded.
 
+The final destination is transient navigation data. It must not be copied into audit events or general diagnostics. Redirect diagnostics contain only normalized origins and a hop count; paths, queries, fragments, reset tokens, and other URL values are not retained.
+
+## Known standard limitation
+
+The current MVP resolver handles HTTP redirects and direct `200 OK` responses. It does not parse HTML meta-refresh instructions. A provider that relies on meta refresh must have a repository-reviewed provider location or fall back to manual guidance. This limitation must not be hidden by treating arbitrary HTML as a successful action.
+
 ## Testing
 
-Tests use injected synthetic `HttpMessageHandler` fixtures. They cover:
+Tests live in `Unpwn.Automation.Tests` and use injected synthetic `HttpMessageHandler` fixtures. They cover:
 
 - provider-first and provider-only selection
 - same-origin and explicitly allowed cross-origin redirects
-- insecure and unexpected redirects
+- insecure, malformed, and unexpected redirects
 - missing redirect locations
 - redirect limits
-- unsupported responses and network failures
+- unsupported responses, including `204 No Content`
+- network failures and cancellation
 - provider fallback
-- cancellation
+- sanitized redirect-origin diagnostics
 - absence of credentials and account-path data in requests
 
 No live provider dependency is used in the normal test suite.
