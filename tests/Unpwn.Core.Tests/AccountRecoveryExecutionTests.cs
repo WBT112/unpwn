@@ -210,13 +210,31 @@ public sealed class AccountRecoveryExecutionTests
             AccountCriticality.Critical,
             dependencyDepth: 0,
             waitingForAccountIds: []);
+        var (
+            _,
+            _,
+            _,
+            _,
+            completedRequiredActions,
+            totalRequiredActions,
+            completedActionWeight,
+            totalActionWeight,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _,
+            _) = projection;
 
-        Assert.Equal(1, projection.CompletedRequiredActions);
-        Assert.Equal(2, projection.TotalRequiredActions);
-        Assert.Equal((int)RecoveryActionImportance.Important, projection.CompletedActionWeight);
+        Assert.Equal(1, completedRequiredActions);
+        Assert.Equal(2, totalRequiredActions);
+        Assert.Equal((int)RecoveryActionImportance.Important, completedActionWeight);
         Assert.Equal(
             (int)RecoveryActionImportance.Important + (int)RecoveryActionImportance.Critical,
-            projection.TotalActionWeight);
+            totalActionWeight);
     }
 
     private static RecoveryWorkflowDefinition CreateWorkflow()
