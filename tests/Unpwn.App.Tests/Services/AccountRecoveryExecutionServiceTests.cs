@@ -124,10 +124,10 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             CancellationToken.None);
 
         Assert.True(repeatedCreate.Succeeded);
-        Assert.Equal(created.State, repeatedCreate.State);
+        AssertStateEquivalent(created.State, repeatedCreate.State);
         Assert.True(started.Succeeded);
         Assert.True(repeated.Succeeded);
-        Assert.Equal(started.State, repeated.State);
+        AssertStateEquivalent(started.State, repeated.State);
         Assert.False(stale.Succeeded);
         Assert.Equal(AccountRecoveryExecutionFailureCode.Conflict, stale.FailureCode);
     }
@@ -173,6 +173,17 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
     }
 
     public void Dispose() => _mutations.Dispose();
+
+    private static void AssertStateEquivalent(
+        AccountRecoveryExecutionState? expected,
+        AccountRecoveryExecutionState? actual)
+    {
+        Assert.NotNull(expected);
+        Assert.NotNull(actual);
+        Assert.Equal(
+            JsonSerializer.Serialize(expected),
+            JsonSerializer.Serialize(actual));
+    }
 
     private static AccountRecoveryExecutionTransitionRequest TransitionRequest(
         Guid operationId,
