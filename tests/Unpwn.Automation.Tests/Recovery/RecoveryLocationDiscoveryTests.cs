@@ -152,10 +152,11 @@ public sealed class RecoveryLocationDiscoveryTests
     [Fact]
     public async Task InvalidRedirectLocationReturnsProviderFallbackReason()
     {
-        var handler = new RecordingHandler(_ =>
+        var handler = new RecordingHandler(request =>
         {
+            _ = request;
             var response = new HttpResponseMessage(HttpStatusCode.Found);
-            _ = response.Headers.TryAddWithoutValidation("Location", "https://[");
+            response.Headers.TryAddWithoutValidation("Location", "https://[");
             return response;
         });
         using var service = CreateService(handler);
