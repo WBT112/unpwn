@@ -85,15 +85,8 @@ public sealed class ShellViewModel : ObservableObject
         LockCommand.PropertyChanged += LockCommand_OnPropertyChanged;
         _vaultLifecycle.ContextChanged += ShellContext_OnContextChanged;
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
-        if (_recoverySession is not null)
-        {
-            _recoverySession.SessionChanged += RecoverySession_OnSessionChanged;
-        }
-
-        if (_accountInventory is not null)
-        {
-            _accountInventory.InventoryChanged += AccountInventory_OnInventoryChanged;
-        }
+        _recoverySession?.SessionChanged += RecoverySession_OnSessionChanged;
+        _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
 
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
