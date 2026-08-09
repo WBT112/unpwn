@@ -102,5 +102,6 @@
   <data name="Import.Resolution.Separate" xml:space="preserve"><value>Import duplicates as separate accounts</value></data>
   <data name="Import.Action.Import" xml:space="preserve"><value>Import reviewed accounts</value></data>
   <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
+  <data name="Import.Result.NoChanges" xml:space="preserve"><value>No new accounts were imported because every reviewed candidate was a duplicate and you chose to skip duplicates.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
 </root>
