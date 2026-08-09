@@ -11,9 +11,12 @@ namespace Unpwn.App.Tests.Presentation;
 public sealed class CsvImportScreenViewModelTests
 {
     [Fact]
-    public async Task SkipDuplicatesWithOnlyDuplicateCandidatesCompletesWithoutPersisting()
+    public async Task SkipDuplicatesKeepsFirstWithinImportCandidate()
     {
-        var inventory = new RecordingInventoryService();
+        var inventory = new RecordingInventoryService
+        {
+            ImportResult = AccountInventoryOperationResult.Success(1),
+        };
         var viewModel = new CsvImportScreenViewModel(inventory, CreateLocalization());
         var candidates = CreateDuplicateCandidates();
 
@@ -22,10 +25,12 @@ public sealed class CsvImportScreenViewModelTests
             ImportDuplicateResolution.SkipDuplicates,
             CancellationToken.None);
 
+        Assert.Equal(CsvDuplicateKind.None, candidates[0].DuplicateKind);
+        Assert.Equal(CsvDuplicateKind.WithinImport, candidates[1].DuplicateKind);
         Assert.True(result.Succeeded);
-        Assert.Equal(0, result.AffectedAccounts);
-        Assert.Equal(0, inventory.ImportCalls);
-        Assert.Equal("Import.Result.NoChanges", CsvImportScreenViewModel.GetImportResultResourceKey(result));
+        Assert.Equal(1, inventory.ImportCalls);
+        Assert.Equal(ImportDuplicateResolution.SkipDuplicates, inventory.LastDuplicateResolution);
+        Assert.Equal("Import.Result.Success", CsvImportScreenViewModel.GetImportResultResourceKey(result));
     }
 
     [Fact]
