@@ -237,6 +237,107 @@ public sealed class AccountRecoveryExecutionTests
             totalActionWeight);
     }
 
+    [Fact]
+    public void RecoveryPathCanChangeOnlyBeforeMaterialActionStateExists()
+    {
+        var workflow = CreateWorkflowWithManualPath();
+        var state = AccountRecoveryExecutionState.Create(
+            Guid.NewGuid(),
+            workflow,
+            RecoveryPath.AuthenticatedChange,
+            StartedAt);
+
+        state = state.ChangePath(
+            workflow,
+            RecoveryPath.ManualRecovery,
+            StartedAt.AddMinutes(1));
+
+        Assert.Equal(RecoveryPath.ManualRecovery, state.SelectedPath);
+        Assert.Equal(["manual-recovery"], state.Actions.Select(action => action.DefinitionId));
+        state.Validate(workflow);
+
+        state = state.StartAction(workflow, "manual-recovery", StartedAt.AddMinutes(2));
+        Assert.Throws<InvalidOperationException>(() => state.ChangePath(
+            workflow,
+            RecoveryPath.AuthenticatedChange,
+            StartedAt.AddMinutes(3)));
+    }
+
+    [Fact]
+    public void BlockedFailedAndUserActionStatesRequireReasonsAndRemainRetryable()
+    {
+        var workflow = CreateWorkflow();
+        var initial = AccountRecoveryExecutionState.Create(
+                Guid.NewGuid(),
+                workflow,
+                RecoveryPath.AuthenticatedChange,
+                StartedAt)
+            .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1));
+
+        Assert.Throws<ArgumentException>(() => initial.BlockAction(
+            workflow,
+            "identify-account",
+            string.Empty,
+            StartedAt.AddMinutes(2)));
+
+        var blocked = initial.BlockAction(
+            workflow,
+            "identify-account",
+            "Waiting for a trusted device.",
+            StartedAt.AddMinutes(2));
+        var retried = blocked.StartAction(workflow, "identify-account", StartedAt.AddMinutes(3));
+        var waiting = retried.RequireUserAction(
+            workflow,
+            "identify-account",
+            "Provider confirmation is required.",
+            StartedAt.AddMinutes(4));
+        var failed = waiting.FailAction(
+            workflow,
+            "identify-account",
+            "Provider rejected the request.",
+            StartedAt.AddMinutes(5));
+
+        Assert.Equal(RecoveryActionReasonCode.UserBlocked, blocked.GetAction("identify-account").ReasonCode);
+        Assert.Equal(RecoveryActionStatus.InProgress, retried.GetAction("identify-account").Status);
+        Assert.Equal(RecoveryActionReasonCode.UserActionRequired, waiting.GetAction("identify-account").ReasonCode);
+        Assert.Equal(RecoveryActionReasonCode.ProviderFailure, failed.GetAction("identify-account").ReasonCode);
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            failed.StartAction(workflow, "identify-account", StartedAt.AddMinutes(6))
+                .GetAction("identify-account").Status);
+    }
+
+    [Fact]
+    public void NotApplicableAndAcceptedRiskKeepDistinctProgressSemantics()
+    {
+        var workflow = CreateWorkflow();
+        var initial = AccountRecoveryExecutionState.Create(
+            Guid.NewGuid(),
+            workflow,
+            RecoveryPath.AuthenticatedChange,
+            StartedAt);
+        var trulyNotApplicable = initial.MarkNotApplicable(
+            workflow,
+            "identify-account",
+            "This synthetic account has no separate identification step.",
+            NotApplicableDisposition.TrulyNotApplicable,
+            StartedAt.AddMinutes(1));
+        var riskSource = initial
+            .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1))
+            .AcceptUnresolvedRisk(
+                workflow,
+                "identify-account",
+                "The required control could not be completed.",
+                StartedAt.AddMinutes(2));
+
+        Assert.Equal(
+            NotApplicableDisposition.TrulyNotApplicable,
+            trulyNotApplicable.GetAction("identify-account").NotApplicableDisposition);
+        Assert.False(trulyNotApplicable.GetAction("identify-account").HasUnresolvedRisk);
+        Assert.True(riskSource.GetAction("identify-account").HasUnresolvedRisk);
+        Assert.Equal(AccountRecoveryStatus.NotFullySecured, riskSource.RecoveryStatus);
+    }
+
     private static RecoveryWorkflowDefinition CreateWorkflow()
     {
         var firstPrefix = "Workflow.Test.Action.identify-account";
@@ -268,6 +369,35 @@ public sealed class AccountRecoveryExecutionTests
                     secondPrefix,
                     RecoveryActionImportance.Critical),
             ]);
+    }
+
+    private static RecoveryWorkflowDefinition CreateWorkflowWithManualPath()
+    {
+        var workflow = CreateWorkflow();
+        const string prefix = "Workflow.Test.Action.manual-recovery";
+        var criteria = new[] { $"{prefix}.Criterion.1" };
+        return workflow with
+        {
+            Actions =
+            [
+                .. workflow.Actions,
+                new RecoveryActionDefinition(
+                    "manual-recovery",
+                    RecoveryActionType.ManualRecovery,
+                    [RecoveryPath.ManualRecovery],
+                    RecoveryActionRequirement.Required,
+                    RecoveryActionImportance.Critical,
+                    AutomationSupport.None,
+                    [],
+                    criteria,
+                    new RecoveryActionGuidanceKeys(
+                        $"{prefix}.Title",
+                        $"{prefix}.Instruction",
+                        $"{prefix}.Warning",
+                        $"{prefix}.Completion",
+                        criteria)),
+            ],
+        };
     }
 
     private static RecoveryActionDefinition Required(

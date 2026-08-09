@@ -10,6 +10,23 @@ namespace Unpwn.App.Tests.Presentation;
 public sealed class DashboardScreenViewModelTests
 {
     [Fact]
+    public void SessionCreationRemainsDisabledUntilRequiredOverviewFieldsAreComplete()
+    {
+        var viewModel = CreateViewModel(new TestRecoverySessionService());
+
+        Assert.False(viewModel.CreateSessionCommand.CanExecute(null));
+
+        viewModel.SessionName = "Recovery";
+        Assert.False(viewModel.CreateSessionCommand.CanExecute(null));
+
+        viewModel.SecurityWarningAcknowledged = true;
+        Assert.True(viewModel.CreateSessionCommand.CanExecute(null));
+
+        viewModel.SessionName = string.Empty;
+        Assert.False(viewModel.CreateSessionCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task OptionalIncidentDetailsCanBeSkippedWhenCreatingSession()
     {
         var sessionService = new TestRecoverySessionService();

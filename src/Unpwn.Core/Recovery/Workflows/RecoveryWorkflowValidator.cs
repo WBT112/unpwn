@@ -109,6 +109,10 @@ public sealed class RecoveryWorkflowValidator
         }
 
         HashSet<string> actionIds = new(StringComparer.Ordinal);
+        var locationIds = workflow.RecoveryLocations
+            .Where(location => !string.IsNullOrWhiteSpace(location.Id))
+            .Select(location => location.Id)
+            .ToHashSet(StringComparer.Ordinal);
         foreach (var action in workflow.Actions)
         {
             if (string.IsNullOrWhiteSpace(action.Id))
@@ -171,6 +175,16 @@ public sealed class RecoveryWorkflowValidator
             if (action.AutomationSupport == AutomationSupport.Automated)
             {
                 diagnostics.Add(new(workflowId, action.Id, "automation-support-too-high", "Repository workflows cannot claim fully automated recovery support."));
+            }
+
+            if (action.RecoveryLocationId is { } locationId &&
+                !locationIds.Contains(locationId))
+            {
+                diagnostics.Add(new(
+                    workflowId,
+                    action.Id,
+                    "missing-action-recovery-location",
+                    $"Recovery action '{action.Id}' references an unknown recovery location."));
             }
         }
 

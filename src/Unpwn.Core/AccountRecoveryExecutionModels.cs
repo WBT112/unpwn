@@ -257,6 +257,56 @@ public sealed record AccountRecoveryExecutionState(
     public RecoveryActionExecutionState GetAction(string definitionId) =>
         Actions.Single(action => string.Equals(action.DefinitionId, definitionId, StringComparison.Ordinal));
 
+    public AccountRecoveryExecutionState ChangePath(
+        RecoveryWorkflowDefinition workflow,
+        RecoveryPath selectedPath,
+        DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(workflow);
+        ValidateWorkflowIdentity(workflow);
+        ValidateTimestamp(occurredAt);
+        if (!Enum.IsDefined(selectedPath))
+        {
+            throw new ArgumentOutOfRangeException(nameof(selectedPath));
+        }
+
+        if (selectedPath == SelectedPath)
+        {
+            throw new InvalidOperationException("The requested recovery path is already selected.");
+        }
+
+        var hasMaterialActionState = Actions.Any(action =>
+            action.Status != RecoveryActionStatus.Open ||
+            action.StartedAt is not null ||
+            action.CompletedAt is not null ||
+            action.UserReason is not null ||
+            action.UserNotes is not null ||
+            action.CredentialReference is not null);
+        if (hasMaterialActionState)
+        {
+            throw new InvalidOperationException(
+                "A recovery path cannot change after action progress has been recorded.");
+        }
+
+        var definitions = workflow.Actions
+            .Where(action => action.SupportsPath(selectedPath))
+            .ToArray();
+        if (definitions.Length == 0)
+        {
+            throw new InvalidOperationException("The selected recovery path contains no actions.");
+        }
+
+        var changed = this with
+        {
+            SelectedPath = selectedPath,
+            Actions = [.. definitions.Select(RecoveryActionExecutionState.Create)],
+            UpdatedAt = occurredAt,
+            Revision = Revision + 1,
+        };
+        changed.Validate(workflow);
+        return changed;
+    }
+
     public AccountRecoveryExecutionState SetAccessState(
         RecoveryAccessState accessState,
         string? userReason,
@@ -508,9 +558,13 @@ public sealed record AccountRecoveryExecutionState(
     public RecoveryAccountDashboardEntry CreateDashboardProjection(
         AccountCriticality criticality,
         int dependencyDepth,
-        Guid[] waitingForAccountIds)
+        Guid[] waitingForAccountIds,
+        int inventoryBlockedIssues = 0,
+        int inventoryUnresolvedRisks = 0)
     {
         ArgumentNullException.ThrowIfNull(waitingForAccountIds);
+        ArgumentOutOfRangeException.ThrowIfNegative(inventoryBlockedIssues);
+        ArgumentOutOfRangeException.ThrowIfNegative(inventoryUnresolvedRisks);
         var required = Actions
             .Where(action => action.IsRequired)
             .Where(action => action.Status != RecoveryActionStatus.NotApplicable ||
@@ -525,11 +579,18 @@ public sealed record AccountRecoveryExecutionState(
         var completedWeight = required
             .Where(action => action.Status == RecoveryActionStatus.Completed)
             .Sum(action => (int)action.Importance);
-        var recommended = Actions.FirstOrDefault(action =>
-            action.Status is RecoveryActionStatus.Open or
-                RecoveryActionStatus.InProgress or
-                RecoveryActionStatus.Blocked or
-                RecoveryActionStatus.NeedsUserAction)?.DefinitionId;
+        var recommended = Actions
+            .OrderBy(action => action.Status switch
+            {
+                RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed => 0,
+                RecoveryActionStatus.NeedsUserAction => 1,
+                RecoveryActionStatus.InProgress => 2,
+                RecoveryActionStatus.Open => 3,
+                _ => 4,
+            })
+            .FirstOrDefault(action => action.Status is not
+                (RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable))
+            ?.DefinitionId;
         return new RecoveryAccountDashboardEntry(
             AccountId,
             ProviderId,
@@ -539,16 +600,20 @@ public sealed record AccountRecoveryExecutionState(
             requiredTotal,
             completedWeight,
             totalWeight,
-            blocked,
+            blocked + inventoryBlockedIssues,
             failed,
-            unresolved,
+            unresolved + inventoryUnresolvedRisks,
             AccessState == RecoveryAccessState.Lost,
             CredentialsAwaitingExport: Actions.Count(action =>
                 action.CredentialReference is not null && action.Status == RecoveryActionStatus.Completed),
             CredentialsAwaitingDeletion: 0,
             recommended,
             dependencyDepth,
-            waitingForAccountIds);
+            waitingForAccountIds)
+        {
+            InventoryBlockedIssues = inventoryBlockedIssues,
+            InventoryUnresolvedRisks = inventoryUnresolvedRisks,
+        };
     }
 
     public void Validate(RecoveryWorkflowDefinition workflow)

@@ -91,6 +91,7 @@ A provider workflow contains:
 - completion criteria
 - verification date and tests
 - stable localization keys for user-facing guidance where applicable
+- an optional reviewed recovery-location identifier on actions that support visible navigation
 
 Example actions:
 
@@ -109,6 +110,10 @@ Example actions:
 The canonical workflow and action types live in `Unpwn.Core`. Provider catalogs, contract validation, and runtime action instances must use these same types rather than parallel provider-only and runtime-only models.
 
 An action may support one or more recovery paths. Prerequisites must be executable on the same path. The initial catalog deliberately uses path-specific action definitions where prerequisite chains differ, avoiding ambiguous OR-prerequisites between authenticated change and password reset.
+
+Changing the selected path is allowed only before material action state has been recorded. Once an
+action has started, failed, blocked, received notes, or references generated credentials, the user must
+resolve or preserve that work instead of silently replacing it with another path.
 
 ## Language-neutral semantics
 

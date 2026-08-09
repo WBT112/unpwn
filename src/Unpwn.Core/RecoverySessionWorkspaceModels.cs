@@ -75,6 +75,10 @@ public sealed record RecoveryAccountDashboardEntry(
     int DependencyDepth,
     Guid[] WaitingForAccountIds)
 {
+    public int InventoryBlockedIssues { get; init; }
+
+    public int InventoryUnresolvedRisks { get; init; }
+
     public bool IsFullyReviewed => RecoveryStatus == AccountRecoveryStatus.FullyReviewed;
 
     public bool IsCriticalReady =>
@@ -104,6 +108,8 @@ public sealed record RecoveryAccountDashboardEntry(
         ValidateNonNegative(CredentialsAwaitingExport, nameof(CredentialsAwaitingExport));
         ValidateNonNegative(CredentialsAwaitingDeletion, nameof(CredentialsAwaitingDeletion));
         ValidateNonNegative(DependencyDepth, nameof(DependencyDepth));
+        ValidateNonNegative(InventoryBlockedIssues, nameof(InventoryBlockedIssues));
+        ValidateNonNegative(InventoryUnresolvedRisks, nameof(InventoryUnresolvedRisks));
 
         if (RequiredActionsCompleted > RequiredActionsTotal)
         {
@@ -113,6 +119,13 @@ public sealed record RecoveryAccountDashboardEntry(
         if (CompletedRequiredWeight > TotalRequiredWeight)
         {
             throw new ArgumentException("Completed required weight cannot exceed the required total weight.");
+        }
+
+        if (InventoryBlockedIssues > BlockedRequiredActions ||
+            InventoryUnresolvedRisks > UnresolvedRisks)
+        {
+            throw new ArgumentException(
+                "Inventory issue counters cannot exceed the combined dashboard counters.");
         }
     }
 

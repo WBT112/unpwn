@@ -53,7 +53,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         CreateSessionCommand = new AsyncCommand(
             CreateSessionAsync,
             () => Localization.GetString("Dashboard.Command.Error"),
-            () => _sessionService.LoadState == RecoverySessionLoadState.Empty);
+            CanCreateSession);
         PauseCommand = new AsyncCommand(
             PauseAsync,
             () => Localization.GetString("Dashboard.Command.Error"),
@@ -105,6 +105,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             if (SetProperty(ref _sessionName, value ?? string.Empty))
             {
                 ClearValidation();
+                CreateSessionCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -166,6 +167,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             if (SetProperty(ref _securityWarningAcknowledged, value))
             {
                 ClearValidation();
+                CreateSessionCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -297,6 +299,15 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand ArchiveCommand { get; }
 
+    public void ShowPlanFeedback(string feedbackResourceKey)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(feedbackResourceKey);
+        SetLocalizedStatus(
+            AppVisualState.Normal,
+            "Workflow.Plan.Recalculated.Title",
+            feedbackResourceKey);
+    }
+
     public RelayCommand OpenBlockedCommand { get; }
 
     public RelayCommand OpenFailedCommand { get; }
@@ -313,9 +324,16 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     public RelayCommand OpenCompletionCommand { get; }
 
+    public override void Activate() => RefreshState();
+
     private RecoverySessionWorkspace? Session => _sessionService.CurrentSession;
 
     private RecoveryDashboardSnapshot? Dashboard => _sessionService.Dashboard;
+
+    private bool CanCreateSession() =>
+        _sessionService.LoadState == RecoverySessionLoadState.Empty &&
+        !string.IsNullOrWhiteSpace(SessionName) &&
+        SecurityWarningAcknowledged;
 
     protected override void RefreshLocalization()
     {

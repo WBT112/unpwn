@@ -22,6 +22,9 @@
     <DataTemplate DataType="{x:Type vm:AccountInventoryScreenViewModel}">
       <views:AccountsView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:WorkflowExecutionScreenViewModel}">
+      <views:WorkflowExecutionView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vm:CompletionScreenViewModel}">
       <views:CompletionScreenView />
     </DataTemplate>

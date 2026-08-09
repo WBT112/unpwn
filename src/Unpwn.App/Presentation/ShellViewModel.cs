@@ -8,7 +8,10 @@ public sealed class ShellViewModel : ObservableObject
 {
     private readonly IScreenFactory _screenFactory;
     private readonly IVaultLifecycleService _vaultLifecycle;
+    private readonly IRecoverySessionService? _recoverySession;
+    private readonly IAccountInventoryService? _accountInventory;
     private readonly ILocalizationService _localization;
+    private readonly bool _enforceNavigationPrerequisites;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
     private readonly LanguageOptionViewModel[] _languageOptions;
     private NavigationItemViewModel _selectedNavigation;
@@ -22,6 +25,39 @@ public sealed class ShellViewModel : ObservableObject
         IScreenFactory screenFactory,
         IVaultLifecycleService vaultLifecycle,
         ILocalizationService localization)
+        : this(
+            screenFactory,
+            vaultLifecycle,
+            recoverySession: null,
+            accountInventory: null,
+            localization,
+            enforceNavigationPrerequisites: false)
+    {
+    }
+
+    public ShellViewModel(
+        IScreenFactory screenFactory,
+        IVaultLifecycleService vaultLifecycle,
+        IRecoverySessionService recoverySession,
+        IAccountInventoryService accountInventory,
+        ILocalizationService localization)
+        : this(
+            screenFactory,
+            vaultLifecycle,
+            recoverySession ?? throw new ArgumentNullException(nameof(recoverySession)),
+            accountInventory ?? throw new ArgumentNullException(nameof(accountInventory)),
+            localization,
+            enforceNavigationPrerequisites: true)
+    {
+    }
+
+    private ShellViewModel(
+        IScreenFactory screenFactory,
+        IVaultLifecycleService vaultLifecycle,
+        IRecoverySessionService? recoverySession,
+        IAccountInventoryService? accountInventory,
+        ILocalizationService localization,
+        bool enforceNavigationPrerequisites)
     {
         ArgumentNullException.ThrowIfNull(screenFactory);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
@@ -29,13 +65,17 @@ public sealed class ShellViewModel : ObservableObject
 
         _screenFactory = screenFactory;
         _vaultLifecycle = vaultLifecycle;
+        _recoverySession = recoverySession;
+        _accountInventory = accountInventory;
         _localization = localization;
+        _enforceNavigationPrerequisites = enforceNavigationPrerequisites;
         _navigationItems = BuildNavigationItems();
         _languageOptions = BuildLanguageOptions();
         _selectedLanguage = _languageOptions.Single(option =>
             option.Code == _localization.CurrentLanguageCode);
         _selectedNavigation = _navigationItems[0];
         _currentScreen = _screenFactory.Create(_selectedNavigation.Route);
+        _currentScreen.Activate();
         SubscribeToScreen(_currentScreen);
         _currentStatus = _currentScreen.Status;
         LockCommand = new AsyncCommand(
@@ -45,6 +85,16 @@ public sealed class ShellViewModel : ObservableObject
         LockCommand.PropertyChanged += LockCommand_OnPropertyChanged;
         _vaultLifecycle.ContextChanged += ShellContext_OnContextChanged;
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
+        if (_recoverySession is not null)
+        {
+            _recoverySession.SessionChanged += RecoverySession_OnSessionChanged;
+        }
+
+        if (_accountInventory is not null)
+        {
+            _accountInventory.InventoryChanged += AccountInventory_OnInventoryChanged;
+        }
+
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
 
@@ -79,13 +129,18 @@ public sealed class ShellViewModel : ObservableObject
         set
         {
             ArgumentNullException.ThrowIfNull(value);
+            if (!value.IsEnabled)
+            {
+                OnPropertyChanged();
+                return;
+            }
+
             if (!SetProperty(ref _selectedNavigation, value))
             {
                 return;
             }
 
-            CurrentScreen = _screenFactory.Create(value.Route);
-            CurrentStatus = CurrentScreen.Status;
+            ShowScreen(value.Route);
         }
     }
 
@@ -152,44 +207,104 @@ public sealed class ShellViewModel : ObservableObject
     private void NavigateTo(AppRoute route) =>
         SelectedNavigation = NavigationItems.Single(item => item.Route == route);
 
-    private IReadOnlyList<NavigationItemViewModel> BuildNavigationItems() =>
+    private void ShowScreen(AppRoute route)
+    {
+        var screen = _screenFactory.Create(route);
+        if (screen is WorkflowExecutionScreenViewModel workflow)
+        {
+            workflow.Activate(NavigationAccountId, NavigationActionId);
+        }
+        else
+        {
+            screen.Activate();
+        }
+
+        CurrentScreen = screen;
+        CurrentStatus = CurrentScreen.Status;
+    }
+
+    private void RefreshNavigationAvailability()
+    {
+        var currentRoute = SelectedNavigation.Route;
+        _navigationItems = BuildNavigationItems();
+        var selected = _navigationItems.Single(item => item.Route == currentRoute);
+        if (!selected.IsEnabled)
+        {
+            var fallbackRoute = !IsVaultUnlocked
+                ? AppRoute.VaultEntry
+                : _recoverySession?.CurrentSession is null
+                    ? AppRoute.Dashboard
+                    : AppRoute.Accounts;
+            selected = _navigationItems.Single(item => item.Route == fallbackRoute);
+        }
+
+        OnPropertyChanged(nameof(NavigationItems));
+        _selectedNavigation = selected;
+        OnPropertyChanged(nameof(SelectedNavigation));
+        if (CurrentScreen.Route != selected.Route)
+        {
+            NavigationAccountId = null;
+            NavigationActionId = null;
+            ShowScreen(selected.Route);
+        }
+    }
+
+    private IReadOnlyList<NavigationItemViewModel> BuildNavigationItems()
+    {
+        var hasVault = !_enforceNavigationPrerequisites || IsVaultUnlocked;
+        var hasSession = !_enforceNavigationPrerequisites ||
+            (hasVault && _recoverySession?.CurrentSession is not null);
+        var canMutateInventory = !_enforceNavigationPrerequisites ||
+            (hasSession && _accountInventory?.LoadState is
+                AccountInventoryLoadState.Empty or AccountInventoryLoadState.Loaded);
+        var hasAccounts = !_enforceNavigationPrerequisites ||
+            (canMutateInventory && _accountInventory?.CurrentInventory?.Accounts.Length > 0);
+        return
     [
         new(
             AppRoute.VaultEntry,
             _localization.GetString("Shell.Navigation.Vault.Label"),
             _localization.GetString("Shell.Navigation.Vault.Description"),
-            "V"),
+            "V",
+            IsEnabled: true),
         new(
             AppRoute.Dashboard,
             _localization.GetString("Shell.Navigation.Dashboard.Label"),
             _localization.GetString("Shell.Navigation.Dashboard.Description"),
-            "D"),
+            "D",
+            hasVault),
         new(
             AppRoute.Accounts,
             _localization.GetString("Shell.Navigation.Accounts.Label"),
             _localization.GetString("Shell.Navigation.Accounts.Description"),
-            "A"),
+            "A",
+            hasSession),
         new(
             AppRoute.Workflow,
             _localization.GetString("Shell.Navigation.Workflow.Label"),
             _localization.GetString("Shell.Navigation.Workflow.Description"),
-            "W"),
+            "W",
+            hasAccounts),
         new(
             AppRoute.CredentialsExport,
             _localization.GetString("Shell.Navigation.Credentials.Label"),
             _localization.GetString("Shell.Navigation.Credentials.Description"),
-            "C"),
+            "C",
+            hasAccounts),
         new(
             AppRoute.Completion,
             _localization.GetString("Shell.Navigation.Completion.Label"),
             _localization.GetString("Shell.Navigation.Completion.Description"),
-            "✓"),
+            "✓",
+            hasAccounts),
         new(
             AppRoute.CsvImport,
             _localization.GetString("Shell.Navigation.Import.Label"),
             _localization.GetString("Shell.Navigation.Import.Description"),
-            "I"),
+            "I",
+            canMutateInventory),
     ];
+    }
 
     private LanguageOptionViewModel[] BuildLanguageOptions() =>
     [
@@ -204,6 +319,7 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
         LockCommand.RaiseCanExecuteChanged();
+        RefreshNavigationAvailability();
 
         if (!IsVaultUnlocked && CurrentScreen.Route != AppRoute.VaultEntry)
         {
@@ -239,11 +355,7 @@ public sealed class ShellViewModel : ObservableObject
 
     private void Localization_OnCultureChanged(object? sender, EventArgs eventArgs)
     {
-        var selectedRoute = SelectedNavigation.Route;
-        _navigationItems = BuildNavigationItems();
-        OnPropertyChanged(nameof(NavigationItems));
-        _selectedNavigation = _navigationItems.Single(item => item.Route == selectedRoute);
-        OnPropertyChanged(nameof(SelectedNavigation));
+        RefreshNavigationAvailability();
 
         foreach (var language in _localization.SupportedLanguages)
         {
@@ -290,6 +402,12 @@ public sealed class ShellViewModel : ObservableObject
         }
     }
 
+    private void RecoverySession_OnSessionChanged(object? sender, EventArgs eventArgs) =>
+        RefreshNavigationAvailability();
+
+    private void AccountInventory_OnInventoryChanged(object? sender, EventArgs eventArgs) =>
+        RefreshNavigationAvailability();
+
     private void VaultEntry_OnContinueRequested(object? sender, EventArgs eventArgs) =>
         NavigateTo(AppRoute.Dashboard);
 
@@ -300,6 +418,19 @@ public sealed class ShellViewModel : ObservableObject
         NavigationAccountId = eventArgs.AccountId;
         NavigationActionId = eventArgs.ActionId;
         NavigateTo(eventArgs.Route);
+    }
+
+    private void Workflow_OnPlanReturnRequested(
+        object? sender,
+        WorkflowPlanReturnRequest eventArgs)
+    {
+        NavigationAccountId = null;
+        NavigationActionId = null;
+        NavigateTo(AppRoute.Dashboard);
+        if (CurrentScreen is DashboardScreenViewModel dashboard)
+        {
+            dashboard.ShowPlanFeedback(eventArgs.FeedbackResourceKey);
+        }
     }
 
     private void SubscribeToScreen(ScreenViewModel screen)
@@ -314,6 +445,12 @@ public sealed class ShellViewModel : ObservableObject
         {
             dashboard.NavigationRequested += Dashboard_OnNavigationRequested;
         }
+
+
+        if (screen is WorkflowExecutionScreenViewModel workflow)
+        {
+            workflow.PlanReturnRequested += Workflow_OnPlanReturnRequested;
+        }
     }
 
     private void UnsubscribeFromScreen(ScreenViewModel screen)
@@ -327,6 +464,12 @@ public sealed class ShellViewModel : ObservableObject
         if (screen is DashboardScreenViewModel dashboard)
         {
             dashboard.NavigationRequested -= Dashboard_OnNavigationRequested;
+        }
+
+
+        if (screen is WorkflowExecutionScreenViewModel workflow)
+        {
+            workflow.PlanReturnRequested -= Workflow_OnPlanReturnRequested;
         }
     }
 

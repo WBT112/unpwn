@@ -695,8 +695,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
     private bool CanCreateVault() =>
         !string.IsNullOrWhiteSpace(CreatePath) &&
-        !string.IsNullOrEmpty(CreatePassword) &&
-        !string.IsNullOrEmpty(ConfirmCreatePassword) &&
+        CreatePassword.Length >= MinimumNewPasswordLength &&
+        string.Equals(CreatePassword, ConfirmCreatePassword, StringComparison.Ordinal) &&
         AcknowledgesNonRecoverability;
 
     private bool CanOpenVault() =>
@@ -706,8 +706,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     private bool CanChangePassword() =>
         _vaultLifecycle.Snapshot.IsUnlocked &&
         !string.IsNullOrEmpty(CurrentPassword) &&
-        !string.IsNullOrEmpty(NewPassword) &&
-        !string.IsNullOrEmpty(ConfirmNewPassword);
+        NewPassword.Length >= MinimumNewPasswordLength &&
+        string.Equals(NewPassword, ConfirmNewPassword, StringComparison.Ordinal);
 
     private void ShowFailure(VaultOperationFailureCode failureCode)
     {

@@ -56,6 +56,13 @@ User-authored reasons are required for user blocking, provider failure, not-appl
 - completed and not-applicable terminal states cannot be silently reopened
 - lost access remains distinct from progress and produces `AccessNotRestored`
 - browser navigation and elapsed time never complete an action
+- the selected recovery path may change only while every action is still pristine; once progress,
+  notes, or a generated-credential reference exists, the path change fails closed so required work
+  cannot disappear from the execution
+
+Repository actions may reference one reviewed recovery-location identifier from their workflow.
+Validation rejects unknown identifiers. The UI therefore does not infer provider URLs from translated
+guidance or action names.
 
 ## Generated credential reference
 
@@ -86,9 +93,10 @@ Repository workflow definitions contain only stable resource keys for:
 
 The GitHub workflow ships complete English and German resources. CI checks key syntax, workflow-key consistency, English/German parity, and runtime language switching. Translation changes do not alter paths, action IDs, prerequisites, automation support, URLs, expected origins, or completion semantics.
 
-## Integration with Issue #34
+## Guided workflow UI
 
-The workflow UI should consume this application service rather than mutate `RecoveryActionInstance` or dashboard summaries directly. It should:
+The workflow UI consumes this application service rather than mutating action instances or dashboard
+summaries directly. It:
 
 - display inventory metadata alongside the canonical execution
 - resolve provider guidance through localization resources
@@ -97,4 +105,7 @@ The workflow UI should consume this application service rather than mutate `Reco
 - return to the recalculated dashboard/plan after each material transition
 - restore focus and announce state changes according to the accessibility baseline in Issue #38
 
-The UI must not infer an external action result from opening or returning from a provider page.
+Each material outcome persists the execution and dashboard projection atomically, clears satisfied
+dependency waits, and returns to the recalculated dashboard recommendation. A visible provider-page
+handoff shows the reviewed destination and expected origins before using the operating-system launcher.
+Opening the page changes only transient presentation status and never changes an action state.

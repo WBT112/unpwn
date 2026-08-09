@@ -223,12 +223,29 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
             var projectedAccount = execution.State.CreateDashboardProjection(
                 context.Criticality,
                 context.DependencyDepth,
-                context.WaitingForAccountIds);
+                context.WaitingForAccountIds,
+                context.InventoryBlockedIssues,
+                context.InventoryUnresolvedRisks);
             var summaries = session.Accounts
                 .Where(account => account.AccountId != execution.State.AccountId)
                 .Append(projectedAccount)
                 .OrderBy(account => account.AccountId)
                 .ToArray();
+            var statusByAccountId = summaries.ToDictionary(
+                account => account.AccountId,
+                account => account.RecoveryStatus);
+            summaries =
+            [
+                .. summaries.Select(account => account with
+                {
+                    WaitingForAccountIds =
+                    [
+                        .. account.WaitingForAccountIds.Where(dependencyId =>
+                            !statusByAccountId.TryGetValue(dependencyId, out var dependencyStatus) ||
+                            dependencyStatus != AccountRecoveryStatus.FullyReviewed),
+                    ],
+                }),
+            ];
             projection = await _projectionCoordinator.PrepareAccountSummaryUpdateAsync(
                 summaries,
                 cancellationToken);
@@ -321,6 +338,12 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
     {
         return request.Transition switch
         {
+            AccountRecoveryExecutionTransitionKind.ChangeRecoveryPath =>
+                state.ChangePath(
+                    request.Workflow,
+                    request.SelectedPath
+                        ?? throw new InvalidOperationException("The transition requires a recovery path."),
+                    occurredAt),
             AccountRecoveryExecutionTransitionKind.SetAccessAvailable =>
                 state.SetAccessState(RecoveryAccessState.Available, null, occurredAt),
             AccountRecoveryExecutionTransitionKind.SetAccessLost =>

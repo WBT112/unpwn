@@ -11,6 +11,47 @@ namespace Unpwn.App.Tests.Presentation;
 public sealed class AccountInventoryScreenViewModelTests
 {
     [Fact]
+    public void ActivationRefreshesAccountsWhenAnEarlierNotificationWasMissed()
+    {
+        var service = new TestAccountInventoryService([]);
+        var viewModel = CreateViewModel(service);
+        var imported = CreateAccount(
+            "Imported Mail",
+            AccountInventoryPriority.Normal,
+            AccountInventoryRole.EmailMailbox,
+            AccountRoleDecision.Suggested);
+        service.ReplaceWithoutNotification([imported]);
+
+        Assert.Empty(viewModel.Accounts);
+
+        viewModel.Activate();
+
+        Assert.Equal(imported.Id, Assert.Single(viewModel.Accounts).Id);
+    }
+
+    [Fact]
+    public void NewAccountEnablesEditorBeforePersistedAccountOnlyFeatures()
+    {
+        var service = new TestAccountInventoryService([]);
+        var viewModel = CreateViewModel(service);
+
+        Assert.False(viewModel.IsEditingAccount);
+        Assert.False(viewModel.HasPersistedAccount);
+        viewModel.NewAccountCommand.Execute(null);
+
+        Assert.True(viewModel.IsEditingAccount);
+        Assert.False(viewModel.HasPersistedAccount);
+        Assert.False(viewModel.SaveAccountCommand.CanExecute(null));
+        Assert.False(viewModel.AddRoleCommand.CanExecute(null));
+
+        viewModel.ProviderId = "Mail";
+        viewModel.AccountName = "Primary mailbox";
+
+        Assert.True(viewModel.SaveAccountCommand.CanExecute(null));
+        Assert.False(viewModel.AddRoleCommand.CanExecute(null));
+    }
+
+    [Fact]
     public void FiltersSearchesAndSortsPersistedInventoryWithoutUsingDisplayTextForSemantics()
     {
         var critical = CreateAccount(
@@ -184,6 +225,14 @@ public sealed class AccountInventoryScreenViewModelTests
             CancellationToken cancellationToken) => Failure();
 
         public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];
+
+        public void ReplaceWithoutNotification(AccountInventoryEntry[] replacement)
+        {
+            CurrentInventory = AccountInventoryState.Empty(
+                    CurrentInventory!.SessionId,
+                    CurrentInventory.UpdatedAt.AddSeconds(1))
+                .ReplaceAccounts(replacement, CurrentInventory.UpdatedAt.AddSeconds(2));
+        }
 
         public void ClearForLock()
         {

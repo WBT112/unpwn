@@ -1,5 +1,6 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Application.Recovery;
 
 namespace Unpwn.App.Presentation;
 
@@ -30,6 +31,55 @@ public sealed class AppScreenFactory : IScreenFactory
         IRecoverySessionService recoverySession,
         IAccountInventoryService accountInventory,
         ILocalizationService localization)
+        : this(
+            confirmationDialog,
+            vaultLifecycle,
+            wizard,
+            recoverySession,
+            accountInventory,
+            executionService: null,
+            locationDiscovery: null,
+            externalNavigation: null,
+            localization,
+            functionalWorkflow: false)
+    {
+    }
+
+    public AppScreenFactory(
+        IConfirmationDialogService confirmationDialog,
+        IVaultLifecycleService vaultLifecycle,
+        RecoveryWizardSessionService wizard,
+        IRecoverySessionService recoverySession,
+        IAccountInventoryService accountInventory,
+        IAccountRecoveryExecutionService executionService,
+        IRecoveryLocationDiscoveryService locationDiscovery,
+        IExternalNavigationService externalNavigation,
+        ILocalizationService localization)
+        : this(
+            confirmationDialog,
+            vaultLifecycle,
+            wizard,
+            recoverySession,
+            accountInventory,
+            executionService ?? throw new ArgumentNullException(nameof(executionService)),
+            locationDiscovery ?? throw new ArgumentNullException(nameof(locationDiscovery)),
+            externalNavigation ?? throw new ArgumentNullException(nameof(externalNavigation)),
+            localization,
+            functionalWorkflow: true)
+    {
+    }
+
+    private AppScreenFactory(
+        IConfirmationDialogService confirmationDialog,
+        IVaultLifecycleService vaultLifecycle,
+        RecoveryWizardSessionService wizard,
+        IRecoverySessionService recoverySession,
+        IAccountInventoryService accountInventory,
+        IAccountRecoveryExecutionService? executionService,
+        IRecoveryLocationDiscoveryService? locationDiscovery,
+        IExternalNavigationService? externalNavigation,
+        ILocalizationService localization,
+        bool functionalWorkflow = false)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
@@ -55,14 +105,23 @@ public sealed class AppScreenFactory : IScreenFactory
                 accountInventory,
                 confirmationDialog,
                 localization),
-            [AppRoute.Workflow] = new PlaceholderScreenViewModel(
-                AppRoute.Workflow,
-                localization,
-                "Screen.Workflow.Title",
-                "Screen.Workflow.Description",
-                AppVisualState.Blocked,
-                "Screen.Workflow.StatusTitle",
-                "Screen.Workflow.StatusMessage"),
+            [AppRoute.Workflow] = functionalWorkflow
+                ? new WorkflowExecutionScreenViewModel(
+                    accountInventory,
+                    recoverySession,
+                    executionService!,
+                    locationDiscovery!,
+                    externalNavigation!,
+                    confirmationDialog,
+                    localization)
+                : new PlaceholderScreenViewModel(
+                    AppRoute.Workflow,
+                    localization,
+                    "Screen.Workflow.Title",
+                    "Screen.Workflow.Description",
+                    AppVisualState.Blocked,
+                    "Screen.Workflow.StatusTitle",
+                    "Screen.Workflow.StatusMessage"),
             [AppRoute.CredentialsExport] = new PlaceholderScreenViewModel(
                 AppRoute.CredentialsExport,
                 localization,

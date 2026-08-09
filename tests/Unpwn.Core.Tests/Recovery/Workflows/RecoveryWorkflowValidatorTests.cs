@@ -87,6 +87,26 @@ public sealed class RecoveryWorkflowValidatorTests
         Assert.Contains(result.Diagnostics, diagnostic => diagnostic.Rule == "cyclic-prerequisite");
     }
 
+    [Fact]
+    public void ValidateRejectsAnActionThatReferencesAnUnknownRecoveryLocation()
+    {
+        var workflow = RepositoryWorkflowCatalog.Workflows.Single();
+        workflow = workflow with
+        {
+            Actions =
+            [
+                workflow.Actions[0] with { RecoveryLocationId = "missing-location" },
+                .. workflow.Actions.Skip(1),
+            ],
+        };
+
+        var result = RecoveryWorkflowValidator.Validate(workflow, new DateOnly(2026, 8, 5));
+
+        Assert.Contains(
+            result.Diagnostics,
+            diagnostic => diagnostic.Rule == "missing-action-recovery-location");
+    }
+
     private static RecoveryWorkflowDefinition CreateWorkflow(
         DateOnly? verifiedAt = null,
         IReadOnlyList<RecoveryLocationDefinition>? locations = null,
