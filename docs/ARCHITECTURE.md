@@ -1,300 +1,103 @@
 # unpwn Architecture
 
-## Overview
+## Goals
 
-unpwn is designed as a modular, local-first account recovery orchestration platform.
+unpwn is a modular, local-first desktop application for account-recovery orchestration. The architecture keeps the recovery domain independent from UI, storage, operating-system APIs, localization, providers, and browser assistance.
 
-The architecture separates recovery planning, workflow execution, storage, vault security, automation assistance, imports, exports, localization, and service-specific recovery workflows.
+Windows is the first target platform. Core recovery logic must remain portable to macOS and Linux.
 
-The architecture is platform-neutral. Windows is the initial target platform, but core components must not depend on Windows-specific functionality. Future support for macOS and Linux should be possible without redesigning the recovery engine.
+## Technology
 
-## Technology Stack
-
-The initial implementation uses:
-
-- C#
-- .NET LTS
+- C# / .NET 10 (LTS)
 - Avalonia UI
-- .NET resource files for presentation localization
 - SQLite
-- Argon2id for vault-password key derivation
-- AES-256-GCM for authenticated encryption
+- Argon2id and AES-256-GCM in the Recovery Vault
+- .NET resource files for presentation localization
+- Playwright for bounded browser assistance where implemented
 
-The application follows a modular architecture with a platform-independent core.
+Detailed cryptographic rules live in [Vault Security](VAULT_SECURITY.md); localization rules live in [Localization](LOCALIZATION.md).
 
-Platform-specific functionality and localization must remain isolated from recovery logic, workflow logic, provider implementations, and portable vault access.
-
-## Recovery Workflows
-
-Recovery workflows are a first-class concept in unpwn.
-
-A workflow describes the steps required to restore control over a digital account after a suspected security incident.
-
-A workflow may include:
-
-- identifying the account
-- assessing priority and risk
-- selecting an authenticated password change, password reset, or manual recovery path
-- changing credentials
-- invalidating sessions
-- reviewing MFA settings
-- checking recovery options
-- reviewing connected applications, tokens, or trusted devices
-- documenting completion
-
-Providers define service-specific workflows, while the Recovery Engine manages execution, dependencies, state tracking, prioritization, and user interaction.
-
-Workflow semantics use canonical identifiers and structured data. User-facing workflow titles, descriptions, warnings, and completion guidance are resolved through presentation localization keys and never control execution.
-
-See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
-
-## Components
-
-```
-Unpwn.App
- ├── Avalonia Desktop Application
- ├── MVVM Application Shell and Navigation
- ├── Localization Service and Resource Sets
- ├── Presentation Commands and Visual States
- └── UI Composition Root
-
-Unpwn.Application
- └── Application Services and Use Cases
-
-Unpwn.Core
- ├── Recovery Engine
- ├── Workflow State Machine
- ├── Risk Prioritization Logic
- ├── Dependency Planning
- ├── Progress Calculation
- └── Recovery Action Model
-
-Unpwn.Infrastructure
- ├── SQLite Storage
- ├── Cryptography
- └── OS Integration
-
-Unpwn.Vault
- ├── Encrypted Recovery Vault
- ├── Credential Storage
- ├── Key Management
- └── Recovery History
-
-Unpwn.Automation
- ├── Recovery Location Discovery
- ├── Browser Assistance (Playwright)
- └── Manual Guidance
-
-Unpwn.Import
- ├── Browser/password manager imports
- └── Generic import mapping
-
-Unpwn.Export
- ├── Bitwarden
- ├── KeePass
- ├── 1Password
- └── CSV
-
-Unpwn.Providers
- ├── GoogleRecoveryProvider
- ├── MicrosoftRecoveryProvider
- ├── GitHubRecoveryProvider
- └── Other service providers
-```
-
-## Dependency Direction
-
-Dependencies point inward. `Unpwn.Core` is the platform-independent domain and has no project or external package dependencies. `Unpwn.Application` contains use cases and depends only on Core.
-
-Infrastructure, Vault, Automation, Import, Export, and Providers are adapters or feature modules. They may depend on Application and Core, but never on the desktop application or on one another. `Unpwn.App` is the composition root: it references the modules, wires them together, and owns all Avalonia UI and localization concerns.
+## Projects
 
 ```text
 Unpwn.App
- ├── Unpwn.Infrastructure ─┐
- ├── Unpwn.Vault ─────────┤
- ├── Unpwn.Automation ────┤
- ├── Unpwn.Import ────────┼──> Unpwn.Application ──> Unpwn.Core
- ├── Unpwn.Export ────────┤                 └───────> Unpwn.Core
- └── Unpwn.Providers ─────┘
-```
+  Desktop UI, MVVM presentation, navigation, localization, composition root
 
-The architecture test project verifies this project-reference graph and checks that Core remains free of UI, storage, browser-automation, operating-system, and localization dependencies.
+Unpwn.Application
+  Application services and use cases
 
-The desktop shell uses constructor-injected view models and UI-facing services. Its code-behind is limited to view initialization, native file-picker bridging, and dialog close results. Navigation, lock visibility, session context, presentation status, command execution, cancellation, safe error codes, and localization remain in presentation services and view models. See [Application Shell and UI Foundation](UI_FOUNDATION.md).
+Unpwn.Core
+  Recovery domain, state machines, priorities, dependencies, progress
 
-## Localization Boundary
+Unpwn.Infrastructure
+  General infrastructure and OS integration
 
-Localization is an application-wide presentation service owned by `Unpwn.App`.
+Unpwn.Vault
+  Encrypted Recovery Vault, keys, records, generated credentials
 
-The boundary provides:
-
-- stable resource-key lookup
-- English source resources and deterministic fallback
-- explicit selected UI culture
-- parameterized formatting with that culture
-- culture-change notifications for visible screens
-- resource diagnostics that contain keys and cultures but no user values
-
-Views and view models consume localized text. Domain entities, workflow definitions, audit events, provider URLs, vault records, import/export schemas, and error codes remain language-neutral.
-
-The selected UI culture must not influence GUIDs, URLs, cryptographic associated data, serialized formats, workflow versions, or security-sensitive parsing. A language change therefore never requires a domain migration, workflow migration, or vault rewrite.
-
-See [Localization and Multilingual GUI](LOCALIZATION.md).
-
-## Recovery Vault
-
-The Recovery Vault is an encrypted local workspace used during the complete recovery process.
-
-It may exist for days or weeks because account recovery is not always completed in one session.
-
-The vault contains:
-
-- accounts and account dependencies
-- recovery actions and workflow state
-- generated new credentials
-- export information
-- user notes
-- append-only audit events
-
-The vault is a recovery workspace, not a replacement for a dedicated password manager.
-
-### Key hierarchy
-
-The primary protection mechanism is a user-defined vault password.
-
-1. Argon2id derives a key-encryption key from the vault password and a random salt.
-2. A cryptographically random vault data key encrypts sensitive records.
-3. The derived key encrypts the vault data key.
-4. Changing the vault password re-wraps the data key without requiring every record to be re-encrypted.
-
-Sensitive records use AES-256-GCM with a unique nonce for every encryption operation. Record identifiers, record types, and schema versions should be authenticated as associated data.
-
-SQLite is the storage container. It must not be treated as the sole confidentiality boundary.
-
-Operating-system facilities such as Windows Credential Manager, macOS Keychain, or Linux Secret Service may later provide optional unlock convenience. They must not be required for portable vault access.
-
-Old passwords are not stored. Generated new credentials may be retained, encrypted, until they are exported or deliberately deleted by the user.
-
-Localized labels are never used as vault record identifiers, record types, associated data, or canonical persisted state.
-
-See [Vault Security](VAULT_SECURITY.md).
-
-## Recovery Actions
-
-Recovery steps are modeled as actions with security and workflow metadata.
-
-Example:
-
-```
-RecoveryAction
-
-Type:
-  CHANGE_PASSWORD
-
-RecoveryPath:
-  AUTHENTICATED_CHANGE | PASSWORD_RESET | MANUAL_RECOVERY
-
-Importance:
-  CRITICAL | IMPORTANT | ROUTINE
-
-Status:
-  OPEN | IN_PROGRESS | BLOCKED | NEEDS_USER_ACTION | COMPLETED | FAILED
-
-AutomationSupport:
-  NONE | NAVIGATION | ASSISTED | AUTOMATED
-
-UserConfirmation:
-  REQUIRED
-```
-
-Actions may depend on other actions or accounts. For example, a password reset may depend on first securing the primary email account.
-
-The UI maps action types, importance, status, and confirmation consequences to localized resources. Recovery logic never compares localized labels.
-
-## Data and Progress Model
-
-The central domain entities are:
-
-- `RecoverySession`
-- `Account`
-- `AccountDependency`
-- `RecoveryWorkflowDefinition`
-- `RecoveryActionInstance`
-- `CredentialEntry`
-- `AuditEvent`
-
-unpwn reports more than one progress signal to avoid presenting a misleading single percentage:
-
-- critical accounts secured
-- accounts fully reviewed
-- weighted required actions completed
-- blocked actions and unresolved risks
-
-These signals remain numeric and language-neutral. The presentation layer formats labels, counts, percentages, dates, and plural-sensitive messages with the selected UI culture.
-
-See [Data Model](DATA_MODEL.md).
-
-## Provider System
-
-Services are implemented through providers instead of hard-coded account logic.
-
-Providers define service-specific recovery workflows. They answer:
-
-> What needs to happen for this service?
-
-They do not own vault cryptography, localization, or generic browser automation.
-
-Example:
-
-```
-GoogleRecoveryProvider
- ├── ChangeOrResetPassword
- ├── RevokeSessions
- ├── CheckMFA
- └── ReviewRecoveryOptions
-```
-
-Provider and workflow contributions are made through normal pull requests to this repository. They are reviewed, tested, and shipped with unpwn releases. unpwn does not download or execute third-party provider plugins at runtime.
-
-## Automation Assistance
-
-unpwn does not depend on browser password managers or vendor-specific ecosystems.
-
-Automation layers:
-
-```
 Unpwn.Automation
+  Recovery-location discovery and bounded browser assistance
 
-├── Recovery Location Discovery
-│     └── /.well-known/change-password (optional)
-│
-├── Browser Assistance
-│     └── Playwright-based visible workflows
-│
-└── Manual Guidance
+Unpwn.Import
+  Platform-neutral import parsing and mapping
+
+Unpwn.Export
+  Credential export formats
+
+Unpwn.Providers
+  Repository-controlled provider workflow definitions
 ```
 
-The `/.well-known/change-password` standard is used only to discover a suitable password change location. It does not provide an automation protocol.
+## Dependency direction
 
-Browser assistance helps users complete workflows when appropriate. It is not intended to be an autonomous account recovery bot.
+Dependencies point inward:
 
-Automation priority:
+```text
+Unpwn.App
+ ├── Infrastructure ─┐
+ ├── Vault ──────────┤
+ ├── Automation ─────┤
+ ├── Import ─────────┼──> Unpwn.Application ──> Unpwn.Core
+ ├── Export ─────────┤
+ └── Providers ──────┘
+```
 
-1. Official APIs where appropriate and safely available
-2. Supported web standards for location discovery
-3. Visible browser assistance for supported workflows
-4. Manual guidance
+`Unpwn.Core` must not depend on Avalonia, SQLite, Playwright, operating-system APIs, localization resources, or provider-specific infrastructure. Architecture tests enforce the project-reference boundary.
 
-Security boundaries:
+`Unpwn.App` is the composition root. View models and UI-facing services use constructor injection; code-behind is limited to Avalonia-specific bridging such as native file pickers, dialog results, and focus hooks. See [UI Foundation](UI_FOUNDATION.md).
 
-- no CAPTCHA bypass
-- no MFA bypass
-- no hidden account changes
-- no use of recovery mechanisms to gain access to accounts the user does not own
-- user confirmation for sensitive steps
+## Canonical boundaries
 
-## Security Assumption
+### Recovery domain
 
-unpwn should be executed on a trusted device.
+Canonical accounts, dependencies, actions, statuses, progress, and audit semantics live in the platform-neutral domain. Presentation code must not create a parallel recovery state machine.
 
-If the executing system is compromised, local software cannot reliably protect new credentials, browser sessions, screen contents, user input, or translated security guidance displayed by the application.
+See [Data Model](DATA_MODEL.md) and [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
+
+### Recovery workflows
+
+Providers describe what must be done for a service. Generic orchestration owns execution state, ordering, dependencies, and progress. Provider code does not own vault cryptography, localization, or generic browser automation.
+
+See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
+
+### Persistence and vault
+
+Sensitive recovery state is stored in the encrypted local Recovery Vault. Logically related workspace changes are persisted atomically where required. Storage failure must not be represented as saved work.
+
+See [Vault Security](VAULT_SECURITY.md) and [Workspace Persistence](WORKSPACE_PERSISTENCE.md).
+
+### Localization
+
+Localization is a presentation concern. Workflow IDs, action IDs, error codes, URLs, record identifiers, serialized values, and security decisions remain language-neutral.
+
+See [Localization](LOCALIZATION.md).
+
+### Automation
+
+Automation assists bounded recovery tasks. Opening or returning from an external provider page never proves that an action succeeded. CAPTCHA, MFA, identity verification, and ownership checks are not bypassed.
+
+See [Recovery Location Discovery](RECOVERY_LOCATION_DISCOVERY.md) and [Recovery Workflows](RECOVERY_WORKFLOWS.md).
+
+## Documentation ownership
+
+Detailed rules should live in the specialized documents listed in the [documentation index](README.md). This architecture document defines module boundaries and dependency direction rather than repeating the complete vault, workflow, localization, or testing specifications.

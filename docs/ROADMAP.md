@@ -1,127 +1,52 @@
 # unpwn Roadmap
 
-The roadmap prioritizes a trustworthy recovery workflow over broad website automation.
+The roadmap prioritizes a trustworthy guided recovery flow over broad automation. Detailed tasks and acceptance criteria live in GitHub issues.
 
-## MVP 0.1 - Foundation
+## Current foundation
 
-- .NET LTS solution and project structure
-- Avalonia desktop shell
-- platform-neutral core boundaries
-- repository documentation and contribution guidance
-- automated build and test setup
-- initial threat-model checks in development guidelines
-- application-wide localization service and versioned resources
-- complete English source and fallback resources
-- language-neutral domain, workflow, audit, vault, and error codes
-- pseudo-localization and resource fallback tests
+The repository already contains the main technical foundations for the MVP:
 
-The localization boundary is established in the foundation phase so later GUI work does not hard-code one language into views, validation, workflows, or persisted state. A complete set of additional translations is not required for the foundation milestone.
+- platform-neutral recovery domain and state machines;
+- encrypted local Recovery Vault;
+- trusted-device and vault-entry flow;
+- recovery session and risk-first dashboard;
+- account inventory, roles, dependencies, and deterministic planning;
+- reviewed CSV import;
+- generated-credential lifecycle and secure export core;
+- safe recovery-location discovery;
+- multilingual Avalonia presentation foundation;
+- atomic workspace persistence for the critical recovery state;
+- canonical per-account recovery execution state.
 
-See [Localization and Multilingual GUI](LOCALIZATION.md).
+## Current focus
 
-## MVP 0.2 - Recovery Domain
+### Guided account recovery
 
-- `RecoverySession` model
-- `Account` and `AccountDependency` models
-- versioned recovery workflow definitions
-- recovery action state machine
-- account prioritization
-- critical-account readiness
-- weighted action progress
-- unresolved-risk handling
-- append-only audit events without secrets or localized summaries
-- stable presentation codes for localized status and error mapping
+The next major product step is [Issue #34](https://github.com/WBT112/unpwn/issues/34): turn the existing recovery state and provider workflows into the user-facing, action-by-action account recovery experience.
 
-## MVP 0.3 - Encrypted Recovery Vault
+The UI must explain why an account is recommended, keep prerequisites and unresolved risks visible, show official recovery locations and expected origins, and require explicit confirmation of completion criteria. Opening a provider page never proves success.
 
-- user-defined vault password
-- Argon2id key derivation
-- random vault data key and key wrapping
-- AES-256-GCM encrypted records
-- SQLite persistence container
-- vault create, unlock, lock, reopen, and password-change flows
-- secret-safe logging and crash behavior
-- credential lifecycle tracking
-- invariant record identifiers, associated data, and serialized values independent of GUI culture
+## Before the MVP release
 
-## MVP 0.4 - Account Import and Planning
+After guided account recovery, the remaining MVP work centers on:
 
-- generic CSV import
-- column mapping workflow
-- browser/password-manager export import support
-- duplicate detection
-- manual account creation and editing
-- account priority suggestions
-- dependency identification, especially primary-email reset dependencies
-- localized mapping and warning UI over culture-explicit parsing rules
+- credential export and cleanup UX;
+- completion review and final report;
+- remaining resilience/error-handling work from Issue #37;
+- accessibility and minimum-window verification;
+- additional reviewed provider workflows and end-to-end integration coverage;
+- release packaging and security review.
 
-## MVP 0.5 - Initial Recovery Workflows
+## Later
 
-Initial providers:
+Possible later work includes:
 
-1. Google
-2. Microsoft
-3. GitHub
+- macOS and Linux packaging;
+- more provider workflows and password-manager formats;
+- more reviewed GUI languages and RTL support;
+- improved dependency suggestions and recommendations;
+- carefully bounded browser assistance.
 
-Each provider defines repository-reviewed recovery workflows such as:
+Automation remains secondary to clear recovery guidance, dependency-aware ordering, and honest progress reporting.
 
-- authenticated password change
-- password reset
-- manual recovery guidance
-- session invalidation
-- MFA review
-- recovery-option review
-- connected application, token, or trusted-device review
-
-Provider workflow semantics use canonical identifiers. User-facing titles, instructions, warnings, and completion guidance use reviewed localization resources and English fallback.
-
-Provider changes are contributed through pull requests and shipped with releases. No third-party provider code or language packs are downloaded or executed at runtime.
-
-## MVP 0.6 - Export and Completion
-
-- secure password generation
-- encrypted credential retention during recovery
-- generic plaintext CSV export with explicit warnings
-- at least one password-manager-specific export format
-- session completion summary
-- unresolved-risk report
-- vault credential cleanup options
-- localized human-readable reports while machine-readable export schemas remain deterministic
-
-## MVP 0.7 - Automation Assistance
-
-- recovery location discovery
-- `/.well-known/change-password` support
-- visible Playwright browser assistance for a small set of bounded workflows
-- user-assisted handling of email links, MFA, CAPTCHA, and identity verification
-- safe failure and manual fallback
-- localized guidance that never controls automation selectors or authorization
-
-Automation remains a supporting feature. The primary product value is discovery, prioritization, recovery workflows, dependency handling, and progress management.
-
-## Translation rollout
-
-After the localization foundation is stable:
-
-1. migrate every existing user-facing string to resources
-2. add in-application language selection and persistence before vault unlock
-3. ship the first reviewed secondary language resource set
-4. add terminology guidance for security-sensitive translations
-5. expand language coverage through reviewed pull requests
-6. add right-to-left verification before shipping the first RTL language
-
-A language is considered supported only when critical workflows, warnings, confirmations, accessibility text, fallback behavior, and minimum-window layout have been verified.
-
-## Future
-
-Possible future work:
-
-- macOS and Linux application packaging
-- additional password-manager formats
-- additional provider workflows
-- additional reviewed GUI languages
-- right-to-left language support
-- improved dependency suggestions
-- advanced recovery recommendations
-- carefully bounded provider automation
-- professional support or services without making the local core cloud-dependent
+For product scope see [Vision](VISION.md). For the detailed issue sequence use the repository's GitHub issues and the MVP UI epic.

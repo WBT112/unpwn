@@ -2,94 +2,48 @@
 
 ## Purpose
 
-unpwn helps people recover their digital identity after a suspected account compromise.
+unpwn helps a private user regain control of their digital identity after a suspected account compromise.
 
-The problem is not only detecting an incident. The difficult part begins afterwards:
+The hard part after phishing, an infostealer, session theft, or a similar incident is often not knowing **what to do first, what depends on what, and what is still unresolved**. unpwn provides that structure.
 
-- Which accounts should be secured first?
-- Which accounts are critical?
-- Which recovery steps depend on access to another account?
-- Which sessions, tokens, applications, or recovery methods must be reviewed?
-- Which recovery steps have already been completed?
-- How can the user avoid missing important accounts?
+## Product promise
 
-unpwn provides structure, prioritization, and guidance during this process.
+unpwn should guide the user through one understandable recovery process:
 
-## Primary Use Case
+1. start on a trusted device;
+2. create or resume an encrypted local recovery workspace;
+3. record affected accounts and relevant observations;
+4. identify critical identity and recovery dependencies;
+5. recommend a deterministic recovery order and explain why;
+6. guide provider recovery actions one step at a time;
+7. keep blocked, failed, lost-access, and unresolved-risk states visible;
+8. export newly generated credentials to an established password manager;
+9. finish with an explicit review instead of a misleading "all secure" claim.
 
-The primary use case is a private user who suspects that credentials, browser sessions, or account data may have been stolen through an infostealer, phishing attack, session hijacking, or a similar incident.
+The user should understand what unpwn proposes, why it matters, and what still requires their action.
 
-The user runs unpwn on a trusted device, imports or records affected accounts, secures critical identity accounts first, and works through service-specific recovery workflows until all relevant accounts have been reviewed.
-
-The recovery experience should remain understandable in the user's preferred supported language. Language selection must not change security semantics, recovery order, workflow behavior, or persisted vault data.
-
-## What unpwn is
-
-unpwn is an open-source emergency account recovery assistant focused on recovery orchestration.
-
-It supports users with:
-
-- account discovery and inventory
-- risk-based prioritization
-- account dependencies
-- recovery workflows
-- authenticated password changes, password resets, and manual recovery paths
-- credential rotation support
-- session invalidation guidance
-- MFA and recovery-option review
-- progress tracking
-- recovery history and documentation
-- a multilingual and accessible presentation layer
-
-unpwn does not replace a password manager. Password managers store credentials. unpwn helps users restore control after a security incident.
-
-## What unpwn is not
+## Product boundaries
 
 unpwn is not:
 
-- an antivirus product
-- a malware scanner
-- an infostealer detector
-- a cloud account management platform
-- an enterprise security product in the MVP
-- an autonomous account takeover or recovery bot
-- a general-purpose incident response suite
-- a runtime machine-translation service
+- an antivirus or malware scanner;
+- a tool that proves a device or account is safe;
+- a replacement for a password manager;
+- an autonomous account-recovery bot;
+- a CAPTCHA, MFA, identity-verification, or ownership-check bypass;
+- a general enterprise incident-response platform in the MVP.
 
-## Core Principles
+Automation may assist recovery, but security-relevant decisions and external provider actions remain visible to the user.
 
-### Local-first
+## Principles
 
-Recovery data remains on the user's device in the MVP.
+- **Local-first:** recovery data stays on the user's device in the MVP.
+- **Human control:** sensitive actions require visible user participation and confirmation.
+- **No false assurance:** progress never hides blocked work or unresolved risk.
+- **Explainable ordering:** critical accounts and dependencies are prioritized for understandable reasons.
+- **Open source:** security-sensitive behavior is reviewable.
+- **Platform-neutral core:** Windows is the first target, but recovery logic remains portable.
+- **Language-neutral semantics:** changing the UI language must not change recovery logic, security decisions, or persisted state.
+- **Maintainable automation:** stable recovery workflows are more important than brittle website automation.
 
-### Transparency
-
-Users should understand every action performed or proposed by unpwn.
-
-### Human control
-
-Automation should accelerate recovery, not hide important security decisions.
-
-### Multilingual accessibility
-
-User-facing security guidance should be available in reviewed language resources without translating canonical workflow, audit, vault, or domain state.
-
-English is the complete source and fallback language. Additional languages are repository-controlled and shipped with releases. Missing translations must fall back to complete reviewed text rather than disappear.
-
-See [Localization and Multilingual GUI](LOCALIZATION.md).
-
-### Open source
-
-Security-sensitive software benefits from public review and transparent design.
-
-### Maintainable automation
-
-Automation is a supporting capability. The core value is the recovery workflow, prioritization, and progress management, not brittle website-specific automation.
-
-### Repository-based collaboration
-
-Recovery workflows and translations are contributed, reviewed, tested, and released through pull requests to the main repository. unpwn does not rely on a runtime marketplace or downloaded third-party provider code or language packs.
-
-### Platform-neutral core
-
-Windows is the first target platform. Core recovery logic, workflows, and vault handling must remain portable to macOS and Linux.
+For the user-facing flow see [User Guide](USER_GUIDE.md). Technical boundaries are documented in [Architecture](ARCHITECTURE.md), [Threat Model](THREAT_MODEL.md), and [Recovery Workflows](RECOVERY_WORKFLOWS.md).
