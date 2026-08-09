@@ -178,9 +178,7 @@ public partial class CsvImportView : UserControl
             _lastCandidates,
             resolution,
             CancellationToken.None);
-        _importResultKey = result.Succeeded
-            ? "Import.Result.Success"
-            : "Import.Result.Failure";
+        _importResultKey = CsvImportScreenViewModel.GetImportResultResourceKey(result);
         if (result.Succeeded)
         {
             _previewCanImport = false;
