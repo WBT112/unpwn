@@ -10,7 +10,7 @@ public sealed class ShellViewModel : ObservableObject
     private readonly IVaultLifecycleService _vaultLifecycle;
     private readonly ILocalizationService _localization;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
-    private LanguageOptionViewModel[] _languageOptions;
+    private readonly LanguageOptionViewModel[] _languageOptions;
     private NavigationItemViewModel _selectedNavigation;
     private LanguageOptionViewModel _selectedLanguage;
     private ScreenViewModel _currentScreen;
