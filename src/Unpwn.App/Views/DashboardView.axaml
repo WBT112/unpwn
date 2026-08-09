@@ -9,7 +9,7 @@
       <Border IsVisible="{Binding IsLockedState}"
               Padding="24"
               CornerRadius="12"
-              Background="#FFF4E5">
+              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
         <StackPanel Spacing="16">
           <TextBlock Text="{DynamicResource Dashboard.State.Locked}"
                      TextWrapping="Wrap" />
@@ -22,7 +22,7 @@
       <Border IsVisible="{Binding IsLoadingState}"
               Padding="24"
               CornerRadius="12"
-              Background="#F3F6FA">
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
         <TextBlock Text="{DynamicResource Dashboard.State.Loading}"
                    TextWrapping="Wrap" />
       </Border>
@@ -30,7 +30,7 @@
       <Border IsVisible="{Binding IsCorruptedState}"
               Padding="24"
               CornerRadius="12"
-              Background="#FDECEC">
+              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
         <StackPanel Spacing="12">
           <TextBlock Classes="section-title"
                      Text="{DynamicResource Dashboard.State.Corrupted.Title}" />
@@ -45,7 +45,7 @@
       <Border IsVisible="{Binding IsEmptyState}"
               Padding="24"
               CornerRadius="12"
-              Background="#F7F9FC">
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
         <StackPanel Spacing="16">
           <TextBlock Classes="section-title"
                      Text="{DynamicResource Dashboard.State.Empty.Title}" />
@@ -73,7 +73,7 @@
 
           <Border Padding="16"
                   CornerRadius="8"
-                  Background="#EAF2FF">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <StackPanel Spacing="8">
               <TextBlock Classes="section-title"
                          Text="{DynamicResource Dashboard.Intake.Indicators.Title}" />
@@ -98,7 +98,7 @@
 
           <Border Padding="16"
                   CornerRadius="8"
-                  Background="#FFF4E5">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <StackPanel Spacing="10">
               <TextBlock Text="{DynamicResource Dashboard.Intake.SecurityWarning}"
                          TextWrapping="Wrap"
@@ -111,7 +111,7 @@
           <Border IsVisible="{Binding HasValidationMessage}"
                   Padding="12"
                   CornerRadius="8"
-                  Background="#FDECEC">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <TextBlock Text="{Binding ValidationMessage}"
                        TextWrapping="Wrap" />
           </Border>
@@ -126,7 +126,7 @@
                   Spacing="{DynamicResource ShellSpacingLarge}">
         <Border Padding="20"
                 CornerRadius="12"
-                Background="#F3F6FA">
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
           <Grid ColumnDefinitions="*,Auto"
                 ColumnSpacing="16">
             <StackPanel Spacing="6">
@@ -147,7 +147,7 @@
         <Border IsVisible="{Binding HasEmergencyAdvisory}"
                 Padding="20"
                 CornerRadius="12"
-                Background="#FFF4E5">
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
           <StackPanel Spacing="8">
             <TextBlock Classes="section-title"
                        Text="{DynamicResource Dashboard.Emergency.Title}" />
@@ -160,7 +160,7 @@
               ColumnSpacing="16">
           <Border Padding="18"
                   CornerRadius="12"
-                  Background="#EAF2FF">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <StackPanel Spacing="8">
               <TextBlock Classes="section-title"
                          Text="{DynamicResource Dashboard.Critical.Title}" />
@@ -171,7 +171,7 @@
           <Border Grid.Column="1"
                   Padding="18"
                   CornerRadius="12"
-                  Background="#F3F6FA">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
             <StackPanel Spacing="8">
               <TextBlock Classes="section-title"
                          Text="{DynamicResource Dashboard.Accounts.Title}" />
@@ -182,7 +182,7 @@
           <Border Grid.Column="2"
                   Padding="18"
                   CornerRadius="12"
-                  Background="#F3F6FA">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
             <StackPanel Spacing="8">
               <TextBlock Classes="section-title"
                          Text="{DynamicResource Dashboard.Progress.Title}" />
@@ -201,7 +201,7 @@
           <Border IsVisible="{Binding HasBlockedActions}"
                   Padding="16"
                   CornerRadius="10"
-                  Background="#FFF4E5">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{DynamicResource Dashboard.Alert.Blocked.Title}"
@@ -217,7 +217,7 @@
           <Border IsVisible="{Binding HasFailedActions}"
                   Padding="16"
                   CornerRadius="10"
-                  Background="#FDECEC">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{DynamicResource Dashboard.Alert.Failed.Title}"
@@ -233,7 +233,7 @@
           <Border IsVisible="{Binding HasUnresolvedRisks}"
                   Padding="16"
                   CornerRadius="10"
-                  Background="#FFF4E5">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{DynamicResource Dashboard.Alert.Unresolved.Title}"
@@ -249,7 +249,7 @@
           <Border IsVisible="{Binding HasLostAccess}"
                   Padding="16"
                   CornerRadius="10"
-                  Background="#FFF4E5">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{DynamicResource Dashboard.Alert.LostAccess.Title}"
@@ -265,7 +265,7 @@
           <Border IsVisible="{Binding HasCredentialExports}"
                   Padding="16"
                   CornerRadius="10"
-                  Background="#EAF2FF">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{DynamicResource Dashboard.Alert.Export.Title}"
@@ -281,7 +281,7 @@
           <Border IsVisible="{Binding HasCredentialDeletions}"
                   Padding="16"
                   CornerRadius="10"
-                  Background="#EAF2FF">
+                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{DynamicResource Dashboard.Alert.Deletion.Title}"
@@ -297,7 +297,7 @@
 
         <Border Padding="20"
                 CornerRadius="12"
-                Background="#EAF2FF">
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
           <StackPanel Spacing="10">
             <TextBlock Classes="section-title"
                        Text="{DynamicResource Dashboard.Recommendation.Title}" />
@@ -312,7 +312,7 @@
         <Border IsVisible="{Binding HasValidationMessage}"
                 Padding="12"
                 CornerRadius="8"
-                Background="#FDECEC">
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
           <TextBlock Text="{Binding ValidationMessage}"
                      TextWrapping="Wrap" />
         </Border>
