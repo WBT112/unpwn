@@ -33,6 +33,9 @@ public sealed class ResourceLocalizationService : ILocalizationService
         new(
             "Unpwn.App.Localization.RecoveryExecutionStrings",
             typeof(ResourceLocalizationService).Assembly),
+        new(
+            "Unpwn.App.Localization.CredentialStrings",
+            typeof(ResourceLocalizationService).Assembly),
     ];
     private static readonly IReadOnlyList<LocalizationLanguage> Languages =
         new ReadOnlyCollection<LocalizationLanguage>(

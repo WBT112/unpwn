@@ -99,4 +99,7 @@
   <data name="Workflow.GitHub.Action.document-completion-manual.Warning" xml:space="preserve"><value>Die Dokumentation des Ergebnisses bedeutet nicht, dass der Zugriff wiederhergestellt wurde oder das Konto sicher ist.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Completion" xml:space="preserve"><value>Ergebnis der manuellen Wiederherstellung abgeschlossen</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Criterion.1" xml:space="preserve"><value>Das Ergebnis der manuellen Wiederherstellung und alle ungelösten Risiken wurden dokumentiert.</value></data>
+  <data name="Workflow.Credential.Generate" xml:space="preserve"><value>Neue Zugangsdaten erzeugen und verknüpfen</value></data>
+  <data name="Workflow.Credential.GenerationFailed" xml:space="preserve"><value>Neue Zugangsdaten konnten nicht erzeugt und verknüpft werden.</value></data>
+  <data name="Workflow.Credential.GenerationHelp" xml:space="preserve"><value>Bei Passwortänderungs- und Zurücksetzungsaktionen wird nur eine undurchsichtige Referenz gespeichert. Anzeigen oder kopieren kannst du den erzeugten Wert im Bereich „Zugangsdaten“.</value></data>
 </root>

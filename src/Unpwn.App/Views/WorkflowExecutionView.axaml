@@ -211,6 +211,11 @@
                      AcceptsReturn="True"
                      TextWrapping="Wrap" />
             <TextBlock Text="{Binding CredentialReferenceText}" TextWrapping="Wrap" />
+            <TextBlock Text="{DynamicResource Workflow.Credential.GenerationHelp}"
+                       TextWrapping="Wrap" />
+            <Button HorizontalAlignment="Left"
+                    Content="{DynamicResource Workflow.Credential.Generate}"
+                    Command="{Binding GenerateCredentialCommand}" />
             <Button HorizontalAlignment="Left"
                     Content="{DynamicResource Workflow.Notes.Save}"
                     Command="{Binding SaveNotesCommand}" />

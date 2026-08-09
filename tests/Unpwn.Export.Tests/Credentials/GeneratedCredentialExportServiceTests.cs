@@ -294,5 +294,29 @@ public sealed class GeneratedCredentialExportServiceTests : IDisposable
             Guid operationId,
             CancellationToken cancellationToken) =>
             throw new NotSupportedException();
+
+        public Task<GeneratedCredentialOperationResult> ConfirmPasswordManagerImportAsync(
+            GeneratedCredentialReference reference,
+            Guid operationId,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<GeneratedCredentialOperationResult> RevokePasswordManagerImportConfirmationAsync(
+            GeneratedCredentialReference reference,
+            Guid operationId,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<GeneratedCredentialOperationResult> PostponePasswordManagerImportConfirmationAsync(
+            GeneratedCredentialReference reference,
+            Guid operationId,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
+
+        public Task<GeneratedCredentialOperationResult> ConfirmPlaintextExportCleanupAsync(
+            GeneratedCredentialReference reference,
+            Guid operationId,
+            CancellationToken cancellationToken) =>
+            throw new NotSupportedException();
     }
 }

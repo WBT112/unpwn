@@ -127,6 +127,26 @@ public interface IGeneratedCredentialRepository
         Guid operationId,
         CancellationToken cancellationToken);
 
+    Task<GeneratedCredentialOperationResult> ConfirmPasswordManagerImportAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken);
+
+    Task<GeneratedCredentialOperationResult> RevokePasswordManagerImportConfirmationAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken);
+
+    Task<GeneratedCredentialOperationResult> PostponePasswordManagerImportConfirmationAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken);
+
+    Task<GeneratedCredentialOperationResult> ConfirmPlaintextExportCleanupAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken);
+
     Task<GeneratedCredentialOperationResult> DeleteAsync(
         GeneratedCredentialReference reference,
         Guid operationId,

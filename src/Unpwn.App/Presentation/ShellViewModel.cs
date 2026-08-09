@@ -148,6 +148,7 @@ public sealed class ShellViewModel : ObservableObject
             }
 
             UnsubscribeFromScreen(_currentScreen);
+            _currentScreen.Deactivate();
             _currentScreen = value;
             SubscribeToScreen(_currentScreen);
             OnPropertyChanged();

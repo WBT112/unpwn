@@ -358,6 +358,46 @@ public sealed class RecoveryVaultGeneratedCredentialRepository(
         }
     }
 
+    public Task<GeneratedCredentialOperationResult> ConfirmPasswordManagerImportAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateSingleAsync(
+            reference,
+            operationId,
+            (metadata, occurredAt) => metadata.ConfirmPasswordManagerImport(operationId, occurredAt),
+            cancellationToken);
+
+    public Task<GeneratedCredentialOperationResult> RevokePasswordManagerImportConfirmationAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateSingleAsync(
+            reference,
+            operationId,
+            (metadata, occurredAt) => metadata.RevokePasswordManagerImportConfirmation(operationId, occurredAt),
+            cancellationToken);
+
+    public Task<GeneratedCredentialOperationResult> PostponePasswordManagerImportConfirmationAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateSingleAsync(
+            reference,
+            operationId,
+            (metadata, occurredAt) => metadata.PostponePasswordManagerImportConfirmation(operationId, occurredAt),
+            cancellationToken);
+
+    public Task<GeneratedCredentialOperationResult> ConfirmPlaintextExportCleanupAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateSingleAsync(
+            reference,
+            operationId,
+            (metadata, occurredAt) => metadata.ConfirmPlaintextExportCleanup(operationId, occurredAt),
+            cancellationToken);
+
     public void Dispose()
     {
         if (_disposed)

@@ -6,6 +6,7 @@ using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
 using Unpwn.Automation.Recovery;
+using Unpwn.Export.Credentials;
 
 namespace Unpwn.App;
 
@@ -44,6 +45,8 @@ public partial class App : Avalonia.Application
                 accountInventory);
             var confirmationDialog = new AvaloniaConfirmationDialogService(() => mainWindow);
             var externalNavigation = new AvaloniaExternalNavigationService(() => mainWindow);
+            var credentialExport = new GeneratedCredentialExportService(vaultLifecycle);
+            var credentialClipboard = new AvaloniaCredentialClipboardService(() => mainWindow);
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
@@ -53,6 +56,9 @@ public partial class App : Avalonia.Application
                 accountRecovery,
                 locationDiscovery,
                 externalNavigation,
+                vaultLifecycle,
+                credentialExport,
+                credentialClipboard,
                 localization);
             var shell = new ShellViewModel(
                 screenFactory,

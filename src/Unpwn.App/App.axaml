@@ -25,6 +25,9 @@
     <DataTemplate DataType="{x:Type vm:WorkflowExecutionScreenViewModel}">
       <views:WorkflowExecutionView />
     </DataTemplate>
+    <DataTemplate DataType="{x:Type vm:CredentialExportScreenViewModel}">
+      <views:CredentialExportView />
+    </DataTemplate>
     <DataTemplate DataType="{x:Type vm:CompletionScreenViewModel}">
       <views:CompletionScreenView />
     </DataTemplate>

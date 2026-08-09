@@ -42,6 +42,9 @@ The encrypted metadata records:
 - `ConfirmedAt`
 - `ExportedAt`
 - `ExportCount`
+- `PasswordManagerImportConfirmedAt`
+- whether import confirmation was deliberately postponed
+- `PlaintextExportCleanupConfirmedAt`
 - `DeletedAt`
 - revision
 - structured audit events
@@ -49,6 +52,22 @@ The encrypted metadata records:
 Lifecycle operations require an opaque operation ID. Repeating the same operation ID for the same event is idempotent and does not create duplicate audit entries or export counts.
 
 Confirmation requires a prior recorded use. Deleted credentials cannot be revealed or changed.
+
+The password-manager handoff is intentionally separate from file creation. A user may confirm or
+postpone the import, revoke an incorrect import confirmation, and independently confirm cleanup of
+the plaintext export. A deliberate repeat export reopens both handoff and cleanup state.
+
+## Desktop presentation
+
+The desktop credential screen supports generation for a selected account and opaque attachment to
+password-change or password-reset workflow actions. Lists always show a concealed placeholder, not
+the secret. Reveal lasts 15 seconds and clipboard ownership lasts 30 seconds. Navigation, vault
+locking, and language changes clear both presentation states. Clipboard cleanup first verifies a
+cryptographic hash of the current clipboard text so later user content is not erased.
+
+Managed UI strings cannot be deterministically zeroed by .NET. They are therefore created only for
+an explicit temporary reveal or clipboard operation, are never logged or persisted, and references
+are dropped when the presentation state is cleared.
 
 ## Deletion boundary
 
