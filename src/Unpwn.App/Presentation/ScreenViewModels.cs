@@ -148,8 +148,42 @@ public sealed class CsvImportScreenViewModel(
     public Task<AccountInventoryOperationResult> ImportAsync(
         IReadOnlyCollection<ImportAccountCandidate> candidates,
         ImportDuplicateResolution? duplicateResolution,
-        CancellationToken cancellationToken) =>
-        _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(candidates);
+        if (duplicateResolution == ImportDuplicateResolution.SkipDuplicates &&
+            candidates.Count > 0 &&
+            candidates.All(candidate => candidate.DuplicateKind != CsvDuplicateKind.None))
+        {
+            return Task.FromResult(AccountInventoryOperationResult.Success(affectedAccounts: 0));
+        }
+
+        return _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+    }
+
+    public static string GetImportResultResourceKey(AccountInventoryOperationResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+        if (result.Succeeded)
+        {
+            return result.AffectedAccounts == 0
+                ? "Import.Result.NoChanges"
+                : "Import.Result.Success";
+        }
+
+        return result.FailureCode switch
+        {
+            AccountInventoryFailureCode.Locked => "Accounts.Error.Locked",
+            AccountInventoryFailureCode.InvalidInput => "Accounts.Error.InvalidInput",
+            AccountInventoryFailureCode.NotFound => "Accounts.Error.NotFound",
+            AccountInventoryFailureCode.Conflict => "Accounts.Error.Conflict",
+            AccountInventoryFailureCode.RequiresConfirmation => "Accounts.Error.RequiresConfirmation",
+            AccountInventoryFailureCode.RequiresOverrideReason => "Accounts.Error.RequiresOverrideReason",
+            AccountInventoryFailureCode.Corrupted => "Accounts.Error.Corrupted",
+            AccountInventoryFailureCode.IoFailure => "Accounts.Error.IoFailure",
+            _ => "Import.Result.Failure",
+        };
+    }
 }
 
 public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
