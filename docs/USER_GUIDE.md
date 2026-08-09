@@ -4,6 +4,8 @@ unpwn helps you work through account recovery after you suspect that credentials
 
 > **Development status:** unpwn is still under active development and does not yet have a supported production release. Do not rely on it as your only source of security advice.
 
+The flow below describes the intended MVP recovery experience. Current development builds may not yet implement every step.
+
 ## Before you start
 
 Use a device you reasonably trust. If you think the device itself may still be compromised, do not enter new passwords or recovery information there.
