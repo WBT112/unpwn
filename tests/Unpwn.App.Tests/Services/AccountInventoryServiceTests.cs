@@ -77,7 +77,30 @@ public sealed class AccountInventoryServiceTests
     }
 
     [Fact]
-    public async Task DuplicateImportRequiresExplicitResolution()
+    public async Task SkipDuplicatesImportsFirstOccurrenceOnly()
+    {
+        const string csv = "service,login\nMail,person@example.invalid\nMail,person@example.invalid\n";
+        var analysis = CsvAccountImportService.Analyze(new StringReader(csv));
+        var preview = CsvAccountImportService.CreatePreview(
+            new StringReader(csv),
+            analysis.SuggestedMapping);
+        var store = new TestEncryptedRecordStore();
+        var session = new TestRecoverySessionService();
+        using var service = new AccountInventoryService(store, session, () => DateTimeOffset.UnixEpoch);
+        await service.InitializeAsync(CancellationToken.None);
+
+        var result = await service.ImportAsync(
+            preview.Candidates,
+            ImportDuplicateResolution.SkipDuplicates,
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        var imported = Assert.Single(service.CurrentInventory?.Accounts ?? []);
+        Assert.Equal("person@example.invalid", imported.LoginIdentifier);
+    }
+
+    [Fact]
+    public async Task DuplicateImportRequiresExplicitResolutionForSeparateAccounts()
     {
         const string csv = "service,login\nMail,person@example.invalid\nMail,person@example.invalid\n";
         var analysis = CsvAccountImportService.Analyze(new StringReader(csv));

@@ -106,7 +106,29 @@ public sealed class CsvAccountImportServiceTests
     }
 
     [Fact]
-    public void PreviewMarksDuplicatesWithinImportAndExistingAccounts()
+    public void PreviewKeepsFirstOccurrenceAndMarksOnlyLaterImportDuplicates()
+    {
+        using var source = new StringReader(
+            "service,username\n" +
+            "Example,user@example.test\n" +
+            "example,USER@example.test\n" +
+            "EXAMPLE,user@example.test\n");
+        var mapping = new CsvColumnMapping("service", null, "username", null, []);
+
+        var preview = CsvAccountImportService.CreatePreview(source, mapping);
+
+        Assert.Equal(3, preview.Candidates.Count);
+        Assert.Equal(CsvDuplicateKind.None, preview.Candidates[0].DuplicateKind);
+        Assert.Empty(preview.Candidates[0].DuplicateImportRowNumbers);
+        Assert.All(preview.Candidates.Skip(1), candidate =>
+        {
+            Assert.Equal(CsvDuplicateKind.WithinImport, candidate.DuplicateKind);
+            Assert.Equal([2], candidate.DuplicateImportRowNumbers);
+        });
+    }
+
+    [Fact]
+    public void PreviewMarksExistingAccountOnFirstOccurrenceAndWithinImportOnLaterOccurrence()
     {
         using var source = new StringReader(
             "service,url,username,password\n" +
@@ -121,14 +143,14 @@ public sealed class CsvAccountImportServiceTests
         var preview = CsvAccountImportService.CreatePreview(source, mapping, existingAccounts);
 
         Assert.Equal(2, preview.Candidates.Count);
+        Assert.Equal(CsvDuplicateKind.ExistingAccount, preview.Candidates[0].DuplicateKind);
+        Assert.Empty(preview.Candidates[0].DuplicateImportRowNumbers);
+        Assert.Equal(
+            CsvDuplicateKind.WithinImport | CsvDuplicateKind.ExistingAccount,
+            preview.Candidates[1].DuplicateKind);
+        Assert.Equal([2], preview.Candidates[1].DuplicateImportRowNumbers);
         Assert.All(preview.Candidates, candidate =>
-        {
-            Assert.Equal(
-                CsvDuplicateKind.WithinImport | CsvDuplicateKind.ExistingAccount,
-                candidate.DuplicateKind);
-            Assert.Single(candidate.DuplicateImportRowNumbers);
-            Assert.Equal(["account-42"], candidate.DuplicateExistingAccountIds);
-        });
+            Assert.Equal(["account-42"], candidate.DuplicateExistingAccountIds));
     }
 
     [Fact]

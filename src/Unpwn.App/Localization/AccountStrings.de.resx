@@ -98,9 +98,10 @@
   <data name="Confirmation.Risk.Destructive" xml:space="preserve"><value>Destruktive Änderung</value></data>
   <data name="Import.Resolution.Label" xml:space="preserve"><value>Duplikatauflösung</value></data>
   <data name="Import.Resolution.Required" xml:space="preserve"><value>Lege vor dem Import fest, wie Duplikatkandidaten behandelt werden sollen.</value></data>
-  <data name="Import.Resolution.Skip" xml:space="preserve"><value>Alle Duplikatkandidaten überspringen</value></data>
+  <data name="Import.Resolution.Skip" xml:space="preserve"><value>Erstes Vorkommen importieren, weitere Duplikate überspringen (Standard)</value></data>
   <data name="Import.Resolution.Separate" xml:space="preserve"><value>Duplikate als getrennte Konten importieren</value></data>
   <data name="Import.Action.Import" xml:space="preserve"><value>Geprüfte Konten importieren</value></data>
   <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
+  <data name="Import.Result.NoChanges" xml:space="preserve"><value>Es wurden keine neuen Konten importiert, weil alle geprüften Konten bereits im Inventar vorhanden sind.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Löse die Duplikatauswahl oder prüfe den Inventarzustand.</value></data>
 </root>

@@ -10,17 +10,18 @@
 4. Require every detected password column to be explicitly excluded.
 5. Create a preview containing valid rows, safe diagnostics, and duplicate candidates.
 6. Compare the preview with the current encrypted inventory.
-7. Require an explicit duplicate decision when candidates match another imported row or an existing account.
-8. Persist the reviewed candidates through the account-inventory application service.
+7. Apply the safe duplicate default: keep the first occurrence within the CSV, skip later matching rows, and skip candidates that already match an existing inventory account.
+8. Allow the user to override that default and import duplicate CSV candidates as separate accounts.
+9. Persist the reviewed candidates through the account-inventory application service.
 
 Malformed rows are reported individually and do not stop later valid rows. Account URLs accept only absolute HTTP or HTTPS URLs. Duplicate detection uses the normalized service host or service name together with the login identifier or account name. It reports matches within the import and against account references supplied by the application.
 
-The desktop import flow supports two explicit duplicate dispositions:
+The desktop import flow supports two duplicate dispositions:
 
-- skip every duplicate candidate, or
-- import duplicate candidates as separate accounts.
+- **default:** import the first occurrence in each CSV duplicate group and skip later duplicates; candidates that already match the encrypted inventory are skipped, or
+- explicitly import duplicate candidates as separate accounts.
 
-There is no implicit default when duplicates exist. Merging account records is outside the generic importer because it requires account-specific review of roles, dependencies, and existing recovery state.
+The default avoids creating duplicate account records without forcing the user through a confirmation for the common case. Merging account records remains outside the generic importer because it requires account-specific review of roles, dependencies, and existing recovery state.
 
 ## Application persistence boundary
 

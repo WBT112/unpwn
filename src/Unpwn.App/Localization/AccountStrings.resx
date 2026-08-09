@@ -98,9 +98,10 @@
   <data name="Confirmation.Risk.Destructive" xml:space="preserve"><value>Destructive change</value></data>
   <data name="Import.Resolution.Label" xml:space="preserve"><value>Duplicate resolution</value></data>
   <data name="Import.Resolution.Required" xml:space="preserve"><value>Choose how duplicate candidates should be handled before importing.</value></data>
-  <data name="Import.Resolution.Skip" xml:space="preserve"><value>Skip all duplicate candidates</value></data>
+  <data name="Import.Resolution.Skip" xml:space="preserve"><value>Import first occurrence and skip later duplicates (default)</value></data>
   <data name="Import.Resolution.Separate" xml:space="preserve"><value>Import duplicates as separate accounts</value></data>
   <data name="Import.Action.Import" xml:space="preserve"><value>Import reviewed accounts</value></data>
   <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
+  <data name="Import.Result.NoChanges" xml:space="preserve"><value>No new accounts were imported because all reviewed accounts already exist in the inventory.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
 </root>

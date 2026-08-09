@@ -40,8 +40,9 @@ The flow is:
 3. Map service, account, login, and URL columns.
 4. Create a preview using the current inventory as the existing-account duplicate set.
 5. Review valid rows, row diagnostics, and duplicate candidates.
-6. When duplicates exist, explicitly choose to skip them or import them as separate accounts.
-7. Persist the reviewed candidates in the encrypted inventory.
+6. By default, keep the first occurrence in each CSV duplicate group, skip later matching rows, and skip candidates that already match an existing inventory account.
+7. Optionally override the default and import duplicate CSV candidates as separate accounts.
+8. Persist the reviewed candidates in the encrypted inventory.
 
 Malformed rows remain separate diagnostics and do not prevent later valid rows from being reviewed. The import model has no password property, so excluded password values cannot become account fields, diagnostics, duplicate keys, or persisted inventory data.
 
@@ -117,7 +118,7 @@ Automated tests cover:
 - deterministic dependency-root and recovery-channel ordering,
 - missing dependencies and cycles,
 - override reasons and retained unresolved risk,
-- duplicate resolution,
+- keep-first duplicate handling and explicit separate-account import,
 - password-column exclusion and persisted-record scanning,
 - encrypted record reload and lock clearing,
 - dashboard synchronization,
