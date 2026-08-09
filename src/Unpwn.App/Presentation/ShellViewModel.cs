@@ -10,7 +10,7 @@ public sealed class ShellViewModel : ObservableObject
     private readonly IVaultLifecycleService _vaultLifecycle;
     private readonly ILocalizationService _localization;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
-    private LanguageOptionViewModel[] _languageOptions;
+    private readonly LanguageOptionViewModel[] _languageOptions;
     private NavigationItemViewModel _selectedNavigation;
     private LanguageOptionViewModel _selectedLanguage;
     private ScreenViewModel _currentScreen;
@@ -58,12 +58,18 @@ public sealed class ShellViewModel : ObservableObject
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (value.Code == _localization.CurrentLanguageCode)
+            if (!SetProperty(ref _selectedLanguage, value))
             {
                 return;
             }
 
-            _localization.SetLanguage(value.Code);
+            if (!string.Equals(
+                    value.Code,
+                    _localization.CurrentLanguageCode,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                _localization.SetLanguage(value.Code);
+            }
         }
     }
 
@@ -239,11 +245,19 @@ public sealed class ShellViewModel : ObservableObject
         _selectedNavigation = _navigationItems.Single(item => item.Route == selectedRoute);
         OnPropertyChanged(nameof(SelectedNavigation));
 
-        _languageOptions = BuildLanguageOptions();
-        OnPropertyChanged(nameof(LanguageOptions));
-        _selectedLanguage = _languageOptions.Single(option =>
+        foreach (var language in _localization.SupportedLanguages)
+        {
+            var option = _languageOptions.Single(candidate => candidate.Code == language.Code);
+            option.UpdateDisplayName(_localization.GetString(language.DisplayNameKey));
+        }
+
+        var selectedLanguage = _languageOptions.Single(option =>
             option.Code == _localization.CurrentLanguageCode);
-        OnPropertyChanged(nameof(SelectedLanguage));
+        if (!ReferenceEquals(_selectedLanguage, selectedLanguage))
+        {
+            _selectedLanguage = selectedLanguage;
+            OnPropertyChanged(nameof(SelectedLanguage));
+        }
 
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
