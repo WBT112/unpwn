@@ -200,7 +200,7 @@ public sealed class CredentialExportScreenViewModelTests
                 Guid.NewGuid(), accountId, operationId, StartedAt);
             return Task.FromResult(GeneratedCredentialCreationResult.Success(
                 Metadata,
-                new CredentialSecretLease(_secret.ToArray())));
+                new CredentialSecretLease([.. _secret])));
         }
 
         public Task<IReadOnlyList<GeneratedCredentialMetadata>> ListAsync(CancellationToken cancellationToken) =>
@@ -212,7 +212,7 @@ public sealed class CredentialExportScreenViewModelTests
 
         public Task<CredentialSecretLease?> ReadSecretAsync(
             GeneratedCredentialReference reference, CancellationToken cancellationToken) =>
-            Task.FromResult<CredentialSecretLease?>(new(_secret.ToArray()));
+            Task.FromResult<CredentialSecretLease?>(new([.. _secret]));
 
         public Task<GeneratedCredentialOperationResult> MarkUsedAsync(
             GeneratedCredentialReference reference, Guid operationId, CancellationToken cancellationToken) =>

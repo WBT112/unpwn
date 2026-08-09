@@ -12,27 +12,20 @@ public sealed record CredentialAccountOption(Guid AccountId, string Label);
 
 public sealed record CredentialExportFormatOption(CredentialExportFormatId Format, string Label);
 
-public sealed class GeneratedCredentialListItemViewModel : ObservableObject
+public sealed class GeneratedCredentialListItemViewModel(
+    GeneratedCredentialMetadata metadata,
+    string accountLabel,
+    string stageLabel) : ObservableObject
 {
     private bool _isSelectedForExport;
 
-    public GeneratedCredentialListItemViewModel(
-        GeneratedCredentialMetadata metadata,
-        string accountLabel,
-        string stageLabel)
-    {
-        Metadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
-        AccountLabel = accountLabel;
-        StageLabel = stageLabel;
-    }
-
-    public GeneratedCredentialMetadata Metadata { get; }
+    public GeneratedCredentialMetadata Metadata { get; } = metadata ?? throw new ArgumentNullException(nameof(metadata));
 
     public GeneratedCredentialReference Reference => Metadata.Reference;
 
-    public string AccountLabel { get; }
+    public string AccountLabel { get; } = accountLabel;
 
-    public string StageLabel { get; }
+    public string StageLabel { get; } = stageLabel;
 
     public bool IsDeleted => Metadata.IsDeleted;
 
@@ -397,16 +390,15 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         var selectedId = SelectedCredential?.Reference.CredentialId;
         var selectedAccountId = SelectedAccount?.AccountId;
         var inventoryAccounts = _inventory.CurrentInventory?.Accounts ?? [];
-        Accounts = inventoryAccounts
+        Accounts = [.. inventoryAccounts
             .Select(account => new CredentialAccountOption(account.Id, AccountLabel(account)))
-            .OrderBy(account => account.Label, StringComparer.Create(Localization.CurrentCulture, ignoreCase: true))
-            .ToArray();
+            .OrderBy(account => account.Label, StringComparer.Create(Localization.CurrentCulture, ignoreCase: true))];
         SelectedAccount = Accounts.SingleOrDefault(account => account.AccountId == selectedAccountId) ??
             (Accounts.Count > 0 ? Accounts[0] : null);
 
         var accountLabels = inventoryAccounts.ToDictionary(account => account.Id, AccountLabel);
         var metadata = await _repository.ListAsync(cancellationToken);
-        Credentials = metadata
+        Credentials = [.. metadata
             .OrderBy(item => item.IsDeleted)
             .ThenByDescending(item => item.GeneratedAt)
             .Select(item => new GeneratedCredentialListItemViewModel(
@@ -414,8 +406,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
                 accountLabels.GetValueOrDefault(
                     item.AccountId,
                     Localization.GetString("Credentials.Account.Unavailable")),
-                StageLabel(item.Stage)))
-            .ToArray();
+                StageLabel(item.Stage)))];
         SelectedCredential = Credentials.SingleOrDefault(item => item.Reference.CredentialId == selectedId) ??
             Credentials.FirstOrDefault(item => !item.IsDeleted) ??
             (Credentials.Count > 0 ? Credentials[0] : null);
@@ -701,11 +692,10 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
     private void BuildLocalizedOptions()
     {
         var selectedFormat = SelectedFormat?.Format ?? CredentialExportFormatId.BitwardenCsv;
-        Formats = Enum.GetValues<CredentialExportFormatId>()
+        Formats = [.. Enum.GetValues<CredentialExportFormatId>()
             .Select(format => new CredentialExportFormatOption(
                 format,
-                Localization.GetString($"Credentials.Export.Format.{format}")))
-            .ToArray();
+                Localization.GetString($"Credentials.Export.Format.{format}")))];
         SelectedFormat = Formats.Single(format => format.Format == selectedFormat);
     }
 
@@ -717,7 +707,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         }
 
         var selectedId = SelectedCredential?.Reference.CredentialId;
-        Credentials = Credentials.Select(item =>
+        Credentials = [.. Credentials.Select(item =>
         {
             var replacement = new GeneratedCredentialListItemViewModel(
                 item.Metadata,
@@ -727,7 +717,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
                 IsSelectedForExport = item.IsSelectedForExport,
             };
             return replacement;
-        }).ToArray();
+        })];
         SelectedCredential = Credentials.SingleOrDefault(item => item.Reference.CredentialId == selectedId);
     }
 
