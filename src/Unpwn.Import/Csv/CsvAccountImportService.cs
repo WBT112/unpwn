@@ -267,14 +267,15 @@ public sealed class CsvAccountImportService
 
         foreach (var group in candidateGroups.Where(group => group.Count() > 1))
         {
-            var groupCandidates = group.Select(item => item.Candidate).ToArray();
-            foreach (var candidate in groupCandidates)
+            var groupCandidates = group
+                .Select(item => item.Candidate)
+                .OrderBy(candidate => candidate.RowNumber)
+                .ToArray();
+            var firstCandidate = groupCandidates[0];
+            foreach (var candidate in groupCandidates.Skip(1))
             {
                 candidate.DuplicateKind |= CsvDuplicateKind.WithinImport;
-                candidate.DuplicateImportRowNumbers = [.. groupCandidates
-                    .Where(other => other.RowNumber != candidate.RowNumber)
-                    .Select(other => other.RowNumber)
-                    .Order()];
+                candidate.DuplicateImportRowNumbers = [firstCandidate.RowNumber];
             }
         }
 
