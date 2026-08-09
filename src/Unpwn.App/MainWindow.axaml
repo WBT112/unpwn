@@ -75,7 +75,10 @@
                    BorderThickness="0">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:NavigationItemViewModel">
-                <Grid Margin="2,4" ColumnDefinitions="32,*" ColumnSpacing="8">
+                <Grid Margin="2,4"
+                      ColumnDefinitions="32,*"
+                      ColumnSpacing="8"
+                      IsEnabled="{Binding IsEnabled}">
                   <Border Width="28"
                           Height="28"
                           VerticalAlignment="Center"

@@ -3,6 +3,7 @@ using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
 using Unpwn.Core;
+using Unpwn.Import.Csv;
 using Xunit;
 
 namespace Unpwn.App.Tests.Presentation;
@@ -43,6 +44,50 @@ public sealed class ShellViewModelTests
 
         Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
         Assert.Equal("Accounts", shell.CurrentScreen.Title);
+    }
+
+    [Fact]
+    public void NavigationEnforcesVaultAndOverviewPrerequisites()
+    {
+        var vault = new TestVaultLifecycleService();
+        var recoverySession = new TestRecoverySessionService();
+        var inventory = new TestAccountInventoryService();
+        var localization = CreateLocalization();
+        var confirmation = new TestConfirmationDialogService((_, _) => Task.FromResult(false));
+        var factory = new AppScreenFactory(
+            confirmation,
+            vault,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            recoverySession,
+            inventory,
+            localization);
+        var shell = new ShellViewModel(
+            factory,
+            vault,
+            recoverySession,
+            inventory,
+            localization);
+
+        Assert.Equal(
+            [AppRoute.VaultEntry],
+            shell.NavigationItems.Where(item => item.IsEnabled).Select(item => item.Route));
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
+        Assert.Equal(AppRoute.VaultEntry, shell.CurrentScreen.Route);
+
+        vault.Unlock("Synthetic vault", string.Empty);
+
+        Assert.True(shell.NavigationItems.Single(item => item.Route == AppRoute.Dashboard).IsEnabled);
+        Assert.False(shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport).IsEnabled);
+
+        recoverySession.SetSession(RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+
+        Assert.True(shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts).IsEnabled);
+        Assert.True(shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport).IsEnabled);
+        Assert.False(shell.NavigationItems.Single(item => item.Route == AppRoute.Workflow).IsEnabled);
     }
 
     [Fact]
@@ -260,6 +305,64 @@ public sealed class ShellViewModelTests
             CurrentSession = null;
             SessionChanged?.Invoke(this, EventArgs.Empty);
         }
+
+        public void SetSession(RecoverySessionWorkspace session)
+        {
+            CurrentSession = session;
+            LoadState = RecoverySessionLoadState.Loaded;
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private sealed class TestAccountInventoryService : IAccountInventoryService
+    {
+        public event EventHandler? InventoryChanged;
+
+        public AccountInventoryLoadState LoadState => AccountInventoryLoadState.Empty;
+
+        public AccountInventoryState? CurrentInventory => null;
+
+        public AccountInventoryPlan? CurrentPlan => null;
+
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<AccountInventoryOperationResult> UpsertAsync(
+            AccountInventoryUpsertRequest request,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> DecideRoleAsync(
+            Guid accountId,
+            AccountInventoryRole role,
+            AccountRoleDecision decision,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> AddDependencyAsync(
+            AccountDependencyRequest request,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
+            Guid accountId,
+            Guid dependsOnAccountId,
+            AccountDependencyKind kind,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> RemoveAccountAsync(
+            Guid accountId,
+            bool dependencyImpactAcknowledged,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> ImportAsync(
+            IReadOnlyCollection<ImportAccountCandidate> candidates,
+            ImportDuplicateResolution? duplicateResolution,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];
+
+        public void ClearForLock() => InventoryChanged?.Invoke(this, EventArgs.Empty);
+
+        private static Task<AccountInventoryOperationResult> Unsupported() =>
+            Task.FromResult(AccountInventoryOperationResult.Failure(
+                AccountInventoryFailureCode.Conflict));
     }
 
     private sealed class TestVaultLifecycleService : IVaultLifecycleService

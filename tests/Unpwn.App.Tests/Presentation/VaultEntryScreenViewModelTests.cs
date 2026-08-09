@@ -50,12 +50,13 @@ public sealed class VaultEntryScreenViewModelTests
 
         var validationOutcome = await viewModel.CreateVaultCommand.ExecuteAsync();
 
-        Assert.Equal(AsyncCommandOutcome.Completed, validationOutcome);
+        Assert.Equal(AsyncCommandOutcome.Skipped, validationOutcome);
         Assert.Equal(0, lifecycle.VaultOperationCalls);
-        Assert.Equal("Use at least 12 characters for a new vault password.", viewModel.ValidationMessage);
+        Assert.False(viewModel.CreateVaultCommand.CanExecute(null));
 
         viewModel.CreatePassword = password;
         viewModel.ConfirmCreatePassword = password;
+        Assert.True(viewModel.CreateVaultCommand.CanExecute(null));
         var outcome = await viewModel.CreateVaultCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);

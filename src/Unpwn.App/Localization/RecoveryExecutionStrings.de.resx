@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Workflow.Account.Title" xml:space="preserve"><value>Kontokontext</value></data>
+  <data name="Workflow.Account.Priority" xml:space="preserve"><value>Priorität</value></data>
+  <data name="Workflow.Account.Roles" xml:space="preserve"><value>Bestätigte Rollen</value></data>
+  <data name="Workflow.Account.Dependencies" xml:space="preserve"><value>Abhängigkeiten</value></data>
+  <data name="Workflow.Account.Access" xml:space="preserve"><value>Zugriff</value></data>
+  <data name="Workflow.Account.Status" xml:space="preserve"><value>Wiederherstellungsstatus</value></data>
+  <data name="Workflow.Account.Unavailable" xml:space="preserve"><value>Kein Konto ausgewählt</value></data>
+  <data name="Workflow.Account.LoginUnavailable" xml:space="preserve"><value>Keine Anmeldekennung erfasst</value></data>
+  <data name="Workflow.Account.NoConfirmedRoles" xml:space="preserve"><value>Keine bestätigte Identitäts- oder Wiederherstellungsrolle</value></data>
+  <data name="Workflow.Account.NoDependencies" xml:space="preserve"><value>Keine Kontoabhängigkeit erfasst</value></data>
+  <data name="Workflow.Account.MissingDependency" xml:space="preserve"><value>Fehlendes Inventarkonto</value></data>
+  <data name="Workflow.Account.Dependents.Zero" xml:space="preserve"><value>Derzeit hängt kein anderes Konto von diesem Konto ab.</value></data>
+  <data name="Workflow.Account.Dependents.One" xml:space="preserve"><value>Derzeit hängt {0} anderes Konto von diesem Konto ab.</value></data>
+  <data name="Workflow.Account.Dependents.Other" xml:space="preserve"><value>Derzeit hängen {0} andere Konten von diesem Konto ab.</value></data>
+  <data name="Workflow.Account.DependentNames" xml:space="preserve"><value>Abhängige Konten: {0}</value></data>
+  <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Warum dieses Konto jetzt?</value></data>
+  <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>Derzeit ist keine Planbegründung verfügbar.</value></data>
+  <data name="Workflow.Recommendation.DependenciesSatisfied" xml:space="preserve"><value>Die für diese Wiederherstellung erforderlichen Konten wurden vollständig geprüft; dieses Konto ist daher jetzt bereit.</value></data>
+  <data name="Workflow.Path.Title" xml:space="preserve"><value>Wiederherstellungspfad</value></data>
+  <data name="Workflow.Path.Help" xml:space="preserve"><value>Wähle den Pfad, der deinem tatsächlichen Zugriff entspricht. Authentifizierte Änderung, Passwortzurücksetzung und manuelle Wiederherstellung haben unterschiedliche Voraussetzungen.</value></data>
+  <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Passwort in einer authentifizierten Kontositzung ändern</value></data>
+  <data name="Workflow.Path.PasswordReset" xml:space="preserve"><value>Passwort über einen gesicherten Wiederherstellungskanal zurücksetzen</value></data>
+  <data name="Workflow.Path.ManualRecovery" xml:space="preserve"><value>Manuellen Kontowiederherstellungsprozess des Anbieters verwenden</value></data>
+  <data name="Workflow.Path.Begin" xml:space="preserve"><value>Diesen Wiederherstellungspfad beginnen</value></data>
+  <data name="Workflow.Path.Change" xml:space="preserve"><value>Wiederherstellungspfad ändern</value></data>
+  <data name="Workflow.Path.ChangeHelp" xml:space="preserve"><value>Der Pfad kann nur geändert werden, bevor Aktionsfortschritt, Notizen oder eine Referenz auf ein erzeugtes Zugangsdatenobjekt erfasst wurden. So kann erforderliche Arbeit nicht still verworfen werden.</value></data>
+  <data name="Workflow.Access.Title" xml:space="preserve"><value>Kontozugriff</value></data>
+  <data name="Workflow.Access.Help" xml:space="preserve"><value>Erfasse den tatsächlichen Zugriffsstatus. Verlorener Zugriff und Anbieterprüfung benötigen eine nicht geheime Begründung und führen zum neu berechneten Plan zurück.</value></data>
+  <data name="Workflow.Access.Unknown" xml:space="preserve"><value>Nicht erfasst</value></data>
+  <data name="Workflow.Access.Available" xml:space="preserve"><value>Zugriff vorhanden</value></data>
+  <data name="Workflow.Access.Lost" xml:space="preserve"><value>Zugriff verloren</value></data>
+  <data name="Workflow.Access.WaitingForProviderReview" xml:space="preserve"><value>Wartet auf Anbieterprüfung</value></data>
+  <data name="Workflow.Access.Available.Action" xml:space="preserve"><value>Zugriff vorhanden erfassen</value></data>
+  <data name="Workflow.Access.Lost.Action" xml:space="preserve"><value>Verlorenen Zugriff erfassen</value></data>
+  <data name="Workflow.Access.WaitingForProviderReview.Action" xml:space="preserve"><value>Anbieterprüfung erfassen</value></data>
+  <data name="Workflow.Actions.Title" xml:space="preserve"><value>Erforderliche Wiederherstellungsaktionen</value></data>
+  <data name="Workflow.Action.Progress" xml:space="preserve"><value>Schritt {0} von {1}</value></data>
+  <data name="Workflow.Action.Prerequisites" xml:space="preserve"><value>Voraussetzungen</value></data>
+  <data name="Workflow.Action.NoPrerequisites" xml:space="preserve"><value>Keine vorausgehende Aktion</value></data>
+  <data name="Workflow.Action.Status.Open" xml:space="preserve"><value>Offen</value></data>
+  <data name="Workflow.Action.Status.InProgress" xml:space="preserve"><value>In Bearbeitung</value></data>
+  <data name="Workflow.Action.Status.Blocked" xml:space="preserve"><value>Blockiert</value></data>
+  <data name="Workflow.Action.Status.NeedsUserAction" xml:space="preserve"><value>Benutzeraktion erforderlich</value></data>
+  <data name="Workflow.Action.Status.Completed" xml:space="preserve"><value>Abgeschlossen</value></data>
+  <data name="Workflow.Action.Status.Failed" xml:space="preserve"><value>Fehlgeschlagen</value></data>
+  <data name="Workflow.Action.Status.NotApplicable" xml:space="preserve"><value>Nicht anwendbar</value></data>
+  <data name="Workflow.Action.Status.UnresolvedRisk" xml:space="preserve"><value>Ungelöstes Risiko</value></data>
+  <data name="Workflow.Action.Start" xml:space="preserve"><value>Aktion starten</value></data>
+  <data name="Workflow.Action.Retry" xml:space="preserve"><value>Aktion erneut versuchen</value></data>
+  <data name="Workflow.Action.Complete" xml:space="preserve"><value>Abschluss bestätigen</value></data>
+  <data name="Workflow.Action.NeedsUserAction" xml:space="preserve"><value>Warten / Benutzeraktion erfassen</value></data>
+  <data name="Workflow.Action.Block" xml:space="preserve"><value>Blockierung erfassen</value></data>
+  <data name="Workflow.Action.Fail" xml:space="preserve"><value>Fehlschlag erfassen</value></data>
+  <data name="Workflow.Action.NotApplicable" xml:space="preserve"><value>Wirklich nicht anwendbar</value></data>
+  <data name="Workflow.Action.AcceptRisk" xml:space="preserve"><value>Ungelöstes Risiko akzeptieren</value></data>
+  <data name="Workflow.Importance.Routine" xml:space="preserve"><value>Wichtigkeit: Routine</value></data>
+  <data name="Workflow.Importance.Important" xml:space="preserve"><value>Wichtigkeit: wichtig</value></data>
+  <data name="Workflow.Importance.Critical" xml:space="preserve"><value>Wichtigkeit: kritisch</value></data>
+  <data name="Workflow.Automation.None" xml:space="preserve"><value>Unterstützung: manuelle Anleitung</value></data>
+  <data name="Workflow.Automation.Navigation" xml:space="preserve"><value>Unterstützung: sichtbare Navigation</value></data>
+  <data name="Workflow.Automation.Assisted" xml:space="preserve"><value>Unterstützung: sichtbare Browserhilfe</value></data>
+  <data name="Workflow.Automation.Automated" xml:space="preserve"><value>Unterstützung: begrenzte Automatisierung mit ausdrücklicher Autorisierung</value></data>
+  <data name="Workflow.Navigation.Title" xml:space="preserve"><value>Offizielle Wiederherstellungsseite</value></data>
+  <data name="Workflow.Navigation.Destination" xml:space="preserve"><value>Ziel</value></data>
+  <data name="Workflow.Navigation.ExpectedOrigins" xml:space="preserve"><value>Erwarteter Ursprung</value></data>
+  <data name="Workflow.Navigation.Disclaimer" xml:space="preserve"><value>Prüfe Ziel und Ursprung vor dem Öffnen. Das Öffnen der Seite, die Rückkehr zu unpwn oder verstrichene Zeit schließen diese Aktion nicht ab.</value></data>
+  <data name="Workflow.Navigation.Open" xml:space="preserve"><value>Offizielle Seite öffnen</value></data>
+  <data name="Workflow.Navigation.Opened" xml:space="preserve"><value>Die offizielle Seite wurde geöffnet. Die Aktion bleibt unverändert, bis du ihre Abschlusskriterien ausdrücklich bestätigst.</value></data>
+  <data name="Workflow.Navigation.Unavailable" xml:space="preserve"><value>Die offizielle Seite konnte nicht sicher geöffnet werden. Fahre mit der angezeigten manuellen Anleitung fort.</value></data>
+  <data name="Workflow.Navigation.Rejected" xml:space="preserve"><value>Das Betriebssystem hat die Seite nicht geöffnet. Keine Wiederherstellungsaktion wurde als abgeschlossen markiert.</value></data>
+  <data name="Workflow.Completion.Title" xml:space="preserve"><value>Abschlusskriterien</value></data>
+  <data name="Workflow.Completion.Help" xml:space="preserve"><value>Bestätige erst, wenn jedes aufgeführte Kriterium tatsächlich erfüllt ist. Navigation allein reicht niemals aus.</value></data>
+  <data name="Workflow.Completion.Acknowledge" xml:space="preserve"><value>Ich habe geprüft, dass die aufgeführten Abschlusskriterien erfüllt sind.</value></data>
+  <data name="Workflow.Complete.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungsaktion abschließen</value></data>
+  <data name="Workflow.Complete.Confirmation.Consequence" xml:space="preserve"><value>Dies erfasst nur deine ausdrückliche Bestätigung der im Repository definierten Kriterien. unpwn hat das Anbieterkonto nicht überprüft.</value></data>
+  <data name="Workflow.Complete.Confirmation.Confirm" xml:space="preserve"><value>Aktion als abgeschlossen erfassen</value></data>
+  <data name="Workflow.Notes.Title" xml:space="preserve"><value>Nicht geheime Notizen</value></data>
+  <data name="Workflow.Notes.Warning" xml:space="preserve"><value>Gib keine Passwörter, Zurücksetzungslinks, Token, MFA-Geheimnisse, Wiederherstellungscodes, Cookies, Browserzustände oder Identitätsdokumente ein. Erzeugte Zugangsdaten werden über eine opaque Vault-Referenz verknüpft.</value></data>
+  <data name="Workflow.Notes.Save" xml:space="preserve"><value>Nicht geheime Notizen speichern</value></data>
+  <data name="Workflow.Credential.None" xml:space="preserve"><value>Mit dieser Aktion sind keine erzeugten Zugangsdaten verknüpft.</value></data>
+  <data name="Workflow.Credential.Reference" xml:space="preserve"><value>Verschlüsselte Referenz auf erzeugte Zugangsdaten: {0}</value></data>
+  <data name="Workflow.Outcome.Title" xml:space="preserve"><value>Aktionsergebnis erfassen</value></data>
+  <data name="Workflow.Reason.Placeholder" xml:space="preserve"><value>Nicht geheime Begründung für blockiert, fehlgeschlagen, wartend, Zugriff verloren, nicht anwendbar und Risiko erforderlich</value></data>
+  <data name="Workflow.Reason.Recorded" xml:space="preserve"><value>Erfasste Begründung</value></data>
+  <data name="Workflow.Reason.WaitingForPrerequisite" xml:space="preserve"><value>Wartet auf vorausgehende Aktionen: {0}</value></data>
+  <data name="Workflow.Reason.UserActionRequired" xml:space="preserve"><value>Eine weitere Benutzeraktion ist erforderlich.</value></data>
+  <data name="Workflow.Reason.UserBlocked" xml:space="preserve"><value>Die Aktion ist blockiert.</value></data>
+  <data name="Workflow.Reason.ProviderFailure" xml:space="preserve"><value>Die Anbieteraktion ist fehlgeschlagen.</value></data>
+  <data name="Workflow.Reason.TrulyNotApplicable" xml:space="preserve"><value>Die Funktion ist für dieses Konto nicht verfügbar.</value></data>
+  <data name="Workflow.Reason.UnresolvedRiskAccepted" xml:space="preserve"><value>Ein ungelöstes Risiko wurde akzeptiert.</value></data>
+  <data name="Workflow.Reason.AccessLost" xml:space="preserve"><value>Der Kontozugriff wurde verloren.</value></data>
+  <data name="Workflow.NotApplicable.Confirmation.Action" xml:space="preserve"><value>Aktion als wirklich nicht anwendbar markieren</value></data>
+  <data name="Workflow.NotApplicable.Confirmation.Consequence" xml:space="preserve"><value>Verwende dies nur, wenn die Funktion für dieses Konto wirklich nicht existiert. Eine nicht verfügbare oder abgelehnte Kontrolle muss als ungelöstes Risiko sichtbar bleiben.</value></data>
+  <data name="Workflow.NotApplicable.Confirmation.Confirm" xml:space="preserve"><value>Wirklich nicht anwendbar bestätigen</value></data>
+  <data name="Workflow.Risk.Confirmation.Action" xml:space="preserve"><value>Ungelöstes Risiko akzeptieren</value></data>
+  <data name="Workflow.Risk.Confirmation.Consequence" xml:space="preserve"><value>Die erforderliche Aktion bleibt ungelöst und das Konto wird nicht als vollständig gesichert dargestellt.</value></data>
+  <data name="Workflow.Risk.Confirmation.Confirm" xml:space="preserve"><value>Ungelöstes Risiko erfassen</value></data>
+  <data name="Workflow.Status.NotStarted" xml:space="preserve"><value>Nicht begonnen</value></data>
+  <data name="Workflow.Status.Open" xml:space="preserve"><value>Offen</value></data>
+  <data name="Workflow.Status.InProgress" xml:space="preserve"><value>In Bearbeitung</value></data>
+  <data name="Workflow.Status.FullyReviewed" xml:space="preserve"><value>Vollständig geprüft</value></data>
+  <data name="Workflow.Status.NotFullySecured" xml:space="preserve"><value>Nicht vollständig gesichert</value></data>
+  <data name="Workflow.Status.AccessNotRestored" xml:space="preserve"><value>Zugriff nicht wiederhergestellt</value></data>
+  <data name="Workflow.Status.Ready.Title" xml:space="preserve"><value>Wiederherstellungspfad wählen</value></data>
+  <data name="Workflow.Status.Ready.Message" xml:space="preserve"><value>Prüfe den Kontokontext und wähle den Pfad, der deinem tatsächlichen Zugriff entspricht.</value></data>
+  <data name="Workflow.Status.Started.Title" xml:space="preserve"><value>Wiederherstellungspfad begonnen</value></data>
+  <data name="Workflow.Status.Started.Message" xml:space="preserve"><value>Bearbeite jede erforderliche Aktion getrennt und erfasse das tatsächliche Ergebnis.</value></data>
+  <data name="Workflow.Status.Active.Title" xml:space="preserve"><value>Kontowiederherstellung läuft</value></data>
+  <data name="Workflow.Status.Active.Message" xml:space="preserve"><value>Blockierte Arbeit, Fehlschläge, verlorener Zugriff und ungelöste Risiken bleiben im Wiederherstellungsplan sichtbar.</value></data>
+  <data name="Workflow.Plan.Recalculated.Title" xml:space="preserve"><value>Wiederherstellungsplan neu berechnet</value></data>
+  <data name="Workflow.Plan.Changed" xml:space="preserve"><value>Das empfohlene Konto oder die empfohlene Aktion hat sich nach dem erfassten Ergebnis geändert. Prüfe die aktuelle Empfehlung, bevor du fortfährst.</value></data>
+  <data name="Workflow.Plan.Unchanged" xml:space="preserve"><value>Der Plan wurde neu berechnet. Die aktuelle Empfehlung bleibt gleich und ungelöste Arbeit bleibt sichtbar.</value></data>
+  <data name="Workflow.Plan.Status.Unavailable" xml:space="preserve"><value>Planstatus nicht verfügbar</value></data>
+  <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Jetzt bereit</value></data>
+  <data name="Workflow.Plan.Status.PlannedLater" xml:space="preserve"><value>Nach Abhängigkeiten geplant</value></data>
+  <data name="Workflow.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Durch eine fehlende Abhängigkeit blockiert</value></data>
+  <data name="Workflow.Plan.Status.BlockedCycle" xml:space="preserve"><value>Durch einen Abhängigkeitszyklus blockiert</value></data>
+  <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Entsperre einen Vault und lade ein Kontoinventar, bevor du die Kontowiederherstellung beginnst.</value></data>
+  <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>Das ausgewählte Konto ist im verschlüsselten Inventar nicht mehr verfügbar.</value></data>
+  <data name="Workflow.Validation.ProviderUnsupported" xml:space="preserve"><value>Für diesen Anbieter ist kein geprüfter Repository-Workflow verfügbar. Verwende das Kontoinventar und manuelle Hinweise; unpwn errät keine Anbieteranweisungen.</value></data>
+  <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Wähle vor dem Start einen Wiederherstellungspfad.</value></data>
+  <data name="Workflow.Validation.CriteriaRequired" xml:space="preserve"><value>Bestätige die Abschlusskriterien ausdrücklich, bevor du den Abschluss erfasst.</value></data>
+  <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Gib eine nicht geheime Begründung für dieses Ergebnis ein.</value></data>
+  <data name="Workflow.Validation.Locked" xml:space="preserve"><value>Der Recovery Vault ist gesperrt.</value></data>
+  <data name="Workflow.Validation.NotFound" xml:space="preserve"><value>Für dieses Konto wurde keine persistierte Ausführung gefunden.</value></data>
+  <data name="Workflow.Validation.Conflict" xml:space="preserve"><value>Der Wiederherstellungsstatus wurde an anderer Stelle geändert oder der Übergang ist nicht erlaubt. Aktualisiere vor dem Fortfahren.</value></data>
+  <data name="Workflow.Validation.Corrupted" xml:space="preserve"><value>Die persistierte Wiederherstellungsausführung konnte nicht authentifiziert oder validiert werden. Sie wurde nicht ersetzt.</value></data>
+  <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>Das Ergebnis konnte nicht gespeichert werden. Die UI behauptet nicht, dass es erfasst wurde.</value></data>
+  <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>Der angeforderte Wiederherstellungsübergang ist ungültig.</value></data>
+  <data name="Workflow.Command.Error" xml:space="preserve"><value>Der Wiederherstellungsvorgang ist fehlgeschlagen, ohne Anbieter- oder Kontodaten offenzulegen.</value></data>
+  <data name="Workflow.Refresh" xml:space="preserve"><value>Wiederherstellungsstatus aktualisieren</value></data>
+</root>

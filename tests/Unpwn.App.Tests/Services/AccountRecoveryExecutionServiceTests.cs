@@ -172,6 +172,64 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
         Assert.Null(action.UserReason);
     }
 
+    [Fact]
+    public async Task CompletingADependencyRecalculatesWaitingAccountsInTheAtomicProjection()
+    {
+        var dependencyId = Guid.NewGuid();
+        var dependentId = Guid.NewGuid();
+        var initial = CreateSession().ReplaceAccounts(
+            [DashboardEntry(dependentId, [dependencyId])],
+            StartedAt.AddMinutes(1));
+        var store = new InMemoryAtomicRecordStore();
+        var session = new ProjectionSessionService(initial);
+        var service = new AccountRecoveryExecutionService(
+            store,
+            session,
+            _mutations,
+            () => StartedAt.AddMinutes(2));
+        var workflow = CreateWorkflow();
+        var created = await service.CreateAsync(
+            new AccountRecoveryExecutionCreateRequest(
+                Guid.NewGuid(),
+                dependencyId,
+                workflow,
+                RecoveryPath.AuthenticatedChange,
+                ProjectionContext()),
+            CancellationToken.None);
+
+        var state = created.State!;
+        foreach (var actionId in new[] { "identify-account", "change-password" })
+        {
+            var started = await service.ApplyAsync(
+                TransitionRequest(
+                    Guid.NewGuid(),
+                    dependencyId,
+                    state.Revision,
+                    workflow,
+                    AccountRecoveryExecutionTransitionKind.StartAction,
+                    actionId),
+                CancellationToken.None);
+            state = started.State!;
+            var completed = await service.ApplyAsync(
+                TransitionRequest(
+                    Guid.NewGuid(),
+                    dependencyId,
+                    state.Revision,
+                    workflow,
+                    AccountRecoveryExecutionTransitionKind.CompleteAction,
+                    actionId) with
+                {
+                    CompletionCriteriaAcknowledged = true,
+                },
+                CancellationToken.None);
+            state = completed.State!;
+        }
+
+        var dependent = session.CurrentSession!.Accounts.Single(account => account.AccountId == dependentId);
+        Assert.Empty(dependent.WaitingForAccountIds);
+        Assert.Equal(AccountRecoveryStatus.FullyReviewed, state.RecoveryStatus);
+    }
+
     public void Dispose() => _mutations.Dispose();
 
     private static void AssertStateEquivalent(
@@ -214,6 +272,26 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             "Incident",
             RecoveryIncidentIntake.Empty,
             StartedAt);
+
+    private static RecoveryAccountDashboardEntry DashboardEntry(Guid accountId, Guid[] waitingFor) =>
+        new(
+            accountId,
+            "dependent.example",
+            AccountCriticality.Routine,
+            AccountRecoveryStatus.Open,
+            RequiredActionsCompleted: 0,
+            RequiredActionsTotal: 0,
+            CompletedRequiredWeight: 0,
+            TotalRequiredWeight: 0,
+            BlockedRequiredActions: 0,
+            FailedRequiredActions: 0,
+            UnresolvedRisks: 0,
+            AccessLost: false,
+            CredentialsAwaitingExport: 0,
+            CredentialsAwaitingDeletion: 0,
+            RecommendedActionId: null,
+            DependencyDepth: 1,
+            WaitingForAccountIds: waitingFor);
 
     private static RecoveryWorkflowDefinition CreateWorkflow()
     {

@@ -82,6 +82,8 @@ public sealed record RecoveryActionDefinition(
     IReadOnlyList<string> CompletionCriteria,
     RecoveryActionGuidanceKeys Guidance)
 {
+    public string? RecoveryLocationId { get; init; }
+
     public RecoveryActionDefinition(
         string id,
         RecoveryActionType type,

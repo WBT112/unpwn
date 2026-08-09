@@ -67,7 +67,10 @@
       </Border>
 
       <StackPanel Grid.Column="1" Spacing="18">
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <Border Padding="18"
+                CornerRadius="10"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                IsEnabled="{Binding IsEditingAccount}">
           <StackPanel Spacing="12">
             <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Editor.Title}" />
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="10">
@@ -104,7 +107,10 @@
           </StackPanel>
         </Border>
 
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <Border Padding="18"
+                CornerRadius="10"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                IsEnabled="{Binding HasPersistedAccount}">
           <StackPanel Spacing="12">
             <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Roles.Title}" />
             <TextBlock Text="{DynamicResource Accounts.Roles.Help}" TextWrapping="Wrap" />
@@ -142,7 +148,10 @@
           </StackPanel>
         </Border>
 
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <Border Padding="18"
+                CornerRadius="10"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+                IsEnabled="{Binding HasPersistedAccount}">
           <StackPanel Spacing="12">
             <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Dependency.Title}" />
             <TextBlock Text="{DynamicResource Accounts.Dependency.Help}" TextWrapping="Wrap" />

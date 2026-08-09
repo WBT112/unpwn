@@ -12,6 +12,7 @@ unpwn is **not** an antivirus, malware scanner, password manager, or autonomous 
 
 - [User Guide](docs/USER_GUIDE.md) — short recovery walkthrough
 - [Documentation Index](docs/README.md) — product, architecture, security, workflow, vault, and engineering docs
+- [Account Recovery Execution](docs/ACCOUNT_RECOVERY_EXECUTION.md) — canonical action states and guided execution rules
 - [Security Policy](SECURITY.md) — limitations and vulnerability reporting
 - [Roadmap](docs/ROADMAP.md) — current development direction
 - [Contributing](CONTRIBUTING.md) — development and pull-request workflow

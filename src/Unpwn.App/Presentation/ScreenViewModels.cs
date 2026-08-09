@@ -33,6 +33,10 @@ public abstract class ScreenViewModel(
         get => _status;
         protected set => SetProperty(ref _status, value);
     }
+
+    public virtual void Activate()
+    {
+    }
 }
 
 public abstract class LocalizedScreenViewModel : ScreenViewModel

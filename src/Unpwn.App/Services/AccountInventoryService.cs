@@ -637,30 +637,49 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
         var plan = inventory.CreatePlan(
             _recoverySession.CurrentSession?.Incident.Indicators ?? IncidentIndicator.None);
         var planByAccount = plan.Items.ToDictionary(item => item.AccountId);
+        var existingByAccount = _recoverySession.CurrentSession?.Accounts
+            .ToDictionary(account => account.AccountId) ?? [];
         return inventory.Accounts.Select(account =>
         {
             var planItem = planByAccount[account.Id];
             var isBlocked = planItem.Status is
                 AccountInventoryPlanStatus.BlockedCycle or
                 AccountInventoryPlanStatus.BlockedMissingDependency;
+            existingByAccount.TryGetValue(account.Id, out var existing);
+            var hasExecution = existing?.RequiredActionsTotal > 0;
+            var executionBlocked = hasExecution
+                ? Math.Max(0, existing!.BlockedRequiredActions - existing.InventoryBlockedIssues)
+                : 0;
+            var executionUnresolved = hasExecution
+                ? Math.Max(0, existing!.UnresolvedRisks - existing.InventoryUnresolvedRisks)
+                : 0;
+            var waitingFor = planItem.WaitingForAccountIds
+                .Where(dependencyId =>
+                    !existingByAccount.TryGetValue(dependencyId, out var dependency) ||
+                    !dependency.IsFullyReviewed)
+                .ToArray();
             return new RecoveryAccountDashboardEntry(
                 account.Id,
                 account.ProviderId,
                 account.DashboardCriticality,
-                AccountRecoveryStatus.Open,
-                RequiredActionsCompleted: 0,
-                RequiredActionsTotal: 0,
-                CompletedRequiredWeight: 0,
-                TotalRequiredWeight: 0,
-                BlockedRequiredActions: isBlocked ? 1 : 0,
-                FailedRequiredActions: 0,
-                UnresolvedRisks: planItem.HasDependencyOverride ? 1 : 0,
-                AccessLost: false,
-                CredentialsAwaitingExport: 0,
-                CredentialsAwaitingDeletion: 0,
-                RecommendedActionId: null,
+                existing?.RecoveryStatus ?? AccountRecoveryStatus.Open,
+                existing?.RequiredActionsCompleted ?? 0,
+                existing?.RequiredActionsTotal ?? 0,
+                existing?.CompletedRequiredWeight ?? 0,
+                existing?.TotalRequiredWeight ?? 0,
+                BlockedRequiredActions: executionBlocked + (isBlocked ? 1 : 0),
+                existing?.FailedRequiredActions ?? 0,
+                UnresolvedRisks: executionUnresolved + (planItem.HasDependencyOverride ? 1 : 0),
+                existing?.AccessLost ?? false,
+                existing?.CredentialsAwaitingExport ?? 0,
+                existing?.CredentialsAwaitingDeletion ?? 0,
+                existing?.RecommendedActionId,
                 planItem.DependencyDepth,
-                planItem.WaitingForAccountIds);
+                waitingFor)
+            {
+                InventoryBlockedIssues = isBlocked ? 1 : 0,
+                InventoryUnresolvedRisks = planItem.HasDependencyOverride ? 1 : 0,
+            };
         }).ToArray();
     }
 

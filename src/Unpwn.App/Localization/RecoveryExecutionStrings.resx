@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Workflow.Account.Title" xml:space="preserve"><value>Account context</value></data>
+  <data name="Workflow.Account.Priority" xml:space="preserve"><value>Priority</value></data>
+  <data name="Workflow.Account.Roles" xml:space="preserve"><value>Confirmed roles</value></data>
+  <data name="Workflow.Account.Dependencies" xml:space="preserve"><value>Dependencies</value></data>
+  <data name="Workflow.Account.Access" xml:space="preserve"><value>Access</value></data>
+  <data name="Workflow.Account.Status" xml:space="preserve"><value>Recovery status</value></data>
+  <data name="Workflow.Account.Unavailable" xml:space="preserve"><value>No account selected</value></data>
+  <data name="Workflow.Account.LoginUnavailable" xml:space="preserve"><value>No login identifier recorded</value></data>
+  <data name="Workflow.Account.NoConfirmedRoles" xml:space="preserve"><value>No confirmed identity or recovery role</value></data>
+  <data name="Workflow.Account.NoDependencies" xml:space="preserve"><value>No account dependency recorded</value></data>
+  <data name="Workflow.Account.MissingDependency" xml:space="preserve"><value>Missing inventory account</value></data>
+  <data name="Workflow.Account.Dependents.Zero" xml:space="preserve"><value>No other account currently depends on this account.</value></data>
+  <data name="Workflow.Account.Dependents.One" xml:space="preserve"><value>{0} other account currently depends on this account.</value></data>
+  <data name="Workflow.Account.Dependents.Other" xml:space="preserve"><value>{0} other accounts currently depend on this account.</value></data>
+  <data name="Workflow.Account.DependentNames" xml:space="preserve"><value>Dependent accounts: {0}</value></data>
+  <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Why this account now?</value></data>
+  <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>No current plan reason is available.</value></data>
+  <data name="Workflow.Recommendation.DependenciesSatisfied" xml:space="preserve"><value>The accounts required by this recovery have been fully reviewed, so this account is ready now.</value></data>
+  <data name="Workflow.Path.Title" xml:space="preserve"><value>Recovery path</value></data>
+  <data name="Workflow.Path.Help" xml:space="preserve"><value>Choose the path that matches your actual access. Authenticated change, password reset, and manual recovery have different requirements.</value></data>
+  <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Change the password in an authenticated account session</value></data>
+  <data name="Workflow.Path.PasswordReset" xml:space="preserve"><value>Reset the password through a secured recovery channel</value></data>
+  <data name="Workflow.Path.ManualRecovery" xml:space="preserve"><value>Use the provider's manual account-recovery process</value></data>
+  <data name="Workflow.Path.Begin" xml:space="preserve"><value>Begin this recovery path</value></data>
+  <data name="Workflow.Path.Change" xml:space="preserve"><value>Change recovery path</value></data>
+  <data name="Workflow.Path.ChangeHelp" xml:space="preserve"><value>The path can change only before action progress, notes, or a generated-credential reference have been recorded. This prevents required work from being silently discarded.</value></data>
+  <data name="Workflow.Access.Title" xml:space="preserve"><value>Account access</value></data>
+  <data name="Workflow.Access.Help" xml:space="preserve"><value>Record the real access state. Lost access and provider review require a non-secret reason and return you to the recalculated plan.</value></data>
+  <data name="Workflow.Access.Unknown" xml:space="preserve"><value>Not recorded</value></data>
+  <data name="Workflow.Access.Available" xml:space="preserve"><value>Access available</value></data>
+  <data name="Workflow.Access.Lost" xml:space="preserve"><value>Access lost</value></data>
+  <data name="Workflow.Access.WaitingForProviderReview" xml:space="preserve"><value>Waiting for provider review</value></data>
+  <data name="Workflow.Access.Available.Action" xml:space="preserve"><value>Record access available</value></data>
+  <data name="Workflow.Access.Lost.Action" xml:space="preserve"><value>Record lost access</value></data>
+  <data name="Workflow.Access.WaitingForProviderReview.Action" xml:space="preserve"><value>Record provider review</value></data>
+  <data name="Workflow.Actions.Title" xml:space="preserve"><value>Required recovery actions</value></data>
+  <data name="Workflow.Action.Progress" xml:space="preserve"><value>Step {0} of {1}</value></data>
+  <data name="Workflow.Action.Prerequisites" xml:space="preserve"><value>Prerequisites</value></data>
+  <data name="Workflow.Action.NoPrerequisites" xml:space="preserve"><value>No prerequisite action</value></data>
+  <data name="Workflow.Action.Status.Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Workflow.Action.Status.InProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="Workflow.Action.Status.Blocked" xml:space="preserve"><value>Blocked</value></data>
+  <data name="Workflow.Action.Status.NeedsUserAction" xml:space="preserve"><value>Needs user action</value></data>
+  <data name="Workflow.Action.Status.Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Workflow.Action.Status.Failed" xml:space="preserve"><value>Failed</value></data>
+  <data name="Workflow.Action.Status.NotApplicable" xml:space="preserve"><value>Not applicable</value></data>
+  <data name="Workflow.Action.Status.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk</value></data>
+  <data name="Workflow.Action.Start" xml:space="preserve"><value>Start action</value></data>
+  <data name="Workflow.Action.Retry" xml:space="preserve"><value>Retry action</value></data>
+  <data name="Workflow.Action.Complete" xml:space="preserve"><value>Confirm completed</value></data>
+  <data name="Workflow.Action.NeedsUserAction" xml:space="preserve"><value>Record waiting / user action</value></data>
+  <data name="Workflow.Action.Block" xml:space="preserve"><value>Record blocked</value></data>
+  <data name="Workflow.Action.Fail" xml:space="preserve"><value>Record failure</value></data>
+  <data name="Workflow.Action.NotApplicable" xml:space="preserve"><value>Truly not applicable</value></data>
+  <data name="Workflow.Action.AcceptRisk" xml:space="preserve"><value>Accept unresolved risk</value></data>
+  <data name="Workflow.Importance.Routine" xml:space="preserve"><value>Importance: routine</value></data>
+  <data name="Workflow.Importance.Important" xml:space="preserve"><value>Importance: important</value></data>
+  <data name="Workflow.Importance.Critical" xml:space="preserve"><value>Importance: critical</value></data>
+  <data name="Workflow.Automation.None" xml:space="preserve"><value>Support: manual guidance</value></data>
+  <data name="Workflow.Automation.Navigation" xml:space="preserve"><value>Support: visible navigation</value></data>
+  <data name="Workflow.Automation.Assisted" xml:space="preserve"><value>Support: visible browser assistance</value></data>
+  <data name="Workflow.Automation.Automated" xml:space="preserve"><value>Support: bounded automation with explicit authorization</value></data>
+  <data name="Workflow.Navigation.Title" xml:space="preserve"><value>Official recovery location</value></data>
+  <data name="Workflow.Navigation.Destination" xml:space="preserve"><value>Destination</value></data>
+  <data name="Workflow.Navigation.ExpectedOrigins" xml:space="preserve"><value>Expected origin</value></data>
+  <data name="Workflow.Navigation.Disclaimer" xml:space="preserve"><value>Check the destination and origin before opening it. Opening the page, returning to unpwn, or waiting does not complete this action.</value></data>
+  <data name="Workflow.Navigation.Open" xml:space="preserve"><value>Open official page</value></data>
+  <data name="Workflow.Navigation.Opened" xml:space="preserve"><value>The official page was opened. The action remains unchanged until you explicitly confirm its completion criteria.</value></data>
+  <data name="Workflow.Navigation.Unavailable" xml:space="preserve"><value>The official page could not be opened safely. Continue with the displayed manual guidance.</value></data>
+  <data name="Workflow.Navigation.Rejected" xml:space="preserve"><value>The operating system did not open the page. No recovery action was marked complete.</value></data>
+  <data name="Workflow.Completion.Title" xml:space="preserve"><value>Completion criteria</value></data>
+  <data name="Workflow.Completion.Help" xml:space="preserve"><value>Confirm only after every listed criterion is actually true. Navigation alone is never sufficient.</value></data>
+  <data name="Workflow.Completion.Acknowledge" xml:space="preserve"><value>I verified that the listed completion criteria are met.</value></data>
+  <data name="Workflow.Complete.Confirmation.Action" xml:space="preserve"><value>Complete recovery action</value></data>
+  <data name="Workflow.Complete.Confirmation.Consequence" xml:space="preserve"><value>This records only your explicit confirmation that the repository-defined criteria are met. unpwn did not verify the provider account.</value></data>
+  <data name="Workflow.Complete.Confirmation.Confirm" xml:space="preserve"><value>Record action as completed</value></data>
+  <data name="Workflow.Notes.Title" xml:space="preserve"><value>Non-secret notes</value></data>
+  <data name="Workflow.Notes.Warning" xml:space="preserve"><value>Do not enter passwords, reset links, tokens, MFA secrets, recovery codes, cookies, browser state, or identity documents. Generated credentials are linked through an opaque vault reference.</value></data>
+  <data name="Workflow.Notes.Save" xml:space="preserve"><value>Save non-secret notes</value></data>
+  <data name="Workflow.Credential.None" xml:space="preserve"><value>No generated credential is linked to this action.</value></data>
+  <data name="Workflow.Credential.Reference" xml:space="preserve"><value>Encrypted generated credential reference: {0}</value></data>
+  <data name="Workflow.Outcome.Title" xml:space="preserve"><value>Record the action outcome</value></data>
+  <data name="Workflow.Reason.Placeholder" xml:space="preserve"><value>Non-secret reason required for blocked, failed, waiting, lost-access, not-applicable, and risk decisions</value></data>
+  <data name="Workflow.Reason.Recorded" xml:space="preserve"><value>Recorded reason</value></data>
+  <data name="Workflow.Reason.WaitingForPrerequisite" xml:space="preserve"><value>Waiting for prerequisite actions: {0}</value></data>
+  <data name="Workflow.Reason.UserActionRequired" xml:space="preserve"><value>Additional user action is required.</value></data>
+  <data name="Workflow.Reason.UserBlocked" xml:space="preserve"><value>The action is blocked.</value></data>
+  <data name="Workflow.Reason.ProviderFailure" xml:space="preserve"><value>The provider action failed.</value></data>
+  <data name="Workflow.Reason.TrulyNotApplicable" xml:space="preserve"><value>The capability is not available for this account.</value></data>
+  <data name="Workflow.Reason.UnresolvedRiskAccepted" xml:space="preserve"><value>An unresolved risk was accepted.</value></data>
+  <data name="Workflow.Reason.AccessLost" xml:space="preserve"><value>Account access was lost.</value></data>
+  <data name="Workflow.NotApplicable.Confirmation.Action" xml:space="preserve"><value>Mark action truly not applicable</value></data>
+  <data name="Workflow.NotApplicable.Confirmation.Consequence" xml:space="preserve"><value>Use this only when the capability genuinely does not exist for this account. An unavailable or declined control must remain an unresolved risk.</value></data>
+  <data name="Workflow.NotApplicable.Confirmation.Confirm" xml:space="preserve"><value>Confirm truly not applicable</value></data>
+  <data name="Workflow.Risk.Confirmation.Action" xml:space="preserve"><value>Accept unresolved risk</value></data>
+  <data name="Workflow.Risk.Confirmation.Consequence" xml:space="preserve"><value>The required action remains unresolved and the account will not be represented as fully secured.</value></data>
+  <data name="Workflow.Risk.Confirmation.Confirm" xml:space="preserve"><value>Record unresolved risk</value></data>
+  <data name="Workflow.Status.NotStarted" xml:space="preserve"><value>Not started</value></data>
+  <data name="Workflow.Status.Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Workflow.Status.InProgress" xml:space="preserve"><value>In progress</value></data>
+  <data name="Workflow.Status.FullyReviewed" xml:space="preserve"><value>Fully reviewed</value></data>
+  <data name="Workflow.Status.NotFullySecured" xml:space="preserve"><value>Not fully secured</value></data>
+  <data name="Workflow.Status.AccessNotRestored" xml:space="preserve"><value>Access not restored</value></data>
+  <data name="Workflow.Status.Ready.Title" xml:space="preserve"><value>Choose the recovery path</value></data>
+  <data name="Workflow.Status.Ready.Message" xml:space="preserve"><value>Review the account context and select the path that matches your real access.</value></data>
+  <data name="Workflow.Status.Started.Title" xml:space="preserve"><value>Recovery path started</value></data>
+  <data name="Workflow.Status.Started.Message" xml:space="preserve"><value>Work through each required action separately and record the actual outcome.</value></data>
+  <data name="Workflow.Status.Active.Title" xml:space="preserve"><value>Account recovery in progress</value></data>
+  <data name="Workflow.Status.Active.Message" xml:space="preserve"><value>Blocked work, failures, lost access, and unresolved risks remain visible in the recovery plan.</value></data>
+  <data name="Workflow.Plan.Recalculated.Title" xml:space="preserve"><value>Recovery plan recalculated</value></data>
+  <data name="Workflow.Plan.Changed" xml:space="preserve"><value>The recommended account or action changed after the recorded outcome. Review the current recommendation before continuing.</value></data>
+  <data name="Workflow.Plan.Unchanged" xml:space="preserve"><value>The plan was recalculated. The current recommendation remains the same and unresolved work is still visible.</value></data>
+  <data name="Workflow.Plan.Status.Unavailable" xml:space="preserve"><value>Plan status unavailable</value></data>
+  <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Ready now</value></data>
+  <data name="Workflow.Plan.Status.PlannedLater" xml:space="preserve"><value>Planned after dependencies</value></data>
+  <data name="Workflow.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Blocked by a missing dependency</value></data>
+  <data name="Workflow.Plan.Status.BlockedCycle" xml:space="preserve"><value>Blocked by a dependency cycle</value></data>
+  <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Unlock a vault and load an account inventory before starting account recovery.</value></data>
+  <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>The selected account is no longer available in the encrypted inventory.</value></data>
+  <data name="Workflow.Validation.ProviderUnsupported" xml:space="preserve"><value>No reviewed repository workflow is available for this provider. Use the account inventory and manual guidance; unpwn will not guess provider instructions.</value></data>
+  <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Select a recovery path before starting.</value></data>
+  <data name="Workflow.Validation.CriteriaRequired" xml:space="preserve"><value>Explicitly acknowledge the completion criteria before recording completion.</value></data>
+  <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Enter a non-secret reason for this outcome.</value></data>
+  <data name="Workflow.Validation.Locked" xml:space="preserve"><value>The recovery vault is locked.</value></data>
+  <data name="Workflow.Validation.NotFound" xml:space="preserve"><value>No persisted execution was found for this account.</value></data>
+  <data name="Workflow.Validation.Conflict" xml:space="preserve"><value>The recovery state changed elsewhere or the requested transition is not allowed. Refresh before continuing.</value></data>
+  <data name="Workflow.Validation.Corrupted" xml:space="preserve"><value>The persisted recovery execution could not be authenticated or validated. It was not replaced.</value></data>
+  <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>The outcome could not be saved. The UI does not claim that it was recorded.</value></data>
+  <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>The requested recovery transition is invalid.</value></data>
+  <data name="Workflow.Command.Error" xml:space="preserve"><value>The recovery operation failed without exposing provider or account data.</value></data>
+  <data name="Workflow.Refresh" xml:space="preserve"><value>Refresh recovery state</value></data>
+</root>

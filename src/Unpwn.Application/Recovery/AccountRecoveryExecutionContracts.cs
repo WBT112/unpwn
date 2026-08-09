@@ -24,6 +24,7 @@ public enum AccountRecoveryExecutionFailureCode
 
 public enum AccountRecoveryExecutionTransitionKind
 {
+    ChangeRecoveryPath,
     SetAccessAvailable,
     SetAccessLost,
     SetWaitingForProviderReview,
@@ -44,10 +45,16 @@ public sealed record AccountRecoveryProjectionContext(
     int DependencyDepth,
     Guid[] WaitingForAccountIds)
 {
+    public int InventoryBlockedIssues { get; init; }
+
+    public int InventoryUnresolvedRisks { get; init; }
+
     public void Validate()
     {
         ArgumentNullException.ThrowIfNull(WaitingForAccountIds);
         ArgumentOutOfRangeException.ThrowIfNegative(DependencyDepth);
+        ArgumentOutOfRangeException.ThrowIfNegative(InventoryBlockedIssues);
+        ArgumentOutOfRangeException.ThrowIfNegative(InventoryUnresolvedRisks);
         if (!Enum.IsDefined(Criticality) || WaitingForAccountIds.Any(id => id == Guid.Empty))
         {
             throw new InvalidOperationException("The account execution projection context is invalid.");
@@ -73,7 +80,10 @@ public sealed record AccountRecoveryExecutionTransitionRequest(
     string? UserNotes,
     bool CompletionCriteriaAcknowledged,
     GeneratedCredentialReference? CredentialReference,
-    AccountRecoveryProjectionContext ProjectionContext);
+    AccountRecoveryProjectionContext ProjectionContext)
+{
+    public RecoveryPath? SelectedPath { get; init; }
+}
 
 public sealed record AccountRecoveryExecutionResult(
     bool Succeeded,

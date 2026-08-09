@@ -107,7 +107,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         SaveAccountCommand = new AsyncCommand(
             SaveAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && _editingAccountId is not null);
+            CanSaveAccount);
         DeleteAccountCommand = new AsyncCommand(
             DeleteAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
@@ -115,28 +115,28 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         AcceptSuggestedRoleCommand = new AsyncCommand(
             cancellationToken => DecideSelectedRoleAsync(AccountRoleDecision.Confirmed, cancellationToken),
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && SelectedSuggestedRole is not null && _editingAccountId is not null);
+            () => HasPersistedAccount && SelectedSuggestedRole is not null);
         RejectSuggestedRoleCommand = new AsyncCommand(
             cancellationToken => DecideSelectedRoleAsync(AccountRoleDecision.Rejected, cancellationToken),
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && SelectedSuggestedRole is not null && _editingAccountId is not null);
+            () => HasPersistedAccount && SelectedSuggestedRole is not null);
         AddRoleCommand = new AsyncCommand(
             cancellationToken => DecideAddedRoleAsync(AccountRoleDecision.Confirmed, cancellationToken),
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && SelectedRoleToAdd is not null && _editingAccountId is not null);
+            () => HasPersistedAccount && SelectedRoleToAdd is not null);
         RemoveRoleCommand = new AsyncCommand(
             cancellationToken => DecideConfirmedRoleAsync(AccountRoleDecision.Rejected, cancellationToken),
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && SelectedConfirmedRole is not null && _editingAccountId is not null);
+            () => HasPersistedAccount && SelectedConfirmedRole is not null);
         AddDependencyCommand = new AsyncCommand(
             AddDependencyAsync,
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && _editingAccountId is not null &&
+            () => HasPersistedAccount &&
                   SelectedDependencyTarget is not null && SelectedDependencyKind is not null);
         RemoveDependencyCommand = new AsyncCommand(
             RemoveDependencyAsync,
             () => Localization.GetString("Accounts.Error.Command"),
-            () => CanMutate && _editingAccountId is not null && SelectedDependency is not null);
+            () => HasPersistedAccount && SelectedDependency is not null);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         BuildStaticOptions();
         RefreshFromService();
@@ -240,7 +240,13 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public AccountInventoryOption<AccountInventoryPriority>? SelectedPriority
     {
         get => _selectedPriority;
-        set => SetProperty(ref _selectedPriority, value);
+        set
+        {
+            if (SetProperty(ref _selectedPriority, value))
+            {
+                SaveAccountCommand.RaiseCanExecuteChanged();
+            }
+        }
     }
 
     public AccountInventoryOption<AccountInventoryFilter>? SelectedFilter
@@ -342,25 +348,25 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public string ProviderId
     {
         get => _providerId;
-        set => SetProperty(ref _providerId, value);
+        set => SetEditorValue(ref _providerId, value, nameof(ProviderId));
     }
 
     public string AccountName
     {
         get => _accountName;
-        set => SetProperty(ref _accountName, value);
+        set => SetEditorValue(ref _accountName, value, nameof(AccountName));
     }
 
     public string LoginIdentifier
     {
         get => _loginIdentifier;
-        set => SetProperty(ref _loginIdentifier, value);
+        set => SetEditorValue(ref _loginIdentifier, value, nameof(LoginIdentifier));
     }
 
     public string AccountUrl
     {
         get => _accountUrl;
-        set => SetProperty(ref _accountUrl, value);
+        set => SetEditorValue(ref _accountUrl, value, nameof(AccountUrl));
     }
 
     public string OverrideReason
@@ -401,7 +407,15 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public bool CanMutate => _inventory.LoadState is AccountInventoryLoadState.Empty or AccountInventoryLoadState.Loaded;
 
+    public bool IsEditingAccount => _editingAccountId is not null;
+
+    public bool HasPersistedAccount => CanMutate &&
+        _editingAccountId is { } accountId &&
+        _inventory.CurrentInventory?.Accounts.Any(account => account.Id == accountId) == true;
+
     public bool HasSelectedAccount => SelectedAccount is not null;
+
+    public override void Activate() => RefreshFromService();
 
     protected override void RefreshLocalization()
     {
@@ -490,6 +504,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             SelectedAccount = Accounts.FirstOrDefault(account => account.Id == editingId);
         }
 
+        NotifyEditingState();
         RaiseCommandStates();
     }
 
@@ -607,6 +622,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         RefreshAccountDetails(account);
         ValidationMessage = null;
         OnPropertyChanged(nameof(HasSelectedAccount));
+        NotifyEditingState();
     }
 
     private void RefreshAccountDetails(AccountInventoryEntry account)
@@ -690,6 +706,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         SelectedDependencyTarget = DependencyTargets.Count == 0 ? null : DependencyTargets[0];
         ValidationMessage = null;
         OnPropertyChanged(nameof(HasSelectedAccount));
+        NotifyEditingState();
         RaiseCommandStates();
     }
 
@@ -743,6 +760,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         {
             _editingAccountId = null;
             SelectedAccount = null;
+            NotifyEditingState();
         }
 
         ApplyResult(result);
@@ -833,6 +851,34 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     private static bool Contains(string? value, string search) =>
         value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
+
+    private bool CanSaveAccount()
+    {
+        if (!CanMutate || _editingAccountId is null || SelectedPriority is null ||
+            string.IsNullOrWhiteSpace(ProviderId) ||
+            (string.IsNullOrWhiteSpace(AccountName) && string.IsNullOrWhiteSpace(LoginIdentifier)))
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(AccountUrl) ||
+            (Uri.TryCreate(AccountUrl, UriKind.Absolute, out var uri) &&
+             uri.Scheme is "https" or "http");
+    }
+
+    private void SetEditorValue(ref string field, string? value, string propertyName)
+    {
+        if (SetProperty(ref field, value ?? string.Empty, propertyName))
+        {
+            SaveAccountCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    private void NotifyEditingState()
+    {
+        OnPropertyChanged(nameof(IsEditingAccount));
+        OnPropertyChanged(nameof(HasPersistedAccount));
+    }
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs) => RefreshFromService();
 

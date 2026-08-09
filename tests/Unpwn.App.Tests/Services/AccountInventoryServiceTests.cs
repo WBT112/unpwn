@@ -209,6 +209,66 @@ public sealed class AccountInventoryServiceTests
     }
 
     [Fact]
+    public async Task InventoryReplanningPreservesPersistedWorkflowExecutionProgress()
+    {
+        var time = DateTimeOffset.UnixEpoch;
+        var store = new TestEncryptedRecordStore();
+        var session = new TestRecoverySessionService();
+        using var service = new AccountInventoryService(store, session, () => time);
+        await service.InitializeAsync(CancellationToken.None);
+        Assert.True((await service.UpsertAsync(CreateRequest("Mail"), CancellationToken.None)).Succeeded);
+        var account = service.CurrentInventory!.Accounts.Single();
+        var executionSummary = new RecoveryAccountDashboardEntry(
+            account.Id,
+            account.ProviderId,
+            AccountCriticality.Routine,
+            AccountRecoveryStatus.InProgress,
+            RequiredActionsCompleted: 2,
+            RequiredActionsTotal: 4,
+            CompletedRequiredWeight: 5,
+            TotalRequiredWeight: 10,
+            BlockedRequiredActions: 1,
+            FailedRequiredActions: 1,
+            UnresolvedRisks: 1,
+            AccessLost: true,
+            CredentialsAwaitingExport: 1,
+            CredentialsAwaitingDeletion: 1,
+            RecommendedActionId: "review-mfa",
+            DependencyDepth: 0,
+            WaitingForAccountIds: []);
+        Assert.True((await session.ReplaceAccountSummariesAsync(
+            [executionSummary],
+            CancellationToken.None)).Succeeded);
+
+        time = time.AddMinutes(1);
+        var result = await service.UpsertAsync(
+            new AccountInventoryUpsertRequest(
+                account.Id,
+                account.ProviderId,
+                account.AccountName,
+                account.LoginIdentifier,
+                account.AccountUrl,
+                AccountInventoryPriority.Critical),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        var replanned = Assert.Single(session.LastSummaries);
+        Assert.Equal(AccountCriticality.Critical, replanned.Criticality);
+        Assert.Equal(AccountRecoveryStatus.InProgress, replanned.RecoveryStatus);
+        Assert.Equal(2, replanned.RequiredActionsCompleted);
+        Assert.Equal(4, replanned.RequiredActionsTotal);
+        Assert.Equal(5, replanned.CompletedRequiredWeight);
+        Assert.Equal(10, replanned.TotalRequiredWeight);
+        Assert.Equal(1, replanned.BlockedRequiredActions);
+        Assert.Equal(1, replanned.FailedRequiredActions);
+        Assert.Equal(1, replanned.UnresolvedRisks);
+        Assert.True(replanned.AccessLost);
+        Assert.Equal(1, replanned.CredentialsAwaitingExport);
+        Assert.Equal(1, replanned.CredentialsAwaitingDeletion);
+        Assert.Equal("review-mfa", replanned.RecommendedActionId);
+    }
+
+    [Fact]
     public async Task LockClearsMaterializedInventoryButKeepsPersistedRecord()
     {
         var store = new TestEncryptedRecordStore();

@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.Automation.Recovery;
 
 namespace Unpwn.App;
 
@@ -32,19 +33,33 @@ public partial class App : Avalonia.Application
                 vaultLifecycle,
                 recoverySession,
                 mutationCoordinator: workspaceMutations);
+            var accountRecovery = new AccountRecoveryExecutionService(
+                vaultLifecycle,
+                recoverySession,
+                workspaceMutations);
+            var locationDiscovery = HttpRecoveryLocationDiscoveryService.CreateDefault();
             var sessionVaultBridge = new RecoverySessionVaultBridge(
                 vaultLifecycle,
                 recoverySession,
                 accountInventory);
             var confirmationDialog = new AvaloniaConfirmationDialogService(() => mainWindow);
+            var externalNavigation = new AvaloniaExternalNavigationService(() => mainWindow);
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
                 wizard,
                 recoverySession,
                 accountInventory,
+                accountRecovery,
+                locationDiscovery,
+                externalNavigation,
                 localization);
-            var shell = new ShellViewModel(screenFactory, vaultLifecycle, localization);
+            var shell = new ShellViewModel(
+                screenFactory,
+                vaultLifecycle,
+                recoverySession,
+                accountInventory,
+                localization);
 
             mainWindow = new MainWindow
             {
@@ -54,6 +69,7 @@ public partial class App : Avalonia.Application
             desktop.Exit += (_, _) =>
             {
                 sessionVaultBridge.Dispose();
+                locationDiscovery.Dispose();
                 accountInventory.Dispose();
                 recoverySession.Dispose();
                 workspaceMutations.Dispose();
