@@ -80,7 +80,11 @@ public sealed class CsvImportScreenViewModelTests
 
     private sealed class RecordingInventoryService : IAccountInventoryService
     {
-        public event EventHandler? InventoryChanged;
+        public event EventHandler? InventoryChanged
+        {
+            add { }
+            remove { }
+        }
 
         public AccountInventoryLoadState LoadState => AccountInventoryLoadState.Loaded;
 
