@@ -164,6 +164,43 @@ public sealed class GeneratedCredentialRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task PasswordManagerHandoffStatePersistsEncryptedAndCanBeCorrected()
+    {
+        var path = VaultPath();
+        using var vault = RecoveryVault.Create(path, "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        var current = _startedAt;
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(
+            vault,
+            clock: () => current);
+        using var created = await repository.GenerateAsync(
+            Guid.NewGuid(),
+            CredentialGenerationPolicy.Default,
+            Guid.NewGuid(),
+            CancellationToken.None);
+        var reference = Assert.IsType<GeneratedCredentialMetadata>(created.Metadata).Reference;
+
+        current = current.AddMinutes(1);
+        Assert.True((await repository.MarkExportedAsync(
+            [reference], Guid.NewGuid(), CancellationToken.None)).Succeeded);
+        current = current.AddMinutes(1);
+        Assert.True((await repository.ConfirmPasswordManagerImportAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).Succeeded);
+        current = current.AddMinutes(1);
+        Assert.True((await repository.ConfirmPlaintextExportCleanupAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).Succeeded);
+        current = current.AddMinutes(1);
+        Assert.True((await repository.RevokePasswordManagerImportConfirmationAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).Succeeded);
+
+        var metadata = await repository.GetMetadataAsync(reference, CancellationToken.None);
+        Assert.Equal(GeneratedCredentialStage.Exported, metadata?.Stage);
+        Assert.Null(metadata?.PasswordManagerImportConfirmedAt);
+        Assert.False(metadata?.IsPlaintextExportCleanupPending);
+        Assert.Contains(metadata!.AuditEvents, item =>
+            item.EventType == GeneratedCredentialAuditEventType.PasswordManagerImportConfirmationRevoked);
+    }
+
+    [Fact]
     public void PublicRepositoryApiCannotAcceptOldPasswordStrings()
     {
         var forbiddenParameters = typeof(IGeneratedCredentialRepository)

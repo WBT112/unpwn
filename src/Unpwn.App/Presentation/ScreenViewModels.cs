@@ -37,6 +37,10 @@ public abstract class ScreenViewModel(
     public virtual void Activate()
     {
     }
+
+    public virtual void Deactivate()
+    {
+    }
 }
 
 public abstract class LocalizedScreenViewModel : ScreenViewModel

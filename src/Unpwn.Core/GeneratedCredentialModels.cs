@@ -2,20 +2,25 @@ namespace Unpwn.Core;
 
 public enum GeneratedCredentialStage
 {
-    Generated,
-    Used,
-    Confirmed,
-    Exported,
-    Deleted,
+    Generated = 0,
+    Used = 1,
+    Confirmed = 2,
+    Exported = 3,
+    Deleted = 4,
+    PasswordManagerImportConfirmed = 5,
 }
 
 public enum GeneratedCredentialAuditEventType
 {
-    Generated,
-    Used,
-    Confirmed,
-    Exported,
-    Deleted,
+    Generated = 0,
+    Used = 1,
+    Confirmed = 2,
+    Exported = 3,
+    Deleted = 4,
+    PasswordManagerImportConfirmed = 5,
+    PasswordManagerImportConfirmationRevoked = 6,
+    PasswordManagerImportConfirmationPostponed = 7,
+    PlaintextExportCleanupConfirmed = 8,
 }
 
 public sealed record CredentialGenerationPolicy(
@@ -87,10 +92,18 @@ public sealed record GeneratedCredentialMetadata(
     long Revision,
     GeneratedCredentialAuditEvent[] AuditEvents)
 {
+    public DateTimeOffset? PasswordManagerImportConfirmedAt { get; init; }
+
+    public DateTimeOffset? PlaintextExportCleanupConfirmedAt { get; init; }
+
+    public bool IsPasswordManagerImportConfirmationPostponed { get; init; }
+
     public GeneratedCredentialReference Reference => new(CredentialId, AccountId);
 
     public GeneratedCredentialStage Stage => DeletedAt is not null
         ? GeneratedCredentialStage.Deleted
+        : PasswordManagerImportConfirmedAt is not null
+            ? GeneratedCredentialStage.PasswordManagerImportConfirmed
         : ExportedAt is not null
             ? GeneratedCredentialStage.Exported
             : ConfirmedAt is not null
@@ -100,6 +113,9 @@ public sealed record GeneratedCredentialMetadata(
                     : GeneratedCredentialStage.Generated;
 
     public bool IsDeleted => DeletedAt is not null;
+
+    public bool IsPlaintextExportCleanupPending =>
+        ExportedAt is not null && PlaintextExportCleanupConfirmedAt is null;
 
     public static GeneratedCredentialMetadata Create(
         Guid credentialId,
@@ -159,7 +175,74 @@ public sealed record GeneratedCredentialMetadata(
             {
                 ExportedAt = occurredAt,
                 ExportCount = current.ExportCount + 1,
+                PasswordManagerImportConfirmedAt = null,
+                PlaintextExportCleanupConfirmedAt = null,
+                IsPasswordManagerImportConfirmationPostponed = false,
             });
+
+    public GeneratedCredentialMetadata ConfirmPasswordManagerImport(
+        Guid operationId,
+        DateTimeOffset occurredAt)
+    {
+        EnsureExported();
+        return ApplyIdempotent(
+            operationId,
+            GeneratedCredentialAuditEventType.PasswordManagerImportConfirmed,
+            occurredAt,
+            current => current with
+            {
+                PasswordManagerImportConfirmedAt = occurredAt,
+                IsPasswordManagerImportConfirmationPostponed = false,
+            });
+    }
+
+    public GeneratedCredentialMetadata RevokePasswordManagerImportConfirmation(
+        Guid operationId,
+        DateTimeOffset occurredAt)
+    {
+        EnsureExported();
+        if (HasOperation(
+                operationId,
+                GeneratedCredentialAuditEventType.PasswordManagerImportConfirmationRevoked))
+        {
+            return this;
+        }
+
+        if (PasswordManagerImportConfirmedAt is null)
+        {
+            throw new InvalidOperationException("A password-manager import must be confirmed before it can be revoked.");
+        }
+
+        return ApplyIdempotent(
+            operationId,
+            GeneratedCredentialAuditEventType.PasswordManagerImportConfirmationRevoked,
+            occurredAt,
+            current => current with { PasswordManagerImportConfirmedAt = null });
+    }
+
+    public GeneratedCredentialMetadata PostponePasswordManagerImportConfirmation(
+        Guid operationId,
+        DateTimeOffset occurredAt)
+    {
+        EnsureExported();
+        return ApplyIdempotent(
+            operationId,
+            GeneratedCredentialAuditEventType.PasswordManagerImportConfirmationPostponed,
+            occurredAt,
+            current => current with { IsPasswordManagerImportConfirmationPostponed = true });
+    }
+
+    public GeneratedCredentialMetadata ConfirmPlaintextExportCleanup(
+        Guid operationId,
+        DateTimeOffset occurredAt)
+    {
+        EnsureExported();
+        return ApplyIdempotent(
+            operationId,
+            GeneratedCredentialAuditEventType.PlaintextExportCleanupConfirmed,
+            occurredAt,
+            current => current with { PlaintextExportCleanupConfirmedAt = occurredAt });
+    }
 
     public GeneratedCredentialMetadata Delete(Guid operationId, DateTimeOffset occurredAt)
     {
@@ -222,6 +305,8 @@ public sealed record GeneratedCredentialMetadata(
         ValidateOptionalTimestamp(UsedAt);
         ValidateOptionalTimestamp(ConfirmedAt);
         ValidateOptionalTimestamp(ExportedAt);
+        ValidateOptionalTimestamp(PasswordManagerImportConfirmedAt);
+        ValidateOptionalTimestamp(PlaintextExportCleanupConfirmedAt);
         ValidateOptionalTimestamp(DeletedAt);
         if (ConfirmedAt is not null && UsedAt is null)
         {
@@ -231,6 +316,14 @@ public sealed record GeneratedCredentialMetadata(
         if ((ExportCount == 0) != (ExportedAt is null))
         {
             throw new InvalidOperationException("Generated credential export count and timestamp are inconsistent.");
+        }
+
+        if (ExportedAt is null &&
+            (PasswordManagerImportConfirmedAt is not null ||
+             PlaintextExportCleanupConfirmedAt is not null ||
+             IsPasswordManagerImportConfirmationPostponed))
+        {
+            throw new InvalidOperationException("Credential handoff state requires a completed plaintext export.");
         }
 
         if (ExportCount != AuditEvents.Count(auditEvent =>
@@ -295,6 +388,15 @@ public sealed record GeneratedCredentialMetadata(
         if (IsDeleted)
         {
             throw new InvalidOperationException("A deleted generated credential cannot be changed or revealed.");
+        }
+    }
+
+    private void EnsureExported()
+    {
+        EnsureActive();
+        if (ExportedAt is null)
+        {
+            throw new InvalidOperationException("A generated credential must be exported before its handoff can be recorded.");
         }
     }
 

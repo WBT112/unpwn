@@ -1,6 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Unpwn.Application.Credentials;
 using Unpwn.Core;
+using Unpwn.Vault.Credentials;
 using Unpwn.Vault.Cryptography;
 using Unpwn.Vault.Storage;
 
@@ -10,7 +12,8 @@ public sealed class RecoveryVaultLifecycleService :
     IVaultLifecycleService,
     IEncryptedVaultRecordStore,
     IRecoveryWizardVaultCoordinator,
-    IRecoveryWizardPersistenceCoordinator
+    IRecoveryWizardPersistenceCoordinator,
+    IGeneratedCredentialRepository
 {
     private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase
@@ -21,6 +24,7 @@ public sealed class RecoveryVaultLifecycleService :
     private readonly VaultInactivityPolicy _inactivityPolicy;
     private readonly Func<DateTimeOffset> _clock;
     private RecoveryVault? _vault;
+    private RecoveryVaultGeneratedCredentialRepository? _credentialRepository;
     private DateTimeOffset _lastActivity;
     private bool _disposed;
 
@@ -49,6 +53,8 @@ public sealed class RecoveryVaultLifecycleService :
     public IReadOnlyList<RecentVaultReference> RecentVaults { get; private set; } = [];
 
     public bool IsVaultUnlocked => _vault is { IsLocked: false };
+
+    public bool IsUnlocked => _credentialRepository?.IsUnlocked == true;
 
     public RecoveryWizardState CurrentWizard => _wizard.Current;
 
@@ -209,6 +215,7 @@ public sealed class RecoveryVaultLifecycleService :
         }
 
         _lastActivity = _clock();
+        _credentialRepository ??= new RecoveryVaultGeneratedCredentialRepository(_vault, clock: _clock);
         Snapshot = Snapshot with
         {
             Status = VaultLifecycleStatus.Unlocked,
@@ -290,6 +297,8 @@ public sealed class RecoveryVaultLifecycleService :
 
         if (Snapshot.CurrentPath is not null && PathComparer.Equals(Snapshot.CurrentPath, fullPath))
         {
+            _credentialRepository?.Dispose();
+            _credentialRepository = null;
             _vault?.Dispose();
             _vault = null;
             Current = ShellContext.Locked;
@@ -382,6 +391,8 @@ public sealed class RecoveryVaultLifecycleService :
             }
         }
 
+        _credentialRepository?.Dispose();
+        _credentialRepository = null;
         _vault?.Dispose();
         _vault = null;
         Current = ShellContext.Locked;
@@ -450,8 +461,11 @@ public sealed class RecoveryVaultLifecycleService :
             return VaultOperationResult.Failure(VaultOperationFailureCode.AuthenticationOrIntegrity);
         }
 
+        _credentialRepository?.Dispose();
+        _credentialRepository = null;
         _vault?.Dispose();
         _vault = openedVault;
+        _credentialRepository = new RecoveryVaultGeneratedCredentialRepository(openedVault, clock: _clock);
         _lastActivity = _clock();
         var displayName = GetDisplayName(fullPath);
         Snapshot = new VaultLifecycleSnapshot(
@@ -621,4 +635,95 @@ public sealed class RecoveryVaultLifecycleService :
     }
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+    public Task<GeneratedCredentialCreationResult> GenerateAsync(
+        Guid accountId,
+        CredentialGenerationPolicy policy,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        CredentialRepositoryOrLocked()?.GenerateAsync(accountId, policy, operationId, cancellationToken) ??
+        Task.FromResult(GeneratedCredentialCreationResult.Failure(GeneratedCredentialFailureCode.Locked));
+
+    public Task<IReadOnlyList<GeneratedCredentialMetadata>> ListAsync(
+        CancellationToken cancellationToken) =>
+        CredentialRepositoryOrLocked()?.ListAsync(cancellationToken) ??
+        Task.FromResult<IReadOnlyList<GeneratedCredentialMetadata>>([]);
+
+    public Task<GeneratedCredentialMetadata?> GetMetadataAsync(
+        GeneratedCredentialReference reference,
+        CancellationToken cancellationToken) =>
+        CredentialRepositoryOrLocked()?.GetMetadataAsync(reference, cancellationToken) ??
+        Task.FromResult<GeneratedCredentialMetadata?>(null);
+
+    public Task<CredentialSecretLease?> ReadSecretAsync(
+        GeneratedCredentialReference reference,
+        CancellationToken cancellationToken) =>
+        CredentialRepositoryOrLocked()?.ReadSecretAsync(reference, cancellationToken) ??
+        Task.FromResult<CredentialSecretLease?>(null);
+
+    public Task<GeneratedCredentialOperationResult> MarkUsedAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.MarkUsedAsync(
+            reference, operationId, cancellationToken));
+
+    public Task<GeneratedCredentialOperationResult> ConfirmAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.ConfirmAsync(
+            reference, operationId, cancellationToken));
+
+    public Task<GeneratedCredentialBatchResult> MarkExportedAsync(
+        IReadOnlyCollection<GeneratedCredentialReference> references,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        CredentialRepositoryOrLocked()?.MarkExportedAsync(references, operationId, cancellationToken) ??
+        Task.FromResult(GeneratedCredentialBatchResult.Failure(GeneratedCredentialFailureCode.Locked));
+
+    public Task<GeneratedCredentialOperationResult> ConfirmPasswordManagerImportAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.ConfirmPasswordManagerImportAsync(
+            reference, operationId, cancellationToken));
+
+    public Task<GeneratedCredentialOperationResult> RevokePasswordManagerImportConfirmationAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.RevokePasswordManagerImportConfirmationAsync(
+            reference, operationId, cancellationToken));
+
+    public Task<GeneratedCredentialOperationResult> PostponePasswordManagerImportConfirmationAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.PostponePasswordManagerImportConfirmationAsync(
+            reference, operationId, cancellationToken));
+
+    public Task<GeneratedCredentialOperationResult> ConfirmPlaintextExportCleanupAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.ConfirmPlaintextExportCleanupAsync(
+            reference, operationId, cancellationToken));
+
+    public Task<GeneratedCredentialOperationResult> DeleteAsync(
+        GeneratedCredentialReference reference,
+        Guid operationId,
+        CancellationToken cancellationToken) =>
+        MutateCredentialAsync(repository => repository.DeleteAsync(
+            reference, operationId, cancellationToken));
+
+    private RecoveryVaultGeneratedCredentialRepository? CredentialRepositoryOrLocked() =>
+        !_disposed && IsVaultUnlocked ? _credentialRepository : null;
+
+    private Task<GeneratedCredentialOperationResult> MutateCredentialAsync(
+        Func<RecoveryVaultGeneratedCredentialRepository, Task<GeneratedCredentialOperationResult>> mutation) =>
+        CredentialRepositoryOrLocked() is { } repository
+            ? mutation(repository)
+            : Task.FromResult(GeneratedCredentialOperationResult.Failure(
+                GeneratedCredentialFailureCode.Locked));
 }

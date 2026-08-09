@@ -1,5 +1,6 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Application.Credentials;
 using Unpwn.Application.Recovery;
 using Unpwn.Core;
 using Unpwn.Providers.Workflows;
@@ -27,6 +28,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private readonly IRecoveryLocationDiscoveryService _locationDiscovery;
     private readonly IExternalNavigationService _externalNavigation;
     private readonly IConfirmationDialogService _confirmationDialog;
+    private readonly IGeneratedCredentialRepository? _generatedCredentials;
     private Guid? _requestedAccountId;
     private string? _requestedActionId;
     private AccountInventoryEntry? _account;
@@ -51,7 +53,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         IRecoveryLocationDiscoveryService locationDiscovery,
         IExternalNavigationService externalNavigation,
         IConfirmationDialogService confirmationDialog,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IGeneratedCredentialRepository? generatedCredentials = null)
         : base(
             AppRoute.Workflow,
             localization,
@@ -67,6 +70,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _locationDiscovery = locationDiscovery ?? throw new ArgumentNullException(nameof(locationDiscovery));
         _externalNavigation = externalNavigation ?? throw new ArgumentNullException(nameof(externalNavigation));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
+        _generatedCredentials = generatedCredentials;
 
         RefreshCommand = Command(LoadAsync, () => _inventory.CurrentInventory is not null);
         BeginCommand = Command(BeginAsync, () => _account is not null && _workflow is not null && _execution is null && SelectedPath is not null);
@@ -113,6 +117,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         AcceptRiskCommand = Command(AcceptRiskAsync, CanAcceptRisk);
         SaveNotesCommand = Command(SaveNotesAsync, () => _execution is not null && CurrentActionState is not null);
         OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => CurrentLocation is not null);
+        GenerateCredentialCommand = Command(GenerateCredentialAsync, CanGenerateCredential);
 
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         _session.SessionChanged += Session_OnSessionChanged;
@@ -152,6 +157,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand SaveNotesCommand { get; }
 
     public AsyncCommand OpenOfficialPageCommand { get; }
+
+    public AsyncCommand GenerateCredentialCommand { get; }
 
     public IReadOnlyList<RecoveryPathOptionViewModel> PathOptions => _pathOptions;
 
@@ -235,6 +242,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public bool HasOfficialLocation => CurrentLocation is not null;
 
     public bool HasCredentialReference => CurrentActionState?.CredentialReference is not null;
+
+    public bool CanGenerateCredentialForCurrentAction => CanGenerateCredential();
 
     public bool HasRecordedReason => CurrentActionState?.ReasonCode != RecoveryActionReasonCode.None;
 
@@ -677,6 +686,31 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             returnToPlan: false);
     }
 
+    private async Task GenerateCredentialAsync(CancellationToken cancellationToken)
+    {
+        if (_generatedCredentials is null || _account is null)
+        {
+            return;
+        }
+
+        using var generated = await _generatedCredentials.GenerateAsync(
+            _account.Id,
+            CredentialGenerationPolicy.Default,
+            Guid.NewGuid(),
+            cancellationToken);
+        if (!generated.Succeeded || generated.Metadata is null)
+        {
+            SetValidation(generated.FailureCode == GeneratedCredentialFailureCode.Locked
+                ? "Workflow.Validation.Locked"
+                : "Workflow.Credential.GenerationFailed");
+            return;
+        }
+
+        await AttachCredentialReferenceAsync(generated.Metadata.Reference, cancellationToken);
+        NotifyCurrentActionProperties();
+        RaiseCommandStates();
+    }
+
     private async Task OpenOfficialPageAsync(CancellationToken cancellationToken)
     {
         if (_workflow is null || CurrentDefinition is null || CurrentLocation is null)
@@ -1080,6 +1114,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(HasCurrentAction));
         OnPropertyChanged(nameof(HasOfficialLocation));
         OnPropertyChanged(nameof(HasCredentialReference));
+        OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(HasRecordedReason));
         OnPropertyChanged(nameof(CurrentActionTitle));
         OnPropertyChanged(nameof(CurrentActionInstruction));
@@ -1111,13 +1146,20 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                      CompleteActionCommand, RequireUserActionCommand, BlockActionCommand,
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,
                      SaveNotesCommand, OpenOfficialPageCommand,
+                     GenerateCredentialCommand,
                  })
         {
             command.RaiseCanExecuteChanged();
         }
 
         OnPropertyChanged(nameof(CanChangeRecoveryPath));
+        OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
     }
+
+    private bool CanGenerateCredential() =>
+        _generatedCredentials?.IsUnlocked == true && _account is not null && _execution is not null &&
+        CurrentDefinition?.Type is RecoveryActionType.ChangePassword or RecoveryActionType.ResetPassword &&
+        CurrentActionState?.CredentialReference is null;
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs)
     {

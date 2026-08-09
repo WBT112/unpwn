@@ -99,4 +99,7 @@
   <data name="Workflow.GitHub.Action.document-completion-manual.Warning" xml:space="preserve"><value>Documenting the result does not mean that access was restored or the account is secure.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Completion" xml:space="preserve"><value>Manual recovery outcome documented</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Criterion.1" xml:space="preserve"><value>The manual recovery result and all unresolved risks have been recorded.</value></data>
+  <data name="Workflow.Credential.Generate" xml:space="preserve"><value>Generate and attach new credential</value></data>
+  <data name="Workflow.Credential.GenerationFailed" xml:space="preserve"><value>A new credential could not be generated and attached.</value></data>
+  <data name="Workflow.Credential.GenerationHelp" xml:space="preserve"><value>Password-change and reset actions store only an opaque reference. Reveal or copy the generated value on the Credentials page.</value></data>
 </root>

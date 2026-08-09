@@ -1,5 +1,6 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Application.Credentials;
 using Unpwn.Application.Recovery;
 
 namespace Unpwn.App.Presentation;
@@ -40,8 +41,12 @@ public sealed class AppScreenFactory : IScreenFactory
             executionService: null,
             locationDiscovery: null,
             externalNavigation: null,
+            credentialRepository: null,
+            credentialExportService: null,
+            credentialClipboard: null,
             localization,
-            functionalWorkflow: false)
+            functionalWorkflow: false,
+            functionalCredentials: false)
     {
     }
 
@@ -64,8 +69,43 @@ public sealed class AppScreenFactory : IScreenFactory
             executionService ?? throw new ArgumentNullException(nameof(executionService)),
             locationDiscovery ?? throw new ArgumentNullException(nameof(locationDiscovery)),
             externalNavigation ?? throw new ArgumentNullException(nameof(externalNavigation)),
+            credentialRepository: null,
+            credentialExportService: null,
+            credentialClipboard: null,
             localization,
-            functionalWorkflow: true)
+            functionalWorkflow: true,
+            functionalCredentials: false)
+    {
+    }
+
+    public AppScreenFactory(
+        IConfirmationDialogService confirmationDialog,
+        IVaultLifecycleService vaultLifecycle,
+        RecoveryWizardSessionService wizard,
+        IRecoverySessionService recoverySession,
+        IAccountInventoryService accountInventory,
+        IAccountRecoveryExecutionService executionService,
+        IRecoveryLocationDiscoveryService locationDiscovery,
+        IExternalNavigationService externalNavigation,
+        IGeneratedCredentialRepository credentialRepository,
+        IGeneratedCredentialExportService credentialExportService,
+        ICredentialClipboardService credentialClipboard,
+        ILocalizationService localization)
+        : this(
+            confirmationDialog,
+            vaultLifecycle,
+            wizard,
+            recoverySession,
+            accountInventory,
+            executionService ?? throw new ArgumentNullException(nameof(executionService)),
+            locationDiscovery ?? throw new ArgumentNullException(nameof(locationDiscovery)),
+            externalNavigation ?? throw new ArgumentNullException(nameof(externalNavigation)),
+            credentialRepository ?? throw new ArgumentNullException(nameof(credentialRepository)),
+            credentialExportService ?? throw new ArgumentNullException(nameof(credentialExportService)),
+            credentialClipboard ?? throw new ArgumentNullException(nameof(credentialClipboard)),
+            localization,
+            functionalWorkflow: true,
+            functionalCredentials: true)
     {
     }
 
@@ -78,8 +118,12 @@ public sealed class AppScreenFactory : IScreenFactory
         IAccountRecoveryExecutionService? executionService,
         IRecoveryLocationDiscoveryService? locationDiscovery,
         IExternalNavigationService? externalNavigation,
+        IGeneratedCredentialRepository? credentialRepository,
+        IGeneratedCredentialExportService? credentialExportService,
+        ICredentialClipboardService? credentialClipboard,
         ILocalizationService localization,
-        bool functionalWorkflow = false)
+        bool functionalWorkflow = false,
+        bool functionalCredentials = false)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
@@ -113,7 +157,8 @@ public sealed class AppScreenFactory : IScreenFactory
                     locationDiscovery!,
                     externalNavigation!,
                     confirmationDialog,
-                    localization)
+                    localization,
+                    functionalCredentials ? credentialRepository : null)
                 : new PlaceholderScreenViewModel(
                     AppRoute.Workflow,
                     localization,
@@ -122,14 +167,23 @@ public sealed class AppScreenFactory : IScreenFactory
                     AppVisualState.Blocked,
                     "Screen.Workflow.StatusTitle",
                     "Screen.Workflow.StatusMessage"),
-            [AppRoute.CredentialsExport] = new PlaceholderScreenViewModel(
-                AppRoute.CredentialsExport,
-                localization,
-                "Screen.Credentials.Title",
-                "Screen.Credentials.Description",
-                AppVisualState.Warning,
-                "Screen.Credentials.StatusTitle",
-                "Screen.Credentials.StatusMessage"),
+            [AppRoute.CredentialsExport] = functionalCredentials
+                ? new CredentialExportScreenViewModel(
+                    credentialRepository!,
+                    credentialExportService!,
+                    accountInventory,
+                    vaultLifecycle,
+                    credentialClipboard!,
+                    confirmationDialog,
+                    localization)
+                : new PlaceholderScreenViewModel(
+                    AppRoute.CredentialsExport,
+                    localization,
+                    "Screen.Credentials.Title",
+                    "Screen.Credentials.Description",
+                    AppVisualState.Warning,
+                    "Screen.Credentials.StatusTitle",
+                    "Screen.Credentials.StatusMessage"),
             [AppRoute.Completion] = new CompletionScreenViewModel(
                 confirmationDialog,
                 vaultLifecycle,
