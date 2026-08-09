@@ -170,8 +170,8 @@ public partial class CsvImportView : UserControl
 
         ImportDuplicateResolution? resolution = DuplicateResolutionCombo.SelectedIndex switch
         {
-            1 => ImportDuplicateResolution.SkipDuplicates,
-            2 => ImportDuplicateResolution.ImportAsSeparateAccounts,
+            0 => ImportDuplicateResolution.SkipDuplicates,
+            1 => ImportDuplicateResolution.ImportAsSeparateAccounts,
             _ => null,
         };
         var result = await ViewModel.ImportAsync(
@@ -307,7 +307,6 @@ public partial class CsvImportView : UserControl
 
         DuplicateResolutionCombo.ItemsSource = new[]
         {
-            Localization.GetString("Import.Resolution.Required"),
             Localization.GetString("Import.Resolution.Skip"),
             Localization.GetString("Import.Resolution.Separate"),
         };
@@ -350,7 +349,7 @@ public partial class CsvImportView : UserControl
     private void RefreshImportControls()
     {
         var duplicateResolutionComplete =
-            _duplicateCandidateCount == 0 || DuplicateResolutionCombo.SelectedIndex is 1 or 2;
+            _duplicateCandidateCount == 0 || DuplicateResolutionCombo.SelectedIndex is 0 or 1;
         ImportReviewedButton.IsEnabled = _previewCanImport && duplicateResolutionComplete;
         ImportResultText.Text = _importResultKey is null
             ? string.Empty
