@@ -30,6 +30,7 @@ Requires the .NET 10 SDK.
 ```shell
 dotnet restore unpwn.slnx
 dotnet build unpwn.slnx --no-restore
+pwsh tests/Unpwn.SyntheticProvider.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 dotnet test unpwn.slnx --no-build
 dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
 ```

@@ -9,6 +9,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Unpwn.Application/Unpwn.Application.csproj" />
+    <ProjectReference Include="../../src/Unpwn.Automation/Unpwn.Automation.csproj" />
+    <ProjectReference Include="../../src/Unpwn.Core/Unpwn.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

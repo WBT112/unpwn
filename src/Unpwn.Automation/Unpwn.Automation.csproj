@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../Unpwn.Application/Unpwn.Application.csproj" />
     <ProjectReference Include="../Unpwn.Core/Unpwn.Core.csproj" />
   </ItemGroup>
