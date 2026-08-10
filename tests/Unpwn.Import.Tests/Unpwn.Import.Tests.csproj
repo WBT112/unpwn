@@ -18,6 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Unpwn.Core/Unpwn.Core.csproj" />
     <ProjectReference Include="../../src/Unpwn.Import/Unpwn.Import.csproj" />
+    <ProjectReference Include="../../src/Unpwn.Providers/Unpwn.Providers.csproj" />
   </ItemGroup>
 </Project>
