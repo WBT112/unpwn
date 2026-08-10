@@ -104,10 +104,7 @@ public sealed class ShellViewModel : ObservableObject
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
         _recoverySession?.SessionChanged += RecoverySession_OnSessionChanged;
         _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
-        if (_guidedWizard is not null)
-        {
-            _guidedWizard.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
-        }
+        _guidedWizard?.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
 
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
