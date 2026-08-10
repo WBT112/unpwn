@@ -60,6 +60,11 @@ public sealed class SecretSafeDiagnosticsTests
     [InlineData(DiagnosticOperation.CredentialExport, "UNPWN1004", "Credential export failed.")]
     [InlineData(DiagnosticOperation.VaultLock, "UNPWN1005", "Vault lock failed.")]
     [InlineData(DiagnosticOperation.VaultPasswordChange, "UNPWN1006", "Vault password change failed.")]
+    [InlineData(DiagnosticOperation.WorkspaceSave, "UNPWN1007", "Recovery workspace saving failed.")]
+    [InlineData(DiagnosticOperation.WorkspaceLoad, "UNPWN1008", "Recovery workspace loading failed.")]
+    [InlineData(DiagnosticOperation.StartupRecovery, "UNPWN1009", "Previous application run ended unexpectedly.")]
+    [InlineData(DiagnosticOperation.ApplicationCrash, "UNPWN1010", "Application failure boundary activated.")]
+    [InlineData(DiagnosticOperation.DiagnosticExport, "UNPWN1011", "Diagnostic export failed.")]
     public void EverySupportedOperationEmitsAStableSafeEvent(
         DiagnosticOperation operation,
         string expectedEventId,
@@ -78,6 +83,21 @@ public sealed class SecretSafeDiagnosticsTests
         Assert.Equal(expectedMessage, safeException.Message);
         Assert.DoesNotContain("UNPWN_TEST_SECRET_", Render(diagnosticEvent), StringComparison.Ordinal);
         Assert.DoesNotContain("UNPWN_TEST_SECRET_", safeException.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BoundedStoreKeepsOnlyNewestSanitizedEvents()
+    {
+        var store = new BoundedSecretSafeDiagnosticStore(capacity: 2);
+        var diagnostics = new SecretSafeDiagnostics(store);
+
+        diagnostics.ReportFailure(DiagnosticOperation.VaultUnlock, new IOException("first"));
+        diagnostics.ReportFailure(DiagnosticOperation.WorkspaceSave, new IOException("second"));
+        diagnostics.ReportFailure(DiagnosticOperation.ApplicationCrash, new IOException("third"));
+
+        Assert.Equal(
+            ["UNPWN1007", "UNPWN1010"],
+            store.Snapshot().Select(item => item.EventId));
     }
 
     private static string Render(DiagnosticEvent diagnosticEvent) => string.Join(

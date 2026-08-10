@@ -131,6 +131,14 @@ Disposing a managed buffer reduces accidental retention but is not a forensic me
 
 Resource formatting or missing-key diagnostics must never include a decrypted value or any formatting argument that may contain vault data.
 
+Application diagnostics are held in a bounded in-memory store. Each event contains only a
+repository-defined operation, stable event identifier, static message, severity, and exception type;
+source messages, inner exceptions, stack traces, paths, URLs, imported values, and vault content are
+discarded. The local diagnostic export is opt-in and requires the user to preview and explicitly
+approve the exact JSON payload before choosing a destination. The export boundary reconstructs every
+event from the repository allowlist instead of trusting stored event text, writes through a temporary
+file and atomic replacement, and never uploads the report.
+
 ## Export Safety
 
 Plaintext export formats such as CSV are inherently sensitive.
@@ -157,6 +165,12 @@ The vault should lock when:
 - the application is inactive for a configurable period
 - the operating system session is locked, where detectable
 - the application exits normally
+- an unhandled application failure reaches the last-chance crash boundary and cleanup is still possible
+
+An abnormal-exit marker contains only the static word `running`; it contains no vault path, session
+identifier, provider state, or personal data. Seeing that marker on the next launch warns the user but
+never marks an external recovery step complete. Authentication and corrupted-vault failures continue
+to fail closed through the normal vault-open boundary.
 
 After recovery, the user may:
 

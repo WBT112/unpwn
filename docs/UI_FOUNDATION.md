@@ -28,6 +28,12 @@ is visible immediately.
 
 Routes whose functional application use cases are not implemented show an explicit localized placeholder instead of simulating recovery behavior.
 
+The shell also owns two global, non-domain status surfaces. Encrypted workspace writes publish visible
+saving, saved, retrying, cancelled, and save-failed states; failure text distinguishes access,
+storage, version, and lock/conflict cases without exposing source exception details. A prior abnormal
+exit produces a dismissible warning that instructs the user to review the recovered state. Neither
+surface changes workflow state or implies that an external provider action succeeded.
+
 The workflow-execution route is functional. It resolves the selected or currently recommended account
 from the encrypted inventory, binds it to a reviewed repository workflow, and projects the persisted
 account-execution aggregate. Unsupported providers fail closed to manual guidance rather than guessed
@@ -93,3 +99,8 @@ Code-behind remains limited to view initialization, native file-picker bridging,
 External provider navigation is exposed through an injected presentation adapter. The view model first
 validates the repository-defined handoff and the UI displays the destination and expected origins.
 Launcher success, browser return, and elapsed time never call an execution completion transition.
+
+The vault-entry screen exposes local diagnostics independently of vault unlock. Export requires a
+fresh preview of the exact sanitized JSON, an explicit approval checkbox, and a user-selected local
+destination. Preview creation does not write or upload anything. A successful export consumes the
+preview approval; a failed or cancelled export remains retryable without claiming success.

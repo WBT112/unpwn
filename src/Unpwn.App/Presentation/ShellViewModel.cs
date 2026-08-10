@@ -14,6 +14,7 @@ public sealed class ShellViewModel : ObservableObject
     private readonly IAccountInventoryService? _accountInventory;
     private readonly ILocalizationService _localization;
     private readonly IGuidedRecoveryWizardService? _guidedWizard;
+    private readonly IWorkspacePersistenceStatus? _persistenceStatus;
     private readonly bool _enforceNavigationPrerequisites;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
     private readonly LanguageOptionViewModel[] _languageOptions;
@@ -23,6 +24,7 @@ public sealed class ShellViewModel : ObservableObject
     private VisualStatusViewModel _currentStatus;
     private Guid? _navigationAccountId;
     private string? _navigationActionId;
+    private bool _hasStartupRecoveryWarning;
 
     public ShellViewModel(
         IScreenFactory screenFactory,
@@ -34,6 +36,8 @@ public sealed class ShellViewModel : ObservableObject
             recoverySession: null,
             accountInventory: null,
             guidedWizard: null,
+            persistenceStatus: null,
+            runState: null,
             localization,
             enforceNavigationPrerequisites: false)
     {
@@ -45,13 +49,17 @@ public sealed class ShellViewModel : ObservableObject
         IRecoverySessionService recoverySession,
         IAccountInventoryService accountInventory,
         ILocalizationService localization,
-        IGuidedRecoveryWizardService? guidedWizard = null)
+        IGuidedRecoveryWizardService? guidedWizard = null,
+        IWorkspacePersistenceStatus? persistenceStatus = null,
+        ApplicationRunState? runState = null)
         : this(
             screenFactory,
             vaultLifecycle,
             recoverySession ?? throw new ArgumentNullException(nameof(recoverySession)),
             accountInventory ?? throw new ArgumentNullException(nameof(accountInventory)),
             guidedWizard,
+            persistenceStatus,
+            runState,
             localization,
             enforceNavigationPrerequisites: true)
     {
@@ -63,6 +71,8 @@ public sealed class ShellViewModel : ObservableObject
         IRecoverySessionService? recoverySession,
         IAccountInventoryService? accountInventory,
         IGuidedRecoveryWizardService? guidedWizard,
+        IWorkspacePersistenceStatus? persistenceStatus,
+        ApplicationRunState? runState,
         ILocalizationService localization,
         bool enforceNavigationPrerequisites)
     {
@@ -75,6 +85,8 @@ public sealed class ShellViewModel : ObservableObject
         _recoverySession = recoverySession;
         _accountInventory = accountInventory;
         _guidedWizard = guidedWizard;
+        _persistenceStatus = persistenceStatus;
+        _hasStartupRecoveryWarning = runState?.PreviousExitWasAbnormal == true;
         _localization = localization;
         _enforceNavigationPrerequisites = enforceNavigationPrerequisites;
         _navigationItems = BuildNavigationItems();
@@ -100,11 +112,18 @@ public sealed class ShellViewModel : ObservableObject
             GoBackGuidedStepAsync,
             () => _localization.GetString("Shell.Guided.Error"),
             () => IsGuidedWizardVisible && _guidedWizard!.PreviousDecision.CanMove);
+        DismissStartupRecoveryCommand = new RelayCommand(
+            DismissStartupRecovery,
+            () => HasStartupRecoveryWarning);
         _vaultLifecycle.ContextChanged += ShellContext_OnContextChanged;
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
         _recoverySession?.SessionChanged += RecoverySession_OnSessionChanged;
         _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
         _guidedWizard?.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
+        if (_persistenceStatus is not null)
+        {
+            _persistenceStatus.StatusChanged += PersistenceStatus_OnStatusChanged;
+        }
 
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
@@ -210,6 +229,30 @@ public sealed class ShellViewModel : ObservableObject
     public AsyncCommand GuidedAdvanceCommand { get; }
 
     public AsyncCommand GuidedBackCommand { get; }
+
+    public RelayCommand DismissStartupRecoveryCommand { get; }
+
+    public bool HasStartupRecoveryWarning => _hasStartupRecoveryWarning;
+
+    public bool IsPersistenceStatusVisible =>
+        _persistenceStatus?.Current.State != WorkspacePersistenceState.Idle;
+
+    public bool IsPersistenceFailure =>
+        _persistenceStatus?.Current.State == WorkspacePersistenceState.SaveFailed;
+
+    public string PersistenceStatusSymbol => _persistenceStatus?.Current.State switch
+    {
+        WorkspacePersistenceState.Saving => "…",
+        WorkspacePersistenceState.Retrying => "↻",
+        WorkspacePersistenceState.Saved => "✓",
+        WorkspacePersistenceState.SaveFailed => "!",
+        WorkspacePersistenceState.Canceled => "×",
+        _ => "•",
+    };
+
+    public string PersistenceStatusText => _persistenceStatus is null
+        ? string.Empty
+        : _localization.GetString(GetPersistenceStatusKey(_persistenceStatus.Current));
 
     public bool IsGuidedWizardVisible =>
         _guidedWizard is not null && IsVaultUnlocked && _recoverySession?.CurrentSession is not null;
@@ -393,6 +436,7 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(IsVaultUnlocked));
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
+        OnPropertyChanged(nameof(PersistenceStatusText));
         LockCommand.RaiseCanExecuteChanged();
         RefreshGuidance();
         RefreshNavigationAvailability();
@@ -449,6 +493,7 @@ public sealed class ShellViewModel : ObservableObject
 
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
+        OnPropertyChanged(nameof(PersistenceStatusText));
         RefreshGuidance();
 
         if (_vaultLifecycle.Snapshot is
@@ -621,6 +666,21 @@ public sealed class ShellViewModel : ObservableObject
     private void GuidedWizard_OnGuidanceChanged(object? sender, EventArgs eventArgs) =>
         RefreshGuidance();
 
+    private void PersistenceStatus_OnStatusChanged(object? sender, EventArgs eventArgs)
+    {
+        OnPropertyChanged(nameof(IsPersistenceStatusVisible));
+        OnPropertyChanged(nameof(IsPersistenceFailure));
+        OnPropertyChanged(nameof(PersistenceStatusSymbol));
+        OnPropertyChanged(nameof(PersistenceStatusText));
+    }
+
+    private void DismissStartupRecovery()
+    {
+        _hasStartupRecoveryWarning = false;
+        OnPropertyChanged(nameof(HasStartupRecoveryWarning));
+        DismissStartupRecoveryCommand.RaiseCanExecuteChanged();
+    }
+
     private void RefreshGuidance()
     {
         OnPropertyChanged(nameof(IsGuidedWizardVisible));
@@ -685,6 +745,23 @@ public sealed class ShellViewModel : ObservableObject
             _ => "Shell.Guided.OpenCurrent",
         },
     };
+
+    private static string GetPersistenceStatusKey(WorkspacePersistenceSnapshot snapshot) =>
+        snapshot.State switch
+        {
+            WorkspacePersistenceState.Saving => "Shell.Persistence.Saving",
+            WorkspacePersistenceState.Retrying => "Shell.Persistence.Retrying",
+            WorkspacePersistenceState.Saved => "Shell.Persistence.Saved",
+            WorkspacePersistenceState.Canceled => "Shell.Persistence.Canceled",
+            WorkspacePersistenceState.SaveFailed => snapshot.FailureCode switch
+            {
+                WorkspacePersistenceFailureCode.AccessDenied => "Shell.Persistence.Failed.AccessDenied",
+                WorkspacePersistenceFailureCode.VersionIncompatible => "Shell.Persistence.Failed.Version",
+                WorkspacePersistenceFailureCode.LockedOrConflict => "Shell.Persistence.Failed.Conflict",
+                _ => "Shell.Persistence.Failed.Io",
+            },
+            _ => "Shell.Persistence.Idle",
+        };
 
     private void LockCommand_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
     {

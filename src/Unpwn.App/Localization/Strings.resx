@@ -217,6 +217,19 @@
   <data name="Shell.Guided.Blocked.Title" xml:space="preserve"><value>Recovery step not complete</value></data>
   <data name="Shell.Guided.Error.Title" xml:space="preserve"><value>Guided recovery could not be updated</value></data>
   <data name="Shell.Guided.Error" xml:space="preserve"><value>The guided recovery state could not be saved. No step was marked complete.</value></data>
+  <data name="Shell.Persistence.Idle" xml:space="preserve"><value>No workspace save is active.</value></data>
+  <data name="Shell.Persistence.Saving" xml:space="preserve"><value>Saving the encrypted recovery workspace…</value></data>
+  <data name="Shell.Persistence.Retrying" xml:space="preserve"><value>Retrying the encrypted save after your repeated action…</value></data>
+  <data name="Shell.Persistence.Saved" xml:space="preserve"><value>Recovery progress saved in the encrypted workspace.</value></data>
+  <data name="Shell.Persistence.Canceled" xml:space="preserve"><value>Saving was canceled. The canceled change was not claimed as saved.</value></data>
+  <data name="Shell.Persistence.Failed.AccessDenied" xml:space="preserve"><value>Saving failed because access was denied. Your change was not claimed as saved; correct access and retry the action.</value></data>
+  <data name="Shell.Persistence.Failed.Version" xml:space="preserve"><value>Saving failed because the workspace version is incompatible. Your change was not claimed as saved.</value></data>
+  <data name="Shell.Persistence.Failed.Conflict" xml:space="preserve"><value>Saving failed because the workspace was locked or changed. Reload safely before retrying.</value></data>
+  <data name="Shell.Persistence.Failed.Io" xml:space="preserve"><value>Saving failed because storage is unavailable or full. Your change was not claimed as saved; resolve the storage problem and retry the action.</value></data>
+  <data name="Shell.Recovery.Title" xml:space="preserve"><value>Previous run ended unexpectedly</value></data>
+  <data name="Shell.Recovery.Symbol" xml:space="preserve"><value>!</value></data>
+  <data name="Shell.Recovery.Message" xml:space="preserve"><value>The vault starts locked. Review the current plan after unlocking; no external provider action was marked complete automatically.</value></data>
+  <data name="Shell.Recovery.Dismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>RECOVERY WORKSPACE</value></data>
   <data name="Status.Blocked" xml:space="preserve"><value>Blocked</value></data>
   <data name="Status.Error" xml:space="preserve"><value>Failed</value></data>

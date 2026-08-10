@@ -139,6 +139,48 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void ShellShowsAbnormalExitAndLocalizedPersistenceOutcome()
+    {
+        var vault = new TestVaultLifecycleService();
+        var recoverySession = new TestRecoverySessionService();
+        var inventory = new TestAccountInventoryService();
+        var localization = CreateLocalization();
+        var persistence = new TestPersistenceStatus();
+        var factory = new AppScreenFactory(
+            new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            vault,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            recoverySession,
+            inventory,
+            localization);
+        var shell = new ShellViewModel(
+            factory,
+            vault,
+            recoverySession,
+            inventory,
+            localization,
+            persistenceStatus: persistence,
+            runState: new ApplicationRunState(
+                PreviousExitWasAbnormal: true,
+                MarkerUnavailable: false));
+
+        Assert.True(shell.HasStartupRecoveryWarning);
+        shell.DismissStartupRecoveryCommand.Execute(null);
+        Assert.False(shell.HasStartupRecoveryWarning);
+
+        persistence.Publish(
+            WorkspacePersistenceState.SaveFailed,
+            WorkspacePersistenceFailureCode.IoFailure);
+        Assert.True(shell.IsPersistenceStatusVisible);
+        Assert.True(shell.IsPersistenceFailure);
+        Assert.Equal("!", shell.PersistenceStatusSymbol);
+        Assert.Contains("not claimed as saved", shell.PersistenceStatusText, StringComparison.Ordinal);
+
+        shell.SelectedLanguage = shell.LanguageOptions.Single(option => option.Code == "de");
+        Assert.Contains("gilt nicht als gespeichert", shell.PersistenceStatusText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task GlobalLockIsAvailableOnlyForUnlockedVaultAndReturnsToVaultEntry()
     {
         var shellContext = new TestVaultLifecycleService();
@@ -445,6 +487,25 @@ public sealed class ShellViewModelTests
                 unresolvedRiskExplicitlyAccepted,
                 CleanReview().Report!);
             return Task.FromResult(RecoveryCompletionOperationResult.Success(completion));
+        }
+    }
+
+    private sealed class TestPersistenceStatus : IWorkspacePersistenceStatus
+    {
+        public event EventHandler? StatusChanged;
+
+        public WorkspacePersistenceSnapshot Current { get; private set; } =
+            WorkspacePersistenceSnapshot.Empty;
+
+        public void Publish(
+            WorkspacePersistenceState state,
+            WorkspacePersistenceFailureCode failureCode)
+        {
+            Current = new WorkspacePersistenceSnapshot(
+                state,
+                failureCode,
+                Current.Revision + 1);
+            StatusChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 

@@ -78,7 +78,20 @@ After process interruption or an unsuccessful write:
 - dashboard projections can be recalculated from the canonical inventory
 - no browser handoff or prior in-progress state is interpreted as external action completion
 
-Further disk-full, permission, abnormal-exit, sanitized-diagnostic-export, and crash-boundary acceptance coverage remains tracked by Issue #37.
+All encrypted workspace-record writes pass through one presentation-facing persistence monitor. It
+publishes language-neutral `Saving`, `Saved`, `Retrying`, `SaveFailed`, and `Canceled` states. The shell
+renders those states with text and a symbol, and maps access-denied, I/O, version-incompatibility, and
+locked/conflict failures to static localized guidance. A failed operation is never reported as saved.
+The monitor retains neither plaintext nor an executable retry closure: retry is an explicit repeat of
+the original guarded command, so existing operation IDs and revision checks continue to prevent
+duplicate state transitions and audit events.
+
+A repository-controlled run marker records only that the process is active. If it remains after an
+abnormal exit, the next launch displays a dismissible warning and loads persisted state through the
+normal validating services. It does not persist workflow details and does not infer provider success.
+A last-chance process boundary records a secret-safe diagnostic and immediately discards the unlocked
+vault key where the runtime still permits cleanup. Normal shutdown removes the marker only after the
+vault and workspace services have been disposed.
 
 ## Testing
 
@@ -90,6 +103,10 @@ Tests cover:
 - staged state not becoming visible before successful persistence
 - revision conflicts
 - cancellation of superseded reloads
+- disk-full, access-denied, locked/conflict, and version-incompatibility status mapping
+- interrupted-write cancellation without a false saved state
+- explicit retry after a failed write
+- abnormal-exit marker detection and crash-boundary locking
 - secret-marker scans of test artifacts
 
 Future workflow-state tests must inject failures between every logically grouped state update and verify that reload produces either the complete previous state or the complete next state, never a mixture.

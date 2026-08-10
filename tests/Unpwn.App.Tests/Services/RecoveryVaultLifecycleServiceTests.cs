@@ -89,6 +89,30 @@ public sealed class RecoveryVaultLifecycleServiceTests
     }
 
     [Fact]
+    public async Task CrashBoundaryImmediatelyClearsUnlockedVaultWithoutAdvancingWizard()
+    {
+        using var directory = new TemporaryDirectory();
+        var currentTime = DateTimeOffset.UnixEpoch;
+        var wizard = PrepareWizard(currentTime);
+        using var lifecycle = new RecoveryVaultLifecycleService(
+            new JsonRecentVaultStore(Path.Combine(directory.Path, "recent.json")),
+            wizard,
+            clock: () => currentTime);
+        Assert.True((await lifecycle.CreateAsync(
+            Path.Combine(directory.Path, "recovery.db"),
+            OriginalPassword,
+            CancellationToken.None)).Succeeded);
+        var stepBeforeFailure = wizard.Current.CurrentStep;
+
+        lifecycle.LockAfterApplicationFailure();
+
+        Assert.False(lifecycle.IsVaultUnlocked);
+        Assert.Equal(VaultLifecycleStatus.Locked, lifecycle.Snapshot.Status);
+        Assert.Equal(VaultLockReason.ApplicationFailure, lifecycle.Snapshot.LastLockReason);
+        Assert.Equal(stepBeforeFailure, wizard.Current.CurrentStep);
+    }
+
+    [Fact]
     public async Task PasswordChangeRewrapsVaultAndRecentStoreContainsNoPassword()
     {
         using var directory = new TemporaryDirectory();

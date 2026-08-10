@@ -44,6 +44,7 @@ public sealed class AppScreenFactory : IScreenFactory
             credentialRepository: null,
             credentialExportService: null,
             credentialClipboard: null,
+            diagnosticExportService: null,
             localization,
             functionalWorkflow: false,
             functionalCredentials: false)
@@ -72,6 +73,7 @@ public sealed class AppScreenFactory : IScreenFactory
             credentialRepository: null,
             credentialExportService: null,
             credentialClipboard: null,
+            diagnosticExportService: null,
             localization,
             functionalWorkflow: true,
             functionalCredentials: false)
@@ -90,7 +92,8 @@ public sealed class AppScreenFactory : IScreenFactory
         IGeneratedCredentialRepository credentialRepository,
         IGeneratedCredentialExportService credentialExportService,
         ICredentialClipboardService credentialClipboard,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IDiagnosticExportService? diagnosticExportService = null)
         : this(
             confirmationDialog,
             vaultLifecycle,
@@ -103,6 +106,7 @@ public sealed class AppScreenFactory : IScreenFactory
             credentialRepository ?? throw new ArgumentNullException(nameof(credentialRepository)),
             credentialExportService ?? throw new ArgumentNullException(nameof(credentialExportService)),
             credentialClipboard ?? throw new ArgumentNullException(nameof(credentialClipboard)),
+            diagnosticExportService,
             localization,
             functionalWorkflow: true,
             functionalCredentials: true)
@@ -121,6 +125,7 @@ public sealed class AppScreenFactory : IScreenFactory
         IGeneratedCredentialRepository? credentialRepository,
         IGeneratedCredentialExportService? credentialExportService,
         ICredentialClipboardService? credentialClipboard,
+        IDiagnosticExportService? diagnosticExportService,
         ILocalizationService localization,
         bool functionalWorkflow = false,
         bool functionalCredentials = false)
@@ -138,7 +143,8 @@ public sealed class AppScreenFactory : IScreenFactory
                 vaultLifecycle,
                 wizard,
                 confirmationDialog,
-                localization),
+                localization,
+                diagnosticExportService: diagnosticExportService),
             [AppRoute.Dashboard] = new DashboardScreenViewModel(
                 recoverySession,
                 vaultLifecycle,

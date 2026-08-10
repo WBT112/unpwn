@@ -217,6 +217,19 @@
   <data name="Shell.Guided.Blocked.Title" xml:space="preserve"><value>Wiederherstellungsschritt noch nicht abgeschlossen</value></data>
   <data name="Shell.Guided.Error.Title" xml:space="preserve"><value>Geführte Wiederherstellung konnte nicht aktualisiert werden</value></data>
   <data name="Shell.Guided.Error" xml:space="preserve"><value>Der geführte Wiederherstellungsstand konnte nicht gespeichert werden. Kein Schritt wurde als abgeschlossen markiert.</value></data>
+  <data name="Shell.Persistence.Idle" xml:space="preserve"><value>Es ist kein Speichervorgang aktiv.</value></data>
+  <data name="Shell.Persistence.Saving" xml:space="preserve"><value>Der verschlüsselte Wiederherstellungsbereich wird gespeichert…</value></data>
+  <data name="Shell.Persistence.Retrying" xml:space="preserve"><value>Der verschlüsselte Speichervorgang wird nach deiner wiederholten Aktion erneut versucht…</value></data>
+  <data name="Shell.Persistence.Saved" xml:space="preserve"><value>Der Wiederherstellungsfortschritt wurde verschlüsselt gespeichert.</value></data>
+  <data name="Shell.Persistence.Canceled" xml:space="preserve"><value>Das Speichern wurde abgebrochen. Die verworfene Änderung wird nicht als gespeichert dargestellt.</value></data>
+  <data name="Shell.Persistence.Failed.AccessDenied" xml:space="preserve"><value>Das Speichern ist wegen fehlender Berechtigung fehlgeschlagen. Die Änderung gilt nicht als gespeichert; korrigiere den Zugriff und wiederhole die Aktion.</value></data>
+  <data name="Shell.Persistence.Failed.Version" xml:space="preserve"><value>Das Speichern ist wegen einer inkompatiblen Arbeitsbereichsversion fehlgeschlagen. Die Änderung gilt nicht als gespeichert.</value></data>
+  <data name="Shell.Persistence.Failed.Conflict" xml:space="preserve"><value>Das Speichern ist fehlgeschlagen, weil der Arbeitsbereich gesperrt oder geändert wurde. Lade ihn sicher neu, bevor du es erneut versuchst.</value></data>
+  <data name="Shell.Persistence.Failed.Io" xml:space="preserve"><value>Das Speichern ist fehlgeschlagen, weil der Speicher nicht verfügbar oder voll ist. Die Änderung gilt nicht als gespeichert; behebe das Speicherproblem und wiederhole die Aktion.</value></data>
+  <data name="Shell.Recovery.Title" xml:space="preserve"><value>Der vorherige Lauf wurde unerwartet beendet</value></data>
+  <data name="Shell.Recovery.Symbol" xml:space="preserve"><value>!</value></data>
+  <data name="Shell.Recovery.Message" xml:space="preserve"><value>Der Tresor startet gesperrt. Prüfe nach dem Entsperren den aktuellen Plan; keine externe Anbieteraktion wurde automatisch als abgeschlossen markiert.</value></data>
+  <data name="Shell.Recovery.Dismiss" xml:space="preserve"><value>Ausblenden</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>WIEDERHERSTELLUNGSBEREICH</value></data>
   <data name="Status.Blocked" xml:space="preserve"><value>Blockiert</value></data>
   <data name="Status.Error" xml:space="preserve"><value>Fehlgeschlagen</value></data>

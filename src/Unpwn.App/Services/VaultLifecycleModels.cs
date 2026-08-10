@@ -12,6 +12,7 @@ public enum VaultLockReason
     None,
     User,
     Inactivity,
+    ApplicationFailure,
 }
 
 public enum VaultOperationFailureCode
