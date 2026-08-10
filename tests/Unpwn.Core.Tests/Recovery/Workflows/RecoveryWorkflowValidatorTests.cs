@@ -10,7 +10,7 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void RepositoryCatalogWorkflowsAreValid()
     {
-        WorkflowValidationResult result = RepositoryWorkflowCatalog.ValidateAll(new DateOnly(2026, 8, 5));
+        WorkflowValidationResult result = RepositoryWorkflowCatalog.ValidateAll(new DateOnly(2026, 8, 10));
 
         Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Diagnostics.Select(diagnostic => diagnostic.ToString())));
     }
@@ -90,7 +90,8 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void ValidateRejectsAnActionThatReferencesAnUnknownRecoveryLocation()
     {
-        var workflow = RepositoryWorkflowCatalog.Workflows.Single();
+        var workflow = RepositoryWorkflowCatalog.Workflows.Single(candidate =>
+            candidate.ProviderId == "github.com");
         workflow = workflow with
         {
             Actions =
@@ -151,7 +152,8 @@ public sealed class ProviderContractValidatorTests
     [Fact]
     public void ContractValidationRejectsUnavailableExpectedPathsAndMissingActions()
     {
-        var workflow = RepositoryWorkflowCatalog.Workflows.Single();
+        var workflow = RepositoryWorkflowCatalog.Workflows.Single(candidate =>
+            candidate.ProviderId == "github.com");
         var scenario = new ProviderContractScenario(
             "bad-contract",
             workflow.WorkflowId,

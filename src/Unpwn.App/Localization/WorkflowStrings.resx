@@ -99,6 +99,91 @@
   <data name="Workflow.GitHub.Action.document-completion-manual.Warning" xml:space="preserve"><value>Documenting the result does not mean that access was restored or the account is secure.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Completion" xml:space="preserve"><value>Manual recovery outcome documented</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Criterion.1" xml:space="preserve"><value>The manual recovery result and all unresolved risks have been recorded.</value></data>
+  <data name="Workflow.Google.Action.identify-account-auth.Title" xml:space="preserve"><value>Identify the affected Google Account</value></data>
+  <data name="Workflow.Google.Action.identify-account-auth.Instruction" xml:space="preserve"><value>Confirm the exact consumer Google Account and that the current signed-in session belongs to it.</value></data>
+  <data name="Workflow.Google.Action.identify-account-auth.Warning" xml:space="preserve"><value>Do not enter passwords, reset links, verification codes, backup codes, cookies, or browser data into unpwn.</value></data>
+  <data name="Workflow.Google.Action.identify-account-auth.Completion" xml:space="preserve"><value>Google Account identification recorded</value></data>
+  <data name="Workflow.Google.Action.identify-account-auth.Criterion.1" xml:space="preserve"><value>The affected consumer Google Account and current session have been identified.</value></data>
+  <data name="Workflow.Google.Action.change-password.Title" xml:space="preserve"><value>Change the Google Account password</value></data>
+  <data name="Workflow.Google.Action.change-password.Instruction" xml:space="preserve"><value>Open the official Google Account security page and change the password using a new credential created for this account.</value></data>
+  <data name="Workflow.Google.Action.change-password.Warning" xml:space="preserve"><value>Confirm the displayed destination and origin. Returning to unpwn does not prove that the password changed.</value></data>
+  <data name="Workflow.Google.Action.change-password.Completion" xml:space="preserve"><value>Password change recorded</value></data>
+  <data name="Workflow.Google.Action.change-password.Criterion.1" xml:space="preserve"><value>The Google Account password has been changed through the official authenticated flow.</value></data>
+  <data name="Workflow.Google.Action.review-devices-auth.Title" xml:space="preserve"><value>Review devices and sessions</value></data>
+  <data name="Workflow.Google.Action.review-devices-auth.Instruction" xml:space="preserve"><value>Review devices and recent sessions with Google Account access, then sign out any entry that is unknown, lost, or no longer used.</value></data>
+  <data name="Workflow.Google.Action.review-devices-auth.Warning" xml:space="preserve"><value>Similar device names can represent multiple sessions. Review details before deciding, and record anything you cannot resolve as risk.</value></data>
+  <data name="Workflow.Google.Action.review-devices-auth.Completion" xml:space="preserve"><value>Device and session review recorded</value></data>
+  <data name="Workflow.Google.Action.review-devices-auth.Criterion.1" xml:space="preserve"><value>Devices and sessions have been reviewed and unfamiliar access has been signed out or recorded as unresolved risk.</value></data>
+  <data name="Workflow.Google.Action.review-mfa-auth.Title" xml:space="preserve"><value>Review 2-Step Verification and passkeys</value></data>
+  <data name="Workflow.Google.Action.review-mfa-auth.Instruction" xml:space="preserve"><value>Review Google prompts, authenticator methods, telephone numbers, passkeys, security keys, and backup codes. Remove or replace anything you do not recognize.</value></data>
+  <data name="Workflow.Google.Action.review-mfa-auth.Warning" xml:space="preserve"><value>Do not copy authenticator secrets, verification codes, passkeys, private keys, or backup codes into unpwn.</value></data>
+  <data name="Workflow.Google.Action.review-mfa-auth.Completion" xml:space="preserve"><value>2-Step Verification and passkey review recorded</value></data>
+  <data name="Workflow.Google.Action.review-mfa-auth.Criterion.1" xml:space="preserve"><value>Sign-in methods have been reviewed and unrecognized methods were removed or recorded as unresolved risk.</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-auth.Title" xml:space="preserve"><value>Review recovery email and phone</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-auth.Instruction" xml:space="preserve"><value>Review the recovery email address, recovery phone number, and other sign-in methods. Correct entries that are unauthorized or no longer controlled.</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-auth.Warning" xml:space="preserve"><value>Secure a recovery email account before relying on it. Do not enter verification codes or recovery secrets into unpwn.</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-auth.Completion" xml:space="preserve"><value>Recovery information review recorded</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-auth.Criterion.1" xml:space="preserve"><value>Recovery email, phone, and other recovery methods have been reviewed and corrected where possible.</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-auth.Title" xml:space="preserve"><value>Review third-party connections</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-auth.Instruction" xml:space="preserve"><value>Review apps and services that use Sign in with Google, access Google Account data, or are linked to the account. Remove access that is unknown or no longer required.</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-auth.Warning" xml:space="preserve"><value>Removing Google access may not delete data already held by the third party. Do not authorize a new app during this review.</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-auth.Completion" xml:space="preserve"><value>Third-party connection review recorded</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-auth.Criterion.1" xml:space="preserve"><value>Third-party connections have been reviewed and unauthorized Google Account access has been removed.</value></data>
+  <data name="Workflow.Google.Action.document-completion-auth.Title" xml:space="preserve"><value>Review the Google Account outcome</value></data>
+  <data name="Workflow.Google.Action.document-completion-auth.Instruction" xml:space="preserve"><value>Review every required action and keep blocked work, lost access, and unresolved risk visible before leaving this account.</value></data>
+  <data name="Workflow.Google.Action.document-completion-auth.Warning" xml:space="preserve"><value>Documented completion is not proof that the account, its devices, or its recovery channels are secure.</value></data>
+  <data name="Workflow.Google.Action.document-completion-auth.Completion" xml:space="preserve"><value>Google Account outcome documented</value></data>
+  <data name="Workflow.Google.Action.document-completion-auth.Criterion.1" xml:space="preserve"><value>The outcome and every remaining risk have been documented without claiming a security guarantee.</value></data>
+  <data name="Workflow.Google.Action.identify-account-reset.Title" xml:space="preserve"><value>Identify the account and secured recovery channel</value></data>
+  <data name="Workflow.Google.Action.identify-account-reset.Instruction" xml:space="preserve"><value>Confirm the exact consumer Google Account and the already secured recovery email, phone, or trusted device available for account recovery.</value></data>
+  <data name="Workflow.Google.Action.identify-account-reset.Warning" xml:space="preserve"><value>Do not continue through an email account or other recovery channel that may still be controlled by someone else.</value></data>
+  <data name="Workflow.Google.Action.identify-account-reset.Completion" xml:space="preserve"><value>Account and secured recovery channel recorded</value></data>
+  <data name="Workflow.Google.Action.identify-account-reset.Criterion.1" xml:space="preserve"><value>The affected Google Account and an already secured recovery channel have been identified.</value></data>
+  <data name="Workflow.Google.Action.reset-password.Title" xml:space="preserve"><value>Recover the Google Account and reset its password</value></data>
+  <data name="Workflow.Google.Action.reset-password.Instruction" xml:space="preserve"><value>Open Google's official account-recovery flow, answer provider questions yourself, and set a new credential if Google restores access.</value></data>
+  <data name="Workflow.Google.Action.reset-password.Warning" xml:space="preserve"><value>unpwn cannot bypass MFA, CAPTCHA, identity verification, ownership checks, waiting periods, or rate limits. A page open or message sent does not prove recovery.</value></data>
+  <data name="Workflow.Google.Action.reset-password.Completion" xml:space="preserve"><value>Google Account recovery and password reset recorded</value></data>
+  <data name="Workflow.Google.Action.reset-password.Criterion.1" xml:space="preserve"><value>Google restored account access and the password was reset through the official provider flow.</value></data>
+  <data name="Workflow.Google.Action.review-devices-reset.Title" xml:space="preserve"><value>Review devices and sessions after recovery</value></data>
+  <data name="Workflow.Google.Action.review-devices-reset.Instruction" xml:space="preserve"><value>After access is restored, review devices and recent sessions and sign out entries that are unknown, lost, or no longer used.</value></data>
+  <data name="Workflow.Google.Action.review-devices-reset.Warning" xml:space="preserve"><value>A password reset does not by itself prove that every existing device or session has lost access.</value></data>
+  <data name="Workflow.Google.Action.review-devices-reset.Completion" xml:space="preserve"><value>Post-recovery device and session review recorded</value></data>
+  <data name="Workflow.Google.Action.review-devices-reset.Criterion.1" xml:space="preserve"><value>Devices and sessions have been reviewed and unfamiliar access has been signed out or recorded as unresolved risk.</value></data>
+  <data name="Workflow.Google.Action.review-mfa-reset.Title" xml:space="preserve"><value>Review 2-Step Verification and passkeys after recovery</value></data>
+  <data name="Workflow.Google.Action.review-mfa-reset.Instruction" xml:space="preserve"><value>Review Google prompts, authenticator methods, telephone numbers, passkeys, security keys, and backup codes after access is restored.</value></data>
+  <data name="Workflow.Google.Action.review-mfa-reset.Warning" xml:space="preserve"><value>Do not copy authenticator secrets, verification codes, passkeys, private keys, or backup codes into unpwn.</value></data>
+  <data name="Workflow.Google.Action.review-mfa-reset.Completion" xml:space="preserve"><value>Post-recovery sign-in method review recorded</value></data>
+  <data name="Workflow.Google.Action.review-mfa-reset.Criterion.1" xml:space="preserve"><value>Sign-in methods have been reviewed and unrecognized methods were removed or recorded as unresolved risk.</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-reset.Title" xml:space="preserve"><value>Review recovery email and phone after recovery</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-reset.Instruction" xml:space="preserve"><value>Review the recovery email address, recovery phone number, and other sign-in methods after access is restored.</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-reset.Warning" xml:space="preserve"><value>Secure a recovery email account before relying on it. Do not enter verification codes or recovery secrets into unpwn.</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-reset.Completion" xml:space="preserve"><value>Post-recovery recovery-information review recorded</value></data>
+  <data name="Workflow.Google.Action.review-recovery-options-reset.Criterion.1" xml:space="preserve"><value>Recovery email, phone, and other recovery methods have been reviewed and corrected where possible.</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-reset.Title" xml:space="preserve"><value>Review third-party connections after recovery</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-reset.Instruction" xml:space="preserve"><value>Review linked apps, Sign in with Google connections, and services with Google Account data access after access is restored.</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-reset.Warning" xml:space="preserve"><value>Removing Google access may not delete data already held by the third party. Do not authorize a new app during this review.</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-reset.Completion" xml:space="preserve"><value>Post-recovery third-party connection review recorded</value></data>
+  <data name="Workflow.Google.Action.review-connected-apps-reset.Criterion.1" xml:space="preserve"><value>Third-party connections have been reviewed and unauthorized Google Account access has been removed.</value></data>
+  <data name="Workflow.Google.Action.document-completion-reset.Title" xml:space="preserve"><value>Review the recovered Google Account outcome</value></data>
+  <data name="Workflow.Google.Action.document-completion-reset.Instruction" xml:space="preserve"><value>Review every required post-recovery action and keep blocked work, lost access, and unresolved risk visible.</value></data>
+  <data name="Workflow.Google.Action.document-completion-reset.Warning" xml:space="preserve"><value>Documented completion is not proof that the account, its devices, or its recovery channels are secure.</value></data>
+  <data name="Workflow.Google.Action.document-completion-reset.Completion" xml:space="preserve"><value>Recovered Google Account outcome documented</value></data>
+  <data name="Workflow.Google.Action.document-completion-reset.Criterion.1" xml:space="preserve"><value>The recovery outcome and every remaining risk have been documented without claiming a security guarantee.</value></data>
+  <data name="Workflow.Google.Action.identify-account-manual.Title" xml:space="preserve"><value>Identify the account for manual recovery</value></data>
+  <data name="Workflow.Google.Action.identify-account-manual.Instruction" xml:space="preserve"><value>Confirm the exact consumer Google Account and identify only non-secret context that may help you answer Google's recovery questions.</value></data>
+  <data name="Workflow.Google.Action.identify-account-manual.Warning" xml:space="preserve"><value>Do not store passwords, reset links, verification or backup codes, identity documents, cookies, or browser data in unpwn.</value></data>
+  <data name="Workflow.Google.Action.identify-account-manual.Completion" xml:space="preserve"><value>Account for manual recovery identified</value></data>
+  <data name="Workflow.Google.Action.identify-account-manual.Criterion.1" xml:space="preserve"><value>The affected Google Account and available non-secret recovery context have been identified.</value></data>
+  <data name="Workflow.Google.Action.manual-recovery.Title" xml:space="preserve"><value>Use Google's official account-recovery flow</value></data>
+  <data name="Workflow.Google.Action.manual-recovery.Instruction" xml:space="preserve"><value>Follow Google's official recovery flow and record whether access is pending, restored, denied, or currently lost.</value></data>
+  <data name="Workflow.Google.Action.manual-recovery.Warning" xml:space="preserve"><value>unpwn cannot answer ownership questions for you or bypass MFA, CAPTCHA, identity verification, waiting periods, or rate limits. Recovery is not guaranteed.</value></data>
+  <data name="Workflow.Google.Action.manual-recovery.Completion" xml:space="preserve"><value>Official Google recovery outcome recorded</value></data>
+  <data name="Workflow.Google.Action.manual-recovery.Criterion.1" xml:space="preserve"><value>The current outcome of Google's official recovery process has been documented.</value></data>
+  <data name="Workflow.Google.Action.document-completion-manual.Title" xml:space="preserve"><value>Review the manual recovery outcome</value></data>
+  <data name="Workflow.Google.Action.document-completion-manual.Instruction" xml:space="preserve"><value>Keep pending provider review, denied or lost access, unavailable controls, and all unresolved risks visible.</value></data>
+  <data name="Workflow.Google.Action.document-completion-manual.Warning" xml:space="preserve"><value>Documenting the outcome does not mean access was restored or the account is secure.</value></data>
+  <data name="Workflow.Google.Action.document-completion-manual.Completion" xml:space="preserve"><value>Manual recovery outcome documented</value></data>
+  <data name="Workflow.Google.Action.document-completion-manual.Criterion.1" xml:space="preserve"><value>The manual recovery outcome and every remaining unresolved risk have been documented.</value></data>
   <data name="Workflow.Credential.Generate" xml:space="preserve"><value>Generate and attach new credential</value></data>
   <data name="Workflow.Credential.GenerationFailed" xml:space="preserve"><value>A new credential could not be generated and attached.</value></data>
   <data name="Workflow.Credential.GenerationHelp" xml:space="preserve"><value>Password-change and reset actions store only an opaque reference. Reveal or copy the generated value on the Credentials page.</value></data>

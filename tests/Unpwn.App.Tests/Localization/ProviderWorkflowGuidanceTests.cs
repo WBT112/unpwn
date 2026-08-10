@@ -24,11 +24,16 @@ public sealed class ProviderWorkflowGuidanceTests
         Assert.Empty(required.Except(german, StringComparer.Ordinal));
     }
 
-    [Fact]
-    public void RuntimeLanguageSwitchChangesGuidanceWithoutChangingWorkflowSemantics()
+    [Theory]
+    [InlineData("github.com", "change-password")]
+    [InlineData("google.com", "change-password")]
+    public void RuntimeLanguageSwitchChangesGuidanceWithoutChangingWorkflowSemantics(
+        string providerId,
+        string actionId)
     {
-        var workflow = Assert.Single(RepositoryWorkflowCatalog.Workflows);
-        var action = workflow.Actions.Single(candidate => candidate.Id == "change-password");
+        var workflow = RepositoryWorkflowCatalog.Workflows.Single(candidate =>
+            candidate.ProviderId == providerId);
+        var action = workflow.Actions.Single(candidate => candidate.Id == actionId);
         var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
         var english = localization.GetString(action.Guidance.InstructionKey);
         var semanticSnapshot = (

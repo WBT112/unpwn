@@ -39,6 +39,27 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task ResolvesGoogleAccountToReviewedSecurityWorkflow()
+    {
+        var fixture = new Fixture(
+            providerId: "Google",
+            accountUrl: "https://myaccount.google.com/security");
+        var viewModel = fixture.CreateViewModel();
+
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        viewModel.SelectedAction = viewModel.Actions.Single(action =>
+            action.DefinitionId == "change-password");
+        await viewModel.OpenOfficialPageCommand.ExecuteAsync();
+
+        Assert.True(viewModel.HasWorkflow);
+        Assert.Equal("Google", viewModel.ProviderName);
+        Assert.Equal(
+            "https://myaccount.google.com/security",
+            fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
+    }
+
+    [Fact]
     public async Task BrowserNavigationLeavesActionOpenEvenWhenTheProviderPageOpens()
     {
         var fixture = new Fixture();
@@ -185,14 +206,16 @@ public sealed class WorkflowExecutionScreenViewModelTests
     {
         private readonly Guid _accountId = Guid.NewGuid();
 
-        public Fixture()
+        public Fixture(
+            string providerId = "github.com",
+            string accountUrl = "https://github.com/settings/security")
         {
             var account = new AccountInventoryEntry(
                 _accountId,
-                "github.com",
-                "GitHub recovery account",
+                providerId,
+                $"{providerId} recovery account",
                 "synthetic-user",
-                "https://github.com/settings/security",
+                accountUrl,
                 AccountInventoryPriority.Critical,
                 [new AccountRoleState(AccountInventoryRole.IdentityProvider, AccountRoleDecision.Confirmed)],
                 [],
@@ -208,7 +231,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 "Synthetic incident",
                 RecoveryIncidentIntake.Empty,
                 StartedAt).ReplaceAccounts(
-                [DashboardEntry(_accountId)],
+                [DashboardEntry(_accountId, providerId)],
                 StartedAt.AddMinutes(1)));
         }
 
@@ -245,10 +268,12 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 }),
                 Localization);
 
-        private static RecoveryAccountDashboardEntry DashboardEntry(Guid accountId) =>
+        private static RecoveryAccountDashboardEntry DashboardEntry(
+            Guid accountId,
+            string providerId) =>
             new(
                 accountId,
-                "github.com",
+                providerId,
                 AccountCriticality.Critical,
                 AccountRecoveryStatus.Open,
                 RequiredActionsCompleted: 0,

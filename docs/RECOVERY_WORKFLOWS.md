@@ -223,3 +223,33 @@ Provider contract scenarios additionally prove that every expected action suppor
 Localization validation separately verifies that referenced display keys exist in the complete English resources and that shipped translations preserve required keys and formatting placeholders. It does not replace structural, semantic, or provider contract validation.
 
 The shipped provider catalog validates all repository workflows through `RepositoryWorkflowCatalog.ValidateAll()`. Provider workflow changes should add or update catalog entries and regression tests that prove the definition remains structurally and semantically safe.
+
+## Google consumer account workflow
+
+The repository workflow for consumer Google accounts uses only two reviewed navigation boundaries:
+
+- `https://myaccount.google.com/security` for authenticated password, device and session, MFA and passkey, recovery-method, and connected-application review;
+- `https://accounts.google.com/signin/recovery` for password reset and manual account recovery.
+
+Both locations were reviewed against Google's official compromised-account, device-access,
+2-Step Verification, recovery-information, and linked-application guidance on 2026-08-10. The
+workflow declares the exact `myaccount.google.com` and `accounts.google.com` origins rather than
+trusting arbitrary Google subdomains.
+
+Review references:
+
+- [Secure a hacked or compromised Google Account](https://support.google.com/accounts/answer/6294825)
+- [See devices with account access](https://support.google.com/accounts/answer/3067630)
+- [Protecting your personal info with 2-Step Verification](https://support.google.com/accounts/answer/10956730)
+- [Update your recovery info](https://support.google.com/accounts/answer/17299765)
+- [Manage your linked apps](https://support.google.com/accounts/answer/16363505)
+
+A password reset may depend on access to a recovery email account or another recovery channel. The
+provider scenarios therefore distinguish a reset through an already secured channel from one blocked
+by an unsecured recovery email dependency. That cross-account dependency remains part of the account
+inventory and recovery plan; the provider workflow does not assume that receiving a message proves
+the channel is under the user's control.
+
+The workflow covers consumer accounts. Organization-managed Google Workspace policies may remove or
+alter available controls, in which case the user must keep the limitation visible as blocked work or
+unresolved risk and follow their administrator's reviewed process.
