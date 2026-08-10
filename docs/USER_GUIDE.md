@@ -4,7 +4,7 @@ unpwn helps you work through account recovery after you suspect that credentials
 
 > **Development status:** unpwn is still under active development and does not yet have a supported production release. Do not rely on it as your only source of security advice.
 
-The flow below describes the intended MVP recovery experience. Current development builds may not yet implement every step.
+The flow below describes the current guided MVP recovery experience. Individual provider coverage continues to grow during development.
 
 ## Before you start
 
@@ -42,6 +42,8 @@ unpwn can suggest that an account is an email mailbox, password manager, identit
 
 Dependencies matter. For example, an online shop may depend on your email account for password reset. unpwn tries to secure dependency roots first.
 
+The guided-recovery strip at the top shows the current canonical step and explains what comes next. You can still open workspace tabs to review information, but a tab change alone never marks a required step complete. **Continue** remains blocked until the current gate is satisfied; **Back** returns to the documented previous review step.
+
 ### 6. Follow the recommended recovery order
 
 unpwn explains which account is recommended next and why. A recommendation is guidance, not proof that an account is compromised.
@@ -65,6 +67,8 @@ Plaintext exports such as CSV are sensitive. Avoid synchronized folders where po
 Before finishing, review critical accounts, blocked or failed actions, lost access, unresolved risks, and any credentials that still need export or cleanup.
 
 A high progress value does not mean that everything is secure.
+
+After the completion preflight succeeds, review the final report and explicitly choose the outcome. Pausing, locking, or restarting preserves the wizard in the encrypted vault and resumes at a conservative review point; unpwn never treats an opened provider page as completed work.
 
 ## Important limits
 

@@ -86,6 +86,8 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
 
     public event EventHandler<CompletionNavigationRequest>? NavigationRequested;
 
+    public event EventHandler? CompletionReviewSucceeded;
+
     public AsyncCommand ReviewCompletionCommand { get; }
 
     public AsyncCommand CompleteCommand { get; }
@@ -242,6 +244,11 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
                 AppVisualState.UnresolvedRisk,
                 "Completion.Risks.Title",
                 "Completion.Risks.Message");
+        }
+
+        if (result.ExistingCompletion is null)
+        {
+            CompletionReviewSucceeded?.Invoke(this, EventArgs.Empty);
         }
     }
 

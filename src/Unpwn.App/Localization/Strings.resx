@@ -199,6 +199,24 @@
   <data name="Shell.Navigation.Vault.Label" xml:space="preserve"><value>Vault</value></data>
   <data name="Shell.Navigation.Workflow.Description" xml:space="preserve"><value>Recovery actions</value></data>
   <data name="Shell.Navigation.Workflow.Label" xml:space="preserve"><value>Workflow</value></data>
+  <data name="Shell.Guided.Heading" xml:space="preserve"><value>GUIDED RECOVERY</value></data>
+  <data name="Shell.Guided.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="Shell.Guided.Open" xml:space="preserve"><value>Open step</value></data>
+  <data name="Shell.Guided.Continue" xml:space="preserve"><value>Continue</value></data>
+  <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Open this step to continue the recovery.</value></data>
+  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Add or import at least one account before continuing.</value></data>
+  <data name="Shell.Guided.RoleConfirmationRequired" xml:space="preserve"><value>Confirm or reject every suggested account role before continuing.</value></data>
+  <data name="Shell.Guided.Paused" xml:space="preserve"><value>Resume the recovery session before continuing.</value></data>
+  <data name="Shell.Guided.Terminal" xml:space="preserve"><value>This recovery session is complete and remains available as a read-only report.</value></data>
+  <data name="Shell.Guided.NextIdentityReview" xml:space="preserve"><value>Continue by confirming account roles and recovery relationships.</value></data>
+  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Continue to the dependency-aware recovery plan.</value></data>
+  <data name="Shell.Guided.NextAccountRecovery" xml:space="preserve"><value>Continue with the currently recommended account and required actions.</value></data>
+  <data name="Shell.Guided.NextCredentialExport" xml:space="preserve"><value>Handle generated credential export and cleanup before completion.</value></data>
+  <data name="Shell.Guided.NextCompletion" xml:space="preserve"><value>Run the completion review; unresolved work and risks will remain visible.</value></data>
+  <data name="Shell.Guided.NextFinalReport" xml:space="preserve"><value>Review the final report and explicitly confirm the outcome.</value></data>
+  <data name="Shell.Guided.Blocked.Title" xml:space="preserve"><value>Recovery step not complete</value></data>
+  <data name="Shell.Guided.Error.Title" xml:space="preserve"><value>Guided recovery could not be updated</value></data>
+  <data name="Shell.Guided.Error" xml:space="preserve"><value>The guided recovery state could not be saved. No step was marked complete.</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>RECOVERY WORKSPACE</value></data>
   <data name="Status.Blocked" xml:space="preserve"><value>Blocked</value></data>
   <data name="Status.Error" xml:space="preserve"><value>Failed</value></data>

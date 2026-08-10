@@ -119,17 +119,38 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
         return PrepareState(next, Current.Revision);
     }
 
+    public PreparedRecoveryWizardUpdate PrepareNavigation(
+        RecoveryWizardStepId targetStep,
+        bool backwards,
+        DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(targetStep);
+        var next = backwards
+            ? RecoveryWizardOrchestrator.GoBack(Current, targetStep, occurredAt)
+            : RecoveryWizardOrchestrator.Continue(Current, targetStep, occurredAt);
+        return PrepareState(next, Current.Revision);
+    }
+
+    public PreparedRecoveryWizardUpdate PrepareCompletionReview(DateTimeOffset occurredAt) =>
+        PrepareState(
+            RecoveryWizardOrchestrator.BeginCompletionReview(Current, occurredAt),
+            Current.Revision);
+
     private RecoveryWizardState PrepareTerminalState(
         RecoveryWizardTerminalOutcome outcome,
         DateTimeOffset occurredAt)
     {
-        var preflight = Current.CurrentStep == RecoveryWizardStepId.CompletionPreflight
+        var preflight = Current.CurrentStep is var step &&
+                        (step == RecoveryWizardStepId.CompletionPreflight ||
+                         step == RecoveryWizardStepId.FinalReport)
             ? Current
             : RecoveryWizardOrchestrator.BeginCompletionReview(Current, occurredAt);
-        var report = RecoveryWizardOrchestrator.Continue(
-            preflight,
-            RecoveryWizardStepId.FinalReport,
-            occurredAt);
+        var report = preflight.CurrentStep == RecoveryWizardStepId.FinalReport
+            ? preflight
+            : RecoveryWizardOrchestrator.Continue(
+                preflight,
+                RecoveryWizardStepId.FinalReport,
+                occurredAt);
         return RecoveryWizardOrchestrator.Finish(report, outcome, occurredAt);
     }
 

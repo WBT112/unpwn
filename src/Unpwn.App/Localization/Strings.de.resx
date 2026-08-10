@@ -199,6 +199,24 @@
   <data name="Shell.Navigation.Vault.Label" xml:space="preserve"><value>Tresor</value></data>
   <data name="Shell.Navigation.Workflow.Description" xml:space="preserve"><value>Wiederherstellungsmaßnahmen</value></data>
   <data name="Shell.Navigation.Workflow.Label" xml:space="preserve"><value>Ablauf</value></data>
+  <data name="Shell.Guided.Heading" xml:space="preserve"><value>GEFÜHRTE WIEDERHERSTELLUNG</value></data>
+  <data name="Shell.Guided.Back" xml:space="preserve"><value>Zurück</value></data>
+  <data name="Shell.Guided.Open" xml:space="preserve"><value>Schritt öffnen</value></data>
+  <data name="Shell.Guided.Continue" xml:space="preserve"><value>Weiter</value></data>
+  <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Öffne diesen Schritt, um mit der Wiederherstellung fortzufahren.</value></data>
+  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Füge mindestens ein Konto hinzu oder importiere es, bevor du fortfährst.</value></data>
+  <data name="Shell.Guided.RoleConfirmationRequired" xml:space="preserve"><value>Bestätige oder verwerfe alle vorgeschlagenen Kontorollen, bevor du fortfährst.</value></data>
+  <data name="Shell.Guided.Paused" xml:space="preserve"><value>Setze die Wiederherstellungssitzung fort, bevor du weitergehst.</value></data>
+  <data name="Shell.Guided.Terminal" xml:space="preserve"><value>Diese Wiederherstellungssitzung ist beendet und bleibt als schreibgeschützter Bericht verfügbar.</value></data>
+  <data name="Shell.Guided.NextIdentityReview" xml:space="preserve"><value>Bestätige als Nächstes Kontorollen und Wiederherstellungsbeziehungen.</value></data>
+  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Gehe zum abhängigkeitsbasierten Wiederherstellungsplan weiter.</value></data>
+  <data name="Shell.Guided.NextAccountRecovery" xml:space="preserve"><value>Bearbeite das aktuell empfohlene Konto und seine erforderlichen Maßnahmen.</value></data>
+  <data name="Shell.Guided.NextCredentialExport" xml:space="preserve"><value>Erledige Export und Bereinigung erzeugter Zugangsdaten vor dem Abschluss.</value></data>
+  <data name="Shell.Guided.NextCompletion" xml:space="preserve"><value>Starte die Abschlussprüfung; offene Arbeit und Risiken bleiben sichtbar.</value></data>
+  <data name="Shell.Guided.NextFinalReport" xml:space="preserve"><value>Prüfe den Abschlussbericht und bestätige das Ergebnis ausdrücklich.</value></data>
+  <data name="Shell.Guided.Blocked.Title" xml:space="preserve"><value>Wiederherstellungsschritt noch nicht abgeschlossen</value></data>
+  <data name="Shell.Guided.Error.Title" xml:space="preserve"><value>Geführte Wiederherstellung konnte nicht aktualisiert werden</value></data>
+  <data name="Shell.Guided.Error" xml:space="preserve"><value>Der geführte Wiederherstellungsstand konnte nicht gespeichert werden. Kein Schritt wurde als abgeschlossen markiert.</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>WIEDERHERSTELLUNGSBEREICH</value></data>
   <data name="Status.Blocked" xml:space="preserve"><value>Blockiert</value></data>
   <data name="Status.Error" xml:space="preserve"><value>Fehlgeschlagen</value></data>

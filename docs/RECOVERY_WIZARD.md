@@ -46,6 +46,18 @@ The trusted-device decision is the first mandatory security gate:
 
 Generic navigation must not bypass the trusted-device gate, manufacture a vault context, or silently skip a required security step.
 
+After incident intake, the shell shows a persistent guided-recovery strip alongside the review-oriented workspace tabs. Its forward and back controls move the canonical wizard state; opening a normal tab does not mark a step complete. The guided transition is written to the encrypted vault before the in-memory state changes.
+
+The post-intake gates are deterministic:
+
+- inventory cannot advance until at least one account exists;
+- identity review cannot advance while an inferred role is still only `Suggested`;
+- recovery planning routes to outstanding account work first, then credential handoff, then completion preflight;
+- returning from material account work recalculates the plan from the latest persisted projections;
+- a successful completion preflight advances to final-report review, while the terminal outcome still requires explicit confirmation.
+
+Dependency cycles, missing dependencies, blocked and failed actions, lost access, and unresolved risks are not hidden by wizard navigation. They remain visible in the plan and completion review.
+
 ## Safe resume
 
 External work is never assumed to have succeeded because a browser opened, the user returned to unpwn, time passed, or the application restarted.
