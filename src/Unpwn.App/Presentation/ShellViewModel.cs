@@ -120,10 +120,7 @@ public sealed class ShellViewModel : ObservableObject
         _recoverySession?.SessionChanged += RecoverySession_OnSessionChanged;
         _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
         _guidedWizard?.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
-        if (_persistenceStatus is not null)
-        {
-            _persistenceStatus.StatusChanged += PersistenceStatus_OnStatusChanged;
-        }
+        _persistenceStatus?.StatusChanged += PersistenceStatus_OnStatusChanged;
 
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
