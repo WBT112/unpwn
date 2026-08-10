@@ -53,9 +53,9 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Row="1" ColumnDefinitions="220,*" RowDefinitions="*,Auto">
+    <Grid Grid.Row="1" ColumnDefinitions="220,*" RowDefinitions="Auto,*,Auto">
       <Border Grid.Row="0"
-              Grid.RowSpan="2"
+              Grid.RowSpan="3"
               Grid.Column="0"
               Padding="12"
               BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
@@ -111,14 +111,45 @@
         </Grid>
       </Border>
 
-      <ScrollViewer Grid.Row="0" Grid.Column="1" TabIndex="3">
+      <Border Grid.Row="0"
+              Grid.Column="1"
+              IsVisible="{Binding IsGuidedWizardVisible}"
+              Padding="20,12"
+              BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+              BorderThickness="0,0,0,1"
+              Background="{DynamicResource SystemControlBackgroundChromeLowBrush}">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+          <StackPanel Spacing="3">
+            <TextBlock FontSize="12"
+                       FontWeight="SemiBold"
+                       Text="{DynamicResource Shell.Guided.Heading}" />
+            <TextBlock FontWeight="SemiBold" Text="{Binding GuidedStepText}" />
+            <TextBlock Opacity="0.78"
+                       Text="{Binding GuidedRecommendationText}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+          <StackPanel Grid.Column="1"
+                      VerticalAlignment="Center"
+                      Orientation="Horizontal"
+                      Spacing="8">
+            <Button Command="{Binding GuidedBackCommand}"
+                    Content="{DynamicResource Shell.Guided.Back}" />
+            <Button Command="{Binding GuidedOpenCommand}"
+                    Content="{DynamicResource Shell.Guided.Open}" />
+            <Button Command="{Binding GuidedAdvanceCommand}"
+                    Content="{DynamicResource Shell.Guided.Continue}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <ScrollViewer Grid.Row="1" Grid.Column="1" TabIndex="3">
         <ContentControl Margin="28,24"
                         MaxWidth="900"
                         HorizontalAlignment="Stretch"
                         Content="{Binding CurrentScreen}" />
       </ScrollViewer>
 
-      <Border Grid.Row="1"
+      <Border Grid.Row="2"
               Grid.Column="1"
               Padding="20,12"
               BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"

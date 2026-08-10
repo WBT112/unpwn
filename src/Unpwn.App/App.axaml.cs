@@ -47,6 +47,12 @@ public partial class App : Avalonia.Application
             var externalNavigation = new AvaloniaExternalNavigationService(() => mainWindow);
             var credentialExport = new GeneratedCredentialExportService(vaultLifecycle);
             var credentialClipboard = new AvaloniaCredentialClipboardService(() => mainWindow);
+            var guidedWizard = new GuidedRecoveryWizardService(
+                vaultLifecycle,
+                wizard,
+                recoverySession,
+                accountInventory,
+                workspaceMutations);
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
@@ -65,7 +71,8 @@ public partial class App : Avalonia.Application
                 vaultLifecycle,
                 recoverySession,
                 accountInventory,
-                localization);
+                localization,
+                guidedWizard);
 
             mainWindow = new MainWindow
             {
@@ -75,6 +82,7 @@ public partial class App : Avalonia.Application
             desktop.Exit += (_, _) =>
             {
                 sessionVaultBridge.Dispose();
+                guidedWizard.Dispose();
                 locationDiscovery.Dispose();
                 accountInventory.Dispose();
                 recoverySession.Dispose();
