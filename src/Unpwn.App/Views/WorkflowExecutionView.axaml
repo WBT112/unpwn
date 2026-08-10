@@ -243,9 +243,5 @@
         </Border>
       </StackPanel>
     </StackPanel>
-
-    <Button HorizontalAlignment="Left"
-            Content="{DynamicResource Workflow.Refresh}"
-            Command="{Binding RefreshCommand}" />
   </StackPanel>
 </UserControl>

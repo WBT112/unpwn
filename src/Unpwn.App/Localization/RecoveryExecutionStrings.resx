@@ -129,10 +129,9 @@
   <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Enter a non-secret reason for this outcome.</value></data>
   <data name="Workflow.Validation.Locked" xml:space="preserve"><value>The recovery vault is locked.</value></data>
   <data name="Workflow.Validation.NotFound" xml:space="preserve"><value>No persisted execution was found for this account.</value></data>
-  <data name="Workflow.Validation.Conflict" xml:space="preserve"><value>The recovery state changed elsewhere or the requested transition is not allowed. Refresh before continuing.</value></data>
+  <data name="Workflow.Validation.Conflict" xml:space="preserve"><value>The recovery state changed elsewhere or the requested transition is not allowed. Open this tab again before continuing.</value></data>
   <data name="Workflow.Validation.Corrupted" xml:space="preserve"><value>The persisted recovery execution could not be authenticated or validated. It was not replaced.</value></data>
   <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>The outcome could not be saved. The UI does not claim that it was recorded.</value></data>
   <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>The requested recovery transition is invalid.</value></data>
   <data name="Workflow.Command.Error" xml:space="preserve"><value>The recovery operation failed without exposing provider or account data.</value></data>
-  <data name="Workflow.Refresh" xml:space="preserve"><value>Refresh recovery state</value></data>
 </root>

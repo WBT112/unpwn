@@ -103,7 +103,6 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         NewAccountCommand = new RelayCommand(BeginNewAccount, () => CanMutate);
-        RefreshCommand = new RelayCommand(RefreshFromService);
         SaveAccountCommand = new AsyncCommand(
             SaveAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
@@ -143,8 +142,6 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     }
 
     public RelayCommand NewAccountCommand { get; }
-
-    public RelayCommand RefreshCommand { get; }
 
     public AsyncCommand SaveAccountCommand { get; }
 

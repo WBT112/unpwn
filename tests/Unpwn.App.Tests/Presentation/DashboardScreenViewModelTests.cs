@@ -10,6 +10,18 @@ namespace Unpwn.App.Tests.Presentation;
 public sealed class DashboardScreenViewModelTests
 {
     [Fact]
+    public void ActivationReloadsThePersistedSessionEveryTimeTheTabOpens()
+    {
+        var sessionService = new TestRecoverySessionService();
+        var viewModel = CreateViewModel(sessionService);
+
+        viewModel.Activate();
+        viewModel.Activate();
+
+        Assert.Equal(2, sessionService.InitializeCalls);
+    }
+
+    [Fact]
     public void SessionCreationRemainsDisabledUntilRequiredOverviewFieldsAreComplete()
     {
         var viewModel = CreateViewModel(new TestRecoverySessionService());
@@ -198,9 +210,12 @@ public sealed class DashboardScreenViewModelTests
 
         public int ArchiveCalls { get; private set; }
 
+        public int InitializeCalls { get; private set; }
+
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            InitializeCalls++;
             SessionChanged?.Invoke(this, EventArgs.Empty);
             return Task.CompletedTask;
         }

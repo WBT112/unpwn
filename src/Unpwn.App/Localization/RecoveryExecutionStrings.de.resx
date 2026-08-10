@@ -129,10 +129,9 @@
   <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Gib eine nicht geheime Begründung für dieses Ergebnis ein.</value></data>
   <data name="Workflow.Validation.Locked" xml:space="preserve"><value>Der Recovery Vault ist gesperrt.</value></data>
   <data name="Workflow.Validation.NotFound" xml:space="preserve"><value>Für dieses Konto wurde keine persistierte Ausführung gefunden.</value></data>
-  <data name="Workflow.Validation.Conflict" xml:space="preserve"><value>Der Wiederherstellungsstatus wurde an anderer Stelle geändert oder der Übergang ist nicht erlaubt. Aktualisiere vor dem Fortfahren.</value></data>
+  <data name="Workflow.Validation.Conflict" xml:space="preserve"><value>Der Wiederherstellungsstatus wurde an anderer Stelle geändert oder der Übergang ist nicht erlaubt. Öffne diesen Reiter erneut, bevor du fortfährst.</value></data>
   <data name="Workflow.Validation.Corrupted" xml:space="preserve"><value>Die persistierte Wiederherstellungsausführung konnte nicht authentifiziert oder validiert werden. Sie wurde nicht ersetzt.</value></data>
   <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>Das Ergebnis konnte nicht gespeichert werden. Die UI behauptet nicht, dass es erfasst wurde.</value></data>
   <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>Der angeforderte Wiederherstellungsübergang ist ungültig.</value></data>
   <data name="Workflow.Command.Error" xml:space="preserve"><value>Der Wiederherstellungsvorgang ist fehlgeschlagen, ohne Anbieter- oder Kontodaten offenzulegen.</value></data>
-  <data name="Workflow.Refresh" xml:space="preserve"><value>Wiederherstellungsstatus aktualisieren</value></data>
 </root>
