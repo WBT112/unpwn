@@ -21,4 +21,7 @@
     <Project Path="tests/Unpwn.SyntheticProvider.Tests/Unpwn.SyntheticProvider.Tests.csproj" />
     <Project Path="tests/Unpwn.Vault.Tests/Unpwn.Vault.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Unpwn.ProviderSmokeChecks/Unpwn.ProviderSmokeChecks.csproj" />
+  </Folder>
 </Solution>

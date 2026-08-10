@@ -49,6 +49,7 @@ public sealed class ProjectDependencyTests
             .Append("Unpwn.Core.Tests")
             .Append("Unpwn.Export.Tests")
             .Append("Unpwn.Import.Tests")
+            .Append("Unpwn.ProviderSmokeChecks")
             .Append("Unpwn.SyntheticProvider.Tests")
             .Append("Unpwn.Vault.Tests")
             .Order(StringComparer.Ordinal)
@@ -95,6 +96,24 @@ public sealed class ProjectDependencyTests
         {
             Assert.DoesNotContain(forbiddenTerm, source, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    [Fact]
+    public void ProviderSmokeCheckToolDependsOnlyOnAutomationAndProviderCatalog()
+    {
+        var project = XDocument.Load(Path.Combine(
+            RepositoryRoot,
+            "tools",
+            "Unpwn.ProviderSmokeChecks",
+            "Unpwn.ProviderSmokeChecks.csproj"));
+        var actualReferences = project
+            .Descendants("ProjectReference")
+            .Select(element => Path.GetFileNameWithoutExtension(element.Attribute("Include")?.Value))
+            .OfType<string>()
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(["Unpwn.Automation", "Unpwn.Providers"], actualReferences);
     }
 
     private static string RepositoryRoot { get; } = FindRepositoryRoot();

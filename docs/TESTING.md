@@ -209,6 +209,18 @@ These checks should run on a schedule and through manual dispatch. They should i
 
 Smoke checks use canonical URLs and origins and are independent of the selected GUI language.
 
+The implementation lives in `Unpwn.Automation` with a small repository tool under
+`tools/Unpwn.ProviderSmokeChecks`. `.github/workflows/provider-smoke-checks.yml` runs it weekly and
+through manual dispatch; it is deliberately not a pull-request trigger. Requests use `GET` with no
+body, credentials, cookies, or referrer, and redirects are followed manually only while every hop
+remains HTTPS and within the location's exact expected-origin list.
+
+The job writes an issue-ready Markdown table to the GitHub step summary and warning annotations to
+the log. Redirect diagnostics contain origins only; exception messages, response bodies, DOM data,
+screenshots, traces, cookies, and browser storage are neither retained nor uploaded. Provider blocking,
+rate limiting, transient unavailability, and unexpected cross-origin redirects remain distinct
+observations requiring manual review rather than being reported as confirmed workflow defects.
+
 ### 9. Release verification
 
 Before release:
