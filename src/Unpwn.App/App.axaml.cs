@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.Application.Diagnostics;
 using Unpwn.Automation.Recovery;
 using Unpwn.Export.Credentials;
 
@@ -21,21 +22,30 @@ public partial class App : Avalonia.Application
             MainWindow? mainWindow = null;
             var localization = new ResourceLocalizationService();
             _ = new AvaloniaLocalizationResourceBridge(localization);
+            var diagnosticStore = new BoundedSecretSafeDiagnosticStore();
+            var diagnostics = new SecretSafeDiagnostics(diagnosticStore);
+            var runStateService = new ApplicationRunStateService(
+                new FileApplicationRunMarkerStore(GetRunMarkerPath()),
+                diagnostics);
+            var runState = runStateService.Begin();
             var wizard = new RecoveryWizardSessionService();
             var workspaceMutations = new WorkspaceMutationCoordinator();
             var vaultLifecycle = new RecoveryVaultLifecycleService(
                 new JsonRecentVaultStore(),
                 wizard);
-            var recoverySession = new RecoverySessionService(
+            var resilientRecordStore = new ResilientWorkspaceRecordStore(
                 vaultLifecycle,
+                diagnostics);
+            var recoverySession = new RecoverySessionService(
+                resilientRecordStore,
                 vaultLifecycle,
                 mutationCoordinator: workspaceMutations);
             var accountInventory = new AccountInventoryService(
-                vaultLifecycle,
+                resilientRecordStore,
                 recoverySession,
                 mutationCoordinator: workspaceMutations);
             var accountRecovery = new AccountRecoveryExecutionService(
-                vaultLifecycle,
+                resilientRecordStore,
                 recoverySession,
                 workspaceMutations);
             var locationDiscovery = HttpRecoveryLocationDiscoveryService.CreateDefault();
@@ -48,11 +58,15 @@ public partial class App : Avalonia.Application
             var credentialExport = new GeneratedCredentialExportService(vaultLifecycle);
             var credentialClipboard = new AvaloniaCredentialClipboardService(() => mainWindow);
             var guidedWizard = new GuidedRecoveryWizardService(
-                vaultLifecycle,
+                resilientRecordStore,
                 wizard,
                 recoverySession,
                 accountInventory,
                 workspaceMutations);
+            var diagnosticExport = new DiagnosticExportService(
+                diagnosticStore,
+                diagnostics,
+                applicationVersion: typeof(App).Assembly.GetName().Version?.ToString());
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
@@ -65,14 +79,33 @@ public partial class App : Avalonia.Application
                 vaultLifecycle,
                 credentialExport,
                 credentialClipboard,
-                localization);
+                localization,
+                diagnosticExport);
             var shell = new ShellViewModel(
                 screenFactory,
                 vaultLifecycle,
                 recoverySession,
                 accountInventory,
                 localization,
-                guidedWizard);
+                guidedWizard,
+                resilientRecordStore,
+                runState);
+
+            var crashBoundary = new ApplicationCrashBoundary(vaultLifecycle, diagnostics);
+            void domainFailureHandler(object _, UnhandledExceptionEventArgs eventArgs)
+            {
+                if (eventArgs.ExceptionObject is Exception exception)
+                {
+                    crashBoundary.Handle(exception);
+                }
+            }
+            void taskFailureHandler(object? _, UnobservedTaskExceptionEventArgs eventArgs)
+            {
+                crashBoundary.Handle(eventArgs.Exception);
+                eventArgs.SetObserved();
+            }
+            AppDomain.CurrentDomain.UnhandledException += domainFailureHandler;
+            TaskScheduler.UnobservedTaskException += taskFailureHandler;
 
             mainWindow = new MainWindow
             {
@@ -81,6 +114,8 @@ public partial class App : Avalonia.Application
             mainWindow.AttachInactivityMonitor(vaultLifecycle);
             desktop.Exit += (_, _) =>
             {
+                AppDomain.CurrentDomain.UnhandledException -= domainFailureHandler;
+                TaskScheduler.UnobservedTaskException -= taskFailureHandler;
                 sessionVaultBridge.Dispose();
                 guidedWizard.Dispose();
                 locationDiscovery.Dispose();
@@ -88,9 +123,10 @@ public partial class App : Avalonia.Application
                 recoverySession.Dispose();
                 workspaceMutations.Dispose();
                 vaultLifecycle.Dispose();
+                runStateService.Complete();
             };
             desktop.MainWindow = mainWindow;
-            _ = InitializeVaultReferencesAsync(vaultLifecycle);
+            _ = InitializeVaultReferencesAsync(vaultLifecycle, diagnostics);
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -101,15 +137,23 @@ public partial class App : Avalonia.Application
         "CA1031:Do not catch general exception types",
         Justification = "Recent-vault references are non-sensitive convenience metadata; startup must remain usable if that metadata is unavailable or malformed.")]
     private static async Task InitializeVaultReferencesAsync(
-        RecoveryVaultLifecycleService vaultLifecycle)
+        RecoveryVaultLifecycleService vaultLifecycle,
+        SecretSafeDiagnostics diagnostics)
     {
         try
         {
             await vaultLifecycle.InitializeAsync(CancellationToken.None);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            diagnostics.ReportFailure(DiagnosticOperation.WorkspaceLoad, exception);
             // Vault selection and creation remain usable without recent-vault convenience metadata.
         }
     }
+
+    private static string GetRunMarkerPath() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "unpwn",
+        "run-state",
+        "active.marker");
 }

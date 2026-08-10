@@ -104,4 +104,24 @@
   <data name="Vault.Inactivity.Warning.Message" xml:space="preserve"><value>Der Wiederherstellungstresor wird um {0:t} gesperrt, sofern keine Aktivität erfolgt.</value></data>
   <data name="Vault.Inactivity.Locked.Title" xml:space="preserve"><value>Tresor wegen Inaktivität gesperrt</value></data>
   <data name="Vault.Inactivity.Locked.Message" xml:space="preserve"><value>Entsperre den Tresor, um an einem sicheren Prüfpunkt fortzufahren.</value></data>
+  <data name="Vault.Diagnostics.Title" xml:space="preserve"><value>Lokale Diagnose</value></data>
+  <data name="Vault.Diagnostics.Description" xml:space="preserve"><value>Erstelle zuerst eine Vorschau und stimme danach einem lokalen Export ausdrücklich zu. Der Bericht enthält nur begrenzte Ereignis-IDs, statische Meldungen, Ausnahme-Typnamen und allgemeine Laufzeitdaten – niemals Tresorinhalte, Pfade, Stacktraces oder ursprüngliche Fehlermeldungen.</value></data>
+  <data name="Vault.Diagnostics.Preview" xml:space="preserve"><value>Bereinigte Vorschau erstellen</value></data>
+  <data name="Vault.Diagnostics.PreviewHeading" xml:space="preserve"><value>Exakter Exportinhalt</value></data>
+  <data name="Vault.Diagnostics.Destination" xml:space="preserve"><value>Lokales JSON-Ziel</value></data>
+  <data name="Vault.Diagnostics.Browse" xml:space="preserve"><value>Durchsuchen</value></data>
+  <data name="Vault.Diagnostics.Approve" xml:space="preserve"><value>Ich habe genau diese Vorschau geprüft und möchte sie lokal exportieren.</value></data>
+  <data name="Vault.Diagnostics.Export" xml:space="preserve"><value>Geprüfte Diagnose exportieren</value></data>
+  <data name="Vault.Diagnostics.FilePicker.Title" xml:space="preserve"><value>Bereinigte Diagnose exportieren</value></data>
+  <data name="Vault.Diagnostics.FilePicker.Type" xml:space="preserve"><value>JSON-Diagnoseberichte</value></data>
+  <data name="Vault.Diagnostics.CommandError" xml:space="preserve"><value>Der Diagnoseexport konnte nicht abgeschlossen werden.</value></data>
+  <data name="Vault.Diagnostics.PreviewReady.Title" xml:space="preserve"><value>Diagnosevorschau bereit</value></data>
+  <data name="Vault.Diagnostics.PreviewReady.Message" xml:space="preserve"><value>Prüfe den exakten bereinigten Inhalt, bevor du einem Export zustimmst.</value></data>
+  <data name="Vault.Diagnostics.ExportFailed.Title" xml:space="preserve"><value>Diagnoseexport fehlgeschlagen</value></data>
+  <data name="Vault.Diagnostics.Error.InvalidInput" xml:space="preserve"><value>Wähle ein gültiges lokales Ziel.</value></data>
+  <data name="Vault.Diagnostics.Error.PreviewRequired" xml:space="preserve"><value>Erstelle die aktuelle Vorschau und stimme ihr ausdrücklich zu, bevor du exportierst.</value></data>
+  <data name="Vault.Diagnostics.Error.AccessDenied" xml:space="preserve"><value>Die Anwendung hat keine Berechtigung, das gewählte Ziel zu schreiben.</value></data>
+  <data name="Vault.Diagnostics.Error.IoFailure" xml:space="preserve"><value>Die Diagnosedatei konnte nicht sicher geschrieben werden. Prüfe, ob der Pfad verfügbar und genügend Speicher frei ist.</value></data>
+  <data name="Vault.Diagnostics.Exported.Title" xml:space="preserve"><value>Diagnose exportiert</value></data>
+  <data name="Vault.Diagnostics.Exported.Message" xml:space="preserve"><value>Die exakt geprüfte Diagnosevorschau wurde in die gewählte lokale Datei geschrieben. Es wurde nichts hochgeladen.</value></data>
 </root>

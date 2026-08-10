@@ -104,4 +104,24 @@
   <data name="Vault.Inactivity.Warning.Message" xml:space="preserve"><value>The recovery vault will lock at {0:t} unless activity resumes.</value></data>
   <data name="Vault.Inactivity.Locked.Title" xml:space="preserve"><value>Vault locked after inactivity</value></data>
   <data name="Vault.Inactivity.Locked.Message" xml:space="preserve"><value>Unlock the vault to resume at a safe review point.</value></data>
+  <data name="Vault.Diagnostics.Title" xml:space="preserve"><value>Local diagnostics</value></data>
+  <data name="Vault.Diagnostics.Description" xml:space="preserve"><value>Create a preview before opting in to a local export. The report contains only bounded event IDs, static messages, exception type names, and generic runtime metadata—never vault content, paths, stack traces, or source error messages.</value></data>
+  <data name="Vault.Diagnostics.Preview" xml:space="preserve"><value>Create sanitized preview</value></data>
+  <data name="Vault.Diagnostics.PreviewHeading" xml:space="preserve"><value>Exact content to export</value></data>
+  <data name="Vault.Diagnostics.Destination" xml:space="preserve"><value>Local JSON destination</value></data>
+  <data name="Vault.Diagnostics.Browse" xml:space="preserve"><value>Browse</value></data>
+  <data name="Vault.Diagnostics.Approve" xml:space="preserve"><value>I reviewed this exact preview and choose to export it locally.</value></data>
+  <data name="Vault.Diagnostics.Export" xml:space="preserve"><value>Export reviewed diagnostics</value></data>
+  <data name="Vault.Diagnostics.FilePicker.Title" xml:space="preserve"><value>Export sanitized diagnostics</value></data>
+  <data name="Vault.Diagnostics.FilePicker.Type" xml:space="preserve"><value>JSON diagnostic reports</value></data>
+  <data name="Vault.Diagnostics.CommandError" xml:space="preserve"><value>The diagnostic export could not be completed.</value></data>
+  <data name="Vault.Diagnostics.PreviewReady.Title" xml:space="preserve"><value>Diagnostic preview ready</value></data>
+  <data name="Vault.Diagnostics.PreviewReady.Message" xml:space="preserve"><value>Review the exact sanitized content before approving an export.</value></data>
+  <data name="Vault.Diagnostics.ExportFailed.Title" xml:space="preserve"><value>Diagnostic export failed</value></data>
+  <data name="Vault.Diagnostics.Error.InvalidInput" xml:space="preserve"><value>Choose a valid local destination.</value></data>
+  <data name="Vault.Diagnostics.Error.PreviewRequired" xml:space="preserve"><value>Create and explicitly approve the current preview before exporting.</value></data>
+  <data name="Vault.Diagnostics.Error.AccessDenied" xml:space="preserve"><value>The application does not have permission to write the selected destination.</value></data>
+  <data name="Vault.Diagnostics.Error.IoFailure" xml:space="preserve"><value>The diagnostic file could not be written safely. Check that the path is available and storage has free space.</value></data>
+  <data name="Vault.Diagnostics.Exported.Title" xml:space="preserve"><value>Diagnostics exported</value></data>
+  <data name="Vault.Diagnostics.Exported.Message" xml:space="preserve"><value>The exact reviewed diagnostic preview was written to the selected local file. Nothing was uploaded.</value></data>
 </root>

@@ -55,13 +55,14 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             _mutations,
             () => StartedAt.AddMinutes(1));
 
+        var request = new AccountRecoveryExecutionCreateRequest(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            CreateWorkflow(),
+            RecoveryPath.AuthenticatedChange,
+            ProjectionContext());
         var result = await service.CreateAsync(
-            new AccountRecoveryExecutionCreateRequest(
-                Guid.NewGuid(),
-                Guid.NewGuid(),
-                CreateWorkflow(),
-                RecoveryPath.AuthenticatedChange,
-                ProjectionContext()),
+            request,
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
@@ -69,6 +70,15 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
         Assert.False(session.PreparedProjectionCommitted);
         Assert.Empty(session.CurrentSession!.Accounts);
         Assert.Empty(store.Records);
+
+        store.FailBatchWrites = false;
+        var retry = await service.CreateAsync(request, CancellationToken.None);
+        var repeatedRetry = await service.CreateAsync(request, CancellationToken.None);
+
+        Assert.True(retry.Succeeded);
+        Assert.True(repeatedRetry.Succeeded);
+        Assert.True(session.PreparedProjectionCommitted);
+        Assert.Equal(2, store.BatchWrites);
     }
 
     [Fact]
@@ -346,7 +356,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
 
         public bool IsVaultUnlocked => true;
 
-        public bool FailBatchWrites { get; init; }
+        public bool FailBatchWrites { get; set; }
 
         public int BatchWrites { get; private set; }
 

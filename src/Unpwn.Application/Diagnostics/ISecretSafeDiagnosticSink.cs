@@ -7,3 +7,8 @@ public interface ISecretSafeDiagnosticSink
 {
     void Write(DiagnosticEvent diagnosticEvent);
 }
+
+public interface ISecretSafeDiagnosticSource
+{
+    IReadOnlyList<DiagnosticEvent> Snapshot();
+}

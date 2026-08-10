@@ -17,7 +17,33 @@ public sealed class SecretSafeDiagnostics(ISecretSafeDiagnosticSink sink)
     {
         ArgumentNullException.ThrowIfNull(exception);
 
-        var (eventId, message) = operation switch
+        var diagnosticEvent = CreateEvent(operation, exception);
+        _sink.Write(diagnosticEvent);
+        return new InvalidOperationException(diagnosticEvent.Message);
+    }
+
+    public void ReportFailure(DiagnosticOperation operation, Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        _sink.Write(CreateEvent(operation, exception));
+    }
+
+    private static DiagnosticEvent CreateEvent(
+        DiagnosticOperation operation,
+        Exception exception)
+    {
+        var (eventId, message) = GetDescriptor(operation);
+
+        return new DiagnosticEvent(
+            DiagnosticSeverity.Error,
+            operation,
+            eventId,
+            message,
+            exception.GetType().Name);
+    }
+
+    public static (string EventId, string Message) GetDescriptor(
+        DiagnosticOperation operation) => operation switch
         {
             DiagnosticOperation.VaultUnlock => ("UNPWN1001", "Vault unlock failed."),
             DiagnosticOperation.RecoverySessionLoad => ("UNPWN1002", "Recovery session loading failed."),
@@ -25,17 +51,11 @@ public sealed class SecretSafeDiagnostics(ISecretSafeDiagnosticSink sink)
             DiagnosticOperation.CredentialExport => ("UNPWN1004", "Credential export failed."),
             DiagnosticOperation.VaultLock => ("UNPWN1005", "Vault lock failed."),
             DiagnosticOperation.VaultPasswordChange => ("UNPWN1006", "Vault password change failed."),
+            DiagnosticOperation.WorkspaceSave => ("UNPWN1007", "Recovery workspace saving failed."),
+            DiagnosticOperation.WorkspaceLoad => ("UNPWN1008", "Recovery workspace loading failed."),
+            DiagnosticOperation.StartupRecovery => ("UNPWN1009", "Previous application run ended unexpectedly."),
+            DiagnosticOperation.ApplicationCrash => ("UNPWN1010", "Application failure boundary activated."),
+            DiagnosticOperation.DiagnosticExport => ("UNPWN1011", "Diagnostic export failed."),
             _ => throw new ArgumentOutOfRangeException(nameof(operation), operation, "Unsupported diagnostic operation."),
         };
-
-        _sink.Write(
-            new DiagnosticEvent(
-                DiagnosticSeverity.Error,
-                operation,
-                eventId,
-                message,
-                exception.GetType().Name));
-
-        return new InvalidOperationException(message);
-    }
 }

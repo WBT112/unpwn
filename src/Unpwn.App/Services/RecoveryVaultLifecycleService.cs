@@ -13,7 +13,8 @@ public sealed class RecoveryVaultLifecycleService :
     IEncryptedVaultRecordStore,
     IRecoveryWizardVaultCoordinator,
     IRecoveryWizardPersistenceCoordinator,
-    IGeneratedCredentialRepository
+    IGeneratedCredentialRepository,
+    ISafeCrashLock
 {
     private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
         ? StringComparer.OrdinalIgnoreCase
@@ -398,6 +399,25 @@ public sealed class RecoveryVaultLifecycleService :
         Current = ShellContext.Locked;
         Snapshot = VaultLifecycleSnapshot.Empty;
         _disposed = true;
+    }
+
+    public void LockAfterApplicationFailure()
+    {
+        if (_disposed || _vault is null || _vault.IsLocked)
+        {
+            return;
+        }
+
+        _vault.Lock();
+        Current = ShellContext.Locked;
+        Snapshot = Snapshot with
+        {
+            Status = VaultLifecycleStatus.Locked,
+            LastLockReason = VaultLockReason.ApplicationFailure,
+            IsInactivityWarningVisible = false,
+            InactivityLocksAt = null,
+        };
+        PublishState(contextChanged: true);
     }
 
     private async Task<VaultOperationResult> OpenOrCreateAsync(

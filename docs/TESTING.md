@@ -242,6 +242,15 @@ The current baseline is implemented in `.github/workflows/ci.yml`. It performs r
 
 Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The application diagnostic boundary records a bounded operation, stable event ID, static message, and exception type only. It returns a new static-message exception for propagation; source exception messages, inner exceptions, stack traces, localization formatting arguments, and imported values are deliberately excluded because they may contain secrets.
 
+Persistence-resilience tests inject disk-full-style I/O failures, denied access, locked/conflicting
+stores, version incompatibility, and cancellation during an in-flight write. They assert that no
+failure is shown as saved, an explicit retry is visible, repeated operation IDs remain idempotent, and
+prepared projections are published only after a successful atomic write. Recovery-boundary tests
+simulate a stale process marker and an unhandled exception, then verify that startup remains usable,
+the vault is locked without advancing the wizard, and diagnostics contain no synthetic secret marker.
+Diagnostic-export tests use a deliberately malicious diagnostic source, preview/approval token
+mismatches, and writer failures to verify allowlist re-sanitization and strictly local atomic output.
+
 The blocking pull-request suite should eventually run:
 
 1. restore dependencies

@@ -11,4 +11,9 @@ public enum DiagnosticOperation
     CredentialExport,
     VaultLock,
     VaultPasswordChange,
+    WorkspaceSave,
+    WorkspaceLoad,
+    StartupRecovery,
+    ApplicationCrash,
+    DiagnosticExport,
 }
