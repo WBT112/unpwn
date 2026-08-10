@@ -333,7 +333,11 @@ Before completion, unpwn summarizes:
 - unresolved risks
 - credentials not exported or deliberately deleted
 - plaintext export files that may still require cleanup
+- suggested account roles and dependency issues that have not been resolved
+- exported credentials whose password-manager import has not been confirmed
 
 The user may complete a session with unresolved risks, but the final report must preserve those risks and must not describe the session as fully secured.
 
 Completion reports may be rendered in the selected supported language, but canonical status codes, timestamps, numeric values, and machine-readable export fields remain stable.
+
+The persisted `RecoveryCompletionRecord` contains the terminal outcome, completion timestamp, explicit unresolved-risk acknowledgement, and a secret-free `RecoveryCompletionReport`. It never contains account labels, login identifiers, account URLs, user notes, credential identifiers, or credential secret material. Terminal recovery-session lifecycle states are `Completed`, `FollowUpRequired`, and `Archived`; all are read-only unless a separate explicit follow-up workflow is created.

@@ -72,6 +72,59 @@ public sealed class AtomicWorkspacePersistenceTests
         Assert.Equal(1, store.BatchWriteAttempts);
     }
 
+    [Fact]
+    public async Task CompletionPublishesSessionAndWizardOnlyAfterAtomicWriteSucceeds()
+    {
+        var store = new FailingBatchRecordStore { FailBatchWrites = false };
+        var wizard = new TestWizardCoordinator(CreateIncidentIntakeWizard());
+        using var service = new RecoverySessionService(
+            store,
+            wizard,
+            clock: () => StartedAt.AddMinutes(1));
+        var created = await service.CreateAsync(
+            new RecoverySessionCreateRequest(
+                "Incident",
+                IncidentDescription: null,
+                IncidentIndicator.None,
+                SecurityWarningAcknowledged: true),
+            CancellationToken.None);
+        Assert.True(created.Succeeded);
+        var active = service.CurrentSession!;
+        var activeWizard = wizard.CurrentWizard;
+        var report = new RecoveryCompletionReport(
+            active.Id,
+            StartedAt.AddMinutes(1),
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            []);
+        var completion = new RecoveryCompletionRecord(
+            RecoveryCompletionOutcome.Completed,
+            StartedAt.AddMinutes(1),
+            UnresolvedRiskExplicitlyAccepted: false,
+            report);
+
+        store.FailBatchWrites = true;
+        var failed = await service.CompleteAsync(
+            completion,
+            active.Revision,
+            CancellationToken.None);
+
+        Assert.False(failed.Succeeded);
+        Assert.Equal(RecoverySessionOperationFailureCode.IoFailure, failed.FailureCode);
+        Assert.Same(active, service.CurrentSession);
+        Assert.Equal(activeWizard, wizard.CurrentWizard);
+
+        store.FailBatchWrites = false;
+        var succeeded = await service.CompleteAsync(
+            completion,
+            active.Revision,
+            CancellationToken.None);
+
+        Assert.True(succeeded.Succeeded);
+        Assert.Equal(RecoveryWorkspaceLifecycleStatus.Completed, service.CurrentSession!.Status);
+        Assert.Equal(RecoveryWizardLifecycleStatus.Completed, wizard.CurrentWizard.Status);
+        Assert.True(service.CurrentSession.IsReadOnly);
+    }
+
     private static RecoveryWizardState CreateIncidentIntakeWizard()
     {
         var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartedAt);
@@ -94,6 +147,8 @@ public sealed class AtomicWorkspacePersistenceTests
 
         public int BatchWriteAttempts { get; private set; }
 
+        public bool FailBatchWrites { get; set; } = true;
+
         public Task<byte[]?> ReadEncryptedRecordAsync(
             VaultRecordDescriptor descriptor,
             CancellationToken cancellationToken) =>
@@ -110,7 +165,9 @@ public sealed class AtomicWorkspacePersistenceTests
             CancellationToken cancellationToken)
         {
             BatchWriteAttempts++;
-            throw new IOException("Synthetic batch-write failure.");
+            return FailBatchWrites
+                ? Task.FromException(new IOException("Synthetic batch-write failure."))
+                : Task.CompletedTask;
         }
     }
 
@@ -142,6 +199,15 @@ public sealed class AtomicWorkspacePersistenceTests
                         CurrentWizard,
                         RecoveryWizardStepId.AccountInventory,
                         occurredAt),
+                RecoverySessionWizardTransition.Complete => Finish(
+                    RecoveryWizardTerminalOutcome.Completed,
+                    occurredAt),
+                RecoverySessionWizardTransition.CompleteWithFollowUp => Finish(
+                    RecoveryWizardTerminalOutcome.FollowUpRequired,
+                    occurredAt),
+                RecoverySessionWizardTransition.CompleteAndArchive => Finish(
+                    RecoveryWizardTerminalOutcome.Archived,
+                    occurredAt),
                 _ => throw new NotSupportedException(),
             };
             return new PreparedRecoveryWizardUpdate(
@@ -152,6 +218,20 @@ public sealed class AtomicWorkspacePersistenceTests
                     1),
                 Encoding.UTF8.GetBytes("wizard"),
                 CurrentWizard.Revision);
+        }
+
+        private RecoveryWizardState Finish(
+            RecoveryWizardTerminalOutcome outcome,
+            DateTimeOffset occurredAt)
+        {
+            var preflight = RecoveryWizardOrchestrator.BeginCompletionReview(
+                CurrentWizard,
+                occurredAt);
+            var report = RecoveryWizardOrchestrator.Continue(
+                preflight,
+                RecoveryWizardStepId.FinalReport,
+                occurredAt);
+            return RecoveryWizardOrchestrator.Finish(report, outcome, occurredAt);
         }
 
         public void CommitPreparedTransition(PreparedRecoveryWizardUpdate update)

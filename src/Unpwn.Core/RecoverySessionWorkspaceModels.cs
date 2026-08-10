@@ -17,6 +17,8 @@ public enum RecoveryWorkspaceLifecycleStatus
     Active,
     Paused,
     Archived,
+    Completed,
+    FollowUpRequired,
 }
 
 public enum RecoveryDashboardRecommendationCode
@@ -75,6 +77,16 @@ public sealed record RecoveryAccountDashboardEntry(
     int DependencyDepth,
     Guid[] WaitingForAccountIds)
 {
+    public int RequiredActionsOpen { get; init; }
+
+    public int RequiredActionsInProgress { get; init; }
+
+    public int RequiredActionsAwaitingUser { get; init; }
+
+    public int RequiredActionsNotApplicable { get; init; }
+
+    public int AcceptedRiskActions { get; init; }
+
     public int InventoryBlockedIssues { get; init; }
 
     public int InventoryUnresolvedRisks { get; init; }
@@ -110,6 +122,11 @@ public sealed record RecoveryAccountDashboardEntry(
         ValidateNonNegative(DependencyDepth, nameof(DependencyDepth));
         ValidateNonNegative(InventoryBlockedIssues, nameof(InventoryBlockedIssues));
         ValidateNonNegative(InventoryUnresolvedRisks, nameof(InventoryUnresolvedRisks));
+        ValidateNonNegative(RequiredActionsOpen, nameof(RequiredActionsOpen));
+        ValidateNonNegative(RequiredActionsInProgress, nameof(RequiredActionsInProgress));
+        ValidateNonNegative(RequiredActionsAwaitingUser, nameof(RequiredActionsAwaitingUser));
+        ValidateNonNegative(RequiredActionsNotApplicable, nameof(RequiredActionsNotApplicable));
+        ValidateNonNegative(AcceptedRiskActions, nameof(AcceptedRiskActions));
 
         if (RequiredActionsCompleted > RequiredActionsTotal)
         {
@@ -182,6 +199,13 @@ public sealed record RecoverySessionWorkspace(
     long Revision,
     RecoveryAccountDashboardEntry[] Accounts)
 {
+    public RecoveryCompletionRecord? Completion { get; init; }
+
+    public bool IsReadOnly => Status is
+        RecoveryWorkspaceLifecycleStatus.Archived or
+        RecoveryWorkspaceLifecycleStatus.Completed or
+        RecoveryWorkspaceLifecycleStatus.FollowUpRequired;
+
     public static RecoverySessionWorkspace Create(
         Guid id,
         string name,
@@ -217,10 +241,40 @@ public sealed record RecoverySessionWorkspace(
     public RecoverySessionWorkspace Archive(DateTimeOffset occurredAt) =>
         TransitionTo(RecoveryWorkspaceLifecycleStatus.Archived, occurredAt);
 
+    public RecoverySessionWorkspace Complete(
+        RecoveryCompletionRecord completion,
+        DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(completion);
+        completion.Validate();
+        ValidateTimestamp(occurredAt);
+        if (Status != RecoveryWorkspaceLifecycleStatus.Active || Completion is not null ||
+            completion.Report.SessionId != Id)
+        {
+            throw new InvalidOperationException("Only an active recovery session can be completed once.");
+        }
+
+        var status = completion.Outcome switch
+        {
+            RecoveryCompletionOutcome.Completed => RecoveryWorkspaceLifecycleStatus.Completed,
+            RecoveryCompletionOutcome.Archived => RecoveryWorkspaceLifecycleStatus.Archived,
+            RecoveryCompletionOutcome.FollowUpRequired => RecoveryWorkspaceLifecycleStatus.FollowUpRequired,
+            _ => throw new ArgumentOutOfRangeException(nameof(completion)),
+        };
+        return this with
+        {
+            Status = status,
+            Completion = completion,
+            UpdatedAt = occurredAt,
+            Revision = Revision + 1,
+        };
+    }
+
     public RecoverySessionWorkspace ReplaceAccounts(
         IEnumerable<RecoveryAccountDashboardEntry> accounts,
         DateTimeOffset occurredAt)
     {
+        EnsureMutable();
         ArgumentNullException.ThrowIfNull(accounts);
         ValidateTimestamp(occurredAt);
         var materialized = accounts.ToArray();
@@ -288,6 +342,23 @@ public sealed record RecoverySessionWorkspace(
             throw new InvalidOperationException("The recovery session update time predates its creation time.");
         }
 
+        Completion?.Validate();
+        if (Completion is not null && !IsReadOnly)
+        {
+            throw new InvalidOperationException("A completed recovery session must be read-only.");
+        }
+
+        if (Completion is not null && Status != (Completion.Outcome switch
+        {
+            RecoveryCompletionOutcome.Completed => RecoveryWorkspaceLifecycleStatus.Completed,
+            RecoveryCompletionOutcome.Archived => RecoveryWorkspaceLifecycleStatus.Archived,
+            RecoveryCompletionOutcome.FollowUpRequired => RecoveryWorkspaceLifecycleStatus.FollowUpRequired,
+            _ => throw new InvalidOperationException("The completion outcome is invalid."),
+        }))
+        {
+            throw new InvalidOperationException("The recovery-session lifecycle does not match its completion outcome.");
+        }
+
         foreach (var account in Accounts)
         {
             account.Validate();
@@ -312,7 +383,7 @@ public sealed record RecoverySessionWorkspace(
 
     private RecoveryDashboardRecommendation BuildRecommendation()
     {
-        if (Status == RecoveryWorkspaceLifecycleStatus.Archived)
+        if (IsReadOnly)
         {
             return new RecoveryDashboardRecommendation(
                 RecoveryDashboardRecommendationCode.ArchivedSession,
@@ -421,6 +492,14 @@ public sealed record RecoverySessionWorkspace(
                 nameof(occurredAt),
                 occurredAt,
                 "Recovery session transitions cannot move backwards in time.");
+        }
+    }
+
+    private void EnsureMutable()
+    {
+        if (IsReadOnly)
+        {
+            throw new InvalidOperationException("A terminal recovery session is read-only.");
         }
     }
 

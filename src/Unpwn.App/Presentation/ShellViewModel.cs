@@ -253,6 +253,8 @@ public sealed class ShellViewModel : ObservableObject
                 AccountInventoryLoadState.Empty or AccountInventoryLoadState.Loaded);
         var hasAccounts = !_enforceNavigationPrerequisites ||
             (canMutateInventory && _accountInventory?.CurrentInventory?.Accounts.Length > 0);
+        var isTerminal = _enforceNavigationPrerequisites &&
+            _recoverySession?.CurrentSession?.IsReadOnly == true;
         return
     [
         new(
@@ -272,31 +274,31 @@ public sealed class ShellViewModel : ObservableObject
             _localization.GetString("Shell.Navigation.Accounts.Label"),
             _localization.GetString("Shell.Navigation.Accounts.Description"),
             "A",
-            hasSession),
+            hasSession && !isTerminal),
         new(
             AppRoute.Workflow,
             _localization.GetString("Shell.Navigation.Workflow.Label"),
             _localization.GetString("Shell.Navigation.Workflow.Description"),
             "W",
-            hasAccounts),
+            hasAccounts && !isTerminal),
         new(
             AppRoute.CredentialsExport,
             _localization.GetString("Shell.Navigation.Credentials.Label"),
             _localization.GetString("Shell.Navigation.Credentials.Description"),
             "C",
-            hasAccounts),
+            hasAccounts && !isTerminal),
         new(
             AppRoute.Completion,
             _localization.GetString("Shell.Navigation.Completion.Label"),
             _localization.GetString("Shell.Navigation.Completion.Description"),
             "✓",
-            hasAccounts),
+            hasAccounts || isTerminal),
         new(
             AppRoute.CsvImport,
             _localization.GetString("Shell.Navigation.Import.Label"),
             _localization.GetString("Shell.Navigation.Import.Description"),
             "I",
-            canMutateInventory),
+            canMutateInventory && !isTerminal),
     ];
     }
 
@@ -445,6 +447,12 @@ public sealed class ShellViewModel : ObservableObject
         {
             workflow.PlanReturnRequested += Workflow_OnPlanReturnRequested;
         }
+
+
+        if (screen is CompletionScreenViewModel completion)
+        {
+            completion.NavigationRequested += Completion_OnNavigationRequested;
+        }
     }
 
     private void UnsubscribeFromScreen(ScreenViewModel screen)
@@ -465,6 +473,21 @@ public sealed class ShellViewModel : ObservableObject
         {
             workflow.PlanReturnRequested -= Workflow_OnPlanReturnRequested;
         }
+
+
+        if (screen is CompletionScreenViewModel completion)
+        {
+            completion.NavigationRequested -= Completion_OnNavigationRequested;
+        }
+    }
+
+    private void Completion_OnNavigationRequested(
+        object? sender,
+        CompletionNavigationRequest eventArgs)
+    {
+        NavigationAccountId = eventArgs.AccountId;
+        NavigationActionId = eventArgs.ActionId;
+        NavigateTo(eventArgs.Route);
     }
 
     private void LockCommand_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)

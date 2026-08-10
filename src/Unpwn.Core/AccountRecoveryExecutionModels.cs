@@ -565,8 +565,8 @@ public sealed record AccountRecoveryExecutionState(
         ArgumentNullException.ThrowIfNull(waitingForAccountIds);
         ArgumentOutOfRangeException.ThrowIfNegative(inventoryBlockedIssues);
         ArgumentOutOfRangeException.ThrowIfNegative(inventoryUnresolvedRisks);
-        var required = Actions
-            .Where(action => action.IsRequired)
+        var allRequired = Actions.Where(action => action.IsRequired).ToArray();
+        var required = allRequired
             .Where(action => action.Status != RecoveryActionStatus.NotApplicable ||
                 action.NotApplicableDisposition != global::Unpwn.Core.NotApplicableDisposition.TrulyNotApplicable)
             .ToArray();
@@ -613,6 +613,11 @@ public sealed record AccountRecoveryExecutionState(
         {
             InventoryBlockedIssues = inventoryBlockedIssues,
             InventoryUnresolvedRisks = inventoryUnresolvedRisks,
+            RequiredActionsOpen = allRequired.Count(action => action.Status == RecoveryActionStatus.Open),
+            RequiredActionsInProgress = allRequired.Count(action => action.Status == RecoveryActionStatus.InProgress),
+            RequiredActionsAwaitingUser = allRequired.Count(action => action.Status == RecoveryActionStatus.NeedsUserAction),
+            RequiredActionsNotApplicable = allRequired.Count(action => action.Status == RecoveryActionStatus.NotApplicable),
+            AcceptedRiskActions = allRequired.Count(action => action.HasUnresolvedRisk),
         };
     }
 

@@ -108,9 +108,29 @@ public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = nul
                 RecoveryWizardOrchestrator.Resume(Current, occurredAt),
             RecoverySessionWizardTransition.Archive =>
                 RecoveryWizardOrchestrator.Archive(Current, occurredAt),
+            RecoverySessionWizardTransition.Complete =>
+                PrepareTerminalState(RecoveryWizardTerminalOutcome.Completed, occurredAt),
+            RecoverySessionWizardTransition.CompleteWithFollowUp =>
+                PrepareTerminalState(RecoveryWizardTerminalOutcome.FollowUpRequired, occurredAt),
+            RecoverySessionWizardTransition.CompleteAndArchive =>
+                PrepareTerminalState(RecoveryWizardTerminalOutcome.Archived, occurredAt),
             _ => throw new ArgumentOutOfRangeException(nameof(transition), transition, "Unknown session transition."),
         };
         return PrepareState(next, Current.Revision);
+    }
+
+    private RecoveryWizardState PrepareTerminalState(
+        RecoveryWizardTerminalOutcome outcome,
+        DateTimeOffset occurredAt)
+    {
+        var preflight = Current.CurrentStep == RecoveryWizardStepId.CompletionPreflight
+            ? Current
+            : RecoveryWizardOrchestrator.BeginCompletionReview(Current, occurredAt);
+        var report = RecoveryWizardOrchestrator.Continue(
+            preflight,
+            RecoveryWizardStepId.FinalReport,
+            occurredAt);
+        return RecoveryWizardOrchestrator.Finish(report, outcome, occurredAt);
     }
 
     public void CommitPreparedTransition(PreparedRecoveryWizardUpdate update)

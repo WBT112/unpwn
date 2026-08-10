@@ -30,6 +30,9 @@ public enum RecoverySessionWizardTransition
     Pause,
     Resume,
     Archive,
+    Complete,
+    CompleteWithFollowUp,
+    CompleteAndArchive,
 }
 
 public sealed record RecoverySessionOperationResult(
@@ -101,6 +104,13 @@ public interface IRecoverySessionService
     Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken);
 
     Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken);
+
+    Task<RecoverySessionOperationResult> CompleteAsync(
+        RecoveryCompletionRecord completion,
+        long expectedSessionRevision,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(RecoverySessionOperationResult.Failure(
+            RecoverySessionOperationFailureCode.Conflict));
 
     Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
         IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,

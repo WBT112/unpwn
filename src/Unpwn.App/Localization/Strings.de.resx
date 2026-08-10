@@ -9,16 +9,88 @@
   <data name="Common.Failed" xml:space="preserve"><value>FEHLGESCHLAGEN</value></data>
   <data name="Completion.Canceled.Message" xml:space="preserve"><value>Der Zustand der Wiederherstellungssitzung wurde nicht verändert.</value></data>
   <data name="Completion.Canceled.Title" xml:space="preserve"><value>Abschluss abgebrochen</value></data>
-  <data name="Completion.Command.Error" xml:space="preserve"><value>Die Abschlussbestätigung konnte nicht geöffnet werden.</value></data>
+  <data name="Completion.Command.Error" xml:space="preserve"><value>Die Abschlussaktion konnte nicht ausgeführt werden.</value></data>
   <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungssitzung abschließen</value></data>
   <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Zur Abschlussprüfung</value></data>
   <data name="Completion.Confirmation.Consequence" xml:space="preserve"><value>Blockierte Arbeiten und ungeklärte Risiken bleiben im abschließenden Wiederherstellungsstatus dokumentiert.</value></data>
-  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>Dieser Platzhalter bestätigt nur den UI-Ablauf; der funktionale Sitzungsabschluss ist noch nicht umgesetzt.</value></data>
-  <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Bestätigung erfasst</value></data>
-  <data name="Completion.Review.Button" xml:space="preserve"><value>Abschlussbestätigung prüfen</value></data>
-  <data name="Completion.Section.Description" xml:space="preserve"><value>Die Bestätigung nennt die genaue Aktion und die betroffene Sitzung. Der funktionale Abschluss ist noch nicht Teil dieses Schritts.</value></data>
-  <data name="Completion.Section.Title" xml:space="preserve"><value>Grundlage für Sicherheitsbestätigungen</value></data>
+  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>Der abschließende Wiederherstellungsstatus und der geheimnisfreie Bericht wurden verschlüsselt in der Sitzung gespeichert.</value></data>
+  <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Wiederherstellungssitzung beendet</value></data>
+  <data name="Completion.Review.Button" xml:space="preserve"><value>Abschlussprüfung ausführen</value></data>
+  <data name="Completion.Section.Description" xml:space="preserve"><value>Die Prüfung lädt den gespeicherten Konten-, Aktions-, Abhängigkeits- und Zugangsdatenstatus neu. Die Prüfung selbst verändert die Sitzung nicht.</value></data>
+  <data name="Completion.Section.Title" xml:space="preserve"><value>Abschlussprüfung</value></data>
   <data name="Completion.UnlockHint" xml:space="preserve"><value>Entsperre einen Tresor, bevor du den Sitzungsabschluss prüfst.</value></data>
+  <data name="Completion.AcceptRisks" xml:space="preserve"><value>Ich akzeptiere ausdrücklich, dass offene Arbeiten und Risiken verbleiben.</value></data>
+  <data name="Completion.AcceptRisks.Detail" xml:space="preserve"><value>Diese Bestätigung erfasst den Zustand „Nacharbeit erforderlich“. Sie bedeutet nicht, dass Konten oder Gerät sicher sind.</value></data>
+  <data name="Completion.Archive.Button" xml:space="preserve"><value>Sitzung archivieren</value></data>
+  <data name="Completion.Archive.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungssitzung archivieren</value></data>
+  <data name="Completion.Archive.Confirmation.Confirm" xml:space="preserve"><value>Schreibgeschützt archivieren</value></data>
+  <data name="Completion.Clean.Message" xml:space="preserve"><value>Im aktuell gespeicherten Zustand sind keine offenen Arbeiten oder ungeklärten Risiken abgebildet. Dies ist keine Sicherheitsgarantie.</value></data>
+  <data name="Completion.Clean.Title" xml:space="preserve"><value>Prüfung ohne Befunde</value></data>
+  <data name="Completion.Complete.Button" xml:space="preserve"><value>Sitzung beenden</value></data>
+  <data name="Completion.Confirmation.CleanConsequence" xml:space="preserve"><value>Die Sitzung wird schreibgeschützt. Aufbewahrte Zugangsdaten werden nicht automatisch gelöscht.</value></data>
+  <data name="Completion.Confirmation.UnresolvedConsequence" xml:space="preserve"><value>Die Sitzung wird mit erforderlicher Nacharbeit schreibgeschützt. Alle ungeklärten Punkte bleiben sichtbar und Zugangsdaten werden nicht automatisch gelöscht.</value></data>
+  <data name="Completion.Credentials.Open" xml:space="preserve"><value>Zugangsdaten prüfen</value></data>
+  <data name="Completion.Credentials.RetainNotice" xml:space="preserve"><value>Beim Beenden oder Archivieren bleiben der verschlüsselte Tresor und seine Zugangsdaten erhalten. Export, Bestätigung des Passwortmanager-Imports, ausgewähltes Löschen und Bereinigung von Klartextdateien bleiben getrennte ausdrückliche Aktionen.</value></data>
+  <data name="Completion.Decision.Title" xml:space="preserve"><value>Abschließende Entscheidung</value></data>
+  <data name="Completion.Error.InvalidInput" xml:space="preserve"><value>Die Abschlussanfrage ist ungültig.</value></data>
+  <data name="Completion.Error.Locked" xml:space="preserve"><value>Entsperre den Tresor vor Prüfung oder Abschluss.</value></data>
+  <data name="Completion.Error.NoSession" xml:space="preserve"><value>Es ist keine gespeicherte Wiederherstellungssitzung verfügbar.</value></data>
+  <data name="Completion.Error.PersistenceFailure" xml:space="preserve"><value>Der Abschlusszustand konnte nicht gespeichert werden. Die Sitzung bleibt unverändert.</value></data>
+  <data name="Completion.Error.ReadFailed" xml:space="preserve"><value>Der gespeicherte Abschlusszustand konnte nicht gelesen werden.</value></data>
+  <data name="Completion.Error.RiskAcceptanceRequired" xml:space="preserve"><value>Bestätige zuerst ausdrücklich die offenen Arbeiten und Risiken.</value></data>
+  <data name="Completion.Error.StateChanged" xml:space="preserve"><value>Der gespeicherte Wiederherstellungszustand hat sich geändert. Prüfe die aktualisierte Abschlussprüfung erneut.</value></data>
+  <data name="Completion.Export.Button" xml:space="preserve"><value>Bericht exportieren</value></data>
+  <data name="Completion.Export.Choose" xml:space="preserve"><value>Ziel auswählen</value></data>
+  <data name="Completion.Export.Error.AlreadyExists" xml:space="preserve"><value>Dort existiert bereits eine Datei. Es wurde nichts überschrieben.</value></data>
+  <data name="Completion.Export.Error.InvalidPath" xml:space="preserve"><value>Wähle ein gültiges Ziel für den Bericht.</value></data>
+  <data name="Completion.Export.Error.IoFailure" xml:space="preserve"><value>Der Bericht konnte nicht geschrieben werden. Der Sitzungszustand wurde nicht verändert.</value></data>
+  <data name="Completion.Export.Error.None" xml:space="preserve"><value>Der Bericht konnte nicht geschrieben werden.</value></data>
+  <data name="Completion.Export.Failed.Title" xml:space="preserve"><value>Berichtexport fehlgeschlagen</value></data>
+  <data name="Completion.Export.FilePicker.Title" xml:space="preserve"><value>Neue Datei für den Wiederherstellungsbericht auswählen</value></data>
+  <data name="Completion.Export.FilePicker.Type" xml:space="preserve"><value>JSON-Wiederherstellungsbericht</value></data>
+  <data name="Completion.Export.PathWatermark" xml:space="preserve"><value>Kein Ziel ausgewählt</value></data>
+  <data name="Completion.Export.Success.Message" xml:space="preserve"><value>Der geheimnisfreie Bericht wurde an das ausgewählte Ziel geschrieben.</value></data>
+  <data name="Completion.Export.Success.Title" xml:space="preserve"><value>Bericht exportiert</value></data>
+  <data name="Completion.Failed.Title" xml:space="preserve"><value>Sitzung wurde nicht beendet</value></data>
+  <data name="Completion.Issue.CredentialNotExported" xml:space="preserve"><value>Erzeugte Zugangsdaten nicht exportiert</value></data>
+  <data name="Completion.Issue.CredentialRetainedInVault" xml:space="preserve"><value>Erzeugte Zugangsdaten im Tresor aufbewahrt</value></data>
+  <data name="Completion.Issue.CriticalAccountNotFullyReviewed" xml:space="preserve"><value>Kritisches Konto nicht vollständig geprüft</value></data>
+  <data name="Completion.Issue.DependencyIssue" xml:space="preserve"><value>Unbestätigte oder ungeklärte Kontoabhängigkeit</value></data>
+  <data name="Completion.Issue.Detail" xml:space="preserve"><value>{0}: {1} Befund(e)</value></data>
+  <data name="Completion.Issue.LostAccountAccess" xml:space="preserve"><value>Kontozugriff bleibt verloren</value></data>
+  <data name="Completion.Issue.Open" xml:space="preserve"><value>Betroffenen Punkt öffnen</value></data>
+  <data name="Completion.Issue.PasswordManagerImportUnconfirmed" xml:space="preserve"><value>Passwortmanager-Import nicht bestätigt</value></data>
+  <data name="Completion.Issue.PlaintextExportCleanupPending" xml:space="preserve"><value>Bereinigung des Klartextexports nicht bestätigt</value></data>
+  <data name="Completion.Issue.RequiredActionBlocked" xml:space="preserve"><value>Erforderliche Aktion blockiert</value></data>
+  <data name="Completion.Issue.RequiredActionFailed" xml:space="preserve"><value>Erforderliche Aktion fehlgeschlagen</value></data>
+  <data name="Completion.Issue.RequiredActionIncomplete" xml:space="preserve"><value>Erforderliche Aktion noch offen</value></data>
+  <data name="Completion.Issue.SessionLevel" xml:space="preserve"><value>Wiederherstellungssitzung</value></data>
+  <data name="Completion.Issue.UnconfirmedRoleInference" xml:space="preserve"><value>Vorgeschlagene Kontorolle nicht bestätigt oder abgelehnt</value></data>
+  <data name="Completion.Issue.UnresolvedRisk" xml:space="preserve"><value>Ungeklärtes Risiko verbleibt</value></data>
+  <data name="Completion.Issues.None" xml:space="preserve"><value>Im aktuell gespeicherten Zustand sind keine Befunde für die Abschlussprüfung abgebildet.</value></data>
+  <data name="Completion.Issues.Title" xml:space="preserve"><value>Offene Arbeiten und Risiken</value></data>
+  <data name="Completion.NoSafetyClaim" xml:space="preserve"><value>Dieser Bericht behauptet nicht, dass ein Konto oder Gerät sicher ist.</value></data>
+  <data name="Completion.Outcome.Archived" xml:space="preserve"><value>Die Sitzung ist archiviert und schreibgeschützt. Bericht und ungeklärte Punkte bleiben verfügbar.</value></data>
+  <data name="Completion.Outcome.Completed" xml:space="preserve"><value>Die Sitzung ist abgeschlossen und schreibgeschützt. Dieser Zustand ist keine Sicherheitsgarantie.</value></data>
+  <data name="Completion.Outcome.FollowUpRequired" xml:space="preserve"><value>Die Sitzung ist schreibgeschützt und erfordert Nacharbeit. Offene Arbeiten und Risiken bleiben sichtbar.</value></data>
+  <data name="Completion.ReadOnly.Guidance" xml:space="preserve"><value>Diese abgeschlossene oder archivierte Sitzung ist schreibgeschützt. Lege für weitere Änderungen ausdrücklich eine Folgesitzung an.</value></data>
+  <data name="Completion.ReadOnly.Title" xml:space="preserve"><value>Schreibgeschützter Abschlussbericht</value></data>
+  <data name="Completion.Report.Description" xml:space="preserve"><value>Der JSON-Bericht enthält keine Zugangsdatengeheimnisse, Zugangsdaten-IDs, Kontobezeichnungen, Anmeldekennungen, URLs oder Benutzernotizen. Bestehende Dateien werden nie überschrieben.</value></data>
+  <data name="Completion.Report.Title" xml:space="preserve"><value>Geheimnisfreier Abschlussbericht</value></data>
+  <data name="Completion.ReviewFailed.Title" xml:space="preserve"><value>Abschlussprüfung nicht verfügbar</value></data>
+  <data name="Completion.Risks.Message" xml:space="preserve"><value>Prüfe jeden Punkt und nutze den Rücksprung. Der Abschluss erfordert eine ausdrückliche Bestätigung der ungeklärten Risiken.</value></data>
+  <data name="Completion.Risks.Title" xml:space="preserve"><value>Offene Arbeiten oder Risiken verbleiben</value></data>
+  <data name="Completion.Severity.Blocking" xml:space="preserve"><value>Blockierende Warnung</value></data>
+  <data name="Completion.Severity.UnresolvedRisk" xml:space="preserve"><value>Ungeklärtes Risiko</value></data>
+  <data name="Completion.Severity.Warning" xml:space="preserve"><value>Warnung</value></data>
+  <data name="Completion.Summary.Accounts" xml:space="preserve"><value>Vollständig geprüfte Konten: {0} von {1}</value></data>
+  <data name="Completion.Summary.Actions" xml:space="preserve"><value>Erforderliche Aktionen – abgeschlossen: {0}; offen: {1}; in Bearbeitung: {2}; wartet auf Benutzer: {3}; nicht anwendbar: {4}; blockiert: {5}; fehlgeschlagen: {6}; Risiko akzeptiert: {7}; Konten warten auf Abhängigkeiten: {8}</value></data>
+  <data name="Completion.Summary.Credentials" xml:space="preserve"><value>Zugangsdaten – nicht exportiert: {0}; Passwortmanager-Import unbestätigt: {1}; aufbewahrt: {2}; ausdrücklich gelöscht: {3}; Klartextbereinigung offen: {4}</value></data>
+  <data name="Completion.Summary.Critical" xml:space="preserve"><value>Bereite kritische Konten: {0} von {1}</value></data>
+  <data name="Completion.Summary.Title" xml:space="preserve"><value>Aktuell gespeicherte Zusammenfassung</value></data>
+  <data name="Completion.Summary.Unavailable" xml:space="preserve"><value>Führe die Abschlussprüfung aus, um die gespeicherte Zusammenfassung zu laden.</value></data>
+  <data name="Completion.Warnings.Message" xml:space="preserve"><value>Prüfe die Warnungen vor dem Fortfahren. Aufbewahrte verschlüsselte Zugangsdaten werden nicht automatisch gelöscht.</value></data>
+  <data name="Completion.Warnings.Title" xml:space="preserve"><value>Bereinigungswarnungen verbleiben</value></data>
   <data name="Confirmation.AffectedItem" xml:space="preserve"><value>BETROFFENES ELEMENT</value></data>
   <data name="Confirmation.Consequence" xml:space="preserve"><value>AUSWIRKUNG</value></data>
   <data name="Confirmation.PageTitle" xml:space="preserve"><value>Aktion bestätigen</value></data>

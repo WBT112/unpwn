@@ -9,16 +9,88 @@
   <data name="Common.Failed" xml:space="preserve"><value>FAILED</value></data>
   <data name="Completion.Canceled.Message" xml:space="preserve"><value>No recovery-session state was changed.</value></data>
   <data name="Completion.Canceled.Title" xml:space="preserve"><value>Completion canceled</value></data>
-  <data name="Completion.Command.Error" xml:space="preserve"><value>The completion confirmation could not be opened.</value></data>
+  <data name="Completion.Command.Error" xml:space="preserve"><value>The completion action could not be performed.</value></data>
   <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Complete recovery session</value></data>
   <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Continue to completion review</value></data>
   <data name="Completion.Confirmation.Consequence" xml:space="preserve"><value>Blocked work and unresolved risks will remain recorded in the final recovery status.</value></data>
-  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>This placeholder confirms only the UI flow; functional session completion is not implemented yet.</value></data>
-  <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Confirmation recorded</value></data>
-  <data name="Completion.Review.Button" xml:space="preserve"><value>Review completion confirmation</value></data>
-  <data name="Completion.Section.Description" xml:space="preserve"><value>The confirmation names the exact action and affected recovery session. Functional completion remains out of scope.</value></data>
-  <data name="Completion.Section.Title" xml:space="preserve"><value>Sensitive confirmation foundation</value></data>
+  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>The terminal recovery status and secret-free report were saved in the encrypted session.</value></data>
+  <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Recovery session ended</value></data>
+  <data name="Completion.Review.Button" xml:space="preserve"><value>Run completion preflight</value></data>
+  <data name="Completion.Section.Description" xml:space="preserve"><value>The preflight reloads persisted account, action, dependency, and credential state. Reviewing it does not change the session.</value></data>
+  <data name="Completion.Section.Title" xml:space="preserve"><value>Completion preflight</value></data>
   <data name="Completion.UnlockHint" xml:space="preserve"><value>Unlock a vault before reviewing session completion.</value></data>
+  <data name="Completion.AcceptRisks" xml:space="preserve"><value>I explicitly accept that unresolved work and risks remain.</value></data>
+  <data name="Completion.AcceptRisks.Detail" xml:space="preserve"><value>This acknowledgement records a follow-up-required outcome. It does not mean the accounts or device are safe.</value></data>
+  <data name="Completion.Archive.Button" xml:space="preserve"><value>Archive session</value></data>
+  <data name="Completion.Archive.Confirmation.Action" xml:space="preserve"><value>Archive recovery session</value></data>
+  <data name="Completion.Archive.Confirmation.Confirm" xml:space="preserve"><value>Archive read-only</value></data>
+  <data name="Completion.Clean.Message" xml:space="preserve"><value>No incomplete work or unresolved risks are represented by the current persisted state. This is not a safety guarantee.</value></data>
+  <data name="Completion.Clean.Title" xml:space="preserve"><value>Preflight has no findings</value></data>
+  <data name="Completion.Complete.Button" xml:space="preserve"><value>End session</value></data>
+  <data name="Completion.Confirmation.CleanConsequence" xml:space="preserve"><value>The session becomes read-only. Retained credentials are not automatically deleted.</value></data>
+  <data name="Completion.Confirmation.UnresolvedConsequence" xml:space="preserve"><value>The session becomes read-only with follow-up required. Every unresolved item remains visible and retained credentials are not automatically deleted.</value></data>
+  <data name="Completion.Credentials.Open" xml:space="preserve"><value>Review credentials</value></data>
+  <data name="Completion.Credentials.RetainNotice" xml:space="preserve"><value>Ending or archiving retains the encrypted vault and its credentials. Export, password-manager import confirmation, selected deletion, and plaintext-file cleanup remain separate explicit actions.</value></data>
+  <data name="Completion.Decision.Title" xml:space="preserve"><value>Terminal decision</value></data>
+  <data name="Completion.Error.InvalidInput" xml:space="preserve"><value>The completion request is invalid.</value></data>
+  <data name="Completion.Error.Locked" xml:space="preserve"><value>Unlock the vault before reviewing or ending the session.</value></data>
+  <data name="Completion.Error.NoSession" xml:space="preserve"><value>No persisted recovery session is available.</value></data>
+  <data name="Completion.Error.PersistenceFailure" xml:space="preserve"><value>The terminal state could not be stored. The session remains unchanged.</value></data>
+  <data name="Completion.Error.ReadFailed" xml:space="preserve"><value>The persisted completion state could not be read.</value></data>
+  <data name="Completion.Error.RiskAcceptanceRequired" xml:space="preserve"><value>Explicitly acknowledge the unresolved work and risks first.</value></data>
+  <data name="Completion.Error.StateChanged" xml:space="preserve"><value>The persisted recovery state changed. Review the refreshed preflight before continuing.</value></data>
+  <data name="Completion.Export.Button" xml:space="preserve"><value>Export report</value></data>
+  <data name="Completion.Export.Choose" xml:space="preserve"><value>Choose destination</value></data>
+  <data name="Completion.Export.Error.AlreadyExists" xml:space="preserve"><value>A file already exists there. No file was overwritten.</value></data>
+  <data name="Completion.Export.Error.InvalidPath" xml:space="preserve"><value>Choose a valid report destination.</value></data>
+  <data name="Completion.Export.Error.IoFailure" xml:space="preserve"><value>The report could not be written. The session state was not changed.</value></data>
+  <data name="Completion.Export.Error.None" xml:space="preserve"><value>The report could not be written.</value></data>
+  <data name="Completion.Export.Failed.Title" xml:space="preserve"><value>Report export failed</value></data>
+  <data name="Completion.Export.FilePicker.Title" xml:space="preserve"><value>Choose a new recovery-report file</value></data>
+  <data name="Completion.Export.FilePicker.Type" xml:space="preserve"><value>JSON recovery report</value></data>
+  <data name="Completion.Export.PathWatermark" xml:space="preserve"><value>No destination selected</value></data>
+  <data name="Completion.Export.Success.Message" xml:space="preserve"><value>The secret-free report was written to the selected destination.</value></data>
+  <data name="Completion.Export.Success.Title" xml:space="preserve"><value>Report exported</value></data>
+  <data name="Completion.Failed.Title" xml:space="preserve"><value>Session was not ended</value></data>
+  <data name="Completion.Issue.CredentialNotExported" xml:space="preserve"><value>Generated credential not exported</value></data>
+  <data name="Completion.Issue.CredentialRetainedInVault" xml:space="preserve"><value>Generated credential retained in vault</value></data>
+  <data name="Completion.Issue.CriticalAccountNotFullyReviewed" xml:space="preserve"><value>Critical account not fully reviewed</value></data>
+  <data name="Completion.Issue.DependencyIssue" xml:space="preserve"><value>Unconfirmed or unresolved account dependency</value></data>
+  <data name="Completion.Issue.Detail" xml:space="preserve"><value>{0}: {1} finding(s)</value></data>
+  <data name="Completion.Issue.LostAccountAccess" xml:space="preserve"><value>Account access remains lost</value></data>
+  <data name="Completion.Issue.Open" xml:space="preserve"><value>Open affected item</value></data>
+  <data name="Completion.Issue.PasswordManagerImportUnconfirmed" xml:space="preserve"><value>Password-manager import not confirmed</value></data>
+  <data name="Completion.Issue.PlaintextExportCleanupPending" xml:space="preserve"><value>Plaintext export cleanup not confirmed</value></data>
+  <data name="Completion.Issue.RequiredActionBlocked" xml:space="preserve"><value>Required action blocked</value></data>
+  <data name="Completion.Issue.RequiredActionFailed" xml:space="preserve"><value>Required action failed</value></data>
+  <data name="Completion.Issue.RequiredActionIncomplete" xml:space="preserve"><value>Required action still incomplete</value></data>
+  <data name="Completion.Issue.SessionLevel" xml:space="preserve"><value>Recovery session</value></data>
+  <data name="Completion.Issue.UnconfirmedRoleInference" xml:space="preserve"><value>Suggested account role not confirmed or rejected</value></data>
+  <data name="Completion.Issue.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk remains</value></data>
+  <data name="Completion.Issues.None" xml:space="preserve"><value>No preflight findings are represented by the current persisted state.</value></data>
+  <data name="Completion.Issues.Title" xml:space="preserve"><value>Open work and risks</value></data>
+  <data name="Completion.NoSafetyClaim" xml:space="preserve"><value>This report does not claim that any account or device is safe.</value></data>
+  <data name="Completion.Outcome.Archived" xml:space="preserve"><value>The session is archived and read-only. Its report and unresolved items remain available.</value></data>
+  <data name="Completion.Outcome.Completed" xml:space="preserve"><value>The session is completed and read-only. This outcome is not a safety guarantee.</value></data>
+  <data name="Completion.Outcome.FollowUpRequired" xml:space="preserve"><value>The session is read-only with follow-up required. Unresolved work and risks remain visible.</value></data>
+  <data name="Completion.ReadOnly.Guidance" xml:space="preserve"><value>This completed or archived session is read-only. Create an explicit follow-up session before making further recovery changes.</value></data>
+  <data name="Completion.ReadOnly.Title" xml:space="preserve"><value>Read-only final report</value></data>
+  <data name="Completion.Report.Description" xml:space="preserve"><value>The JSON report excludes credential secrets, credential identifiers, account labels, login identifiers, URLs, and user notes. Existing files are never overwritten.</value></data>
+  <data name="Completion.Report.Title" xml:space="preserve"><value>Secret-free final report</value></data>
+  <data name="Completion.ReviewFailed.Title" xml:space="preserve"><value>Preflight unavailable</value></data>
+  <data name="Completion.Risks.Message" xml:space="preserve"><value>Review every item and use its return link. Completion requires an explicit unresolved-risk acknowledgement.</value></data>
+  <data name="Completion.Risks.Title" xml:space="preserve"><value>Open work or risks remain</value></data>
+  <data name="Completion.Severity.Blocking" xml:space="preserve"><value>Blocking warning</value></data>
+  <data name="Completion.Severity.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk</value></data>
+  <data name="Completion.Severity.Warning" xml:space="preserve"><value>Warning</value></data>
+  <data name="Completion.Summary.Accounts" xml:space="preserve"><value>Accounts fully reviewed: {0} of {1}</value></data>
+  <data name="Completion.Summary.Actions" xml:space="preserve"><value>Required actions — completed: {0}; open: {1}; in progress: {2}; awaiting user: {3}; not applicable: {4}; blocked: {5}; failed: {6}; accepted risk: {7}; accounts waiting for dependencies: {8}</value></data>
+  <data name="Completion.Summary.Credentials" xml:space="preserve"><value>Credentials — not exported: {0}; password-manager import unconfirmed: {1}; retained: {2}; deliberately deleted: {3}; plaintext cleanup pending: {4}</value></data>
+  <data name="Completion.Summary.Critical" xml:space="preserve"><value>Critical accounts ready: {0} of {1}</value></data>
+  <data name="Completion.Summary.Title" xml:space="preserve"><value>Current persisted summary</value></data>
+  <data name="Completion.Summary.Unavailable" xml:space="preserve"><value>Run the preflight to load the persisted summary.</value></data>
+  <data name="Completion.Warnings.Message" xml:space="preserve"><value>Review the warnings before continuing. Retained encrypted credentials are not deleted automatically.</value></data>
+  <data name="Completion.Warnings.Title" xml:space="preserve"><value>Cleanup warnings remain</value></data>
   <data name="Confirmation.AffectedItem" xml:space="preserve"><value>AFFECTED ITEM</value></data>
   <data name="Confirmation.Consequence" xml:space="preserve"><value>CONSEQUENCE</value></data>
   <data name="Confirmation.PageTitle" xml:space="preserve"><value>Confirm action</value></data>

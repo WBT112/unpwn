@@ -235,6 +235,12 @@ public sealed class AccountRecoveryExecutionTests
         Assert.Equal(
             (int)RecoveryActionImportance.Important + (int)RecoveryActionImportance.Critical,
             totalActionWeight);
+        Assert.Equal(1, projection.RequiredActionsCompleted);
+        Assert.Equal(1, projection.RequiredActionsOpen);
+        Assert.Equal(0, projection.RequiredActionsInProgress);
+        Assert.Equal(0, projection.RequiredActionsAwaitingUser);
+        Assert.Equal(0, projection.RequiredActionsNotApplicable);
+        Assert.Equal(0, projection.AcceptedRiskActions);
     }
 
     [Fact]

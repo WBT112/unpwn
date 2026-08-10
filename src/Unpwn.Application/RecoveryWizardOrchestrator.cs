@@ -89,6 +89,11 @@ public static class RecoveryWizardOrchestrator
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.Finish(state, outcome, occurredAt);
 
+    public static RecoveryWizardState BeginCompletionReview(
+        RecoveryWizardState state,
+        DateTimeOffset occurredAt) =>
+        RecoveryWizardStateMachine.BeginCompletionReview(state, occurredAt);
+
     public static RecoveryWizardRecommendation GetRecommendation(RecoveryWizardState state)
     {
         ArgumentNullException.ThrowIfNull(state);
