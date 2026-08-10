@@ -34,11 +34,16 @@
   <data name="Workflow.GitHub.Action.review-connected-apps-auth.Warning" xml:space="preserve"><value>Do not authorize a new application merely because it appears during recovery.</value></data>
   <data name="Workflow.GitHub.Action.review-connected-apps-auth.Completion" xml:space="preserve"><value>Connected application review recorded</value></data>
   <data name="Workflow.GitHub.Action.review-connected-apps-auth.Criterion.1" xml:space="preserve"><value>Connected applications have been reviewed and unauthorized access has been revoked.</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Title" xml:space="preserve"><value>Review tokens and keys</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Instruction" xml:space="preserve"><value>Review personal access tokens, SSH keys, and signing keys and revoke or rotate anything unauthorized or exposed.</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Warning" xml:space="preserve"><value>Do not paste token or private-key values into unpwn.</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Completion" xml:space="preserve"><value>Token and key review recorded</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Criterion.1" xml:space="preserve"><value>Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Title" xml:space="preserve"><value>Review personal access tokens</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Instruction" xml:space="preserve"><value>Review fine-grained and classic personal access tokens and revoke anything unauthorized, exposed, or no longer required.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Warning" xml:space="preserve"><value>Treat tokens like passwords and never paste their values into unpwn. Revocation can interrupt command-line tools, integrations, or automation.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Completion" xml:space="preserve"><value>Personal access token review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-auth.Criterion.1" xml:space="preserve"><value>Personal access tokens have been reviewed and unauthorized or exposed tokens were revoked or recorded as unresolved risk.</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-auth.Title" xml:space="preserve"><value>Review SSH and signing keys</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-auth.Instruction" xml:space="preserve"><value>Review SSH authentication keys and signing keys, then remove public keys whose corresponding private key is unknown, lost, unauthorized, or exposed.</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-auth.Warning" xml:space="preserve"><value>Never paste private keys or passphrases into unpwn. Removing a key can interrupt Git access or signature verification and does not delete private-key copies from devices.</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-auth.Completion" xml:space="preserve"><value>SSH and signing key review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-auth.Criterion.1" xml:space="preserve"><value>SSH and signing keys have been reviewed and unauthorized or exposed keys were removed or recorded as unresolved risk.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-auth.Title" xml:space="preserve"><value>Review the account outcome</value></data>
   <data name="Workflow.GitHub.Action.document-completion-auth.Instruction" xml:space="preserve"><value>Review every required action and record any blocked work, lost access, or unresolved risk before leaving this account.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-auth.Warning" xml:space="preserve"><value>Completion means the review was documented; it is not proof that the device or account is secure.</value></data>
@@ -74,11 +79,16 @@
   <data name="Workflow.GitHub.Action.review-connected-apps-reset.Warning" xml:space="preserve"><value>Do not authorize a new application merely because it appears during recovery.</value></data>
   <data name="Workflow.GitHub.Action.review-connected-apps-reset.Completion" xml:space="preserve"><value>Connected application review recorded</value></data>
   <data name="Workflow.GitHub.Action.review-connected-apps-reset.Criterion.1" xml:space="preserve"><value>Connected applications have been reviewed and unauthorized access has been revoked.</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Title" xml:space="preserve"><value>Review tokens and keys</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Instruction" xml:space="preserve"><value>Review personal access tokens, SSH keys, and signing keys after regaining access and revoke or rotate exposed credentials.</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Warning" xml:space="preserve"><value>Do not paste token or private-key values into unpwn.</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Completion" xml:space="preserve"><value>Token and key review recorded</value></data>
-  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Criterion.1" xml:space="preserve"><value>Personal access tokens and SSH or signing keys have been reviewed and rotated or revoked where appropriate.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Title" xml:space="preserve"><value>Review personal access tokens after recovery</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Instruction" xml:space="preserve"><value>After access is restored, review fine-grained and classic personal access tokens and revoke anything unauthorized, exposed, or no longer required.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Warning" xml:space="preserve"><value>Treat tokens like passwords and never paste their values into unpwn. Revocation can interrupt command-line tools, integrations, or automation.</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Completion" xml:space="preserve"><value>Post-recovery personal access token review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-api-tokens-reset.Criterion.1" xml:space="preserve"><value>Personal access tokens have been reviewed and unauthorized or exposed tokens were revoked or recorded as unresolved risk.</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-reset.Title" xml:space="preserve"><value>Review SSH and signing keys after recovery</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-reset.Instruction" xml:space="preserve"><value>After access is restored, review SSH authentication keys and signing keys and remove public keys whose private key is unknown, lost, unauthorized, or exposed.</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-reset.Warning" xml:space="preserve"><value>Never paste private keys or passphrases into unpwn. Removing a key can interrupt Git access or signature verification and does not delete private-key copies from devices.</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-reset.Completion" xml:space="preserve"><value>Post-recovery SSH and signing key review recorded</value></data>
+  <data name="Workflow.GitHub.Action.review-ssh-signing-keys-reset.Criterion.1" xml:space="preserve"><value>SSH and signing keys have been reviewed and unauthorized or exposed keys were removed or recorded as unresolved risk.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-reset.Title" xml:space="preserve"><value>Review the account outcome</value></data>
   <data name="Workflow.GitHub.Action.document-completion-reset.Instruction" xml:space="preserve"><value>Review every required action and record any blocked work, lost access, or unresolved risk before leaving this account.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-reset.Warning" xml:space="preserve"><value>Completion means the review was documented; it is not proof that the device or account is secure.</value></data>
@@ -90,8 +100,8 @@
   <data name="Workflow.GitHub.Action.identify-account-manual.Completion" xml:space="preserve"><value>Account and available recovery evidence recorded</value></data>
   <data name="Workflow.GitHub.Action.identify-account-manual.Criterion.1" xml:space="preserve"><value>The affected account and available recovery evidence have been identified.</value></data>
   <data name="Workflow.GitHub.Action.manual-recovery.Title" xml:space="preserve"><value>Follow manual recovery</value></data>
-  <data name="Workflow.GitHub.Action.manual-recovery.Instruction" xml:space="preserve"><value>Follow the official provider guidance, record whether access is pending, restored, denied, or lost, and preserve unresolved risks.</value></data>
-  <data name="Workflow.GitHub.Action.manual-recovery.Warning" xml:space="preserve"><value>unpwn cannot bypass identity verification, MFA, CAPTCHA, or provider ownership checks.</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Instruction" xml:space="preserve"><value>Open GitHub's official 2FA recovery guidance, use only a recovery method you control, and record whether access is pending, restored, or permanently lost.</value></data>
+  <data name="Workflow.GitHub.Action.manual-recovery.Warning" xml:space="preserve"><value>Opening the guidance does not restore access. unpwn cannot bypass identity verification, MFA, CAPTCHA, ownership checks, provider waiting periods, or GitHub's recovery limits.</value></data>
   <data name="Workflow.GitHub.Action.manual-recovery.Completion" xml:space="preserve"><value>Manual recovery outcome recorded</value></data>
   <data name="Workflow.GitHub.Action.manual-recovery.Criterion.1" xml:space="preserve"><value>The provider's manual recovery outcome has been recorded.</value></data>
   <data name="Workflow.GitHub.Action.document-completion-manual.Title" xml:space="preserve"><value>Review the manual recovery outcome</value></data>
