@@ -27,6 +27,7 @@ public sealed class ProviderWorkflowGuidanceTests
     [Theory]
     [InlineData("github.com", "change-password")]
     [InlineData("google.com", "change-password")]
+    [InlineData("microsoft.com", "change-password")]
     public void RuntimeLanguageSwitchChangesGuidanceWithoutChangingWorkflowSemantics(
         string providerId,
         string actionId)

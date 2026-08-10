@@ -60,6 +60,27 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task ResolvesMicrosoftAccountToReviewedPersonalAccountWorkflow()
+    {
+        var fixture = new Fixture(
+            providerId: "Microsoft",
+            accountUrl: "https://account.microsoft.com/security");
+        var viewModel = fixture.CreateViewModel();
+
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        viewModel.SelectedAction = viewModel.Actions.Single(action =>
+            action.DefinitionId == "change-password");
+        await viewModel.OpenOfficialPageCommand.ExecuteAsync();
+
+        Assert.True(viewModel.HasWorkflow);
+        Assert.Equal("Microsoft", viewModel.ProviderName);
+        Assert.Equal(
+            "https://account.microsoft.com/security",
+            fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
+    }
+
+    [Fact]
     public async Task BrowserNavigationLeavesActionOpenEvenWhenTheProviderPageOpens()
     {
         var fixture = new Fixture();
