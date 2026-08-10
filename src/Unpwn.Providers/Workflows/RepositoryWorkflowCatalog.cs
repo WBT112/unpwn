@@ -7,6 +7,7 @@ public static class RepositoryWorkflowCatalog
 {
     private const string GuidancePrefix = "Workflow.GitHub.Action";
     private const string GoogleGuidancePrefix = "Workflow.Google.Action";
+    private const string MicrosoftGuidancePrefix = "Workflow.Microsoft.Action";
     private static readonly RecoveryPath[] AuthenticatedPath = [RecoveryPath.AuthenticatedChange];
     private static readonly RecoveryPath[] PasswordResetPath = [RecoveryPath.PasswordReset];
     private static readonly RecoveryPath[] ManualPath = [RecoveryPath.ManualRecovery];
@@ -90,6 +91,66 @@ public static class RepositoryWorkflowCatalog
                 GoogleRequired("identify-account-manual", RecoveryActionType.IdentifyAccount, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
                 GoogleRequired("manual-recovery", RecoveryActionType.ManualRecovery, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-manual"], "account-recovery"),
                 GoogleRequired("document-completion-manual", RecoveryActionType.DocumentCompletion, ManualPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["manual-recovery"]),
+            ]),
+        new(
+            "microsoft.com/personal-account-recovery",
+            "microsoft.com",
+            "Microsoft",
+            "personal",
+            "1.0.0",
+            new DateOnly(2026, 8, 10),
+            [
+                new(
+                    "security",
+                    new Uri("https://account.microsoft.com/security"),
+                    ["https://account.microsoft.com"]),
+                new(
+                    "password-reset",
+                    new Uri("https://account.live.com/password/reset"),
+                    ["https://account.live.com"]),
+                new(
+                    "account-recovery-form",
+                    new Uri("https://account.live.com/acsr"),
+                    ["https://account.live.com"]),
+                new(
+                    "recent-activity",
+                    new Uri("https://account.live.com/Activity"),
+                    ["https://account.live.com"]),
+                new(
+                    "advanced-security",
+                    new Uri("https://account.live.com/proofs/manage/additional"),
+                    ["https://account.live.com"]),
+                new(
+                    "devices",
+                    new Uri("https://account.microsoft.com/devices"),
+                    ["https://account.microsoft.com"]),
+                new(
+                    "privacy",
+                    new Uri("https://account.microsoft.com/privacy"),
+                    ["https://account.microsoft.com"]),
+            ],
+            [
+                MicrosoftRequired("identify-account-auth", RecoveryActionType.IdentifyAccount, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
+                MicrosoftRequired("change-password", RecoveryActionType.ChangePassword, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-auth"], "security"),
+                MicrosoftRequired("review-sessions-auth", RecoveryActionType.InvalidateSessions, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "recent-activity"),
+                MicrosoftRequired("review-devices-auth", RecoveryActionType.ReviewTrustedDevices, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "devices"),
+                MicrosoftRequired("review-mfa-auth", RecoveryActionType.ReviewMfa, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["change-password"], "advanced-security"),
+                MicrosoftRequired("review-recovery-options-auth", RecoveryActionType.ReviewRecoveryOptions, AuthenticatedPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["change-password"], "advanced-security"),
+                MicrosoftRequired("review-connected-apps-auth", RecoveryActionType.ReviewConnectedApplications, AuthenticatedPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["change-password"], "privacy"),
+                MicrosoftRequired("document-completion-auth", RecoveryActionType.DocumentCompletion, AuthenticatedPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-sessions-auth", "review-devices-auth", "review-mfa-auth", "review-recovery-options-auth", "review-connected-apps-auth"]),
+
+                MicrosoftRequired("identify-account-reset", RecoveryActionType.IdentifyAccount, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
+                MicrosoftRequired("reset-password", RecoveryActionType.ResetPassword, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-reset"], "password-reset"),
+                MicrosoftRequired("review-sessions-reset", RecoveryActionType.InvalidateSessions, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "recent-activity"),
+                MicrosoftRequired("review-devices-reset", RecoveryActionType.ReviewTrustedDevices, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "devices"),
+                MicrosoftRequired("review-mfa-reset", RecoveryActionType.ReviewMfa, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["reset-password"], "advanced-security"),
+                MicrosoftRequired("review-recovery-options-reset", RecoveryActionType.ReviewRecoveryOptions, PasswordResetPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["reset-password"], "advanced-security"),
+                MicrosoftRequired("review-connected-apps-reset", RecoveryActionType.ReviewConnectedApplications, PasswordResetPath, RecoveryActionImportance.Important, AutomationSupport.Navigation, ["reset-password"], "privacy"),
+                MicrosoftRequired("document-completion-reset", RecoveryActionType.DocumentCompletion, PasswordResetPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["review-sessions-reset", "review-devices-reset", "review-mfa-reset", "review-recovery-options-reset", "review-connected-apps-reset"]),
+
+                MicrosoftRequired("identify-account-manual", RecoveryActionType.IdentifyAccount, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.None, []),
+                MicrosoftRequired("manual-recovery", RecoveryActionType.ManualRecovery, ManualPath, RecoveryActionImportance.Critical, AutomationSupport.Navigation, ["identify-account-manual"], "account-recovery-form"),
+                MicrosoftRequired("document-completion-manual", RecoveryActionType.DocumentCompletion, ManualPath, RecoveryActionImportance.Routine, AutomationSupport.None, ["manual-recovery"]),
             ])
     ];
 
@@ -252,6 +313,70 @@ public static class RepositoryWorkflowCatalog
                 Expected("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], risk: true),
                 Expected("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], risk: true)),
             AccountContractOutcome.AccessCannotBeRestored),
+        new(
+            "microsoft-authenticated-change-available",
+            "microsoft.com/personal-account-recovery",
+            "A signed-in personal Microsoft account is reviewed across password, sessions, devices, sign-in methods, recovery methods, and connected applications.",
+            RecoveryPath.AuthenticatedChange,
+            ["identify-account-auth", "change-password", "review-sessions-auth", "review-devices-auth", "review-mfa-auth", "review-recovery-options-auth", "review-connected-apps-auth", "document-completion-auth"],
+            Expectations(
+                Expected("identify-account-auth", RecoveryActionImportance.Critical, []),
+                Expected("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                Expected("review-sessions-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("review-devices-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("review-mfa-auth", RecoveryActionImportance.Critical, ["change-password"]),
+                Expected("review-recovery-options-auth", RecoveryActionImportance.Critical, ["change-password"]),
+                Expected("review-connected-apps-auth", RecoveryActionImportance.Important, ["change-password"]),
+                Expected("document-completion-auth", RecoveryActionImportance.Routine, ["review-sessions-auth", "review-devices-auth", "review-mfa-auth", "review-recovery-options-auth", "review-connected-apps-auth"])),
+            AccountContractOutcome.CanBeFullySecured),
+        new(
+            "microsoft-password-reset-through-secured-verification-method",
+            "microsoft.com/personal-account-recovery",
+            "Password reset proceeds only through an already controlled verification email, phone, authenticator, or other security method.",
+            RecoveryPath.PasswordReset,
+            ["identify-account-reset", "reset-password", "review-sessions-reset", "review-devices-reset", "review-mfa-reset", "review-recovery-options-reset", "review-connected-apps-reset", "document-completion-reset"],
+            Expectations(
+                Expected("identify-account-reset", RecoveryActionImportance.Critical, []),
+                Expected("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"]),
+                Expected("review-sessions-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("review-devices-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("review-mfa-reset", RecoveryActionImportance.Critical, ["reset-password"]),
+                Expected("review-recovery-options-reset", RecoveryActionImportance.Critical, ["reset-password"]),
+                Expected("review-connected-apps-reset", RecoveryActionImportance.Important, ["reset-password"]),
+                Expected("document-completion-reset", RecoveryActionImportance.Routine, ["review-sessions-reset", "review-devices-reset", "review-mfa-reset", "review-recovery-options-reset", "review-connected-apps-reset"])),
+            AccountContractOutcome.CanBeFullySecured),
+        new(
+            "microsoft-password-reset-blocked-by-verification-method",
+            "microsoft.com/personal-account-recovery",
+            "Password reset remains blocked when every offered verification email, phone, or authenticator method is unavailable or untrusted.",
+            RecoveryPath.PasswordReset,
+            ["identify-account-reset", "reset-password"],
+            Expectations(
+                Expected("identify-account-reset", RecoveryActionImportance.Critical, []),
+                Expected("reset-password", RecoveryActionImportance.Critical, ["identify-account-reset"], blocked: true)),
+            AccountContractOutcome.BlockedByDependency),
+        new(
+            "microsoft-unrecognized-session-remains-risk",
+            "microsoft.com/personal-account-recovery",
+            "Unrecognized recent activity or a session that cannot be invalidated remains visible as unresolved risk.",
+            RecoveryPath.AuthenticatedChange,
+            ["identify-account-auth", "change-password", "review-sessions-auth"],
+            Expectations(
+                Expected("identify-account-auth", RecoveryActionImportance.Critical, []),
+                Expected("change-password", RecoveryActionImportance.Critical, ["identify-account-auth"]),
+                Expected("review-sessions-auth", RecoveryActionImportance.Important, ["change-password"], risk: true)),
+            AccountContractOutcome.NotFullySecuredWithAcceptedRisk),
+        new(
+            "microsoft-account-recovery-form-denied",
+            "microsoft.com/personal-account-recovery",
+            "The provider-reviewed account recovery form can remain pending or be denied without restoring access.",
+            RecoveryPath.ManualRecovery,
+            ["identify-account-manual", "manual-recovery", "document-completion-manual"],
+            Expectations(
+                Expected("identify-account-manual", RecoveryActionImportance.Critical, []),
+                Expected("manual-recovery", RecoveryActionImportance.Critical, ["identify-account-manual"], risk: true),
+                Expected("document-completion-manual", RecoveryActionImportance.Routine, ["manual-recovery"], risk: true)),
+            AccountContractOutcome.AccessCannotBeRestored),
     ];
 
     public static ProviderContractValidationResult ValidateContractScenarios()
@@ -321,6 +446,34 @@ public static class RepositoryWorkflowCatalog
             prerequisites,
             recoveryLocationId);
 
+    private static RecoveryActionDefinition MicrosoftRequired(
+        string id,
+        RecoveryActionType type,
+        IReadOnlyList<RecoveryPath> paths,
+        RecoveryActionImportance importance,
+        AutomationSupport automationSupport,
+        IReadOnlyList<string> prerequisites,
+        string? recoveryLocationId = null) =>
+        Required(
+            MicrosoftGuidancePrefix,
+            id,
+            type,
+            paths,
+            importance,
+            automationSupport,
+            prerequisites,
+            recoveryLocationId,
+            id switch
+            {
+                "review-sessions-reset" => "review-sessions-auth",
+                "review-devices-reset" => "review-devices-auth",
+                "review-mfa-reset" => "review-mfa-auth",
+                "review-recovery-options-reset" => "review-recovery-options-auth",
+                "review-connected-apps-reset" => "review-connected-apps-auth",
+                "document-completion-reset" or "document-completion-manual" => "document-completion-auth",
+                _ => id,
+            });
+
     private static RecoveryActionDefinition Required(
         string guidancePrefix,
         string id,
@@ -329,9 +482,10 @@ public static class RepositoryWorkflowCatalog
         RecoveryActionImportance importance,
         AutomationSupport automationSupport,
         IReadOnlyList<string> prerequisites,
-        string? recoveryLocationId)
+        string? recoveryLocationId,
+        string? guidanceId = null)
     {
-        var prefix = $"{guidancePrefix}.{id}";
+        var prefix = $"{guidancePrefix}.{guidanceId ?? id}";
         var criteria = new[] { $"{prefix}.Criterion.1" };
         return new RecoveryActionDefinition(
             id,

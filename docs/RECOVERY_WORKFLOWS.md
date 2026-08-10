@@ -253,3 +253,31 @@ the channel is under the user's control.
 The workflow covers consumer accounts. Organization-managed Google Workspace policies may remove or
 alter available controls, in which case the user must keep the limitation visible as blocked work or
 unresolved risk and follow their administrator's reviewed process.
+
+## Microsoft personal account workflow
+
+The repository workflow for personal Microsoft accounts uses only reviewed Microsoft account
+locations on the exact `account.microsoft.com` and `account.live.com` origins. It covers the
+authenticated security dashboard, password reset, the provider-reviewed account recovery form,
+recent sign-in activity, advanced security options, registered devices, and privacy or connected-app
+controls. The locations and official guidance below were reviewed on 2026-08-10.
+
+Review references:
+
+- [Reset a forgotten Microsoft account password](https://support.microsoft.com/en-us/accounts-billing/manage/reset-a-forgotten-microsoft-account-password)
+- [Help with the Microsoft account recovery form](https://support.microsoft.com/en-US/accounts-billing/manage/help-with-the-microsoft-account-recovery-form)
+- [Check recent sign-in activity](https://support.microsoft.com/en-us/account-billing/check-the-recent-sign-in-activity-for-your-microsoft-account-5b3cfb8e-70b3-2bd6-9a56-a50177863357)
+- [Use two-step verification with a Microsoft account](https://support.microsoft.com/en-US/accounts-billing/security/how-to-use-two-step-verification-with-your-microsoft-account)
+- [Get a Microsoft account recovery code](https://support.microsoft.com/en-US/accounts-billing/manage/how-to-get-a-microsoft-account-recovery-code)
+- [Add a trusted device](https://support.microsoft.com/en-us/accounts-billing/manage/add-a-trusted-device-to-your-microsoft-account)
+
+Password reset proceeds only through a verification method the user already controls. If every
+offered email address, telephone number, authenticator, or other method is unavailable or untrusted,
+the reset remains visibly blocked and the user can move to Microsoft's official recovery form.
+Submitting that form does not prove ownership or restored access: provider review may remain pending
+or be denied.
+
+This workflow explicitly supports personal Microsoft accounts only. Work or school accounts are
+organization-managed and can expose different controls and recovery policies; users must follow the
+organization's reviewed process or contact its administrator instead of treating the personal-account
+workflow as applicable.
