@@ -1,0 +1,6 @@
+folder,favorite,type,name,notes,fields,reprompt,login_uri,login_username,login_password,login_totp
+google.com,1,login,Google / authenticated-change,"Synthetic fixture, authenticated path",,0,https://bitwarden-google.example.test/account,synthetic-bw-google@accounts.example.test,UNPWN_TEST_SECRET_BITWARDEN_GOOGLE_AUTH,
+microsoft.com,0,login,Microsoft / password-reset,Synthetic fixture reset path,,0,https://bitwarden-microsoft.example.test/account,synthetic-bw-microsoft@accounts.example.test,UNPWN_TEST_SECRET_BITWARDEN_MICROSOFT_RESET,
+github.com,0,login,GitHub / manual-recovery,Synthetic fixture manual path,,0,https://bitwarden-github.example.test/account,synthetic-bw-github@accounts.example.test,UNPWN_TEST_SECRET_BITWARDEN_GITHUB_MANUAL,
+bitwarden.com,1,login,Synthetic password manager,Synthetic dependency root,,1,https://bitwarden-vault.example.test/account,synthetic-bw-vault@password-manager.example.test,UNPWN_TEST_SECRET_BITWARDEN_VAULT,
+unicode.example,0,login,"Müller – 测试konto",UTF-8 account name,,0,,synthetic-bw-unicode@unicode.example.test,UNPWN_TEST_SECRET_BITWARDEN_UNICODE,

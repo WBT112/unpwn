@@ -272,6 +272,8 @@ Browser-assistance tests may use a narrower supported runner matrix if required,
 
 Use recognizable synthetic secret markers, for example values beginning with `UNPWN_TEST_SECRET_`, so tests can scan logs, files, and artifacts for accidental leakage.
 
+The repository-controlled fixtures under `samples/import/` are the canonical manual recovery smoke-test data set. `generic-recovery-sample.csv` covers every shipped provider workflow and recovery path, `bitwarden-recovery-sample.csv` exercises password-manager-style mapping and secret-column exclusion, and `import-edge-cases.csv` provides deterministic duplicate and row-diagnostic cases. Their companion scenario matrix documents post-import roles, dependencies, blocked work, lost access, and unresolved-risk setup without encoding unsupported fields into CSV.
+
 Synthetic reset tokens, credentials, account identifiers, localization arguments, and imported values must never be accepted by production code as trusted test-mode indicators. Test mode must be selected through explicit application configuration and restricted target validation.
 
 Localization tests use synthetic non-secret values and must not place secrets into resource files, pseudo-localized screenshots, or formatting-failure output.

@@ -1,0 +1,17 @@
+service,account,username,url,scenario
+google.com,Google / authenticated-change,synthetic-google-auth@accounts.example.test,https://google-auth.example.test/account,google-authenticated-change
+google.com,Google / password-reset,synthetic-google-reset@accounts.example.test,https://google-reset.example.test/account,google-password-reset
+google.com,Google / manual-recovery,synthetic-google-manual@accounts.example.test,,google-manual-recovery
+microsoft.com,Microsoft / authenticated-change,synthetic-microsoft-auth@accounts.example.test,https://microsoft-auth.example.test/account,microsoft-authenticated-change
+microsoft.com,Microsoft / password-reset,synthetic-microsoft-reset@accounts.example.test,https://microsoft-reset.example.test/account,microsoft-password-reset
+microsoft.com,Microsoft / manual-recovery,synthetic-microsoft-manual@accounts.example.test,,microsoft-manual-recovery
+github.com,GitHub / authenticated-change,synthetic-github-auth@accounts.example.test,https://github-auth.example.test/account,github-authenticated-change
+github.com,GitHub / password-reset,synthetic-github-reset@accounts.example.test,https://github-reset.example.test/account,github-password-reset
+github.com,GitHub / manual-recovery,synthetic-github-manual@accounts.example.test,,github-manual-recovery
+google.com,Primary recovery email,synthetic-primary-email@accounts.example.test,,dependency-root
+bitwarden.com,Synthetic password manager,synthetic-vault@password-manager.example.test,https://password-manager.example.test/account,password-manager-root
+example-marketplace.test,"Marketplace, account",synthetic-market@marketplace.example.test,https://marketplace.example.test/login,ordinary-dependent
+unicode.example,"Müller – 测试konto",synthetic-unicode@unicode.example.test,,unicode-account
+unsupported.example,Manual fallback account,,https://unsupported.example.test/account,unsupported-provider
+login-only.example,,synthetic-login-only@login-only.example.test,,login-only
+,URL-only account,synthetic-url-only@url-only.example.test,https://url-only.example.test/account,url-only
