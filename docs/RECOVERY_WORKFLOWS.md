@@ -224,6 +224,33 @@ Localization validation separately verifies that referenced display keys exist i
 
 The shipped provider catalog validates all repository workflows through `RepositoryWorkflowCatalog.ValidateAll()`. Provider workflow changes should add or update catalog entries and regression tests that prove the definition remains structurally and semantically safe.
 
+## GitHub consumer account workflow
+
+The repository workflow for GitHub.com consumer accounts guides authenticated password changes,
+password resets through an already secured email account, and GitHub's provider-controlled recovery
+options when 2FA credentials are unavailable. Its reviewed navigation boundaries use only the exact
+`github.com` and `docs.github.com` origins for password and authentication settings, active sessions,
+verified email addresses, authorized applications, personal access tokens, SSH and signing keys, and
+official recovery guidance. These locations were reviewed on 2026-08-10.
+
+Review references:
+
+- [Updating your GitHub access credentials](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/updating-your-github-access-credentials)
+- [Preventing unauthorized access](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/preventing-unauthorized-access)
+- [Configuring two-factor authentication recovery methods](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/configuring-two-factor-authentication-recovery-methods)
+- [Recovering your account if you lose your 2FA credentials](https://docs.github.com/en/authentication/securing-your-account-with-two-factor-authentication-2fa/recovering-your-account-if-you-lose-your-2fa-credentials)
+- [Reviewing authorized OAuth apps](https://docs.github.com/en/apps/oauth-apps/using-oauth-apps/reviewing-your-authorized-oauth-apps)
+- [Managing personal access tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+
+Personal access tokens and SSH or signing keys are separate required critical actions. Their secret
+values never enter unpwn. Revocation can interrupt command-line access, integrations, deployments, or
+automation, so the user performs each provider action visibly and records any credential that cannot
+be safely replaced as unresolved risk.
+
+The workflow covers the user's GitHub.com account. It does not perform organization-wide or
+enterprise administration, and it does not assume GitHub Support can restore an account when all
+documented 2FA recovery methods are unavailable.
+
 ## Google consumer account workflow
 
 The repository workflow for consumer Google accounts uses only two reviewed navigation boundaries:

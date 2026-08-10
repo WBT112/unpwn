@@ -132,6 +132,7 @@ public enum RecoveryActionType
     ManualRecovery,
     RecordUnresolvedRisk,
     DocumentCompletion,
+    ReviewSshAndSigningKeys,
 }
 
 public enum RecoveryPath

@@ -101,6 +101,26 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.Contains("remains unchanged", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("review-api-tokens-auth", "https://github.com/settings/tokens")]
+    [InlineData("review-ssh-signing-keys-auth", "https://github.com/settings/keys")]
+    public async Task OpensTheReviewedLocationForCriticalDeveloperCredentials(
+        string actionId,
+        string expectedDestination)
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        viewModel.SelectedAction = viewModel.Actions.Single(action =>
+            action.DefinitionId == actionId);
+
+        await viewModel.OpenOfficialPageCommand.ExecuteAsync();
+
+        Assert.Equal(expectedDestination, fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
+        Assert.Equal(RecoveryActionStatus.Open, fixture.Execution.State!.GetAction(actionId).Status);
+    }
+
     [Fact]
     public async Task CompletionRequiresCriteriaAndConfirmationThenReturnsToRecalculatedPlan()
     {
