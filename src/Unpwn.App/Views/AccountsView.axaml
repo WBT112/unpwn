@@ -20,7 +20,6 @@
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
           <Button Content="{DynamicResource Accounts.Action.New}" Command="{Binding NewAccountCommand}" />
-          <Button Content="{DynamicResource Accounts.Action.Refresh}" Command="{Binding RefreshCommand}" />
         </StackPanel>
         <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="2*,*,*" ColumnSpacing="12">
           <TextBox Grid.Column="0"

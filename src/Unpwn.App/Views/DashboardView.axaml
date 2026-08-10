@@ -10,13 +10,8 @@
               Padding="24"
               CornerRadius="12"
               Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-        <StackPanel Spacing="16">
-          <TextBlock Text="{DynamicResource Dashboard.State.Locked}"
-                     TextWrapping="Wrap" />
-          <Button Content="{DynamicResource Dashboard.Refresh}"
-                  Command="{Binding RefreshCommand}"
-                  HorizontalAlignment="Left" />
-        </StackPanel>
+        <TextBlock Text="{DynamicResource Dashboard.State.Locked}"
+                   TextWrapping="Wrap" />
       </Border>
 
       <Border IsVisible="{Binding IsLoadingState}"
@@ -36,9 +31,6 @@
                      Text="{DynamicResource Dashboard.State.Corrupted.Title}" />
           <TextBlock Text="{DynamicResource Dashboard.State.Corrupted.Message}"
                      TextWrapping="Wrap" />
-          <Button Content="{DynamicResource Dashboard.Refresh}"
-                  Command="{Binding RefreshCommand}"
-                  HorizontalAlignment="Left" />
         </StackPanel>
       </Border>
 
@@ -127,21 +119,14 @@
         <Border Padding="20"
                 CornerRadius="12"
                 Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <Grid ColumnDefinitions="*,Auto"
-                ColumnSpacing="16">
-            <StackPanel Spacing="6">
-              <TextBlock Classes="section-title"
-                         Text="{Binding CurrentSessionName}" />
-              <TextBlock Text="{Binding SessionStatusText}" />
-              <TextBlock Text="{Binding LastSavedText}" />
-              <TextBlock Text="{Binding VaultText}" />
-              <TextBlock Text="{Binding WizardPhaseText}" />
-            </StackPanel>
-            <Button Grid.Column="1"
-                    Content="{DynamicResource Dashboard.Refresh}"
-                    Command="{Binding RefreshCommand}"
-                    VerticalAlignment="Top" />
-          </Grid>
+          <StackPanel Spacing="6">
+            <TextBlock Classes="section-title"
+                       Text="{Binding CurrentSessionName}" />
+            <TextBlock Text="{Binding SessionStatusText}" />
+            <TextBlock Text="{Binding LastSavedText}" />
+            <TextBlock Text="{Binding VaultText}" />
+            <TextBlock Text="{Binding WizardPhaseText}" />
+          </StackPanel>
         </Border>
 
         <Border IsVisible="{Binding HasEmergencyAdvisory}"

@@ -59,7 +59,6 @@
   <data name="Accounts.Dependency.Missing" xml:space="preserve"><value>Missing account</value></data>
   <data name="Accounts.Dependency.OverrideMarker" xml:space="preserve"><value>(override; risk remains)</value></data>
   <data name="Accounts.Action.New" xml:space="preserve"><value>New account</value></data>
-  <data name="Accounts.Action.Refresh" xml:space="preserve"><value>Refresh</value></data>
   <data name="Accounts.Search.Placeholder" xml:space="preserve"><value>Search provider, account, login, or URL</value></data>
   <data name="Accounts.List.Title" xml:space="preserve"><value>Account inventory</value></data>
   <data name="Accounts.Editor.Title" xml:space="preserve"><value>Account details</value></data>

@@ -324,7 +324,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     public RelayCommand OpenCompletionCommand { get; }
 
-    public override void Activate() => RefreshState();
+    public override void Activate() => _ = RefreshCommand.ExecuteAsync();
 
     private RecoverySessionWorkspace? Session => _sessionService.CurrentSession;
 

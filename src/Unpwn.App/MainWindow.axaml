@@ -73,12 +73,19 @@
                    SelectedItem="{Binding SelectedNavigation, Mode=TwoWay}"
                    Background="Transparent"
                    BorderThickness="0">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="IsEnabled" Value="{ReflectionBinding IsEnabled}" />
+              </Style>
+              <Style Selector="ListBoxItem:disabled">
+                <Setter Property="Opacity" Value="0.42" />
+              </Style>
+            </ListBox.Styles>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:NavigationItemViewModel">
                 <Grid Margin="2,4"
                       ColumnDefinitions="32,*"
-                      ColumnSpacing="8"
-                      IsEnabled="{Binding IsEnabled}">
+                      ColumnSpacing="8">
                   <Border Width="28"
                           Height="28"
                           VerticalAlignment="Center"

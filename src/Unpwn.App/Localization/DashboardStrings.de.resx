@@ -5,7 +5,6 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Dashboard.Command.Error" xml:space="preserve"><value>Die Aktion für die Wiederherstellungssitzung konnte nicht abgeschlossen werden.</value></data>
-  <data name="Dashboard.Refresh" xml:space="preserve"><value>Sitzung neu laden</value></data>
   <data name="Dashboard.State.Locked" xml:space="preserve"><value>Entsperre den Wiederherstellungstresor, um das Sitzungs-Dashboard zu laden.</value></data>
   <data name="Dashboard.State.Loading" xml:space="preserve"><value>Die verschlüsselte Wiederherstellungssitzung wird geladen…</value></data>
   <data name="Dashboard.State.Empty.Title" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
