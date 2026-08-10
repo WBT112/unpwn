@@ -185,6 +185,13 @@ public sealed class AppScreenFactory : IScreenFactory
                     "Screen.Credentials.StatusTitle",
                     "Screen.Credentials.StatusMessage"),
             [AppRoute.Completion] = new CompletionScreenViewModel(
+                functionalCredentials
+                    ? new RecoveryCompletionService(
+                        recoverySession,
+                        accountInventory,
+                        credentialRepository!)
+                    : new UnavailableRecoveryCompletionService(),
+                new JsonRecoveryCompletionReportWriter(),
                 confirmationDialog,
                 vaultLifecycle,
                 localization),

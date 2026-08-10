@@ -100,6 +100,11 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
             return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Locked);
         }
 
+        if (_sessionService.CurrentSession?.IsReadOnly == true)
+        {
+            return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
+        }
+
         try
         {
             ValidateCreateRequest(request);
@@ -152,6 +157,11 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         if (!_recordStore.IsVaultUnlocked)
         {
             return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Locked);
+        }
+
+        if (_sessionService.CurrentSession?.IsReadOnly == true)
+        {
+            return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
         }
 
         try

@@ -466,6 +466,11 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                 return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.Conflict);
             }
 
+            if (session.IsReadOnly)
+            {
+                return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.Conflict);
+            }
+
             inventory ??= AccountInventoryState.Empty(session.Id, _clock());
             AccountInventoryState updated;
             try

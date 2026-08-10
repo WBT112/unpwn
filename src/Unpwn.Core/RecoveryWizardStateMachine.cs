@@ -254,6 +254,31 @@ public static class RecoveryWizardStateMachine
         };
     }
 
+    public static RecoveryWizardState BeginCompletionReview(
+        RecoveryWizardState state,
+        DateTimeOffset occurredAt)
+    {
+        ValidateActive(state);
+        ValidateVaultContext(state);
+        ValidateTimestamp(state, occurredAt);
+        if (state.CurrentStep == RecoveryWizardStepId.Welcome ||
+            state.CurrentStep == RecoveryWizardStepId.TrustedDeviceCheck ||
+            state.CurrentStep == RecoveryWizardStepId.TrustedDeviceGuidance ||
+            state.CurrentStep == RecoveryWizardStepId.VaultEntry ||
+            state.CurrentStep == RecoveryWizardStepId.IncidentIntake)
+        {
+            throw new InvalidOperationException("Completion review requires a persisted recovery session.");
+        }
+
+        return state with
+        {
+            CurrentStep = RecoveryWizardStepId.CompletionPreflight,
+            ResumeStep = RecoveryWizardStepId.CompletionPreflight,
+            Revision = state.Revision + 1,
+            UpdatedAt = occurredAt,
+        };
+    }
+
     private static RecoveryWizardState MoveToAllowedStep(
         RecoveryWizardState state,
         RecoveryWizardStepId nextStep,

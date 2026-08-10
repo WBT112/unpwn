@@ -91,6 +91,39 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void TerminalSessionKeepsFinalReportAvailableAndDisablesMutationScreens()
+    {
+        var vault = new TestVaultLifecycleService();
+        var recoverySession = new TestRecoverySessionService();
+        var inventory = new TestAccountInventoryService();
+        var localization = CreateLocalization();
+        var factory = new AppScreenFactory(
+            new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            vault,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            recoverySession,
+            inventory,
+            localization);
+        var shell = new ShellViewModel(factory, vault, recoverySession, inventory, localization);
+        vault.Unlock("Synthetic vault", "Synthetic recovery session");
+        var archived = RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch)
+            .Archive(DateTimeOffset.UnixEpoch.AddMinutes(1));
+
+        recoverySession.SetSession(archived);
+
+        Assert.True(shell.NavigationItems.Single(item => item.Route == AppRoute.Dashboard).IsEnabled);
+        Assert.True(shell.NavigationItems.Single(item => item.Route == AppRoute.Completion).IsEnabled);
+        Assert.False(shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts).IsEnabled);
+        Assert.False(shell.NavigationItems.Single(item => item.Route == AppRoute.Workflow).IsEnabled);
+        Assert.False(shell.NavigationItems.Single(item => item.Route == AppRoute.CredentialsExport).IsEnabled);
+        Assert.False(shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport).IsEnabled);
+    }
+
+    [Fact]
     public void LanguageChangeRefreshesShellNavigationAndCurrentScreen()
     {
         var localization = CreateLocalization();
@@ -129,20 +162,15 @@ public sealed class ShellViewModelTests
     public async Task CompletionCommandCanBeCanceledAndRejectsRepeatedExecution()
     {
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var confirmationCalls = 0;
-        var confirmation = new TestConfirmationDialogService(async (_, cancellationToken) =>
+        var service = new TestCompletionService(async cancellationToken =>
         {
-            confirmationCalls++;
             started.SetResult();
             await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
-            return true;
+            return RecoveryCompletionReviewResult.Failure(RecoveryCompletionFailureCode.ReadFailed);
         });
         var shellContext = new TestVaultLifecycleService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
-        var viewModel = new CompletionScreenViewModel(
-            confirmation,
-            shellContext,
-            CreateLocalization());
+        var viewModel = CreateCompletionViewModel(service, shellContext);
 
         var firstExecution = viewModel.ReviewCompletionCommand.ExecuteAsync();
         await started.Task;
@@ -156,27 +184,27 @@ public sealed class ShellViewModelTests
         var firstOutcome = await firstExecution;
 
         Assert.Equal(AsyncCommandOutcome.Canceled, firstOutcome);
-        Assert.Equal(1, confirmationCalls);
+        Assert.Equal(1, service.ReviewCalls);
         Assert.False(viewModel.ReviewCompletionCommand.IsRunning);
     }
 
     [Fact]
     public async Task FailedCompletionCommandUsesCurrentLanguageAndExposesNoSourceMessage()
     {
-        const string sourceError = "UNPWN_TEST_SECRET_dialog-failure";
-        var confirmation = new TestConfirmationDialogService((_, _) =>
-            Task.FromException<bool>(new InvalidOperationException(sourceError)));
+        const string sourceError = "UNPWN_TEST_SECRET_preflight-failure";
+        var service = new TestCompletionService(_ =>
+            Task.FromException<RecoveryCompletionReviewResult>(new InvalidOperationException(sourceError)));
         var shellContext = new TestVaultLifecycleService();
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
         var localization = CreateLocalization();
-        var viewModel = new CompletionScreenViewModel(confirmation, shellContext, localization);
+        var viewModel = CreateCompletionViewModel(service, shellContext, localization);
         localization.SetLanguage("de");
 
         var outcome = await viewModel.ReviewCompletionCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Failed, outcome);
         Assert.Equal(
-            "Die Abschlussbestätigung konnte nicht geöffnet werden.",
+            "Die Abschlussaktion konnte nicht ausgeführt werden.",
             viewModel.ReviewCompletionCommand.LastErrorMessage);
         Assert.DoesNotContain(sourceError, viewModel.ReviewCompletionCommand.LastErrorMessage, StringComparison.Ordinal);
         Assert.True(viewModel.ReviewCompletionCommand.HasError);
@@ -196,9 +224,11 @@ public sealed class ShellViewModelTests
         shellContext.Unlock("Synthetic vault", "Synthetic recovery session");
         var localization = CreateLocalization();
         localization.SetLanguage("de");
-        var viewModel = new CompletionScreenViewModel(confirmation, shellContext, localization);
+        var service = new TestCompletionService(_ => Task.FromResult(CleanReview()));
+        var viewModel = CreateCompletionViewModel(service, shellContext, localization, confirmation);
 
-        var outcome = await viewModel.ReviewCompletionCommand.ExecuteAsync();
+        await viewModel.ReviewCompletionCommand.ExecuteAsync();
+        var outcome = await viewModel.CompleteCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
         Assert.NotNull(observedRequest);
@@ -206,6 +236,7 @@ public sealed class ShellViewModelTests
         Assert.Equal("Synthetic recovery session", observedRequest.AffectedItem);
         Assert.Equal("SICHERHEITSRELEVANTE AKTION", observedRequest.RiskLabel);
         Assert.Equal(AppVisualState.Normal, viewModel.Status.State);
+        Assert.Equal(0, service.CompleteCalls);
     }
 
     [Fact]
@@ -231,6 +262,28 @@ public sealed class ShellViewModelTests
 
     private static ResourceLocalizationService CreateLocalization() =>
         new(CultureInfo.GetCultureInfo("en"));
+
+    private static CompletionScreenViewModel CreateCompletionViewModel(
+        IRecoveryCompletionService completionService,
+        TestVaultLifecycleService shellContext,
+        ResourceLocalizationService? localization = null,
+        IConfirmationDialogService? confirmation = null) =>
+        new(
+            completionService,
+            new TestReportWriter(),
+            confirmation ?? new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            shellContext,
+            localization ?? CreateLocalization());
+
+    private static RecoveryCompletionReviewResult CleanReview()
+    {
+        var sessionId = Guid.NewGuid();
+        var reviewedAt = DateTimeOffset.UnixEpoch;
+        var preflight = new RecoveryCompletionPreflight(sessionId, 1, 1, reviewedAt, [], 0);
+        var report = new RecoveryCompletionReport(
+            sessionId, reviewedAt, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, []);
+        return RecoveryCompletionReviewResult.Success(preflight, report);
+    }
 
     private static ShellViewModel CreateShell(
         TestVaultLifecycleService shellContext,
@@ -363,6 +416,45 @@ public sealed class ShellViewModelTests
         private static Task<AccountInventoryOperationResult> Unsupported() =>
             Task.FromResult(AccountInventoryOperationResult.Failure(
                 AccountInventoryFailureCode.Conflict));
+    }
+
+    private sealed class TestCompletionService(
+        Func<CancellationToken, Task<RecoveryCompletionReviewResult>> review)
+        : IRecoveryCompletionService
+    {
+        public int ReviewCalls { get; private set; }
+
+        public int CompleteCalls { get; private set; }
+
+        public Task<RecoveryCompletionReviewResult> ReviewAsync(CancellationToken cancellationToken)
+        {
+            ReviewCalls++;
+            return review(cancellationToken);
+        }
+
+        public Task<RecoveryCompletionOperationResult> CompleteAsync(
+            RecoveryCompletionPreflight reviewedPreflight,
+            bool unresolvedRiskExplicitlyAccepted,
+            bool archive,
+            CancellationToken cancellationToken)
+        {
+            CompleteCalls++;
+            var completion = new RecoveryCompletionRecord(
+                archive ? RecoveryCompletionOutcome.Archived : RecoveryCompletionOutcome.Completed,
+                reviewedPreflight.ReviewedAt,
+                unresolvedRiskExplicitlyAccepted,
+                CleanReview().Report!);
+            return Task.FromResult(RecoveryCompletionOperationResult.Success(completion));
+        }
+    }
+
+    private sealed class TestReportWriter : IRecoveryCompletionReportWriter
+    {
+        public Task<RecoveryCompletionReportWriteResult> WriteAsync(
+            RecoveryCompletionReport report,
+            string destinationPath,
+            CancellationToken cancellationToken) =>
+            Task.FromResult(RecoveryCompletionReportWriteResult.Success);
     }
 
     private sealed class TestVaultLifecycleService : IVaultLifecycleService

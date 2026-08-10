@@ -101,6 +101,14 @@ Archiving requires a confirmation that names the session and explains the conseq
 
 Completion remains a separate review flow. Opening completion review from the dashboard does not complete the session.
 
+### Completed and follow-up required
+
+Completion reloads the encrypted session and inventory projections and the generated-credential metadata before it builds the preflight. The preflight is revision-bound; if persisted state changes before confirmation, the user must review the refreshed result. Reviewing or cancelling does not mutate the session.
+
+A clean explicit completion stores `Completed`. Open required work, lost access, unresolved roles or dependencies, incomplete credential handoff, and cleanup risk require a separate acknowledgement and store `FollowUpRequired`. A credential that has completed export, password-manager confirmation, and plaintext cleanup but remains encrypted in the vault is shown as a non-blocking retention warning; the terminal confirmation still states that it will not be deleted automatically. Archiving from the same review stores `Archived`. The session record and wizard terminal state are written atomically, after which account, workflow, import, and credential-mutation navigation is read-only.
+
+The encrypted completion record retains a structured report. Its machine-readable JSON export contains only opaque session/account identifiers, provider identifiers, canonical issue codes, timestamps, and aggregate counters. Account labels, login identifiers, URLs, user notes, credential identifiers, and credential secrets are excluded. Export uses an explicit destination and never overwrites an existing file. Ending or archiving never deletes the vault, credentials, or plaintext export files automatically and never claims forensic erasure.
+
 ## Unlock and restart behavior
 
 After a vault is created or unlocked, the application loads the encrypted session record:

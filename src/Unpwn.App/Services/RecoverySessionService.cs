@@ -86,6 +86,18 @@ public sealed class RecoverySessionService :
             RecoverySessionWizardTransition.Archive,
             cancellationToken);
 
+    public Task<RecoverySessionOperationResult> CompleteAsync(
+        RecoveryCompletionRecord completion,
+        long expectedSessionRevision,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(completion);
+        return _mutationCoordinator.ExecuteAsync(
+            token => CompleteCoreAsync(completion, expectedSessionRevision, token),
+            cancellationToken);
+    }
+
     public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
         IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
         CancellationToken cancellationToken)
@@ -297,6 +309,71 @@ public sealed class RecoverySessionService :
         return _mutationCoordinator.ExecuteAsync(
             token => TransitionCoreAsync(transition, wizardTransition, token),
             cancellationToken);
+    }
+
+    private async Task<RecoverySessionOperationResult> CompleteCoreAsync(
+        RecoveryCompletionRecord completion,
+        long expectedSessionRevision,
+        CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!_recordStore.IsVaultUnlocked)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Locked);
+            }
+
+            if (CurrentSession is null || CurrentSession.Revision != expectedSessionRevision ||
+                _wizardCoordinator is not IRecoveryWizardPersistenceCoordinator wizardPersistence)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
+            }
+
+            RecoverySessionWorkspace updated;
+            try
+            {
+                completion.Validate();
+                updated = CurrentSession.Complete(completion, _clock());
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
+            }
+
+            var transition = completion.Outcome switch
+            {
+                RecoveryCompletionOutcome.Completed => RecoverySessionWizardTransition.Complete,
+                RecoveryCompletionOutcome.FollowUpRequired => RecoverySessionWizardTransition.CompleteWithFollowUp,
+                RecoveryCompletionOutcome.Archived => RecoverySessionWizardTransition.CompleteAndArchive,
+                _ => throw new ArgumentOutOfRangeException(nameof(completion)),
+            };
+
+            try
+            {
+                using var sessionUpdate = PrepareState(updated, CurrentSession.Revision);
+                using var wizardUpdate = wizardPersistence.PrepareTransition(transition, _clock());
+                var persisted = await PersistBatchAsync(
+                    [sessionUpdate.ToWrite(), wizardUpdate.ToWrite()],
+                    cancellationToken);
+                if (!persisted.Succeeded)
+                {
+                    return persisted;
+                }
+
+                wizardPersistence.CommitPreparedTransition(wizardUpdate);
+                SetState(RecoverySessionLoadState.Loaded, updated);
+                return RecoverySessionOperationResult.Success;
+            }
+            catch (InvalidOperationException)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
+            }
+        }
+        finally
+        {
+            _gate.Release();
+        }
     }
 
     private async Task<RecoverySessionOperationResult> TransitionCoreAsync(

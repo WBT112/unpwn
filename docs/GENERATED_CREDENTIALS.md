@@ -132,4 +132,4 @@ Tests cover:
 - file-created/state-update-failed reporting
 - repeated operation handling
 
-The later UI work in Issue #35 remains responsible for reveal and clipboard timers, destination warnings, password-manager import confirmation, post-import cleanup prompts, accessibility, and completion-preflight integration.
+The credential UI provides reveal and clipboard timers, destination warnings, password-manager import confirmation, and post-import cleanup prompts. Completion preflight reads only credential metadata and reports separate counts for unexported credentials, unconfirmed password-manager imports, retained vault credentials, and pending plaintext cleanup; it never reads credential secret material.
