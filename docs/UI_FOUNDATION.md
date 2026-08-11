@@ -6,7 +6,14 @@ The Avalonia desktop application uses an MVVM-oriented shell as its composition 
 
 The application starts with no vault unlocked. The header displays explicit locked-vault and no-session labels, the vault-entry route is selected, and no recovery data is loaded. A global lock action is visible whenever an injected shell-context service reports an unlocked vault. Locking returns navigation to the vault-entry route.
 
-The stable top-level routes are:
+During an active recovery session, the primary shell surface is the guided assistant task card. It
+shows the persisted wizard phase, the next task, why it matters, an optional recommended account and
+reviewed action, and one context-sensitive primary action. Back and pause remain secondary actions.
+When the canonical recommendation changes, keyboard and screen-reader focus moves to the new primary
+task action. Merely opening a route never advances the wizard.
+
+The stable top-level routes remain available as secondary detail and correction views behind the
+workspace disclosure:
 
 - vault entry
 - recovery dashboard
@@ -22,7 +29,8 @@ Navigation exposes workflow prerequisites instead of allowing an operation to fa
 unrelated conflict: only vault entry is available while locked, the dashboard becomes available after
 unlock, account entry and CSV import require a persisted recovery session, and downstream recovery,
 credential, and completion routes require at least one persisted account. Disabled routes remain
-visible so the sequence is understandable. Screens refresh their service-backed projection whenever
+visible so the sequence is understandable. Paused sessions keep the dashboard and explicit resume
+action available while mutation-capable detail routes remain disabled. Screens refresh their service-backed projection whenever
 they are activated, in addition to reacting to change notifications, so data imported on another route
 is visible immediately.
 

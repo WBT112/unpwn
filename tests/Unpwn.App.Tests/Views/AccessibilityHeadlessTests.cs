@@ -5,8 +5,12 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.App.Tests.Presentation;
 using Unpwn.App.Views;
+using Unpwn.Application;
+using Unpwn.Core;
 using Xunit;
 
 namespace Unpwn.App.Tests.Views;
@@ -97,7 +101,55 @@ public sealed class AccessibilityHeadlessTests
             Assert.NotNull(FindByAutomationId(window, "shell-language"));
             Assert.NotNull(FindByAutomationId(window, "shell-navigation"));
             Assert.NotNull(FindByAutomationId(window, "shell-lock-vault"));
+            Assert.NotNull(FindByAutomationId(window, "shell-assistant-primary"));
+            Assert.NotNull(FindByAutomationId(window, "shell-workspace-toggle"));
 
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task AssistantTaskReceivesFocusInitiallyAndWhenCanonicalGuidanceChanges()
+    {
+        await Session.Dispatch(() =>
+        {
+            var vault = new ShellViewModelTests.TestVaultLifecycleService();
+            vault.Unlock("Synthetic vault", "Synthetic recovery");
+            var session = new ShellViewModelTests.TestRecoverySessionService();
+            session.SetSession(RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch));
+            var guided = new ShellViewModelTests.TestGuidedRecoveryWizardService(
+                ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
+                new GuidedRecoveryDecision(
+                    RecoveryWizardStepId.AccountInventory,
+                    null,
+                    GuidedRecoveryBlockCode.AccountsRequired));
+            var shell = ShellViewModelTests.CreateGuidedShell(
+                vault,
+                session,
+                new ShellViewModelTests.TestAccountInventoryService(),
+                guided);
+            var window = new global::Unpwn.App.MainWindow { DataContext = shell };
+
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            var primary = FindByAutomationId(window, "shell-assistant-primary");
+            Assert.Same(primary, window.FocusManager?.GetFocusedElement());
+            var previousFocusRequest = shell.AssistantFocusRequest;
+
+            guided.SetGuidance(
+                ShellViewModelTests.WizardAt(RecoveryWizardStepId.IdentityReview),
+                new GuidedRecoveryDecision(
+                    RecoveryWizardStepId.IdentityReview,
+                    RecoveryWizardStepId.RecoveryPlan,
+                    GuidedRecoveryBlockCode.None));
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.True(shell.AssistantFocusRequest > previousFocusRequest);
+            Assert.Same(primary, window.FocusManager?.GetFocusedElement());
             window.Close();
         }, CancellationToken.None);
     }

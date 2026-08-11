@@ -64,7 +64,8 @@
   <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Empfohlener nächster Schritt</value></data>
   <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Empfehlung öffnen</value></data>
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>Keine Empfehlung verfügbar.</value></data>
-  <data name="Dashboard.Recommendation.WithProvider" xml:space="preserve"><value>{0} Ziel: {1}.</value></data>
+  <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Empfohlenes Konto oder Dienst: {0}</value></data>
+  <data name="Dashboard.Recommendation.Action" xml:space="preserve"><value>Aktuelle Aktion: {0}</value></data>
   <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Importiere oder ergänze das Konteninventar, damit Abhängigkeiten und kritische Identitäten geprüft werden können.</value></data>
   <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Prüfe und sichere die primäre E-Mail-Adresse oder den Wiederherstellungskanal vor abhängigen Konten.</value></data>
   <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Stelle den Zugriff auf das kritische Konto wieder her, bevor du mit abhängigen Konten fortfährst.</value></data>

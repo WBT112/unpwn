@@ -2,6 +2,7 @@ using System.Globalization;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.Application;
 using Unpwn.Core;
 using Unpwn.Import.Csv;
 using Xunit;
@@ -302,6 +303,211 @@ public sealed class ShellViewModelTests
             state => state.State == AppVisualState.UnresolvedRisk && state.KindLabel == "Unresolved risk");
     }
 
+    [Fact]
+    public async Task AssistantPrimaryActionAdvancesCanonicalWizardAndOpensItsTarget()
+    {
+        var accountId = Guid.NewGuid();
+        var sessionId = Guid.NewGuid();
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+                sessionId,
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [
+                DashboardAccount(accountId, "github.com", "change-password"),
+            ],
+            DateTimeOffset.UnixEpoch.AddMinutes(1)));
+        var inventory = new TestAccountInventoryService();
+        inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [
+                InventoryAccount(accountId, "github.com", "GitHub recovery"),
+            ],
+            DateTimeOffset.UnixEpoch.AddMinutes(1)));
+        var guided = new TestGuidedRecoveryWizardService(
+            WizardAt(RecoveryWizardStepId.RecoveryPlan),
+            new GuidedRecoveryDecision(
+                RecoveryWizardStepId.RecoveryPlan,
+                RecoveryWizardStepId.AccountRecovery,
+                GuidedRecoveryBlockCode.None,
+                accountId,
+                "change-password"));
+        var shell = CreateGuidedShell(vault, session, inventory, guided);
+
+        var outcome = await shell.GuidedPrimaryCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(1, guided.AdvanceCalls);
+        Assert.Equal(RecoveryWizardStepId.AccountRecovery, guided.Current.CurrentStep);
+        Assert.Equal(AppRoute.Workflow, shell.CurrentScreen.Route);
+        Assert.Contains("GitHub recovery", shell.GuidedTargetText, StringComparison.Ordinal);
+        Assert.Contains("Change the password", shell.GuidedTargetText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ManualDetailNavigationDoesNotAdvanceTheCanonicalWizard()
+    {
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        var inventory = new TestAccountInventoryService();
+        var guided = new TestGuidedRecoveryWizardService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new GuidedRecoveryDecision(
+                RecoveryWizardStepId.AccountInventory,
+                null,
+                GuidedRecoveryBlockCode.AccountsRequired));
+        var shell = CreateGuidedShell(vault, session, inventory, guided);
+
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts);
+
+        Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
+        Assert.Equal(0, guided.AdvanceCalls);
+        Assert.Equal(RecoveryWizardStepId.AccountInventory, guided.Current.CurrentStep);
+    }
+
+    [Fact]
+    public async Task BlockedAssistantOpensCurrentTaskWithoutAdvancing()
+    {
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        var guided = new TestGuidedRecoveryWizardService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new GuidedRecoveryDecision(
+                RecoveryWizardStepId.AccountInventory,
+                null,
+                GuidedRecoveryBlockCode.AccountsRequired));
+        var shell = CreateGuidedShell(vault, session, new TestAccountInventoryService(), guided);
+
+        await shell.GuidedPrimaryCommand.ExecuteAsync();
+
+        Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
+        Assert.Equal(0, guided.AdvanceCalls);
+        Assert.Contains("at least one account", shell.GuidedRecommendationText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PausedAssistantRequiresResumeAndKeepsMutationDetailsDisabled()
+    {
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch)
+            .Pause(DateTimeOffset.UnixEpoch.AddMinutes(1)));
+        var guided = new TestGuidedRecoveryWizardService(
+            WizardAt(RecoveryWizardStepId.RecoveryPlan) with
+            {
+                Status = RecoveryWizardLifecycleStatus.Paused,
+            },
+            new GuidedRecoveryDecision(
+                RecoveryWizardStepId.RecoveryPlan,
+                null,
+                GuidedRecoveryBlockCode.Paused));
+        var shell = CreateGuidedShell(vault, session, new TestAccountInventoryService(), guided);
+
+        Assert.All(
+            shell.NavigationItems.Where(item => item.Route is
+                AppRoute.Accounts or AppRoute.Workflow or AppRoute.CredentialsExport or
+                AppRoute.Completion or AppRoute.CsvImport),
+            item => Assert.False(item.IsEnabled));
+        Assert.Equal("Resume recovery", shell.GuidedPrimaryActionText);
+
+        await shell.GuidedPrimaryCommand.ExecuteAsync();
+
+        Assert.Equal(1, session.ResumeCalls);
+        Assert.Equal(RecoveryWorkspaceLifecycleStatus.Active, session.CurrentSession?.Status);
+        Assert.Equal(0, guided.AdvanceCalls);
+    }
+
+    internal static ShellViewModel CreateGuidedShell(
+        TestVaultLifecycleService vault,
+        TestRecoverySessionService session,
+        TestAccountInventoryService inventory,
+        IGuidedRecoveryWizardService guided)
+    {
+        var localization = CreateLocalization();
+        var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
+        var factory = new AppScreenFactory(
+            new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            vault,
+            wizard,
+            session,
+            inventory,
+            localization);
+        return new ShellViewModel(
+            factory,
+            vault,
+            session,
+            inventory,
+            localization,
+            guided);
+    }
+
+    internal static RecoveryWizardState WizardAt(RecoveryWizardStepId step) => new(
+        Guid.NewGuid(),
+        step,
+        step,
+        RecoveryWizardLifecycleStatus.Active,
+        TrustedDeviceDecision.Trusted,
+        HasVaultContext: true,
+        Revision: 1,
+        DateTimeOffset.UnixEpoch);
+
+    private static AccountInventoryEntry InventoryAccount(
+        Guid accountId,
+        string providerId,
+        string accountName) => new(
+        accountId,
+        providerId,
+        accountName,
+        null,
+        null,
+        AccountInventoryPriority.Normal,
+        [],
+        [],
+        DateTimeOffset.UnixEpoch);
+
+    private static RecoveryAccountDashboardEntry DashboardAccount(
+        Guid accountId,
+        string providerId,
+        string actionId) => new(
+        accountId,
+        providerId,
+        AccountCriticality.Important,
+        AccountRecoveryStatus.Open,
+        RequiredActionsCompleted: 0,
+        RequiredActionsTotal: 1,
+        CompletedRequiredWeight: 0,
+        TotalRequiredWeight: 1,
+        BlockedRequiredActions: 0,
+        FailedRequiredActions: 0,
+        UnresolvedRisks: 0,
+        AccessLost: false,
+        CredentialsAwaitingExport: 0,
+        CredentialsAwaitingDeletion: 0,
+        RecommendedActionId: actionId,
+        DependencyDepth: 0,
+        WaitingForAccountIds: []);
+
     private static ResourceLocalizationService CreateLocalization() =>
         new(CultureInfo.GetCultureInfo("en"));
 
@@ -353,7 +559,7 @@ public sealed class ShellViewModelTests
             CancellationToken cancellationToken) => confirm(request, cancellationToken);
     }
 
-    private sealed class TestRecoverySessionService : IRecoverySessionService
+    internal sealed class TestRecoverySessionService : IRecoverySessionService
     {
         public event EventHandler? SessionChanged;
 
@@ -362,6 +568,8 @@ public sealed class ShellViewModelTests
         public RecoverySessionWorkspace? CurrentSession { get; private set; }
 
         public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();
+
+        public int ResumeCalls { get; private set; }
 
         public Task InitializeAsync(CancellationToken cancellationToken)
         {
@@ -376,13 +584,34 @@ public sealed class ShellViewModelTests
             Task.FromResult(RecoverySessionOperationResult.Failure(
                 RecoverySessionOperationFailureCode.Locked));
 
-        public Task<RecoverySessionOperationResult> PauseAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(RecoverySessionOperationResult.Failure(
-                RecoverySessionOperationFailureCode.Locked));
+        public Task<RecoverySessionOperationResult> PauseAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (CurrentSession?.Status != RecoveryWorkspaceLifecycleStatus.Active)
+            {
+                return Task.FromResult(RecoverySessionOperationResult.Failure(
+                    RecoverySessionOperationFailureCode.Conflict));
+            }
 
-        public Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(RecoverySessionOperationResult.Failure(
-                RecoverySessionOperationFailureCode.Locked));
+            CurrentSession = CurrentSession.Pause(CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ResumeCalls++;
+            if (CurrentSession?.Status != RecoveryWorkspaceLifecycleStatus.Paused)
+            {
+                return Task.FromResult(RecoverySessionOperationResult.Failure(
+                    RecoverySessionOperationFailureCode.Conflict));
+            }
+
+            CurrentSession = CurrentSession.Resume(CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) =>
             Task.FromResult(RecoverySessionOperationResult.Failure(
@@ -409,13 +638,13 @@ public sealed class ShellViewModelTests
         }
     }
 
-    private sealed class TestAccountInventoryService : IAccountInventoryService
+    internal sealed class TestAccountInventoryService : IAccountInventoryService
     {
         public event EventHandler? InventoryChanged;
 
-        public AccountInventoryLoadState LoadState => AccountInventoryLoadState.Empty;
+        public AccountInventoryLoadState LoadState { get; private set; } = AccountInventoryLoadState.Empty;
 
-        public AccountInventoryState? CurrentInventory => null;
+        public AccountInventoryState? CurrentInventory { get; private set; }
 
         public AccountInventoryPlan? CurrentPlan => null;
 
@@ -453,11 +682,84 @@ public sealed class ShellViewModelTests
 
         public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];
 
+        public void SetInventory(AccountInventoryState inventory)
+        {
+            CurrentInventory = inventory;
+            LoadState = AccountInventoryLoadState.Loaded;
+            InventoryChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public void ClearForLock() => InventoryChanged?.Invoke(this, EventArgs.Empty);
 
         private static Task<AccountInventoryOperationResult> Unsupported() =>
             Task.FromResult(AccountInventoryOperationResult.Failure(
                 AccountInventoryFailureCode.Conflict));
+    }
+
+    internal sealed class TestGuidedRecoveryWizardService(
+        RecoveryWizardState current,
+        GuidedRecoveryDecision next) : IGuidedRecoveryWizardService
+    {
+        public event EventHandler? GuidanceChanged;
+
+        public RecoveryWizardState Current { get; private set; } = current;
+
+        public GuidedRecoveryDecision NextDecision { get; private set; } = next;
+
+        public GuidedRecoveryDecision PreviousDecision => new(
+            Current.CurrentStep,
+            null,
+            GuidedRecoveryBlockCode.UnsupportedStep);
+
+        public int AdvanceCalls { get; private set; }
+
+        public void SetGuidance(
+            RecoveryWizardState state,
+            GuidedRecoveryDecision decision)
+        {
+            Current = state;
+            NextDecision = decision;
+            GuidanceChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public Task<GuidedRecoveryMoveResult> AdvanceAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AdvanceCalls++;
+            if (!NextDecision.CanMove || NextDecision.TargetStep is null)
+            {
+                return Task.FromResult(GuidedRecoveryMoveResult.Failure(
+                    GuidedRecoveryMoveFailureCode.Blocked,
+                    NextDecision));
+            }
+
+            var result = NextDecision;
+            Current = Current with
+            {
+                CurrentStep = result.TargetStep,
+                ResumeStep = result.TargetStep,
+                Revision = Current.Revision + 1,
+            };
+            GuidanceChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(GuidedRecoveryMoveResult.Success(result));
+        }
+
+        public Task<GuidedRecoveryMoveResult> GoBackAsync(CancellationToken cancellationToken) =>
+            Task.FromResult(GuidedRecoveryMoveResult.Failure(
+                GuidedRecoveryMoveFailureCode.Blocked,
+                PreviousDecision));
+
+        public Task<GuidedRecoveryMoveResult> BeginCompletionReviewAsync(
+            CancellationToken cancellationToken) =>
+            Task.FromResult(GuidedRecoveryMoveResult.Failure(
+                GuidedRecoveryMoveFailureCode.Blocked,
+                NextDecision));
+
+        public Task<GuidedRecoveryMoveResult> MarkCompletionReviewReadyAsync(
+            CancellationToken cancellationToken) =>
+            Task.FromResult(GuidedRecoveryMoveResult.Failure(
+                GuidedRecoveryMoveFailureCode.Blocked,
+                NextDecision));
     }
 
     private sealed class TestCompletionService(
@@ -518,7 +820,7 @@ public sealed class ShellViewModelTests
             Task.FromResult(RecoveryCompletionReportWriteResult.Success);
     }
 
-    private sealed class TestVaultLifecycleService : IVaultLifecycleService
+    internal sealed class TestVaultLifecycleService : IVaultLifecycleService
     {
         public event EventHandler? ContextChanged;
 

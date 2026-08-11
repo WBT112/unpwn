@@ -200,6 +200,22 @@
   <data name="Shell.Navigation.Workflow.Description" xml:space="preserve"><value>Recovery actions</value></data>
   <data name="Shell.Navigation.Workflow.Label" xml:space="preserve"><value>Workflow</value></data>
   <data name="Shell.Guided.Heading" xml:space="preserve"><value>GUIDED RECOVERY</value></data>
+  <data name="Shell.Assistant.Heading" xml:space="preserve"><value>YOUR NEXT RECOVERY TASK</value></data>
+  <data name="Shell.Assistant.WhyHeading" xml:space="preserve"><value>WHY THIS MATTERS</value></data>
+  <data name="Shell.Assistant.OpenTask" xml:space="preserve"><value>Open current task</value></data>
+  <data name="Shell.Assistant.OpenReport" xml:space="preserve"><value>Open report</value></data>
+  <data name="Shell.Assistant.Resume" xml:space="preserve"><value>Resume recovery</value></data>
+  <data name="Shell.Assistant.Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="Shell.Assistant.Target" xml:space="preserve"><value>Recommended account: {0}</value></data>
+  <data name="Shell.Assistant.TargetWithAction" xml:space="preserve"><value>Recommended account: {0} — current action: {1}</value></data>
+  <data name="Shell.Assistant.Why.AccountInventory" xml:space="preserve"><value>A complete account list is needed before unpwn can calculate a dependable recovery order.</value></data>
+  <data name="Shell.Assistant.Why.IdentityReview" xml:space="preserve"><value>Confirmed recovery roles and relationships determine which accounts must be handled first.</value></data>
+  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>The recovery plan keeps prerequisites and critical accounts ahead of dependent work.</value></data>
+  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>This account is currently allowed and recommended by the persisted dependency-aware plan.</value></data>
+  <data name="Shell.Assistant.Why.CredentialExport" xml:space="preserve"><value>Generated credentials need an explicit password-manager handoff and cleanup review.</value></data>
+  <data name="Shell.Assistant.Why.Completion" xml:space="preserve"><value>The final review keeps incomplete work and unresolved risks visible instead of claiming everything is secure.</value></data>
+  <data name="Shell.Assistant.Why.Paused" xml:space="preserve"><value>Pausing preserves the encrypted recovery state and requires an explicit resume before any further changes.</value></data>
+  <data name="Shell.Assistant.Why.General" xml:space="preserve"><value>This task is the current conservative step in the persisted recovery journey.</value></data>
   <data name="Shell.Guided.Back" xml:space="preserve"><value>Back</value></data>
   <data name="Shell.Guided.Open" xml:space="preserve"><value>Open step</value></data>
   <data name="Shell.Guided.Continue" xml:space="preserve"><value>Continue</value></data>
@@ -231,6 +247,8 @@
   <data name="Shell.Recovery.Message" xml:space="preserve"><value>The vault starts locked. Review the current plan after unlocking; no external provider action was marked complete automatically.</value></data>
   <data name="Shell.Recovery.Dismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>RECOVERY WORKSPACE</value></data>
+  <data name="Shell.Workspace.Show" xml:space="preserve"><value>Review details and workspace</value></data>
+  <data name="Shell.Workspace.Hide" xml:space="preserve"><value>Hide workspace navigation</value></data>
   <data name="Status.Blocked" xml:space="preserve"><value>Blocked</value></data>
   <data name="Status.Error" xml:space="preserve"><value>Failed</value></data>
   <data name="Status.Normal" xml:space="preserve"><value>Status</value></data>

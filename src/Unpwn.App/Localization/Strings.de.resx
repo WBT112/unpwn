@@ -200,6 +200,22 @@
   <data name="Shell.Navigation.Workflow.Description" xml:space="preserve"><value>Wiederherstellungsmaßnahmen</value></data>
   <data name="Shell.Navigation.Workflow.Label" xml:space="preserve"><value>Ablauf</value></data>
   <data name="Shell.Guided.Heading" xml:space="preserve"><value>GEFÜHRTE WIEDERHERSTELLUNG</value></data>
+  <data name="Shell.Assistant.Heading" xml:space="preserve"><value>DEINE NÄCHSTE WIEDERHERSTELLUNGSAUFGABE</value></data>
+  <data name="Shell.Assistant.WhyHeading" xml:space="preserve"><value>WARUM DAS WICHTIG IST</value></data>
+  <data name="Shell.Assistant.OpenTask" xml:space="preserve"><value>Aktuelle Aufgabe öffnen</value></data>
+  <data name="Shell.Assistant.OpenReport" xml:space="preserve"><value>Bericht öffnen</value></data>
+  <data name="Shell.Assistant.Resume" xml:space="preserve"><value>Wiederherstellung fortsetzen</value></data>
+  <data name="Shell.Assistant.Pause" xml:space="preserve"><value>Pausieren</value></data>
+  <data name="Shell.Assistant.Target" xml:space="preserve"><value>Empfohlenes Konto: {0}</value></data>
+  <data name="Shell.Assistant.TargetWithAction" xml:space="preserve"><value>Empfohlenes Konto: {0} — aktuelle Aktion: {1}</value></data>
+  <data name="Shell.Assistant.Why.AccountInventory" xml:space="preserve"><value>Eine vollständige Kontenliste ist nötig, bevor unpwn eine verlässliche Wiederherstellungsreihenfolge berechnen kann.</value></data>
+  <data name="Shell.Assistant.Why.IdentityReview" xml:space="preserve"><value>Bestätigte Wiederherstellungsrollen und Beziehungen bestimmen, welche Konten zuerst bearbeitet werden müssen.</value></data>
+  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>Der Wiederherstellungsplan ordnet Voraussetzungen und kritische Konten vor abhängiger Arbeit ein.</value></data>
+  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>Dieses Konto ist im gespeicherten, abhängigkeitsbasierten Plan derzeit zulässig und empfohlen.</value></data>
+  <data name="Shell.Assistant.Why.CredentialExport" xml:space="preserve"><value>Erzeugte Zugangsdaten benötigen eine ausdrückliche Übergabe an einen Passwortmanager und eine Bereinigungsprüfung.</value></data>
+  <data name="Shell.Assistant.Why.Completion" xml:space="preserve"><value>Die Abschlussprüfung hält unvollständige Arbeit und ungeklärte Risiken sichtbar, statt vollständige Sicherheit zu behaupten.</value></data>
+  <data name="Shell.Assistant.Why.Paused" xml:space="preserve"><value>Beim Pausieren bleibt der verschlüsselte Wiederherstellungsstand erhalten; weitere Änderungen erfordern ein ausdrückliches Fortsetzen.</value></data>
+  <data name="Shell.Assistant.Why.General" xml:space="preserve"><value>Diese Aufgabe ist der aktuelle konservative Schritt der gespeicherten Wiederherstellung.</value></data>
   <data name="Shell.Guided.Back" xml:space="preserve"><value>Zurück</value></data>
   <data name="Shell.Guided.Open" xml:space="preserve"><value>Schritt öffnen</value></data>
   <data name="Shell.Guided.Continue" xml:space="preserve"><value>Weiter</value></data>
@@ -231,6 +247,8 @@
   <data name="Shell.Recovery.Message" xml:space="preserve"><value>Der Tresor startet gesperrt. Prüfe nach dem Entsperren den aktuellen Plan; keine externe Anbieteraktion wurde automatisch als abgeschlossen markiert.</value></data>
   <data name="Shell.Recovery.Dismiss" xml:space="preserve"><value>Ausblenden</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>WIEDERHERSTELLUNGSBEREICH</value></data>
+  <data name="Shell.Workspace.Show" xml:space="preserve"><value>Details und Arbeitsbereich prüfen</value></data>
+  <data name="Shell.Workspace.Hide" xml:space="preserve"><value>Arbeitsbereich-Navigation ausblenden</value></data>
   <data name="Status.Blocked" xml:space="preserve"><value>Blockiert</value></data>
   <data name="Status.Error" xml:space="preserve"><value>Fehlgeschlagen</value></data>
   <data name="Status.Normal" xml:space="preserve"><value>Status</value></data>
