@@ -30,7 +30,7 @@
   <data name="Vault.Create.Browse" xml:space="preserve"><value>Speicherort wählen</value></data>
   <data name="Vault.Create.Password" xml:space="preserve"><value>Tresorpasswort</value></data>
   <data name="Vault.Create.ConfirmPassword" xml:space="preserve"><value>Tresorpasswort bestätigen</value></data>
-  <data name="Vault.Create.Reveal" xml:space="preserve"><value>Passwörter kurzzeitig anzeigen</value></data>
+  <data name="Vault.Create.Reveal" xml:space="preserve"><value>Passwörter 15 Sekunden anzeigen</value></data>
   <data name="Vault.Create.NonRecoverable" xml:space="preserve"><value>Ich verstehe, dass unpwn ein vergessenes Tresorpasswort nicht wiederherstellen kann.</value></data>
   <data name="Vault.Create.Submit" xml:space="preserve"><value>Tresor erstellen und entsperren</value></data>
   <data name="Vault.Create.Back" xml:space="preserve"><value>Zurück zur Tresorauswahl</value></data>
@@ -38,13 +38,13 @@
   <data name="Vault.Open.Path" xml:space="preserve"><value>Tresordatei</value></data>
   <data name="Vault.Open.Browse" xml:space="preserve"><value>Tresordatei auswählen</value></data>
   <data name="Vault.Open.Password" xml:space="preserve"><value>Tresorpasswort</value></data>
-  <data name="Vault.Open.Reveal" xml:space="preserve"><value>Passwort kurzzeitig anzeigen</value></data>
+  <data name="Vault.Open.Reveal" xml:space="preserve"><value>Passwort 15 Sekunden anzeigen</value></data>
   <data name="Vault.Open.Submit" xml:space="preserve"><value>Tresor entsperren</value></data>
   <data name="Vault.Open.Back" xml:space="preserve"><value>Zurück zur Tresorauswahl</value></data>
   <data name="Vault.Locked.Title" xml:space="preserve"><value>Wiederherstellungstresor ist gesperrt</value></data>
   <data name="Vault.Locked.Description" xml:space="preserve"><value>Kontonamen, Fortschritt, Notizen, Vorfalldetails und erzeugte Zugangsdaten bleiben verborgen, bis der Tresor erneut entsperrt wird.</value></data>
   <data name="Vault.Locked.Password" xml:space="preserve"><value>Tresorpasswort</value></data>
-  <data name="Vault.Locked.Reveal" xml:space="preserve"><value>Passwort kurzzeitig anzeigen</value></data>
+  <data name="Vault.Locked.Reveal" xml:space="preserve"><value>Passwort 15 Sekunden anzeigen</value></data>
   <data name="Vault.Locked.Unlock" xml:space="preserve"><value>Entsperren und sicher fortsetzen</value></data>
   <data name="Vault.Unlocked.Title" xml:space="preserve"><value>Tresor entsperrt</value></data>
   <data name="Vault.Unlocked.Description" xml:space="preserve"><value>Der verschlüsselte Arbeitsbereich ist verfügbar. Der Assistent setzt an einem sicheren Prüfpunkt fort und nimmt niemals automatisch an, dass eine externe Anbieteraktion erfolgreich war.</value></data>
@@ -54,7 +54,7 @@
   <data name="Vault.Change.Current" xml:space="preserve"><value>Aktuelles Tresorpasswort</value></data>
   <data name="Vault.Change.New" xml:space="preserve"><value>Neues Tresorpasswort</value></data>
   <data name="Vault.Change.Confirm" xml:space="preserve"><value>Neues Tresorpasswort bestätigen</value></data>
-  <data name="Vault.Change.Reveal" xml:space="preserve"><value>Passwörter kurzzeitig anzeigen</value></data>
+  <data name="Vault.Change.Reveal" xml:space="preserve"><value>Passwörter 15 Sekunden anzeigen</value></data>
   <data name="Vault.Change.Submit" xml:space="preserve"><value>Passwort ändern</value></data>
   <data name="Vault.Change.Cancel" xml:space="preserve"><value>Abbrechen</value></data>
   <data name="Vault.Recent.Title" xml:space="preserve"><value>Zuletzt verwendete Tresore</value></data>

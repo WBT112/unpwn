@@ -37,6 +37,8 @@
                      Text="{DynamicResource Shell.Language.Label}" />
           <ComboBox Width="120"
                     TabIndex="0"
+                    AutomationProperties.AutomationId="shell-language"
+                    AutomationProperties.Name="{DynamicResource Shell.Language.Label}"
                     ItemsSource="{Binding LanguageOptions}"
                     SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}">
             <ComboBox.ItemTemplate>
@@ -46,6 +48,7 @@
             </ComboBox.ItemTemplate>
           </ComboBox>
           <Button TabIndex="1"
+                  AutomationProperties.AutomationId="shell-lock-vault"
                   IsVisible="{Binding IsVaultUnlocked}"
                   Command="{Binding LockCommand}"
                   Content="{DynamicResource Shell.Lock.Button}" />
@@ -69,6 +72,8 @@
                      Text="{DynamicResource Shell.WorkspaceHeading}" />
           <ListBox Grid.Row="1"
                    TabIndex="2"
+                   AutomationProperties.AutomationId="shell-navigation"
+                   AutomationProperties.Name="{DynamicResource Shell.WorkspaceHeading}"
                    ItemsSource="{Binding NavigationItems}"
                    SelectedItem="{Binding SelectedNavigation, Mode=TwoWay}"
                    Background="Transparent"
@@ -113,6 +118,9 @@
 
       <StackPanel Grid.Row="0" Grid.Column="1">
         <Border IsVisible="{Binding HasStartupRecoveryWarning}"
+                AutomationProperties.AutomationId="shell-startup-recovery-warning"
+                AutomationProperties.LiveSetting="Assertive"
+                AutomationProperties.Name="{DynamicResource Shell.Recovery.Message}"
                 Padding="20,12"
                 BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
                 BorderThickness="0,0,0,2">
@@ -127,6 +135,7 @@
                          TextWrapping="Wrap" />
             </StackPanel>
             <Button Grid.Column="2"
+                    AutomationProperties.AutomationId="shell-dismiss-recovery-warning"
                     VerticalAlignment="Center"
                     Command="{Binding DismissStartupRecoveryCommand}"
                     Content="{DynamicResource Shell.Recovery.Dismiss}" />
@@ -134,6 +143,9 @@
         </Border>
 
         <Border IsVisible="{Binding IsPersistenceStatusVisible}"
+                AutomationProperties.AutomationId="shell-persistence-status"
+                AutomationProperties.LiveSetting="Polite"
+                AutomationProperties.Name="{Binding PersistenceStatusText}"
                 Padding="20,10"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                 BorderThickness="0,0,0,1"
@@ -147,6 +159,9 @@
         </Border>
 
         <Border IsVisible="{Binding IsGuidedWizardVisible}"
+                AutomationProperties.AutomationId="shell-guided-status"
+                AutomationProperties.LiveSetting="Polite"
+                AutomationProperties.Name="{Binding GuidedRecommendationText}"
                 Padding="20,12"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
                 BorderThickness="0,0,0,1"

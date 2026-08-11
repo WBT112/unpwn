@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Unpwn.App.Views;
 
@@ -15,9 +16,21 @@ public sealed class AvaloniaConfirmationDialogService(Func<Window?> ownerProvide
 
         var owner = ownerProvider() ?? throw new InvalidOperationException(
             "The confirmation dialog owner is not available.");
+        var previouslyFocusedElement = owner.FocusManager?.GetFocusedElement();
         var dialog = new ConfirmationDialog(request);
         using var registration = cancellationToken.Register(() =>
             Dispatcher.UIThread.Post(() => dialog.Close(false)));
-        return await dialog.ShowDialog<bool>(owner);
+        try
+        {
+            return await dialog.ShowDialog<bool>(owner);
+        }
+        finally
+        {
+            if (previouslyFocusedElement is not null)
+            {
+                Dispatcher.UIThread.Post(() =>
+                    owner.FocusManager?.Focus(previouslyFocusedElement, NavigationMethod.Tab));
+            }
+        }
     }
 }

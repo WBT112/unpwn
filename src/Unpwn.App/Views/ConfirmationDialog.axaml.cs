@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Unpwn.App.Services;
 
@@ -15,6 +16,20 @@ public partial class ConfirmationDialog : Window
     {
         ArgumentNullException.ThrowIfNull(request);
         DataContext = request;
+    }
+
+    private void Window_OnOpened(object? sender, EventArgs eventArgs) =>
+        CancelButton.Focus(NavigationMethod.Tab);
+
+    private void Window_OnKeyDown(object? sender, KeyEventArgs eventArgs)
+    {
+        if (eventArgs.Key != Key.Escape)
+        {
+            return;
+        }
+
+        eventArgs.Handled = true;
+        Close(false);
     }
 
     private void CancelButton_OnClick(object? sender, RoutedEventArgs eventArgs) => Close(false);

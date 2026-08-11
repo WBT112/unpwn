@@ -30,7 +30,7 @@
   <data name="Vault.Create.Browse" xml:space="preserve"><value>Choose location</value></data>
   <data name="Vault.Create.Password" xml:space="preserve"><value>Vault password</value></data>
   <data name="Vault.Create.ConfirmPassword" xml:space="preserve"><value>Confirm vault password</value></data>
-  <data name="Vault.Create.Reveal" xml:space="preserve"><value>Temporarily show passwords</value></data>
+  <data name="Vault.Create.Reveal" xml:space="preserve"><value>Show passwords for 15 seconds</value></data>
   <data name="Vault.Create.NonRecoverable" xml:space="preserve"><value>I understand that unpwn cannot recover a forgotten vault password.</value></data>
   <data name="Vault.Create.Submit" xml:space="preserve"><value>Create and unlock vault</value></data>
   <data name="Vault.Create.Back" xml:space="preserve"><value>Back to vault choice</value></data>
@@ -38,13 +38,13 @@
   <data name="Vault.Open.Path" xml:space="preserve"><value>Vault file</value></data>
   <data name="Vault.Open.Browse" xml:space="preserve"><value>Choose vault file</value></data>
   <data name="Vault.Open.Password" xml:space="preserve"><value>Vault password</value></data>
-  <data name="Vault.Open.Reveal" xml:space="preserve"><value>Temporarily show password</value></data>
+  <data name="Vault.Open.Reveal" xml:space="preserve"><value>Show password for 15 seconds</value></data>
   <data name="Vault.Open.Submit" xml:space="preserve"><value>Unlock vault</value></data>
   <data name="Vault.Open.Back" xml:space="preserve"><value>Back to vault choice</value></data>
   <data name="Vault.Locked.Title" xml:space="preserve"><value>Recovery vault is locked</value></data>
   <data name="Vault.Locked.Description" xml:space="preserve"><value>Account names, progress, notes, incident details, and generated credentials are hidden until the vault is unlocked again.</value></data>
   <data name="Vault.Locked.Password" xml:space="preserve"><value>Vault password</value></data>
-  <data name="Vault.Locked.Reveal" xml:space="preserve"><value>Temporarily show password</value></data>
+  <data name="Vault.Locked.Reveal" xml:space="preserve"><value>Show password for 15 seconds</value></data>
   <data name="Vault.Locked.Unlock" xml:space="preserve"><value>Unlock and resume safely</value></data>
   <data name="Vault.Unlocked.Title" xml:space="preserve"><value>Vault unlocked</value></data>
   <data name="Vault.Unlocked.Description" xml:space="preserve"><value>The encrypted recovery workspace is available. The assistant will resume at a safe review point and will not assume that an external provider action succeeded.</value></data>
@@ -54,7 +54,7 @@
   <data name="Vault.Change.Current" xml:space="preserve"><value>Current vault password</value></data>
   <data name="Vault.Change.New" xml:space="preserve"><value>New vault password</value></data>
   <data name="Vault.Change.Confirm" xml:space="preserve"><value>Confirm new vault password</value></data>
-  <data name="Vault.Change.Reveal" xml:space="preserve"><value>Temporarily show passwords</value></data>
+  <data name="Vault.Change.Reveal" xml:space="preserve"><value>Show passwords for 15 seconds</value></data>
   <data name="Vault.Change.Submit" xml:space="preserve"><value>Change password</value></data>
   <data name="Vault.Change.Cancel" xml:space="preserve"><value>Cancel</value></data>
   <data name="Vault.Recent.Title" xml:space="preserve"><value>Recent vaults</value></data>

@@ -5,7 +5,7 @@ using Unpwn.App.Presentation;
 
 namespace Unpwn.App.Views;
 
-public partial class VaultEntryView : UserControl
+public partial class VaultEntryView : AccessibleScreen
 {
     public VaultEntryView()
     {

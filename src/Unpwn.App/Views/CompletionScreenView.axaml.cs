@@ -5,7 +5,7 @@ using Unpwn.App.Presentation;
 
 namespace Unpwn.App.Views;
 
-public partial class CompletionScreenView : UserControl
+public partial class CompletionScreenView : AccessibleScreen
 {
     public CompletionScreenView()
     {

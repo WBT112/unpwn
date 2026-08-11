@@ -10,12 +10,17 @@
         MinHeight="300"
         CanResize="False"
         ShowInTaskbar="False"
+        KeyDown="Window_OnKeyDown"
+        Opened="Window_OnOpened"
         WindowStartupLocation="CenterOwner">
   <Grid Margin="24" RowDefinitions="*,Auto" RowSpacing="20">
     <StackPanel Grid.Row="0" Spacing="12">
       <TextBlock Classes="page-title" Text="{DynamicResource Confirmation.PageTitle}" />
       <Border Padding="14"
-              BorderBrush="#B26A00"
+              AutomationProperties.AutomationId="confirmation-risk-summary"
+              AutomationProperties.LiveSetting="Assertive"
+              AutomationProperties.Name="{Binding Consequence}"
+              BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
               BorderThickness="5,1,1,1"
               CornerRadius="5">
         <StackPanel Spacing="8">
@@ -32,10 +37,13 @@
                 HorizontalAlignment="Right"
                 Orientation="Horizontal"
                 Spacing="10">
-      <Button TabIndex="0"
+      <Button x:Name="CancelButton"
+              TabIndex="0"
+              AutomationProperties.AutomationId="confirmation-cancel"
               Click="CancelButton_OnClick"
               Content="{DynamicResource Common.Cancel}" />
       <Button TabIndex="1"
+              AutomationProperties.AutomationId="confirmation-confirm"
               Click="ConfirmButton_OnClick"
               Content="{Binding ConfirmLabel}" />
     </StackPanel>

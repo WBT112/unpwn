@@ -12,7 +12,12 @@
 
     <views:StatusBannerView DataContext="{Binding Status}" />
 
-    <Border IsVisible="{Binding HasValidationMessage}"
+    <Border Classes="focus-on-visible"
+            IsVisible="{Binding HasValidationMessage}"
+            Focusable="True"
+            AutomationProperties.AutomationId="workflow-validation"
+            AutomationProperties.LiveSetting="Assertive"
+            AutomationProperties.Name="{Binding ValidationMessage}"
             Padding="14"
             CornerRadius="8"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
@@ -63,7 +68,10 @@
       <StackPanel Spacing="12">
         <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Path.Title}" />
         <TextBlock Text="{DynamicResource Workflow.Path.Help}" TextWrapping="Wrap" />
-        <ComboBox ItemsSource="{Binding PathOptions}"
+        <ComboBox Classes="initial-focus"
+                  AutomationProperties.AutomationId="workflow-recovery-path"
+                  AutomationProperties.Name="{DynamicResource Workflow.Path.Title}"
+                  ItemsSource="{Binding PathOptions}"
                   SelectedItem="{Binding SelectedPath, Mode=TwoWay}">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="vm:RecoveryPathOptionViewModel">

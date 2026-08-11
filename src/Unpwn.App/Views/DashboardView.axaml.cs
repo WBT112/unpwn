@@ -2,7 +2,7 @@ using Avalonia.Controls;
 
 namespace Unpwn.App.Views;
 
-public partial class DashboardView : UserControl
+public partial class DashboardView : AccessibleScreen
 {
     public DashboardView()
     {

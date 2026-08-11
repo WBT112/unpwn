@@ -5,7 +5,7 @@ using Unpwn.App.Presentation;
 
 namespace Unpwn.App.Views;
 
-public partial class CredentialExportView : UserControl
+public partial class CredentialExportView : AccessibleScreen
 {
     public CredentialExportView()
     {

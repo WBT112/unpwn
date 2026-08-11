@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Unpwn.App.Localization;
@@ -8,7 +9,7 @@ using Unpwn.Import.Csv;
 
 namespace Unpwn.App.Views;
 
-public partial class CsvImportView : UserControl
+public partial class CsvImportView : AccessibleScreen
 {
     private IStorageFile? _selectedFile;
     private CsvImportAnalysis? _analysis;
@@ -103,6 +104,7 @@ public partial class CsvImportView : UserControl
         ResetDuplicateResolution();
         RefreshPreviewButton();
         RefreshImportControls();
+        ServiceNameColumnCombo.Focus(NavigationMethod.Tab);
     }
 
     private async void CreatePreviewButton_OnClick(object? sender, RoutedEventArgs eventArgs)
@@ -159,6 +161,7 @@ public partial class CsvImportView : UserControl
         RefreshPreviewSummary();
         ResetDuplicateResolution();
         RefreshImportControls();
+        PreviewSummaryText.Focus(NavigationMethod.Tab);
     }
 
     private async void ImportReviewedButton_OnClick(object? sender, RoutedEventArgs eventArgs)
@@ -185,6 +188,7 @@ public partial class CsvImportView : UserControl
         }
 
         RefreshImportControls();
+        ImportResultText.Focus(NavigationMethod.Tab);
     }
 
     private void CsvImportView_OnDataContextChanged(object? sender, EventArgs eventArgs)
@@ -443,6 +447,7 @@ public partial class CsvImportView : UserControl
         ResetDuplicateResolution();
         RefreshPreviewButton();
         RefreshImportControls();
+        DiagnosticsItems.Focus(NavigationMethod.Tab);
     }
 
     private string FormatCandidate(ImportAccountCandidate candidate)

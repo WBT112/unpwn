@@ -17,6 +17,8 @@
         <TextBlock Classes="section-title" Text="{DynamicResource Import.Step.Source}" />
         <StackPanel Orientation="Horizontal" Spacing="12">
           <Button x:Name="OpenCsvButton"
+                  Classes="initial-focus"
+                  AutomationProperties.AutomationId="import-open-csv"
                   TabIndex="4"
                   Click="OpenCsvButton_OnClick"
                   Content="{DynamicResource Import.ChooseFile.Button}" />
@@ -27,9 +29,14 @@
         </StackPanel>
 
         <Border x:Name="PasswordWarningBorder"
+                Classes="focus-on-visible"
                 IsVisible="False"
+                Focusable="True"
+                AutomationProperties.AutomationId="import-password-warning"
+                AutomationProperties.LiveSetting="Assertive"
+                AutomationProperties.Name="{Binding #PasswordWarningText.Text}"
                 Padding="14"
-                BorderBrush="#B26A00"
+                BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
                 BorderThickness="5,1,1,1"
                 CornerRadius="6">
           <StackPanel Spacing="10">
@@ -37,6 +44,7 @@
                        FontWeight="SemiBold"
                        TextWrapping="Wrap" />
             <CheckBox x:Name="ExcludePasswordsCheckBox"
+                      AutomationProperties.AutomationId="import-exclude-passwords"
                       TabIndex="5"
                       Content="{DynamicResource Import.Password.Exclude}"
                       IsCheckedChanged="ExcludePasswordsCheckBox_OnIsCheckedChanged" />
@@ -52,29 +60,38 @@
           <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Service}" />
             <ComboBox x:Name="ServiceNameColumnCombo"
+                      AutomationProperties.AutomationId="import-service-column"
+                      AutomationProperties.Name="{DynamicResource Import.Mapping.Service}"
                       TabIndex="6"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
           <StackPanel Grid.Row="0" Grid.Column="1" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Account}" />
             <ComboBox x:Name="AccountNameColumnCombo"
+                      AutomationProperties.AutomationId="import-account-column"
+                      AutomationProperties.Name="{DynamicResource Import.Mapping.Account}"
                       TabIndex="7"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
           <StackPanel Grid.Row="1" Grid.Column="0" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Login}" />
             <ComboBox x:Name="LoginIdentifierColumnCombo"
+                      AutomationProperties.AutomationId="import-login-column"
+                      AutomationProperties.Name="{DynamicResource Import.Mapping.Login}"
                       TabIndex="8"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
           <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Url}" />
             <ComboBox x:Name="AccountUrlColumnCombo"
+                      AutomationProperties.AutomationId="import-url-column"
+                      AutomationProperties.Name="{DynamicResource Import.Mapping.Url}"
                       TabIndex="9"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
         </Grid>
         <Button x:Name="CreatePreviewButton"
+                AutomationProperties.AutomationId="import-create-preview"
                 TabIndex="10"
                 HorizontalAlignment="Left"
                 IsEnabled="False"
@@ -86,22 +103,40 @@
     <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="12">
         <TextBlock Classes="section-title" Text="{DynamicResource Import.Step.Review}" />
-        <ItemsControl x:Name="DiagnosticsItems" />
-        <ListBox x:Name="PreviewItems" MinHeight="90" MaxHeight="260" />
+        <ItemsControl x:Name="DiagnosticsItems"
+                      Focusable="True"
+                      AutomationProperties.AutomationId="import-diagnostics"
+                      AutomationProperties.LiveSetting="Assertive" />
+        <ListBox x:Name="PreviewItems"
+                 AutomationProperties.AutomationId="import-preview-items"
+                 MinHeight="90"
+                 MaxHeight="260" />
         <TextBlock x:Name="PreviewSummaryText"
+                   Focusable="True"
+                   AutomationProperties.AutomationId="import-preview-summary"
+                   AutomationProperties.LiveSetting="Polite"
+                   AutomationProperties.Name="{Binding #PreviewSummaryText.Text}"
                    Text="{DynamicResource Import.Preview.Initial}"
                    TextWrapping="Wrap" />
         <StackPanel x:Name="DuplicateResolutionPanel" IsVisible="False" Spacing="6">
           <TextBlock Text="{DynamicResource Import.Resolution.Label}" FontWeight="SemiBold" />
           <ComboBox x:Name="DuplicateResolutionCombo"
+                    AutomationProperties.AutomationId="import-duplicate-resolution"
+                    AutomationProperties.Name="{DynamicResource Import.Resolution.Label}"
                     SelectionChanged="DuplicateResolutionCombo_OnSelectionChanged" />
         </StackPanel>
         <Button x:Name="ImportReviewedButton"
+                AutomationProperties.AutomationId="import-reviewed"
                 HorizontalAlignment="Left"
                 IsEnabled="False"
                 Click="ImportReviewedButton_OnClick"
                 Content="{DynamicResource Import.Action.Import}" />
-        <TextBlock x:Name="ImportResultText" TextWrapping="Wrap" />
+        <TextBlock x:Name="ImportResultText"
+                   Focusable="True"
+                   AutomationProperties.AutomationId="import-result"
+                   AutomationProperties.LiveSetting="Assertive"
+                   AutomationProperties.Name="{Binding #ImportResultText.Text}"
+                   TextWrapping="Wrap" />
       </StackPanel>
     </Border>
   </StackPanel>

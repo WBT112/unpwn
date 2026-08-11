@@ -2,7 +2,7 @@ using Avalonia.Controls;
 
 namespace Unpwn.App.Views;
 
-public partial class WorkflowExecutionView : UserControl
+public partial class WorkflowExecutionView : AccessibleScreen
 {
     public WorkflowExecutionView()
     {

@@ -46,7 +46,10 @@
 
           <TextBlock Text="{DynamicResource Dashboard.Intake.NameLabel}"
                      FontWeight="SemiBold" />
-          <TextBox Text="{Binding SessionName, Mode=TwoWay}"
+          <TextBox Classes="initial-focus"
+                   AutomationProperties.AutomationId="dashboard-session-name"
+                   AutomationProperties.Name="{DynamicResource Dashboard.Intake.NameLabel}"
+                   Text="{Binding SessionName, Mode=TwoWay}"
                    PlaceholderText="{DynamicResource Dashboard.Intake.NameWatermark}"
                    MaxLength="120" />
 
@@ -100,7 +103,12 @@
             </StackPanel>
           </Border>
 
-          <Border IsVisible="{Binding HasValidationMessage}"
+          <Border Classes="focus-on-visible"
+                  IsVisible="{Binding HasValidationMessage}"
+                  Focusable="True"
+                  AutomationProperties.AutomationId="dashboard-intake-validation"
+                  AutomationProperties.LiveSetting="Assertive"
+                  AutomationProperties.Name="{Binding ValidationMessage}"
                   Padding="12"
                   CornerRadius="8"
                   Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
@@ -294,7 +302,12 @@
           </StackPanel>
         </Border>
 
-        <Border IsVisible="{Binding HasValidationMessage}"
+        <Border Classes="focus-on-visible"
+                IsVisible="{Binding HasValidationMessage}"
+                Focusable="True"
+                AutomationProperties.AutomationId="dashboard-session-validation"
+                AutomationProperties.LiveSetting="Assertive"
+                AutomationProperties.Name="{Binding ValidationMessage}"
                 Padding="12"
                 CornerRadius="8"
                 Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
