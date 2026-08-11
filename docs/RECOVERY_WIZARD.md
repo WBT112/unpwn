@@ -46,7 +46,13 @@ The trusted-device decision is the first mandatory security gate:
 
 Generic navigation must not bypass the trusted-device gate, manufacture a vault context, or silently skip a required security step.
 
-After incident intake, the shell shows a persistent guided-recovery strip alongside the review-oriented workspace tabs. Its forward and back controls move the canonical wizard state; opening a normal tab does not mark a step complete. The guided transition is written to the encrypted vault before the in-memory state changes.
+After incident intake, the shell presents the guided assistant task as its primary surface. The task
+shows the current phase, the next recommendation, its reason, and one context-sensitive primary
+action. Review-oriented workspace routes remain available through secondary detail navigation. The
+assistant's forward and back controls move the canonical wizard state; opening a detail route does not
+mark a step complete. A blocked task opens the current work without advancing, and a paused session
+offers explicit resume instead of mutation-capable detail routes. Every guided transition is written
+to the encrypted vault before the in-memory state changes.
 
 The post-intake gates are deterministic:
 

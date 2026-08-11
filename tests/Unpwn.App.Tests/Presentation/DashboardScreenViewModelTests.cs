@@ -103,6 +103,51 @@ public sealed class DashboardScreenViewModelTests
     }
 
     [Fact]
+    public void RecommendationNamesReviewedProviderAndCurrentActionInSelectedLanguage()
+    {
+        var accountId = Guid.NewGuid();
+        var session = RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Provider recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [
+                new RecoveryAccountDashboardEntry(
+                    accountId,
+                    "github.com",
+                    AccountCriticality.Important,
+                    AccountRecoveryStatus.Open,
+                    RequiredActionsCompleted: 0,
+                    RequiredActionsTotal: 1,
+                    CompletedRequiredWeight: 0,
+                    TotalRequiredWeight: 1,
+                    BlockedRequiredActions: 0,
+                    FailedRequiredActions: 0,
+                    UnresolvedRisks: 0,
+                    AccessLost: false,
+                    CredentialsAwaitingExport: 0,
+                    CredentialsAwaitingDeletion: 0,
+                    RecommendedActionId: "change-password",
+                    DependencyDepth: 0,
+                    WaitingForAccountIds: []),
+            ],
+            DateTimeOffset.UnixEpoch.AddMinutes(1));
+        var localization = CreateLocalization();
+        var viewModel = CreateViewModel(new TestRecoverySessionService(session), localization);
+
+        Assert.True(viewModel.HasRecommendationTarget);
+        Assert.True(viewModel.HasRecommendationAction);
+        Assert.Equal("Recommended account or service: GitHub", viewModel.RecommendationTargetText);
+        Assert.Equal("Current action: Change the password", viewModel.RecommendationActionText);
+
+        localization.SetLanguage("de");
+
+        Assert.Equal("Empfohlenes Konto oder Dienst: GitHub", viewModel.RecommendationTargetText);
+        Assert.Equal("Aktuelle Aktion: Passwort ändern", viewModel.RecommendationActionText);
+    }
+
+    [Fact]
     public void BlockedSummaryNavigatesToAffectedAccountAndAction()
     {
         var accountId = Guid.NewGuid();

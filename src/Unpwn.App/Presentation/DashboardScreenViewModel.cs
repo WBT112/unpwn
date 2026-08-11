@@ -1,6 +1,7 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
 using Unpwn.Core;
+using Unpwn.Providers.Workflows;
 
 namespace Unpwn.App.Presentation;
 
@@ -279,13 +280,43 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
                 return Localization.GetString("Dashboard.Recommendation.Unavailable");
             }
 
-            var message = Localization.GetString($"Dashboard.Recommendation.{recommendation.Code}");
-            return string.IsNullOrWhiteSpace(recommendation.ProviderId)
-                ? message
+            return Localization.GetString($"Dashboard.Recommendation.{recommendation.Code}");
+        }
+    }
+
+    public bool HasRecommendationTarget =>
+        !string.IsNullOrWhiteSpace(Dashboard?.Recommendation.ProviderId);
+
+    public string RecommendationTargetText
+    {
+        get
+        {
+            var providerId = Dashboard?.Recommendation.ProviderId;
+            if (string.IsNullOrWhiteSpace(providerId))
+            {
+                return string.Empty;
+            }
+
+            var workflow = ResolveRecommendedWorkflow(providerId);
+            return Localization.Format(
+                "Dashboard.Recommendation.Target",
+                workflow?.ProviderName ?? providerId);
+        }
+    }
+
+    public bool HasRecommendationAction =>
+        ResolveRecommendedAction() is not null;
+
+    public string RecommendationActionText
+    {
+        get
+        {
+            var action = ResolveRecommendedAction();
+            return action is null
+                ? string.Empty
                 : Localization.Format(
-                    "Dashboard.Recommendation.WithProvider",
-                    message,
-                    recommendation.ProviderId);
+                    "Dashboard.Recommendation.Action",
+                    Localization.GetString(action.Guidance.TitleKey));
         }
     }
 
@@ -537,6 +568,10 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CredentialExportsText));
         OnPropertyChanged(nameof(CredentialDeletionsText));
         OnPropertyChanged(nameof(RecommendationText));
+        OnPropertyChanged(nameof(HasRecommendationTarget));
+        OnPropertyChanged(nameof(RecommendationTargetText));
+        OnPropertyChanged(nameof(HasRecommendationAction));
+        OnPropertyChanged(nameof(RecommendationActionText));
         OnPropertyChanged(nameof(ValidationMessage));
     }
 
@@ -647,6 +682,24 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     }
 
     private string FormatCount(string key, int count) => Localization.Format(key, count);
+
+    private static RecoveryWorkflowDefinition? ResolveRecommendedWorkflow(string providerId) =>
+        RepositoryWorkflowCatalog.Workflows.SingleOrDefault(workflow =>
+            string.Equals(workflow.ProviderId, providerId, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(workflow.ProviderName, providerId, StringComparison.OrdinalIgnoreCase));
+
+    private RecoveryActionDefinition? ResolveRecommendedAction()
+    {
+        var recommendation = Dashboard?.Recommendation;
+        if (string.IsNullOrWhiteSpace(recommendation?.ProviderId) ||
+            string.IsNullOrWhiteSpace(recommendation.ActionId))
+        {
+            return null;
+        }
+
+        return ResolveRecommendedWorkflow(recommendation.ProviderId)?.Actions.SingleOrDefault(action =>
+            string.Equals(action.Id, recommendation.ActionId, StringComparison.Ordinal));
+    }
 
     private static string GetWizardStepKey(RecoveryWizardStepId step) => step.Value switch
     {

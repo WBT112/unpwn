@@ -137,6 +137,37 @@
           </StackPanel>
         </Border>
 
+        <Border Padding="24"
+                AutomationProperties.AutomationId="dashboard-recommendation"
+                AutomationProperties.Name="{Binding RecommendationText}"
+                CornerRadius="12"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                BorderThickness="1"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+            <StackPanel Spacing="8">
+              <TextBlock FontSize="24"
+                         FontWeight="SemiBold"
+                         Text="{DynamicResource Dashboard.Recommendation.Title}" />
+              <TextBlock Text="{Binding RecommendationText}"
+                         FontSize="16"
+                         TextWrapping="Wrap" />
+              <TextBlock IsVisible="{Binding HasRecommendationTarget}"
+                         Text="{Binding RecommendationTargetText}"
+                         FontWeight="SemiBold"
+                         TextWrapping="Wrap" />
+              <TextBlock IsVisible="{Binding HasRecommendationAction}"
+                         Text="{Binding RecommendationActionText}"
+                         FontWeight="SemiBold"
+                         TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Content="{DynamicResource Dashboard.Recommendation.Open}"
+                    Command="{Binding OpenRecommendationCommand}" />
+          </Grid>
+        </Border>
+
         <Border IsVisible="{Binding HasEmergencyAdvisory}"
                 Padding="20"
                 CornerRadius="12"
@@ -287,20 +318,6 @@
             </Grid>
           </Border>
         </StackPanel>
-
-        <Border Padding="20"
-                CornerRadius="12"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <StackPanel Spacing="10">
-            <TextBlock Classes="section-title"
-                       Text="{DynamicResource Dashboard.Recommendation.Title}" />
-            <TextBlock Text="{Binding RecommendationText}"
-                       TextWrapping="Wrap" />
-            <Button Content="{DynamicResource Dashboard.Recommendation.Open}"
-                    Command="{Binding OpenRecommendationCommand}"
-                    HorizontalAlignment="Left" />
-          </StackPanel>
-        </Border>
 
         <Border Classes="focus-on-visible"
                 IsVisible="{Binding HasValidationMessage}"

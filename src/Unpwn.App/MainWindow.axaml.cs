@@ -1,6 +1,8 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Unpwn.App.Presentation;
 using Unpwn.App.Services;
 
 namespace Unpwn.App;
@@ -9,10 +11,13 @@ public partial class MainWindow : Window
 {
     private IVaultLifecycleService? _vaultLifecycle;
     private DispatcherTimer? _inactivityTimer;
+    private ShellViewModel? _subscribedShell;
 
     public MainWindow()
     {
         InitializeComponent();
+        DataContextChanged += MainWindow_OnDataContextChanged;
+        Opened += MainWindow_OnOpened;
     }
 
     public void AttachInactivityMonitor(IVaultLifecycleService vaultLifecycle)
@@ -42,6 +47,14 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        if (_subscribedShell is not null)
+        {
+            _subscribedShell.PropertyChanged -= Shell_OnPropertyChanged;
+            _subscribedShell = null;
+        }
+
+        DataContextChanged -= MainWindow_OnDataContextChanged;
+        Opened -= MainWindow_OnOpened;
         if (_inactivityTimer is not null)
         {
             _inactivityTimer.Stop();
@@ -51,6 +64,47 @@ public partial class MainWindow : Window
 
         base.OnClosed(e);
     }
+
+    private void MainWindow_OnDataContextChanged(object? sender, EventArgs eventArgs)
+    {
+        if (sender is not MainWindow window)
+        {
+            return;
+        }
+
+        if (_subscribedShell is not null)
+        {
+            _subscribedShell.PropertyChanged -= Shell_OnPropertyChanged;
+        }
+
+        _subscribedShell = window.DataContext as ShellViewModel;
+        if (_subscribedShell is not null)
+        {
+            _subscribedShell.PropertyChanged += Shell_OnPropertyChanged;
+        }
+    }
+
+    private void MainWindow_OnOpened(object? sender, EventArgs eventArgs) =>
+        FocusAssistantTask();
+
+    private void Shell_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
+    {
+        if (eventArgs.PropertyName == nameof(ShellViewModel.AssistantFocusRequest))
+        {
+            FocusAssistantTask();
+        }
+    }
+
+    private void FocusAssistantTask() =>
+        Dispatcher.UIThread.Post(
+            () =>
+            {
+                if (AssistantPrimaryAction is { IsVisible: true, IsEnabled: true })
+                {
+                    AssistantPrimaryAction.Focus(NavigationMethod.Tab);
+                }
+            },
+            DispatcherPriority.Loaded);
 
     private async void InactivityTimer_OnTick(object? sender, EventArgs eventArgs)
     {

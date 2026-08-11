@@ -64,7 +64,8 @@
   <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Recommended next step</value></data>
   <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Open recommendation</value></data>
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>No recommendation is available.</value></data>
-  <data name="Dashboard.Recommendation.WithProvider" xml:space="preserve"><value>{0} Target: {1}.</value></data>
+  <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Recommended account or service: {0}</value></data>
+  <data name="Dashboard.Recommendation.Action" xml:space="preserve"><value>Current action: {0}</value></data>
   <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Import or add the account inventory so dependencies and critical identities can be reviewed.</value></data>
   <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Review and secure the primary email or recovery channel before dependent accounts.</value></data>
   <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Restore access to the critical account before continuing with dependent accounts.</value></data>
