@@ -134,6 +134,56 @@ public sealed class GuidedRecoveryWizardTests
             GuidedRecoveryWizard.GetNext(terminal, Context()).BlockCode);
     }
 
+    [Theory]
+    [InlineData("identity-review", "account-inventory")]
+    [InlineData("recovery-plan", "identity-review")]
+    [InlineData("account-recovery", "recovery-plan")]
+    [InlineData("credential-export", "recovery-plan")]
+    [InlineData("completion-preflight", "recovery-plan")]
+    [InlineData("final-report", "completion-preflight")]
+    public void EverySupportedBackRouteIsDeterministic(string current, string expected)
+    {
+        var state = AtAccountInventory() with
+        {
+            CurrentStep = RecoveryWizardStepId.Parse(current),
+            ResumeStep = RecoveryWizardStepId.Parse(current),
+        };
+
+        var previous = GuidedRecoveryWizard.GetPrevious(state);
+
+        Assert.True(previous.CanMove);
+        Assert.Equal(RecoveryWizardStepId.Parse(expected), previous.TargetStep);
+    }
+
+    [Fact]
+    public void UnsupportedPausedAndInvalidContextsFailClosed()
+    {
+        var active = AtAccountInventory();
+        var paused = RecoveryWizardOrchestrator.Pause(active, active.UpdatedAt);
+        var unsupported = active with { CurrentStep = RecoveryWizardStepId.IncidentIntake };
+
+        Assert.Equal(
+            GuidedRecoveryBlockCode.Paused,
+            GuidedRecoveryWizard.GetNext(paused, Context()).BlockCode);
+        Assert.Equal(
+            GuidedRecoveryBlockCode.Paused,
+            GuidedRecoveryWizard.GetPrevious(paused).BlockCode);
+        Assert.Equal(
+            GuidedRecoveryBlockCode.UnsupportedStep,
+            GuidedRecoveryWizard.GetNext(unsupported, Context()).BlockCode);
+        Assert.Equal(
+            GuidedRecoveryBlockCode.UnsupportedStep,
+            GuidedRecoveryWizard.GetPrevious(unsupported).BlockCode);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            GuidedRecoveryWizard.GetNext(active, Context(accountCount: -1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            GuidedRecoveryWizard.GetNext(active, Context(suggestedRoles: -1)));
+        Assert.Throws<ArgumentNullException>(() =>
+            GuidedRecoveryWizard.GetNext(null!, Context()));
+        Assert.Throws<ArgumentNullException>(() =>
+            GuidedRecoveryWizard.GetNext(active, null!));
+    }
+
     private static RecoveryWizardState AtAccountInventory()
     {
         var time = DateTimeOffset.UnixEpoch;

@@ -219,6 +219,141 @@ public sealed class RecoveryWizardOrchestratorTests
         Assert.Equal(RecoveryWizardRecommendationCode.CaptureIncidentContext, recommendation.ReasonCode);
     }
 
+    [Theory]
+    [MemberData(nameof(ActiveRecommendations))]
+    public void EveryActiveStepHasAStableRecommendation(
+        string stepValue,
+        RecoveryWizardRecommendationCode expected)
+    {
+        var step = RecoveryWizardStepId.Parse(stepValue);
+        var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime) with
+        {
+            CurrentStep = step,
+            ResumeStep = step,
+            HasVaultContext = step != RecoveryWizardStepId.Welcome &&
+                step != RecoveryWizardStepId.TrustedDeviceCheck &&
+                step != RecoveryWizardStepId.TrustedDeviceGuidance &&
+                step != RecoveryWizardStepId.VaultEntry,
+        };
+
+        var recommendation = RecoveryWizardOrchestrator.GetRecommendation(state);
+
+        Assert.Equal(step, recommendation.StepId);
+        Assert.Equal(expected, recommendation.ReasonCode);
+    }
+
+    [Theory]
+    [InlineData(RecoveryWizardLifecycleStatus.StoppedForDeviceSafety)]
+    [InlineData(RecoveryWizardLifecycleStatus.Cancelled)]
+    [InlineData(RecoveryWizardLifecycleStatus.Completed)]
+    [InlineData(RecoveryWizardLifecycleStatus.Archived)]
+    [InlineData(RecoveryWizardLifecycleStatus.FollowUpRequired)]
+    public void EveryTerminalStatusHasNoFurtherAction(RecoveryWizardLifecycleStatus status)
+    {
+        var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime) with { Status = status };
+
+        Assert.Equal(
+            RecoveryWizardRecommendationCode.NoFurtherAction,
+            RecoveryWizardOrchestrator.GetRecommendation(state).ReasonCode);
+    }
+
+    [Theory]
+    [InlineData(RecoveryWizardTerminalOutcome.Completed, RecoveryWizardLifecycleStatus.Completed)]
+    [InlineData(RecoveryWizardTerminalOutcome.Archived, RecoveryWizardLifecycleStatus.Archived)]
+    [InlineData(RecoveryWizardTerminalOutcome.FollowUpRequired, RecoveryWizardLifecycleStatus.FollowUpRequired)]
+    public void EveryTerminalOutcomeMapsToItsLifecycleStatus(
+        RecoveryWizardTerminalOutcome outcome,
+        RecoveryWizardLifecycleStatus expected)
+    {
+        var state = StartAtRecoveryPlan();
+        state = RecoveryWizardOrchestrator.BeginCompletionReview(state, StartTime.AddMinutes(7));
+        state = RecoveryWizardOrchestrator.Continue(
+            state,
+            RecoveryWizardStepId.FinalReport,
+            StartTime.AddMinutes(8));
+
+        state = RecoveryWizardOrchestrator.Finish(state, outcome, StartTime.AddMinutes(9));
+
+        Assert.Equal(expected, state.Status);
+    }
+
+    [Fact]
+    public void InvalidWizardInputsFailClosed()
+    {
+        var initial = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime);
+        var trustedCheck = RecoveryWizardOrchestrator.Continue(
+            initial,
+            RecoveryWizardStepId.TrustedDeviceCheck,
+            StartTime.AddMinutes(1));
+        var withVault = StartWithVaultContext();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            RecoveryWizardOrchestrator.RecordTrustedDeviceDecision(
+                trustedCheck,
+                TrustedDeviceDecision.NotAnswered,
+                StartTime.AddMinutes(2)));
+        Assert.Throws<InvalidOperationException>(() =>
+            RecoveryWizardOrchestrator.Continue(
+                trustedCheck,
+                RecoveryWizardStepId.VaultEntry,
+                StartTime.AddMinutes(2)));
+        Assert.Throws<InvalidOperationException>(() =>
+            RecoveryWizardOrchestrator.Continue(
+                withVault with { CurrentStep = RecoveryWizardStepId.VaultEntry },
+                RecoveryWizardStepId.IncidentIntake,
+                StartTime.AddMinutes(4)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            RecoveryWizardOrchestrator.Finish(
+                withVault with { CurrentStep = RecoveryWizardStepId.FinalReport },
+                (RecoveryWizardTerminalOutcome)int.MaxValue,
+                StartTime.AddMinutes(4)));
+        Assert.Throws<ArgumentException>(() =>
+            RecoveryWizardOrchestrator.Start(Guid.Empty, StartTime));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            RecoveryWizardStepId.Parse("unknown-step"));
+    }
+
+    [Fact]
+    public void PauseLockResumeCancelAndArchiveCoverEverySupportedLifecycle()
+    {
+        var active = StartWithVaultContext();
+        var paused = RecoveryWizardOrchestrator.Pause(active, StartTime.AddMinutes(4));
+        var lockedFromPause = RecoveryWizardOrchestrator.Lock(paused, StartTime.AddMinutes(5));
+        var resumed = RecoveryWizardOrchestrator.Resume(lockedFromPause, StartTime.AddMinutes(6));
+        var archivedActive = RecoveryWizardOrchestrator.Archive(resumed, StartTime.AddMinutes(7));
+        var archivedPaused = RecoveryWizardOrchestrator.Archive(paused, StartTime.AddMinutes(5));
+        var cancelledPaused = RecoveryWizardOrchestrator.Cancel(paused, StartTime.AddMinutes(5));
+        var cancelledLocked = RecoveryWizardOrchestrator.Cancel(lockedFromPause, StartTime.AddMinutes(6));
+
+        Assert.Equal(RecoveryWizardLifecycleStatus.Archived, archivedActive.Status);
+        Assert.Equal(RecoveryWizardLifecycleStatus.Archived, archivedPaused.Status);
+        Assert.Equal(RecoveryWizardLifecycleStatus.Cancelled, cancelledPaused.Status);
+        Assert.Equal(RecoveryWizardLifecycleStatus.Cancelled, cancelledLocked.Status);
+        Assert.Throws<InvalidOperationException>(() =>
+            RecoveryWizardOrchestrator.Resume(active, StartTime.AddMinutes(4)));
+        Assert.Throws<InvalidOperationException>(() =>
+            RecoveryWizardOrchestrator.Archive(lockedFromPause, StartTime.AddMinutes(6)));
+        Assert.Throws<InvalidOperationException>(() =>
+            RecoveryWizardOrchestrator.Cancel(archivedActive, StartTime.AddMinutes(8)));
+    }
+
+    public static TheoryData<string, RecoveryWizardRecommendationCode> ActiveRecommendations =>
+        new()
+        {
+            { RecoveryWizardStepId.Welcome.Value, RecoveryWizardRecommendationCode.WelcomeUser },
+            { RecoveryWizardStepId.TrustedDeviceCheck.Value, RecoveryWizardRecommendationCode.ConfirmTrustedDevice },
+            { RecoveryWizardStepId.TrustedDeviceGuidance.Value, RecoveryWizardRecommendationCode.MoveToTrustedDevice },
+            { RecoveryWizardStepId.VaultEntry.Value, RecoveryWizardRecommendationCode.CreateOrUnlockVault },
+            { RecoveryWizardStepId.IncidentIntake.Value, RecoveryWizardRecommendationCode.CaptureIncidentContext },
+            { RecoveryWizardStepId.AccountInventory.Value, RecoveryWizardRecommendationCode.ReviewAccountInventory },
+            { RecoveryWizardStepId.IdentityReview.Value, RecoveryWizardRecommendationCode.ConfirmIdentityAndRecoveryRelationships },
+            { RecoveryWizardStepId.RecoveryPlan.Value, RecoveryWizardRecommendationCode.ReviewRecoveryPlan },
+            { RecoveryWizardStepId.AccountRecovery.Value, RecoveryWizardRecommendationCode.RecoverRecommendedAccount },
+            { RecoveryWizardStepId.CredentialExport.Value, RecoveryWizardRecommendationCode.ExportGeneratedCredentials },
+            { RecoveryWizardStepId.CompletionPreflight.Value, RecoveryWizardRecommendationCode.RunCompletionPreflight },
+            { RecoveryWizardStepId.FinalReport.Value, RecoveryWizardRecommendationCode.ReviewFinalReport },
+        };
+
     private static RecoveryWizardState StartAtTrustedDeviceCheck()
     {
         var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime);

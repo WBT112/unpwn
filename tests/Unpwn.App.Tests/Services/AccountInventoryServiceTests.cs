@@ -284,6 +284,26 @@ public sealed class AccountInventoryServiceTests
         Assert.NotNull(store.StoredRecord);
     }
 
+    [Fact]
+    public async Task ReloadDoesNotChangeSessionRevisionWhenProjectionIsAlreadyCurrent()
+    {
+        var time = DateTimeOffset.UnixEpoch;
+        var store = new TestEncryptedRecordStore();
+        var session = new TestRecoverySessionService();
+        using var service = new AccountInventoryService(store, session, () => time);
+        await service.InitializeAsync(CancellationToken.None);
+        time = time.AddMinutes(1);
+        Assert.True((await service.UpsertAsync(
+            CreateRequest("Mail"), CancellationToken.None)).Succeeded);
+        var revisionAfterMutation = session.CurrentSession!.Revision;
+
+        time = time.AddMinutes(1);
+        await service.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(AccountInventoryLoadState.Loaded, service.LoadState);
+        Assert.Equal(revisionAfterMutation, session.CurrentSession!.Revision);
+    }
+
     private static AccountInventoryUpsertRequest CreateRequest(string provider) =>
         new(
             null,

@@ -162,4 +162,152 @@ public sealed class GeneratedCredentialLifecycleTests
 
         Assert.Throws<ArgumentOutOfRangeException>(policy.Validate);
     }
+
+    [Fact]
+    public void GenerationPolicyRequiresAtLeastOneCharacterSet()
+    {
+        var policy = new CredentialGenerationPolicy(24, false, false, false, false);
+
+        Assert.Throws<ArgumentException>(policy.Validate);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void CredentialReferenceRequiresBothOpaqueIdentifiers(
+        bool emptyCredentialId,
+        bool emptyAccountId)
+    {
+        var reference = new GeneratedCredentialReference(
+            emptyCredentialId ? Guid.Empty : Guid.NewGuid(),
+            emptyAccountId ? Guid.Empty : Guid.NewGuid());
+
+        Assert.Throws<InvalidOperationException>(reference.Validate);
+    }
+
+    [Fact]
+    public void AuditEventRequiresOperationIdentifier()
+    {
+        var auditEvent = new GeneratedCredentialAuditEvent(
+            Guid.Empty, GeneratedCredentialAuditEventType.Used, StartedAt);
+
+        Assert.Throws<InvalidOperationException>(auditEvent.Validate);
+    }
+
+    [Fact]
+    public void MetadataValidationRejectsNegativeCountersAndMissingAuditCollection()
+    {
+        var metadata = CreateMetadata();
+
+        Assert.Throws<InvalidOperationException>(() => (metadata with { Revision = -1 }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with { ExportCount = -1 }).Validate());
+        Assert.Throws<ArgumentNullException>(() => (metadata with { AuditEvents = null! }).Validate());
+    }
+
+    [Fact]
+    public void MetadataValidationRejectsInvalidAuditHistory()
+    {
+        var metadata = CreateMetadata();
+        var generated = metadata.AuditEvents[0];
+
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            AuditEvents = [generated with { OccurredAt = StartedAt.AddSeconds(-1) }],
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            AuditEvents = [generated, generated],
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            AuditEvents = [generated with { EventType = GeneratedCredentialAuditEventType.Used }],
+        }).Validate());
+    }
+
+    [Fact]
+    public void MetadataValidationRejectsInconsistentLifecycleTimestamps()
+    {
+        var metadata = CreateMetadata();
+
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            UsedAt = StartedAt.AddSeconds(-1),
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            ConfirmedAt = StartedAt.AddMinutes(1),
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            ExportedAt = StartedAt.AddMinutes(1),
+            ExportCount = 0,
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            ExportedAt = null,
+            ExportCount = 1,
+        }).Validate());
+    }
+
+    [Fact]
+    public void MetadataValidationRejectsHandoffWithoutExportAndMismatchedAuditCounts()
+    {
+        var metadata = CreateMetadata();
+
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            PasswordManagerImportConfirmedAt = StartedAt.AddMinutes(1),
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            PlaintextExportCleanupConfirmedAt = StartedAt.AddMinutes(1),
+        }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            IsPasswordManagerImportConfirmationPostponed = true,
+        }).Validate());
+
+        var exported = metadata.MarkExported(Guid.NewGuid(), StartedAt.AddMinutes(1));
+        Assert.Throws<InvalidOperationException>(() => (exported with { ExportCount = 2 }).Validate());
+        Assert.Throws<InvalidOperationException>(() => (metadata with
+        {
+            DeletedAt = StartedAt.AddMinutes(1),
+        }).Validate());
+    }
+
+    [Fact]
+    public void LifecycleRejectsEmptyOperationsAndNonMonotonicTimestamps()
+    {
+        var metadata = CreateMetadata();
+
+        Assert.False(metadata.HasOperation(Guid.Empty, GeneratedCredentialAuditEventType.Generated));
+        Assert.Throws<ArgumentException>(() => metadata.MarkUsed(Guid.Empty, StartedAt.AddMinutes(1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => metadata.MarkUsed(
+            Guid.NewGuid(), StartedAt.AddSeconds(-1)));
+
+        var used = metadata.MarkUsed(Guid.NewGuid(), StartedAt.AddMinutes(2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => used.MarkExported(
+            Guid.NewGuid(), StartedAt.AddMinutes(1)));
+    }
+
+    [Fact]
+    public void HandoffRevocationRequiresPriorConfirmationAndIsIdempotent()
+    {
+        var exported = CreateMetadata().MarkExported(Guid.NewGuid(), StartedAt.AddMinutes(1));
+        Assert.Throws<InvalidOperationException>(() => exported.RevokePasswordManagerImportConfirmation(
+            Guid.NewGuid(), StartedAt.AddMinutes(2)));
+
+        var revokeOperation = Guid.NewGuid();
+        var revoked = exported
+            .ConfirmPasswordManagerImport(Guid.NewGuid(), StartedAt.AddMinutes(2))
+            .RevokePasswordManagerImportConfirmation(revokeOperation, StartedAt.AddMinutes(3));
+        var repeated = revoked.RevokePasswordManagerImportConfirmation(
+            revokeOperation, StartedAt.AddMinutes(4));
+
+        Assert.Same(revoked, repeated);
+    }
+
+    private static GeneratedCredentialMetadata CreateMetadata() =>
+        GeneratedCredentialMetadata.Create(
+            Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), StartedAt);
 }

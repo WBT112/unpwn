@@ -8,6 +8,7 @@ public sealed record VaultRecordDescriptor(
     private static readonly HashSet<string> AllowedRecordTypes =
         new(StringComparer.Ordinal)
         {
+            "account-execution",
             "account-state",
             "audit-events",
             "generated-credential",

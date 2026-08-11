@@ -132,6 +132,22 @@ view-model tests for every critical desktop flow; they do not validate native UI
 The Windows/NVDA and Ubuntu/Orca checklist in
 [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md) is a release gate.
 
+### End-to-end smoke journeys
+
+The blocking suite includes a small `EndToEndSmoke` category that composes the real application
+services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session
+creation, canonical CSV import, role review, a repository-controlled provider workflow, explicit
+action completion, generated-credential handoff and cleanup, completion review, locking, reopening,
+and persisted-state validation after an application-style restart. Negative smoke coverage verifies
+that an untrusted or uncertain device decision cannot create a vault. All paths use only synthetic
+identities and local files; they never navigate to or mutate a live provider.
+
+Run only this fast cross-component safety net with:
+
+```pwsh
+dotnet test tests/Unpwn.App.Tests/Unpwn.App.Tests.csproj --configuration Release --filter Category=EndToEndSmoke
+```
+
 ### 6. Localization and culture tests
 
 Localization tests follow [Localization and Multilingual GUI](LOCALIZATION.md).
@@ -246,6 +262,24 @@ Before release:
 ## Pull-Request CI
 
 The current baseline is implemented in `.github/workflows/ci.yml`. It performs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting and analyzer verification run once on Linux. Cobertura coverage collection, synthetic-secret artifact scanning, and the normal successful artifact upload also run on Linux. Windows uploads test artifacts only when its build or tests fail. Successful retained artifacts use the configured short retention period.
+
+The Linux job merges the per-test-project Cobertura files and enforces at least 80% line coverage
+and 80% branch coverage across the platform-neutral production assemblies (`Unpwn.Core`,
+`Unpwn.Application`, `Unpwn.Import`, `Unpwn.Export`, `Unpwn.Vault`, `Unpwn.Providers`, and
+`Unpwn.Automation`). `Unpwn.App` is reported through its own view-model, Avalonia headless, and
+manual accessibility test layers, but is excluded from this numeric gate: native desktop
+composition, generated Avalonia plumbing, and visual bindings do not produce a comparable LOC or
+branch signal. This exclusion must not be extended to presentation-independent behavior; such logic
+belongs in a platform-neutral assembly and remains inside the gate.
+
+To reproduce the blocking coverage check locally after a Release build:
+
+```pwsh
+dotnet test unpwn.slnx --configuration Release --no-build --collect:"XPlat Code Coverage" --results-directory artifacts/test-results -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
+dotnet tool restore
+dotnet tool run reportgenerator '-reports:artifacts/test-results/**/coverage.cobertura.xml' '-targetdir:artifacts/coverage' '-reporttypes:Cobertura;JsonSummary;TextSummary' '-assemblyfilters:+Unpwn.*;-Unpwn.App'
+./eng/verify-coverage.ps1 -CoveragePath artifacts/coverage/Cobertura.xml -MinimumLineRate 0.80 -MinimumBranchRate 0.80
+```
 
 Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The application diagnostic boundary records a bounded operation, stable event ID, static message, and exception type only. It returns a new static-message exception for propagation; source exception messages, inner exceptions, stack traces, localization formatting arguments, and imported values are deliberately excluded because they may contain secrets.
 

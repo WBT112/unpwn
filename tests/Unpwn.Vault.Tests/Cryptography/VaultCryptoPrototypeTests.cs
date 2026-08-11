@@ -153,6 +153,14 @@ public sealed class VaultCryptoPrototypeTests
     }
 
     [Fact]
+    public void AccountExecutionIsAnAllowedRepositoryRecordCategory()
+    {
+        var descriptor = new VaultRecordDescriptor("account-execution", RecordId, 1);
+
+        descriptor.Validate();
+    }
+
+    [Fact]
     public void Argon2idParametersRejectUnsafePrototypeSettings()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(1024, 2, 1).Validate());

@@ -73,6 +73,24 @@ jobs:
           --
           DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
 
+      - name: Restore coverage report tool
+        if: runner.os == 'Linux'
+        run: dotnet tool restore
+
+      - name: Merge and verify coverage
+        if: runner.os == 'Linux'
+        shell: pwsh
+        run: |
+          dotnet tool run reportgenerator `
+            '-reports:artifacts/test-results/**/coverage.cobertura.xml' `
+            '-targetdir:artifacts/coverage' `
+            '-reporttypes:Cobertura;JsonSummary;TextSummary' `
+            '-assemblyfilters:+Unpwn.*;-Unpwn.App'
+          ./eng/verify-coverage.ps1 `
+            -CoveragePath artifacts/coverage/Cobertura.xml `
+            -MinimumLineRate 0.80 `
+            -MinimumBranchRate 0.80
+
       - name: Build and test
         if: runner.os == 'Windows'
         run: >-
@@ -87,7 +105,7 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $secretMatches = Get-ChildItem artifacts/test-results -Recurse -File -ErrorAction SilentlyContinue |
+          $secretMatches = Get-ChildItem artifacts -Recurse -File -ErrorAction SilentlyContinue |
             Select-String -SimpleMatch 'UNPWN_TEST_SECRET_'
 
           if ($secretMatches) {
@@ -100,7 +118,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-results-${{ runner.os }}
-          path: artifacts/test-results
+          path: |
+            artifacts/test-results
+            artifacts/coverage
           if-no-files-found: warn
           retention-days: 7
 

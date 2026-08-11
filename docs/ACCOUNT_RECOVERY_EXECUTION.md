@@ -4,7 +4,11 @@
 
 The guided workflow screen needs one persisted source of truth for an account's selected provider workflow, recovery path, access state, action states, timestamps, unresolved risks, user notes, and generated-credential references.
 
-`AccountRecoveryExecutionState` is that canonical execution aggregate. Account inventory remains the source for account identity metadata, confirmed roles, priorities, and dependencies. Dashboard entries and recovery-plan summaries are projections; they are not independent workflow state.
+`AccountRecoveryExecutionState` is that canonical execution aggregate. It is stored as an authenticated
+encrypted `account-execution` record with the opaque inventory account ID as its record identifier.
+Account inventory remains the source for account identity metadata, confirmed roles, priorities, and
+dependencies. Dashboard entries and recovery-plan summaries are projections; they are not independent
+workflow state.
 
 ## Identity and versioning
 
