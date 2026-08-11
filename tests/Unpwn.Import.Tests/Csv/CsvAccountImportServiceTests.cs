@@ -196,6 +196,138 @@ public sealed class CsvAccountImportServiceTests
             diagnostic => diagnostic.Code == "InvalidAccountUrl" && diagnostic.RowNumber == 2);
     }
 
+    [Fact]
+    public void EmptyAndMalformedHeadersAreRejected()
+    {
+        using var empty = new StringReader(string.Empty);
+        using var blankColumn = new StringReader("service,,username\n");
+        using var unterminated = new StringReader("service,\"username\n");
+
+        Assert.Contains(
+            CsvAccountImportService.Analyze(empty).Diagnostics,
+            diagnostic => diagnostic.Code == "MissingHeader");
+        Assert.Contains(
+            CsvAccountImportService.Analyze(blankColumn).Diagnostics,
+            diagnostic => diagnostic.Code == "MalformedHeader");
+        Assert.Contains(
+            CsvAccountImportService.Analyze(unterminated).Diagnostics,
+            diagnostic => diagnostic.Code == "MalformedHeader");
+    }
+
+    [Fact]
+    public void PreviewRejectsRepeatedAndIncompleteMappings()
+    {
+        using var repeatedSource = new StringReader("service,username\nExample,user\n");
+        using var missingServiceSource = new StringReader("service,username\nExample,user\n");
+        using var missingAccountSource = new StringReader("service,username\nExample,user\n");
+
+        var repeated = CsvAccountImportService.CreatePreview(
+            repeatedSource, new CsvColumnMapping("service", "service", "username", null, []));
+        var missingService = CsvAccountImportService.CreatePreview(
+            missingServiceSource, new CsvColumnMapping(null, null, "username", null, []));
+        var missingAccount = CsvAccountImportService.CreatePreview(
+            missingAccountSource, new CsvColumnMapping("service", null, null, null, []));
+
+        Assert.Contains(repeated.Diagnostics, diagnostic => diagnostic.Code == "RepeatedMappedColumn");
+        Assert.Contains(missingService.Diagnostics, diagnostic => diagnostic.Code == "MissingServiceMapping");
+        Assert.Contains(missingAccount.Diagnostics, diagnostic => diagnostic.Code == "MissingAccountMapping");
+    }
+
+    [Fact]
+    public void PasswordColumnCannotBeMappedEvenWhenExcluded()
+    {
+        using var source = new StringReader("service,username,password\nExample,user,discarded\n");
+        var mapping = new CsvColumnMapping("password", null, "username", null, ["password"]);
+
+        var preview = CsvAccountImportService.CreatePreview(source, mapping);
+
+        Assert.Contains(preview.Diagnostics, diagnostic => diagnostic.Code == "PasswordColumnMapped");
+        Assert.Empty(preview.Candidates);
+    }
+
+    [Fact]
+    public void MissingRequiredRowValuesRejectOnlyAffectedRows()
+    {
+        using var source = new StringReader(
+            "service,url,account,username\n" +
+            ",,Personal,user@example.test\n" +
+            "Example,https://example.test,,\n" +
+            "Valid,https://valid.example,Personal,user@example.test\n");
+        var mapping = new CsvColumnMapping("service", "account", "username", "url", []);
+
+        var preview = CsvAccountImportService.CreatePreview(source, mapping);
+
+        Assert.Single(preview.Candidates);
+        Assert.Contains(preview.Diagnostics, diagnostic => diagnostic.Code == "MissingServiceValue");
+        Assert.Contains(preview.Diagnostics, diagnostic => diagnostic.Code == "MissingAccountValue");
+    }
+
+    [Theory]
+    [InlineData("ftp://example.test")]
+    [InlineData("/relative/path")]
+    [InlineData("https://")]
+    public void UnsupportedAccountUrlsAreRejected(string url)
+    {
+        using var source = new StringReader($"url,username\n{url},user@example.test\n");
+        var mapping = new CsvColumnMapping(null, null, "username", "url", []);
+
+        var preview = CsvAccountImportService.CreatePreview(source, mapping);
+
+        Assert.Empty(preview.Candidates);
+        Assert.Contains(preview.Diagnostics, diagnostic => diagnostic.Code == "InvalidAccountUrl");
+    }
+
+    [Fact]
+    public void ParserFlagsQuotesInUnquotedFieldsAndCharactersAfterClosingQuote()
+    {
+        using var source = new StringReader(
+            "service,username\n" +
+            "Ex\"ample,user@example.test\n" +
+            "\"Example\"oops,user2@example.test\n" +
+            "Valid,user3@example.test\n");
+        var mapping = new CsvColumnMapping("service", null, "username", null, []);
+
+        var preview = CsvAccountImportService.CreatePreview(source, mapping);
+
+        Assert.Single(preview.Candidates);
+        Assert.Equal(2, preview.Diagnostics.Count(diagnostic => diagnostic.Code == "MalformedRow"));
+    }
+
+    [Fact]
+    public void RequestedDelimiterAndQuotedDelimiterAreHandledDeterministically()
+    {
+        using var analysisSource = new StringReader("\"service,name\"|username|pwd\n");
+        using var previewSource = new StringReader(
+            "service;username;note\nExample;user@example.test;\"trailing whitespace\"   \n");
+
+        Assert.Equal('|', CsvAccountImportService.Analyze(analysisSource).Delimiter);
+        var preview = CsvAccountImportService.CreatePreview(
+            previewSource,
+            new CsvColumnMapping("service", null, "username", null, []),
+            delimiter: ';');
+
+        Assert.Single(preview.Candidates);
+    }
+
+    [Fact]
+    public void DuplicateIdentityFallsBackToAccountNameAndSkipsIncompleteExistingRecords()
+    {
+        using var source = new StringReader("service,account\nExample,Personal\nexample,PERSONAL\n");
+        var mapping = new CsvColumnMapping("service", "account", null, null, []);
+        ExistingAccountReference[] existingAccounts =
+        [
+            new("incomplete", null, null, null, null),
+            new("matching", " Example ", " personal ", null, null),
+        ];
+
+        var preview = CsvAccountImportService.CreatePreview(source, mapping, existingAccounts);
+
+        Assert.Equal(CsvDuplicateKind.ExistingAccount, preview.Candidates[0].DuplicateKind);
+        Assert.Equal(
+            CsvDuplicateKind.WithinImport | CsvDuplicateKind.ExistingAccount,
+            preview.Candidates[1].DuplicateKind);
+    }
+
     private sealed class TrackingReader(string text) : StringReader(text)
     {
         private readonly List<char> _observedCharacters = [];

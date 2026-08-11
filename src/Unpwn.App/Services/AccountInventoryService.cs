@@ -563,13 +563,21 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
         AccountInventoryState inventory,
         CancellationToken cancellationToken)
     {
+        var summaries = BuildDashboardSummaries(inventory);
+        if (DashboardSummariesEqual(
+                summaries,
+                _recoverySession.CurrentSession?.Accounts ?? []))
+        {
+            return AccountInventoryOperationResult.Success();
+        }
+
         if (_projectionCoordinator is null)
         {
             return await SyncDashboardLegacyAsync(inventory, cancellationToken);
         }
 
         using var update = await _projectionCoordinator.PrepareAccountSummaryUpdateAsync(
-            BuildDashboardSummaries(inventory),
+            summaries,
             cancellationToken);
         try
         {
@@ -585,6 +593,31 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
         {
             return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.IoFailure);
         }
+    }
+
+    private static bool DashboardSummariesEqual(
+        RecoveryAccountDashboardEntry[] expected,
+        RecoveryAccountDashboardEntry[] current)
+    {
+        if (expected.Length != current.Length)
+        {
+            return false;
+        }
+
+        var currentByAccountId = current.ToDictionary(account => account.AccountId);
+        return expected.All(account =>
+            currentByAccountId.TryGetValue(account.AccountId, out var existing) &&
+            DashboardSummaryEquals(account, existing));
+    }
+
+    private static bool DashboardSummaryEquals(
+        RecoveryAccountDashboardEntry left,
+        RecoveryAccountDashboardEntry right)
+    {
+        var sharedEmptyDependencies = Array.Empty<Guid>();
+        return left.WaitingForAccountIds.SequenceEqual(right.WaitingForAccountIds) &&
+            (left with { WaitingForAccountIds = sharedEmptyDependencies }) ==
+            (right with { WaitingForAccountIds = sharedEmptyDependencies });
     }
 
     [SuppressMessage(

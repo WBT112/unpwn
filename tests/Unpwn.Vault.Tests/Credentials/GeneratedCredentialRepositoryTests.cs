@@ -231,6 +231,167 @@ public sealed class GeneratedCredentialRepositoryTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task GenerationRejectsInvalidInputWithoutWritingASecret(
+        bool emptyAccountId,
+        bool emptyOperationId,
+        bool nullPolicy)
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+
+        using var result = await repository.GenerateAsync(
+            emptyAccountId ? Guid.Empty : Guid.NewGuid(),
+            nullPolicy ? null! : CredentialGenerationPolicy.Default,
+            emptyOperationId ? Guid.Empty : Guid.NewGuid(),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, result.FailureCode);
+        Assert.Empty(await repository.ListAsync(CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(11, true, true, true, true)]
+    [InlineData(129, true, true, true, true)]
+    [InlineData(24, false, false, false, false)]
+    public async Task GenerationRejectsInvalidPolicies(
+        int length,
+        bool lowercase,
+        bool uppercase,
+        bool digits,
+        bool symbols)
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+
+        using var result = await repository.GenerateAsync(
+            Guid.NewGuid(),
+            new CredentialGenerationPolicy(length, lowercase, uppercase, digits, symbols),
+            Guid.NewGuid(),
+            CancellationToken.None);
+
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, result.FailureCode);
+    }
+
+    [Fact]
+    public async Task LockedVaultFailsClosedForEveryRepositoryReadAndMutation()
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+        using var created = await repository.GenerateAsync(
+            Guid.NewGuid(), CredentialGenerationPolicy.Default, Guid.NewGuid(), CancellationToken.None);
+        var reference = Assert.IsType<GeneratedCredentialMetadata>(created.Metadata).Reference;
+        vault.Lock();
+
+        using var generated = await repository.GenerateAsync(
+            Guid.NewGuid(), CredentialGenerationPolicy.Default, Guid.NewGuid(), CancellationToken.None);
+        Assert.Equal(GeneratedCredentialFailureCode.Locked, generated.FailureCode);
+        Assert.Empty(await repository.ListAsync(CancellationToken.None));
+        Assert.Null(await repository.GetMetadataAsync(reference, CancellationToken.None));
+        Assert.Null(await repository.ReadSecretAsync(reference, CancellationToken.None));
+        Assert.Equal(GeneratedCredentialFailureCode.Locked, (await repository.MarkUsedAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.Locked, (await repository.MarkExportedAsync(
+            [reference], Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.Locked, (await repository.DeleteAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+    }
+
+    [Fact]
+    public async Task InvalidAndMismatchedReferencesFailClosed()
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+        using var created = await repository.GenerateAsync(
+            Guid.NewGuid(), CredentialGenerationPolicy.Default, Guid.NewGuid(), CancellationToken.None);
+        var valid = Assert.IsType<GeneratedCredentialMetadata>(created.Metadata).Reference;
+        var invalid = new GeneratedCredentialReference(Guid.Empty, Guid.NewGuid());
+        var missing = new GeneratedCredentialReference(Guid.NewGuid(), Guid.NewGuid());
+        var wrongAccount = valid with { AccountId = Guid.NewGuid() };
+
+        Assert.Null(await repository.GetMetadataAsync(null!, CancellationToken.None));
+        Assert.Null(await repository.GetMetadataAsync(invalid, CancellationToken.None));
+        Assert.Null(await repository.ReadSecretAsync(wrongAccount, CancellationToken.None));
+        Assert.Null(await repository.ReadSecretAsync(missing, CancellationToken.None));
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, (await repository.MarkUsedAsync(
+            invalid, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, (await repository.MarkUsedAsync(
+            valid, Guid.Empty, CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.NotFound, (await repository.MarkUsedAsync(
+            missing, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.NotFound, (await repository.DeleteAsync(
+            wrongAccount, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+    }
+
+    [Fact]
+    public async Task ExportBatchRejectsInvalidDuplicateMissingAndDeletedCredentials()
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+        using var created = await repository.GenerateAsync(
+            Guid.NewGuid(), CredentialGenerationPolicy.Default, Guid.NewGuid(), CancellationToken.None);
+        var reference = Assert.IsType<GeneratedCredentialMetadata>(created.Metadata).Reference;
+
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, (await repository.MarkExportedAsync(
+            null!, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, (await repository.MarkExportedAsync(
+            [], Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, (await repository.MarkExportedAsync(
+            [reference], Guid.Empty, CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.InvalidInput, (await repository.MarkExportedAsync(
+            [reference, reference], Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.NotFound, (await repository.MarkExportedAsync(
+            [new GeneratedCredentialReference(Guid.NewGuid(), Guid.NewGuid())],
+            Guid.NewGuid(), CancellationToken.None)).FailureCode);
+
+        Assert.True((await repository.DeleteAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).Succeeded);
+        Assert.Equal(GeneratedCredentialFailureCode.Deleted, (await repository.MarkExportedAsync(
+            [reference], Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.Equal(GeneratedCredentialFailureCode.Deleted, (await repository.MarkUsedAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).FailureCode);
+        Assert.True((await repository.DeleteAsync(
+            reference, Guid.NewGuid(), CancellationToken.None)).Succeeded);
+    }
+
+    [Fact]
+    public async Task GenerationOperationCannotBeReusedForAnotherAccount()
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        using var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+        var operationId = Guid.NewGuid();
+        using var first = await repository.GenerateAsync(
+            Guid.NewGuid(), CredentialGenerationPolicy.Default, operationId, CancellationToken.None);
+        using var conflict = await repository.GenerateAsync(
+            Guid.NewGuid(), CredentialGenerationPolicy.Default, operationId, CancellationToken.None);
+
+        Assert.True(first.Succeeded);
+        Assert.Equal(GeneratedCredentialFailureCode.Conflict, conflict.FailureCode);
+    }
+
+    [Fact]
+    public async Task DisposedRepositoryRejectsFurtherUse()
+    {
+        using var vault = RecoveryVault.Create(
+            VaultPath(), "UNPWN_TEST_SECRET_vault-password", TestParameters);
+        var repository = new RecoveryVaultGeneratedCredentialRepository(vault);
+        repository.Dispose();
+        repository.Dispose();
+
+        Assert.False(repository.IsUnlocked);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => repository.ListAsync(CancellationToken.None));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_directory))
