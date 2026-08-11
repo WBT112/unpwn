@@ -45,6 +45,10 @@ public sealed record AccountInventoryPlanDisplayItem(
     string DisplayText,
     AccountInventoryPlanStatus Status);
 
+public sealed record AccountInventoryGuidedIssue(
+    AccountInventoryIssueKind? Kind,
+    string Message);
+
 public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 {
     private static readonly AccountInventoryRole[] IndividualRoles =
@@ -62,6 +66,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private IReadOnlyList<AccountInventoryListItem> _accounts = [];
     private IReadOnlyList<AccountInventoryDependencyItem> _dependencies = [];
     private IReadOnlyList<AccountInventoryPlanDisplayItem> _planItems = [];
+    private IReadOnlyList<AccountInventoryGuidedIssue> _guidedIssues = [];
     private IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> _suggestedRoles = [];
     private IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> _confirmedRoles = [];
     private IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> _availableRoles = [];
@@ -86,6 +91,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private string? _validationMessage;
     private string _inventorySummary = string.Empty;
     private string _planSummary = string.Empty;
+    private bool _isAdvancedEditorVisible;
 
     public AccountInventoryScreenViewModel(
         IAccountInventoryService inventory,
@@ -128,7 +134,12 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             () => Localization.GetString("Accounts.Error.Command"),
             () => HasPersistedAccount && SelectedConfirmedRole is not null);
         AddDependencyCommand = new AsyncCommand(
-            AddDependencyAsync,
+            cancellationToken => AddDependencyAsync(includeOverride: true, cancellationToken),
+            () => Localization.GetString("Accounts.Error.Command"),
+            () => HasPersistedAccount &&
+                  SelectedDependencyTarget is not null && SelectedDependencyKind is not null);
+        AddGuidedDependencyCommand = new AsyncCommand(
+            cancellationToken => AddDependencyAsync(includeOverride: false, cancellationToken),
             () => Localization.GetString("Accounts.Error.Command"),
             () => HasPersistedAccount &&
                   SelectedDependencyTarget is not null && SelectedDependencyKind is not null);
@@ -136,6 +147,8 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             RemoveDependencyAsync,
             () => Localization.GetString("Accounts.Error.Command"),
             () => HasPersistedAccount && SelectedDependency is not null);
+        ShowAdvancedEditorCommand = new RelayCommand(() => IsAdvancedEditorVisible = true);
+        ShowGuidedReviewCommand = new RelayCommand(() => IsAdvancedEditorVisible = false);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         BuildStaticOptions();
         RefreshFromService();
@@ -157,7 +170,13 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand AddDependencyCommand { get; }
 
+    public AsyncCommand AddGuidedDependencyCommand { get; }
+
     public AsyncCommand RemoveDependencyCommand { get; }
+
+    public RelayCommand ShowAdvancedEditorCommand { get; }
+
+    public RelayCommand ShowGuidedReviewCommand { get; }
 
     public IReadOnlyList<AccountInventoryListItem> Accounts
     {
@@ -177,10 +196,29 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         private set => SetProperty(ref _planItems, value);
     }
 
+    public IReadOnlyList<AccountInventoryGuidedIssue> GuidedIssues
+    {
+        get => _guidedIssues;
+        private set
+        {
+            if (SetProperty(ref _guidedIssues, value))
+            {
+                OnPropertyChanged(nameof(HasGuidedIssues));
+            }
+        }
+    }
+
     public IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> SuggestedRoles
     {
         get => _suggestedRoles;
-        private set => SetProperty(ref _suggestedRoles, value);
+        private set
+        {
+            if (SetProperty(ref _suggestedRoles, value))
+            {
+                OnPropertyChanged(nameof(HasSuggestedRoles));
+                OnPropertyChanged(nameof(SuggestedRoleQuestion));
+            }
+        }
     }
 
     public IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> ConfirmedRoles
@@ -198,7 +236,14 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public IReadOnlyList<AccountInventoryOption<Guid>> DependencyTargets
     {
         get => _dependencyTargets;
-        private set => SetProperty(ref _dependencyTargets, value);
+        private set
+        {
+            if (SetProperty(ref _dependencyTargets, value))
+            {
+                OnPropertyChanged(nameof(HasDependencyTargets));
+                OnPropertyChanged(nameof(DependencyQuestion));
+            }
+        }
     }
 
     public IReadOnlyList<AccountInventoryOption<AccountInventoryPriority>> Priorities { get; private set; } = [];
@@ -229,6 +274,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             if (SetProperty(ref _selectedAccount, value))
             {
                 LoadSelectedAccount();
+                OnPropertyChanged(nameof(SuggestedRoleQuestion));
+                OnPropertyChanged(nameof(AdditionalRoleQuestion));
+                OnPropertyChanged(nameof(DependencyQuestion));
                 RaiseCommandStates();
             }
         }
@@ -277,6 +325,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         {
             if (SetProperty(ref _selectedSuggestedRole, value))
             {
+                OnPropertyChanged(nameof(SuggestedRoleQuestion));
                 RaiseCommandStates();
             }
         }
@@ -301,6 +350,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         {
             if (SetProperty(ref _selectedRoleToAdd, value))
             {
+                OnPropertyChanged(nameof(AdditionalRoleQuestion));
                 RaiseCommandStates();
             }
         }
@@ -313,6 +363,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         {
             if (SetProperty(ref _selectedDependencyTarget, value))
             {
+                OnPropertyChanged(nameof(DependencyQuestion));
                 RaiseCommandStates();
             }
         }
@@ -325,6 +376,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         {
             if (SetProperty(ref _selectedDependencyKind, value))
             {
+                OnPropertyChanged(nameof(DependencyQuestion));
                 RaiseCommandStates();
             }
         }
@@ -385,6 +437,48 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     }
 
     public bool HasValidationMessage => ValidationMessage is not null;
+
+    public bool IsAdvancedEditorVisible
+    {
+        get => _isAdvancedEditorVisible;
+        set
+        {
+            if (SetProperty(ref _isAdvancedEditorVisible, value))
+            {
+                OnPropertyChanged(nameof(IsGuidedReviewVisible));
+            }
+        }
+    }
+
+    public bool IsGuidedReviewVisible => !IsAdvancedEditorVisible;
+
+    public bool HasGuidedIssues => GuidedIssues.Count > 0;
+
+    public bool HasSuggestedRoles => SuggestedRoles.Count > 0;
+
+    public bool HasDependencyTargets => DependencyTargets.Count > 0;
+
+    public string SuggestedRoleQuestion => SelectedSuggestedRole is null
+        ? Localization.GetString("Accounts.Guided.Roles.NoSuggestions")
+        : Localization.Format(
+            "Accounts.Guided.Roles.SuggestionQuestion",
+            SelectedSuggestedRole.Label,
+            SelectedAccount?.DisplayName ?? ProviderId);
+
+    public string AdditionalRoleQuestion => SelectedRoleToAdd is null
+        ? Localization.GetString("Accounts.Guided.Roles.AllReviewed")
+        : Localization.Format(
+            "Accounts.Guided.Roles.AddQuestion",
+            SelectedAccount?.DisplayName ?? ProviderId,
+            SelectedRoleToAdd.Label);
+
+    public string DependencyQuestion => SelectedDependencyTarget is null || SelectedDependencyKind is null
+        ? Localization.GetString("Accounts.Guided.Dependency.NoTarget")
+        : Localization.Format(
+            "Accounts.Guided.Dependency.Question",
+            SelectedAccount?.DisplayName ?? ProviderId,
+            SelectedDependencyTarget.Label,
+            Localization.GetString($"Accounts.Guided.Dependency.Kind.{SelectedDependencyKind.Value}"));
 
     public string InventorySummary
     {
@@ -496,9 +590,14 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             issueCount > 0 ? "Accounts.Status.Blocked.Message" : "Screen.Accounts.StatusMessage");
         RefreshAccountList();
         RefreshPlan();
+        RefreshGuidedIssues();
         if (_editingAccountId is { } editingId)
         {
             SelectedAccount = Accounts.FirstOrDefault(account => account.Id == editingId);
+        }
+        else if (Accounts.Count > 0)
+        {
+            SelectedAccount = Accounts[0];
         }
 
         NotifyEditingState();
@@ -599,6 +698,45 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                         item.Status)),
             ]
             : [];
+    }
+
+    private void RefreshGuidedIssues()
+    {
+        var inventory = _inventory.CurrentInventory;
+        Dictionary<Guid, AccountInventoryEntry> accountsById =
+            inventory?.Accounts.ToDictionary(account => account.Id) ?? [];
+        var issues = new List<AccountInventoryGuidedIssue>();
+
+        foreach (var issue in _inventory.CurrentPlan?.Issues ?? [])
+        {
+            var accountName = AccountDisplayName(accountsById.GetValueOrDefault(issue.AccountId));
+            var relatedName = AccountDisplayName(
+                issue.RelatedAccountId is { } relatedId
+                    ? accountsById.GetValueOrDefault(relatedId)
+                    : null);
+            issues.Add(new AccountInventoryGuidedIssue(
+                issue.Kind,
+                Localization.Format(
+                    $"Accounts.Guided.Issue.{issue.Kind}",
+                    accountName,
+                    relatedName)));
+        }
+
+        if (inventory is not null)
+        {
+            foreach (var duplicateGroup in inventory.Accounts
+                         .GroupBy(DuplicateKey, StringComparer.OrdinalIgnoreCase)
+                         .Where(group => group.Key is not null && group.Count() > 1))
+            {
+                issues.Add(new AccountInventoryGuidedIssue(
+                    null,
+                    Localization.Format(
+                        "Accounts.Guided.Issue.PossibleDuplicate",
+                        string.Join(", ", duplicateGroup.Select(AccountDisplayName)))));
+            }
+        }
+
+        GuidedIssues = issues;
     }
 
     private void LoadSelectedAccount()
@@ -796,7 +934,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         ApplyResult(result);
     }
 
-    private async Task AddDependencyAsync(CancellationToken cancellationToken)
+    private async Task AddDependencyAsync(bool includeOverride, CancellationToken cancellationToken)
     {
         if (_editingAccountId is null || SelectedDependencyTarget is null || SelectedDependencyKind is null)
         {
@@ -808,7 +946,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                 _editingAccountId.Value,
                 SelectedDependencyTarget.Value,
                 SelectedDependencyKind.Value,
-                OverrideReason),
+                includeOverride ? OverrideReason : string.Empty),
             cancellationToken);
         ApplyResult(result);
         if (result.Succeeded)
@@ -846,6 +984,17 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private AccountInventoryOption<AccountInventoryRole> RoleOption(AccountInventoryRole role) =>
         new(role, Localization.GetString($"Accounts.Role.{role}"));
 
+    private static string AccountDisplayName(AccountInventoryEntry? account) =>
+        account?.AccountName ?? account?.LoginIdentifier ?? account?.ProviderId ?? "?";
+
+    private static string? DuplicateKey(AccountInventoryEntry account)
+    {
+        var identity = account.LoginIdentifier ?? account.AccountName;
+        return string.IsNullOrWhiteSpace(identity)
+            ? null
+            : $"{account.ProviderId.Trim()}\u001f{identity.Trim()}";
+    }
+
     private static bool Contains(string? value, string search) =>
         value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
 
@@ -869,6 +1018,13 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         if (SetProperty(ref field, value ?? string.Empty, propertyName))
         {
+            if (propertyName is nameof(ProviderId) or nameof(AccountName))
+            {
+                OnPropertyChanged(nameof(SuggestedRoleQuestion));
+                OnPropertyChanged(nameof(AdditionalRoleQuestion));
+                OnPropertyChanged(nameof(DependencyQuestion));
+            }
+
             SaveAccountCommand.RaiseCanExecuteChanged();
         }
     }
@@ -891,6 +1047,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         AddRoleCommand.RaiseCanExecuteChanged();
         RemoveRoleCommand.RaiseCanExecuteChanged();
         AddDependencyCommand.RaiseCanExecuteChanged();
+        AddGuidedDependencyCommand.RaiseCanExecuteChanged();
         RemoveDependencyCommand.RaiseCanExecuteChanged();
     }
 }

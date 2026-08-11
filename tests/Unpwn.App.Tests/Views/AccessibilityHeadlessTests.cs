@@ -90,6 +90,22 @@ public sealed class AccessibilityHeadlessTests
     }
 
     [Fact]
+    public async Task AccountReviewExposesGuidedActionsAndAnExplicitAdvancedMode()
+    {
+        await Session.Dispatch(() =>
+        {
+            var view = new AccountsView();
+
+            Assert.NotNull(FindByAutomationId(view, "accounts-guided-list"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-role-confirm"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-role-reject"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-dependency-add"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-show-advanced"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-show-guided"));
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task MainWindowKeepsDocumentedMinimumSizeAndStableShellSelectors()
     {
         await Session.Dispatch(() =>

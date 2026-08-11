@@ -24,6 +24,19 @@ Removing an account requires confirmation. Dependencies that pointed to the remo
 
 CSV parsing, password-column exclusion, duplicate rules, and import diagnostics are defined only in [CSV Import](IMPORT.md).
 
+## Guided review and advanced details
+
+The normal account-review journey presents the canonical inventory as questions about accounts the user recognizes:
+
+- review imported accounts and add anything missing;
+- confirm or reject each inferred identity or recovery role explicitly;
+- describe recovery dependencies as “Can this account be recovered using that account?”;
+- explain possible duplicates, missing dependencies, cycles, and overrides in user language.
+
+The guided review is a presentation of `AccountInventoryState`; it is not a second inventory or recovery state machine. Role answers and dependency choices use the same `IAccountInventoryService` mutations as the advanced editor. The recovery wizard's `AccountsRequired` and `RoleConfirmationRequired` gates remain authoritative.
+
+Detailed provider metadata, priority, role removal, dependency removal, and cycle overrides remain available behind **Advanced account details**. An override still requires a written reason and continues to appear as an unresolved risk. Switching between guided and advanced views must therefore round-trip immediately through the same encrypted canonical state.
+
 ## Roles
 
 Supported recovery and identity roles include:

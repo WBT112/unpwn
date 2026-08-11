@@ -103,4 +103,42 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>Es wurden keine neuen Konten importiert, weil alle geprüften Konten bereits im Inventar vorhanden sind.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Löse die Duplikatauswahl oder prüfe den Inventarzustand.</value></data>
+  <data name="Accounts.Guided.Mode.Help" xml:space="preserve"><value>Prüfe deine tatsächlichen Konten in verständlicher Sprache. Technische Felder und besondere Risiko-Overrides bleiben bei Bedarf verfügbar.</value></data>
+  <data name="Accounts.Guided.Action.Advanced" xml:space="preserve"><value>Erweiterte Kontodetails bearbeiten</value></data>
+  <data name="Accounts.Guided.Action.Back" xml:space="preserve"><value>Zurück zur geführten Prüfung</value></data>
+  <data name="Accounts.Guided.Inventory.Title" xml:space="preserve"><value>1. Prüfe, welche Konten hierhergehören</value></data>
+  <data name="Accounts.Guided.Inventory.Help" xml:space="preserve"><value>Prüfe die importierte Liste und ergänze fehlende Konten. Mögliche Duplikate und unsichere Recovery-Wege werden unten erklärt; Konten werden nie automatisch zusammengeführt.</value></data>
+  <data name="Accounts.Guided.Action.AddMissing" xml:space="preserve"><value>Fehlendes Konto ergänzen</value></data>
+  <data name="Accounts.Guided.Details.Title" xml:space="preserve"><value>Ein Konto, das du wiedererkennst</value></data>
+  <data name="Accounts.Guided.Details.Help" xml:space="preserve"><value>Erfasse nur so viele Angaben, dass du das Konto wiedererkennst. Trage niemals Passwort, Recovery-Code, MFA-Geheimnis oder Reset-Link ein.</value></data>
+  <data name="Accounts.Guided.Roles.Title" xml:space="preserve"><value>2. Wie hilft dieses Konto bei der Wiederherstellung?</value></data>
+  <data name="Accounts.Guided.Roles.Help" xml:space="preserve"><value>Antworte für das ausgewählte Konto. Deine Antworten bestimmen, ob es die Wiederherstellung anderer Konten unterstützen kann.</value></data>
+  <data name="Accounts.Guided.Roles.SuggestionQuestion" xml:space="preserve"><value>Ist „{0}“ wirklich eine Recovery-Funktion von {1}?</value></data>
+  <data name="Accounts.Guided.Roles.AddQuestion" xml:space="preserve"><value>Dient {0} außerdem als „{1}“?</value></data>
+  <data name="Accounts.Guided.Roles.NoSuggestions" xml:space="preserve"><value>Für dieses Konto gibt es keine ungeprüften Vorschläge.</value></data>
+  <data name="Accounts.Guided.Roles.AllReviewed" xml:space="preserve"><value>Alle Recovery-Funktionen dieses Kontos wurden geprüft.</value></data>
+  <data name="Accounts.Guided.Roles.SuggestionsAdvisory" xml:space="preserve"><value>Dies ist nur ein Vorschlag. Erst deine ausdrückliche Ja-Antwort macht ihn verbindlich.</value></data>
+  <data name="Accounts.Guided.Roles.EmailWarning" xml:space="preserve"><value>Ein E-Mail-ähnlicher Login beweist nicht, dass das Konto ein E-Mail-Postfach oder eine Recovery-Adresse ist.</value></data>
+  <data name="Accounts.Guided.Roles.ConfirmAdditional" xml:space="preserve"><value>Ja, das trifft zu</value></data>
+  <data name="Accounts.Guided.Answer.Yes" xml:space="preserve"><value>Ja</value></data>
+  <data name="Accounts.Guided.Answer.No" xml:space="preserve"><value>Nein</value></data>
+  <data name="Accounts.Guided.Dependency.Title" xml:space="preserve"><value>3. Was muss zuerst funktionieren?</value></data>
+  <data name="Accounts.Guided.Dependency.Help" xml:space="preserve"><value>Wähle ein anderes Konto nur aus, wenn es tatsächlich zur Wiederherstellung des ausgewählten Kontos benötigt wird. Die Richtung ist wichtig.</value></data>
+  <data name="Accounts.Guided.Dependency.Question" xml:space="preserve"><value>Kann {0} mithilfe von {1} wiederhergestellt werden, weil {2}?</value></data>
+  <data name="Accounts.Guided.Dependency.NoTarget" xml:space="preserve"><value>Ergänze ein weiteres Konto, bevor du eine Recovery-Verbindung erfasst.</value></data>
+  <data name="Accounts.Guided.Dependency.Kind.PasswordReset" xml:space="preserve"><value>es die Nachricht zur Passwortzurücksetzung empfängt</value></data>
+  <data name="Accounts.Guided.Dependency.Kind.Mfa" xml:space="preserve"><value>es den zweiten Faktor empfängt oder bereitstellt</value></data>
+  <data name="Accounts.Guided.Dependency.Kind.IdentityProvider" xml:space="preserve"><value>du dich darüber anmeldest</value></data>
+  <data name="Accounts.Guided.Dependency.Kind.RecoveryContact" xml:space="preserve"><value>es als Recovery-Kontakt dient</value></data>
+  <data name="Accounts.Guided.Dependency.Kind.PasswordManager" xml:space="preserve"><value>es den zur Recovery benötigten Login verwahrt</value></data>
+  <data name="Accounts.Guided.Dependency.Kind.OrganizationManagedSignIn" xml:space="preserve"><value>deine Organisation darüber die Anmeldung steuert</value></data>
+  <data name="Accounts.Guided.Dependency.Add" xml:space="preserve"><value>Ja, diese Recovery-Verbindung hinzufügen</value></data>
+  <data name="Accounts.Guided.Dependency.AdvancedHint" xml:space="preserve"><value>Ändere die Verbindung, wenn dadurch ein Kreis entsteht. Nutze die erweiterten Kontodetails nur, wenn es keine Alternative gibt und du das ungelöste Risiko ausdrücklich dokumentieren musst.</value></data>
+  <data name="Accounts.Guided.Issue.PossibleDuplicate" xml:space="preserve"><value>Diese Einträge könnten dasselbe Konto beschreiben: {0}. Vergleiche sie vor dem Fortfahren; sie werden nicht automatisch zusammengeführt.</value></data>
+  <data name="Accounts.Guided.Issue.MissingDependency" xml:space="preserve"><value>{0} verweist auf ein Recovery-Konto, das nicht mehr in der Liste steht. Ergänze das fehlende Konto erneut oder entferne die defekte Verbindung in den erweiterten Kontodetails.</value></data>
+  <data name="Accounts.Guided.Issue.DependencyCycle" xml:space="preserve"><value>{0} ist Teil eines kreisförmigen Recovery-Wegs. Ändere vor dem Fortfahren eine der Recovery-Verbindungen.</value></data>
+  <data name="Accounts.Guided.Issue.DependencyOverride" xml:space="preserve"><value>{0} enthält eine dokumentierte Ausnahme. Das kreisförmige Recovery-Risiko bleibt ungelöst und sichtbar.</value></data>
+  <data name="Accounts.Guided.Ready.Title" xml:space="preserve"><value>Zurück zum Recovery-Assistenten</value></data>
+  <data name="Accounts.Guided.Ready.Help" xml:space="preserve"><value>Kehre zum Assistenten zurück und wähle „Weiter“, sobald alle echten Konten und Rollenvorschläge geprüft sind. Der Assistent verwendet die verbindlichen Konto- und Rollenprüfungen; diese Seite umgeht sie nicht.</value></data>
+  <data name="Accounts.Advanced.Title" xml:space="preserve"><value>Erweiterte Kontodetails</value></data>
 </root>
