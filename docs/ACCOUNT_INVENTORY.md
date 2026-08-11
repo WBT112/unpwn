@@ -8,7 +8,7 @@ The encrypted `account-state` record contains the recovery-session reference and
 
 - opaque account identifiers;
 - provider or service identifiers;
-- account name, login identifier, and optional HTTP/HTTPS account URL;
+- account name, login identifier, and optional HTTP/HTTPS account URL without embedded URL credentials;
 - priority;
 - explicit role decisions;
 - dependencies and override reasons;

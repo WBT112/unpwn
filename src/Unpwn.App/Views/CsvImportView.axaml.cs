@@ -21,6 +21,7 @@ public partial class CsvImportView : AccessibleScreen
     private int _duplicateCandidateCount;
     private bool _hasReadFailure;
     private bool _previewCanImport;
+    private bool _isImporting;
     private string? _importResultKey;
 
     public CsvImportView()
@@ -166,7 +167,7 @@ public partial class CsvImportView : AccessibleScreen
 
     private async void ImportReviewedButton_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
-        if (ViewModel is null || !_previewCanImport || _lastCandidates.Count == 0)
+        if (ViewModel is null || !_previewCanImport || _lastCandidates.Count == 0 || _isImporting)
         {
             return;
         }
@@ -177,18 +178,27 @@ public partial class CsvImportView : AccessibleScreen
             1 => ImportDuplicateResolution.ImportAsSeparateAccounts,
             _ => null,
         };
-        var result = await ViewModel.ImportAsync(
-            _lastCandidates,
-            resolution,
-            CancellationToken.None);
-        _importResultKey = CsvImportScreenViewModel.GetImportResultResourceKey(result);
-        if (result.Succeeded)
-        {
-            _previewCanImport = false;
-        }
-
+        _isImporting = true;
         RefreshImportControls();
-        ImportResultText.Focus(NavigationMethod.Tab);
+        try
+        {
+            var result = await ViewModel.ImportAsync(
+                _lastCandidates,
+                resolution,
+                CancellationToken.None);
+            _importResultKey = CsvImportScreenViewModel.GetImportResultResourceKey(result);
+            if (result.Succeeded)
+            {
+                _previewCanImport = false;
+            }
+
+            ImportResultText.Focus(NavigationMethod.Tab);
+        }
+        finally
+        {
+            _isImporting = false;
+            RefreshImportControls();
+        }
     }
 
     private void CsvImportView_OnDataContextChanged(object? sender, EventArgs eventArgs)
@@ -354,7 +364,7 @@ public partial class CsvImportView : AccessibleScreen
     {
         var duplicateResolutionComplete =
             _duplicateCandidateCount == 0 || DuplicateResolutionCombo.SelectedIndex is 0 or 1;
-        ImportReviewedButton.IsEnabled = _previewCanImport && duplicateResolutionComplete;
+        ImportReviewedButton.IsEnabled = _previewCanImport && duplicateResolutionComplete && !_isImporting;
         ImportResultText.Text = _importResultKey is null
             ? string.Empty
             : Localization.GetString(_importResultKey);

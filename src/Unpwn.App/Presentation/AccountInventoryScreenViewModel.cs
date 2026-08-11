@@ -860,7 +860,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
         return string.IsNullOrWhiteSpace(AccountUrl) ||
             (Uri.TryCreate(AccountUrl, UriKind.Absolute, out var uri) &&
-             uri.Scheme is "https" or "http");
+             uri.Scheme is "https" or "http" &&
+             !string.IsNullOrWhiteSpace(uri.Host) &&
+             string.IsNullOrEmpty(uri.UserInfo));
     }
 
     private void SetEditorValue(ref string field, string? value, string propertyName)

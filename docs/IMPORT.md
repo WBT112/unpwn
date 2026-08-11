@@ -40,7 +40,7 @@ Duplicate matching uses normalized service/provider identity together with the a
 The importer is platform-neutral and language-neutral. Changing the GUI language must not change the meaning of the same CSV file.
 
 - delimiter and quote handling follow explicit format rules;
-- account URLs must be absolute HTTP or HTTPS URLs;
+- account URLs must be absolute HTTP or HTTPS URLs and must not contain embedded URL credentials;
 - URLs and identifiers use invariant parsing rules;
 - localized column aliases may suggest mappings but never change canonical target field identifiers;
 - future numeric or date fields require an explicit import culture or unambiguous machine format.

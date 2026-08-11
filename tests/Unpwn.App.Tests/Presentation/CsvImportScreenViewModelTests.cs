@@ -54,6 +54,34 @@ public sealed class CsvImportScreenViewModelTests
         Assert.Equal("Import.Result.Success", CsvImportScreenViewModel.GetImportResultResourceKey(result));
     }
 
+    [Fact]
+    public async Task ConcurrentSubmissionDoesNotStartASecondImport()
+    {
+        var inventory = new RecordingInventoryService
+        {
+            ImportCompletion = new TaskCompletionSource<AccountInventoryOperationResult>(
+                TaskCreationOptions.RunContinuationsAsynchronously),
+        };
+        var viewModel = new CsvImportScreenViewModel(inventory, CreateLocalization());
+        var candidates = CreateDuplicateCandidates();
+
+        var firstImport = viewModel.ImportAsync(
+            candidates,
+            ImportDuplicateResolution.ImportAsSeparateAccounts,
+            CancellationToken.None);
+        await inventory.ImportStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        var repeatedImport = await viewModel.ImportAsync(
+            candidates,
+            ImportDuplicateResolution.ImportAsSeparateAccounts,
+            CancellationToken.None);
+        inventory.ImportCompletion.SetResult(AccountInventoryOperationResult.Success(2));
+
+        Assert.True((await firstImport).Succeeded);
+        Assert.False(repeatedImport.Succeeded);
+        Assert.Equal(AccountInventoryFailureCode.Conflict, repeatedImport.FailureCode);
+        Assert.Equal(1, inventory.ImportCalls);
+    }
+
     [Theory]
     [InlineData(AccountInventoryFailureCode.Locked, "Accounts.Error.Locked")]
     [InlineData(AccountInventoryFailureCode.InvalidInput, "Accounts.Error.InvalidInput")]
@@ -104,6 +132,11 @@ public sealed class CsvImportScreenViewModelTests
         public AccountInventoryOperationResult ImportResult { get; set; } =
             AccountInventoryOperationResult.Success();
 
+        public TaskCompletionSource<AccountInventoryOperationResult>? ImportCompletion { get; init; }
+
+        public TaskCompletionSource ImportStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<AccountInventoryOperationResult> UpsertAsync(
@@ -139,7 +172,8 @@ public sealed class CsvImportScreenViewModelTests
             cancellationToken.ThrowIfCancellationRequested();
             ImportCalls++;
             LastDuplicateResolution = duplicateResolution;
-            return Task.FromResult(ImportResult);
+            ImportStarted.TrySetResult();
+            return ImportCompletion?.Task ?? Task.FromResult(ImportResult);
         }
 
         public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];

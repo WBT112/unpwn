@@ -64,6 +64,8 @@ password-change or password-reset workflow actions. Lists always show a conceale
 the secret. Reveal lasts 15 seconds and clipboard ownership lasts 30 seconds. Navigation, vault
 locking, and language changes clear both presentation states. Clipboard cleanup first verifies a
 cryptographic hash of the current clipboard text so later user content is not erased.
+If automatic clipboard cleanup cannot be verified, the UI keeps the failure visible and instructs
+the user to clear the clipboard manually.
 
 Managed UI strings cannot be deterministically zeroed by .NET. They are therefore created only for
 an explicit temporary reveal or clipboard operation, are never logged or persisted, and references
@@ -101,6 +103,9 @@ Exports use a temporary file in the destination directory:
 5. atomically mark all selected encrypted credential records as exported
 
 If file creation succeeds but the encrypted lifecycle update fails, the result explicitly reports `StateUpdateFailedAfterFileCreation`. It never claims that no plaintext file exists.
+Moving the completed temporary file to its final destination is the cancellation commit boundary.
+Once that move succeeds, the lifecycle update is attempted without caller cancellation; any failure
+is still reported with `FileCreated` set so the user can clean up the plaintext file.
 
 A retry with an operation ID that is already recorded as exported does not create another file. A new operation ID represents a deliberate repeated export and increments the export count after success.
 

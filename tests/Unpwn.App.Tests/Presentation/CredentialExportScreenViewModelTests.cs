@@ -67,6 +67,20 @@ public sealed class CredentialExportScreenViewModelTests
     }
 
     [Fact]
+    public async Task AutomaticClipboardClearFailureRequiresVisibleManualCleanup()
+    {
+        var clipboard = new TestClipboard { FailClear = true };
+        var context = CreateContext(clipboard, new ImmediatePresentationDelay());
+        await context.ViewModel.RefreshCommand.ExecuteAsync();
+
+        await context.ViewModel.CopyCommand.ExecuteAsync();
+
+        Assert.Equal(1, clipboard.ClearCalls);
+        Assert.Equal(0, context.ViewModel.ClipboardSecondsRemaining);
+        Assert.Contains("manually", context.ViewModel.ResultMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task ExportUsesOnlyExplicitlySelectedCredentialsAndRequiresRiskAcknowledgement()
     {
         var context = CreateContext();
@@ -139,7 +153,9 @@ public sealed class CredentialExportScreenViewModelTests
         Assert.False(context.ViewModel.RevealCommand.CanExecute(null));
     }
 
-    private static TestContext CreateContext()
+    private static TestContext CreateContext(
+        TestClipboard? clipboard = null,
+        IPresentationDelay? delay = null)
     {
         var accountId = Guid.NewGuid();
         var metadata = GeneratedCredentialMetadata.Create(
@@ -156,7 +172,7 @@ public sealed class CredentialExportScreenViewModelTests
             [],
             StartedAt));
         var shell = new TestShellContext();
-        var clipboard = new TestClipboard();
+        clipboard ??= new TestClipboard();
         var export = new TestExportService();
         var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
         var viewModel = new CredentialExportScreenViewModel(
@@ -166,7 +182,8 @@ public sealed class CredentialExportScreenViewModelTests
             shell,
             clipboard,
             new TestConfirmation(),
-            localization);
+            localization,
+            delay);
         return new TestContext(viewModel, repository, export, clipboard, shell, localization);
     }
 
@@ -281,6 +298,8 @@ public sealed class CredentialExportScreenViewModelTests
 
     private sealed class TestClipboard : ICredentialClipboardService
     {
+        public bool FailClear { get; init; }
+
         public int CopyCalls { get; private set; }
 
         public int ClearCalls { get; private set; }
@@ -297,7 +316,21 @@ public sealed class CredentialExportScreenViewModelTests
         public Task ClearOwnedAsync(CancellationToken cancellationToken)
         {
             ClearCalls++;
+            if (FailClear)
+            {
+                throw new InvalidOperationException("Synthetic clipboard failure.");
+            }
+
             Cleared.TrySetResult();
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class ImmediatePresentationDelay : IPresentationDelay
+    {
+        public Task DelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             return Task.CompletedTask;
         }
     }

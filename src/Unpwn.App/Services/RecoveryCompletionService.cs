@@ -401,31 +401,79 @@ public sealed class JsonRecoveryCompletionReportWriter : IRecoveryCompletionRepo
             return new(false, RecoveryCompletionReportWriteFailureCode.InvalidPath);
         }
 
+        string? temporaryPath = null;
+        string? fullPath = null;
         try
         {
-            var fullPath = Path.GetFullPath(destinationPath);
-            await using var stream = new FileStream(
-                fullPath,
+            fullPath = Path.GetFullPath(destinationPath);
+            if (File.Exists(fullPath))
+            {
+                return new(false, RecoveryCompletionReportWriteFailureCode.AlreadyExists);
+            }
+
+            var directory = Path.GetDirectoryName(fullPath);
+            if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            {
+                return new(false, RecoveryCompletionReportWriteFailureCode.InvalidPath);
+            }
+
+            temporaryPath = Path.Combine(
+                directory,
+                $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
+            await using (var stream = new FileStream(
+                temporaryPath,
                 FileMode.CreateNew,
                 FileAccess.Write,
                 FileShare.None,
                 bufferSize: 4096,
-                useAsync: true);
-            await JsonSerializer.SerializeAsync(stream, report, SerializerOptions, cancellationToken);
-            await stream.FlushAsync(cancellationToken);
+                useAsync: true))
+            {
+                await JsonSerializer.SerializeAsync(stream, report, SerializerOptions, cancellationToken);
+                await stream.FlushAsync(cancellationToken);
+                stream.Flush(flushToDisk: true);
+            }
+
+            File.Move(temporaryPath, fullPath, overwrite: false);
+            temporaryPath = null;
             return RecoveryCompletionReportWriteResult.Success;
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             throw;
         }
-        catch (IOException) when (File.Exists(destinationPath))
+        catch (IOException) when (fullPath is not null && File.Exists(fullPath))
         {
             return new(false, RecoveryCompletionReportWriteFailureCode.AlreadyExists);
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return new(false, RecoveryCompletionReportWriteFailureCode.InvalidPath);
         }
         catch (Exception)
         {
             return new(false, RecoveryCompletionReportWriteFailureCode.IoFailure);
+        }
+        finally
+        {
+            if (temporaryPath is not null)
+            {
+                TryDeleteTemporaryFile(temporaryPath);
+            }
+        }
+    }
+
+    private static void TryDeleteTemporaryFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
         }
     }
 }

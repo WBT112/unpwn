@@ -42,6 +42,10 @@ public sealed class GeneratedCredentialListItemViewModel(
     "Design",
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "Sensitive cancellation sources are disposed whenever the cached screen deactivates and when timers are replaced.")]
+[SuppressMessage(
+    "Design",
+    "CA1031:Do not catch general exception types",
+    Justification = "Background clipboard cleanup must never fault the UI or hide that manual cleanup is required.")]
 public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
 {
     private static readonly TimeSpan RevealDuration = TimeSpan.FromSeconds(15);
@@ -517,6 +521,11 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
+        catch (Exception)
+        {
+            ClipboardSecondsRemaining = 0;
+            SetResult("Credentials.Error.ClipboardClearFailed");
+        }
     }
 
     private async Task ExportAsync(CancellationToken cancellationToken)
@@ -752,7 +761,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         {
             await _clipboard.ClearOwnedAsync(CancellationToken.None);
         }
-        catch (InvalidOperationException)
+        catch (Exception)
         {
         }
     }

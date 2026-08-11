@@ -69,6 +69,38 @@ public sealed class VaultEntryScreenViewModelTests
     }
 
     [Fact]
+    public async Task NavigatingAwayFromPasswordChangeClearsSensitiveInputs()
+    {
+        const string vaultPassword = "UNPWN_TEST_SECRET_long-vault-password";
+        var lifecycle = new TestVaultLifecycleService();
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch));
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+        viewModel.ShowCreateVaultCommand.Execute(null);
+        viewModel.CreatePath = "synthetic-vault.db";
+        viewModel.CreatePassword = vaultPassword;
+        viewModel.ConfirmCreatePassword = vaultPassword;
+        viewModel.AcknowledgesNonRecoverability = true;
+        await viewModel.CreateVaultCommand.ExecuteAsync();
+        viewModel.ShowChangePasswordCommand.Execute(null);
+        viewModel.CurrentPassword = "UNPWN_TEST_SECRET_current-password";
+        viewModel.NewPassword = "UNPWN_TEST_SECRET_new-vault-password";
+        viewModel.ConfirmNewPassword = "UNPWN_TEST_SECRET_new-vault-password";
+        viewModel.IsChangePasswordRevealed = true;
+
+        viewModel.Deactivate();
+
+        Assert.Equal(string.Empty, viewModel.CurrentPassword);
+        Assert.Equal(string.Empty, viewModel.NewPassword);
+        Assert.Equal(string.Empty, viewModel.ConfirmNewPassword);
+        Assert.False(viewModel.IsChangePasswordRevealed);
+        Assert.True(viewModel.IsUnlockedVaultVisible);
+        Assert.False(viewModel.IsChangePasswordVisible);
+    }
+
+    [Fact]
     public async Task FailedUnlockUsesLocalizedSafeMessageAndClearsPassword()
     {
         const string password = "UNPWN_TEST_SECRET_wrong-password";

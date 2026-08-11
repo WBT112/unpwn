@@ -76,6 +76,8 @@ Managed-memory clearing remains best effort. The underlying vault disposes or cl
 ## Vault password changes
 
 Changing the vault password requires the current password and a confirmed new password. The vault re-wraps the existing data key; encrypted records are not exported to plaintext or re-created through the GUI.
+Leaving the password-change screen clears the current, new, and confirmation fields and ends any
+temporary password reveal before the cached screen can be opened again.
 
 A failed current-password check leaves the vault and the existing password unchanged.
 
@@ -90,6 +92,8 @@ Recent-vault metadata is convenience data stored outside the encrypted vault. It
 It contains no vault password, account name, session name, recovery state, note, or credential value.
 
 Removing a recent reference does not delete the vault file. Deleting a vault file is a separate destructive action with a separate confirmation. The UI does not claim that normal file deletion provides forensic erasure.
+Recent-vault paths are compared case-insensitively on Windows and case-sensitively on non-Windows
+platforms.
 
 ## Error boundary
 

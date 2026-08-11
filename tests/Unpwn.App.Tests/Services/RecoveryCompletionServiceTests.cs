@@ -272,7 +272,35 @@ public sealed class RecoveryCompletionServiceTests
                 Path.Combine(directory, "missing", "report.json"),
                 CancellationToken.None);
             Assert.False(failed.Succeeded);
-            Assert.Equal(RecoveryCompletionReportWriteFailureCode.IoFailure, failed.FailureCode);
+            Assert.Equal(RecoveryCompletionReportWriteFailureCode.InvalidPath, failed.FailureCode);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task CancelledReportWriteLeavesNoFinalOrTemporaryFile()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"unpwn-completion-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var path = Path.Combine(directory, "report.json");
+            var report = new RecoveryCompletionReport(
+                Guid.NewGuid(), StartedAt, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, []);
+            using var cancellation = new CancellationTokenSource();
+            cancellation.Cancel();
+
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                () => new JsonRecoveryCompletionReportWriter().WriteAsync(
+                    report,
+                    path,
+                    cancellation.Token));
+
+            Assert.False(File.Exists(path));
+            Assert.Empty(Directory.EnumerateFiles(directory));
         }
         finally
         {

@@ -6,6 +6,17 @@ namespace Unpwn.Core.Tests;
 public sealed class AccountInventoryTests
 {
     [Fact]
+    public void AccountUrlWithEmbeddedCredentialsIsRejected()
+    {
+        var account = CreateAccount("Mail", AccountInventoryPriority.Normal) with
+        {
+            AccountUrl = "https://user:old-password@example.test/account",
+        };
+
+        Assert.Throws<InvalidOperationException>(account.Validate);
+    }
+
+    [Fact]
     public void InferredRolesRemainSuggestedUntilExplicitlyConfirmed()
     {
         var account = CreateAccount(

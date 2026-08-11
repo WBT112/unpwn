@@ -52,6 +52,18 @@ public sealed class AccountInventoryScreenViewModelTests
     }
 
     [Fact]
+    public void AccountUrlWithEmbeddedCredentialsCannotBeSaved()
+    {
+        var viewModel = CreateViewModel(new TestAccountInventoryService([]));
+        viewModel.NewAccountCommand.Execute(null);
+        viewModel.ProviderId = "Mail";
+        viewModel.AccountName = "Primary mailbox";
+        viewModel.AccountUrl = "https://user:old-password@example.test/account";
+
+        Assert.False(viewModel.SaveAccountCommand.CanExecute(null));
+    }
+
+    [Fact]
     public void FiltersSearchesAndSortsPersistedInventoryWithoutUsingDisplayTextForSemantics()
     {
         var critical = CreateAccount(

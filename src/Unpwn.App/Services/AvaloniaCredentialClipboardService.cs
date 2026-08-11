@@ -65,8 +65,9 @@ public sealed class AvaloniaCredentialClipboardService(Func<TopLevel?> topLevelP
                 return;
             }
 
-            var clipboard = _topLevelProvider()?.Clipboard;
-            var text = clipboard is null ? null : await clipboard.TryGetTextAsync();
+            var clipboard = _topLevelProvider()?.Clipboard
+                ?? throw new InvalidOperationException("The clipboard is unavailable for cleanup.");
+            var text = await clipboard.TryGetTextAsync();
             if (text is not null)
             {
                 var currentBytes = Encoding.UTF8.GetBytes(text);
@@ -75,7 +76,7 @@ public sealed class AvaloniaCredentialClipboardService(Func<TopLevel?> topLevelP
                 {
                     if (CryptographicOperations.FixedTimeEquals(currentHash, _ownedHash))
                     {
-                        await clipboard!.ClearAsync();
+                        await clipboard.ClearAsync();
                     }
                 }
                 finally

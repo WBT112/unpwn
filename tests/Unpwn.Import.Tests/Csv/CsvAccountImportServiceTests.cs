@@ -266,6 +266,7 @@ public sealed class CsvAccountImportServiceTests
     [InlineData("ftp://example.test")]
     [InlineData("/relative/path")]
     [InlineData("https://")]
+    [InlineData("https://user:old-password@example.test/account")]
     public void UnsupportedAccountUrlsAreRejected(string url)
     {
         using var source = new StringReader($"url,username\n{url},user@example.test\n");
