@@ -61,13 +61,26 @@ See [Localization and Multilingual GUI](LOCALIZATION.md).
 
 ## Presentation and accessibility
 
-Normal, warning, blocked, failed, successful, and unresolved-risk states use a combination of color, a localized textual state label, and a distinct symbol. Meaning does not depend on color alone. Shared focus styles provide a visible three-pixel focus border, and navigation and action controls use a predictable tab order.
+Normal, warning, blocked, failed, successful, and unresolved-risk states use theme-aware chrome, a
+localized textual state label, and a distinct symbol. Meaning does not depend on color. Shared focus
+styles use operating-system theme brushes and provide a visible three-pixel focus border; navigation
+and action controls use a predictable tab order.
 
 Accessibility names, descriptions, keyboard hints, and dialog consequences are localized. Stable automation IDs and test selectors remain language-neutral so tests and assistive integrations do not depend on visible text.
+
+Navigated screens focus their first relevant enabled control. When a validation summary becomes
+visible, focus moves to that summary; sensitive confirmations start on the safe cancel action and
+restore the invoking focus after closing. Status, persistence, blocking, validation, credential
+reveal, and clipboard-expiry surfaces expose appropriate polite or assertive live regions. Timed
+secret reveal controls state their 15-second duration, permit immediate hiding, and can be invoked
+again after expiry without trapping focus.
 
 The documented minimum desktop window size is 760 by 560 logical pixels on Windows and Ubuntu. Content scrolls inside the shell at that size while global context, navigation, and status remain available.
 
 Controls must tolerate expanded pseudo-localized text and longer translations. Layout must not rely on English string length. The shell preserves a path for right-to-left flow direction even though an RTL language is not required for the initial release.
+
+The automated and manual acceptance contract, including current Avalonia platform limits, is defined
+in [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md).
 
 ## Commands and confirmations
 

@@ -19,7 +19,10 @@
           <TextBlock Text="{Binding PlanSummary}" TextWrapping="Wrap" />
         </StackPanel>
         <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="10">
-          <Button Content="{DynamicResource Accounts.Action.New}" Command="{Binding NewAccountCommand}" />
+          <Button Classes="initial-focus"
+                  AutomationProperties.AutomationId="accounts-new"
+                  Content="{DynamicResource Accounts.Action.New}"
+                  Command="{Binding NewAccountCommand}" />
         </StackPanel>
         <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="2*,*,*" ColumnSpacing="12">
           <TextBox Grid.Column="0"
@@ -207,10 +210,16 @@
       </StackPanel>
     </Border>
 
-    <Border IsVisible="{Binding HasValidationMessage}"
+    <Border Classes="focus-on-visible"
+            IsVisible="{Binding HasValidationMessage}"
+            Focusable="True"
+            AutomationProperties.AutomationId="accounts-validation"
+            AutomationProperties.LiveSetting="Assertive"
+            AutomationProperties.Name="{Binding ValidationMessage}"
             Padding="12"
             CornerRadius="8"
-            Background="#FFF4E5">
+            BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+            BorderThickness="2">
       <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
     </Border>
   </StackPanel>

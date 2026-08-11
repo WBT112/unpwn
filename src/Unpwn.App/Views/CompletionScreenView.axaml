@@ -19,7 +19,9 @@
         <TextBlock Classes="section-title" Text="{DynamicResource Completion.Section.Title}" />
         <TextBlock Text="{DynamicResource Completion.Section.Description}" TextWrapping="Wrap" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding ReviewCompletionCommand}"
+          <Button Classes="initial-focus"
+                  AutomationProperties.AutomationId="completion-review"
+                  Command="{Binding ReviewCompletionCommand}"
                   Content="{DynamicResource Completion.Review.Button}" />
           <Button IsVisible="{Binding ReviewCompletionCommand.IsRunning}"
                   Command="{Binding ReviewCompletionCommand.CancelCommand}"

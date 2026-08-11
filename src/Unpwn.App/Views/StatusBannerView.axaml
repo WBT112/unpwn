@@ -4,7 +4,10 @@
              x:Class="Unpwn.App.Views.StatusBannerView"
              x:DataType="vm:VisualStatusViewModel">
   <Border Padding="12,10"
-          BorderBrush="{Binding State, Converter={StaticResource StatusStateBrushConverter}}"
+          AutomationProperties.AutomationId="status-banner"
+          AutomationProperties.LiveSetting="Polite"
+          AutomationProperties.Name="{Binding Message}"
+          BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
           BorderThickness="5,1,1,1"
           CornerRadius="5">
     <Grid ColumnDefinitions="32,*" ColumnSpacing="10">

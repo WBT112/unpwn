@@ -126,6 +126,12 @@ View-model tests cover locked startup, route navigation, global lock visibility,
 
 Visual-state tests verify that blocked, failed, and unresolved-risk states have distinct localized text and symbols in addition to color.
 
+Avalonia headless integration tests verify screen-entry focus, focus after validation, safe dialog
+focus, and live-region metadata without opening native windows. They supplement the existing
+view-model tests for every critical desktop flow; they do not validate native UIA or AT-SPI bridges.
+The Windows/NVDA and Ubuntu/Orca checklist in
+[Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md) is a release gate.
+
 ### 6. Localization and culture tests
 
 Localization tests follow [Localization and Multilingual GUI](LOCALIZATION.md).
@@ -235,6 +241,7 @@ Before release:
 - verify key and placeholder parity for every shipped translation
 - review security-sensitive translations for meaning
 - run pseudo-localization and minimum-window checks
+- execute and record the Windows/NVDA and Ubuntu/Orca accessibility checklist
 
 ## Pull-Request CI
 

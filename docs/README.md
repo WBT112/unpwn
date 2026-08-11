@@ -17,6 +17,7 @@ This directory contains the detailed project documentation. Each topic should ha
 - [Architecture](ARCHITECTURE.md) — modules and dependency direction
 - [Data Model](DATA_MODEL.md) — canonical recovery domain and progress semantics
 - [Application Shell and UI Foundation](UI_FOUNDATION.md) — MVVM shell, accessibility, and presentation rules
+- [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md) — automated baseline and Windows/Ubuntu release checklist
 - [Localization](LOCALIZATION.md) — language boundary and resource rules
 
 ## Recovery flow
