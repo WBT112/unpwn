@@ -16,8 +16,8 @@ if (-not (Test-Path -LiteralPath $CoveragePath -PathType Leaf)) {
 }
 
 [xml] $coverage = Get-Content -LiteralPath $CoveragePath -Raw
-$root = $coverage.coverage
-if ($null -eq $root) {
+$root = $coverage.DocumentElement
+if ($null -eq $root -or $root.LocalName -ne 'coverage') {
     throw "Coverage report '$CoveragePath' does not contain a Cobertura coverage root."
 }
 
