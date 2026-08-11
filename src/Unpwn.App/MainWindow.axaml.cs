@@ -47,11 +47,8 @@ public partial class MainWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
-        if (_subscribedShell is not null)
-        {
-            _subscribedShell.PropertyChanged -= Shell_OnPropertyChanged;
-            _subscribedShell = null;
-        }
+        _subscribedShell?.PropertyChanged -= Shell_OnPropertyChanged;
+        _subscribedShell = null;
 
         DataContextChanged -= MainWindow_OnDataContextChanged;
         Opened -= MainWindow_OnOpened;
@@ -72,16 +69,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_subscribedShell is not null)
-        {
-            _subscribedShell.PropertyChanged -= Shell_OnPropertyChanged;
-        }
+        _subscribedShell?.PropertyChanged -= Shell_OnPropertyChanged;
 
         _subscribedShell = window.DataContext as ShellViewModel;
-        if (_subscribedShell is not null)
-        {
-            _subscribedShell.PropertyChanged += Shell_OnPropertyChanged;
-        }
+        _subscribedShell?.PropertyChanged += Shell_OnPropertyChanged;
     }
 
     private void MainWindow_OnOpened(object? sender, EventArgs eventArgs) =>
