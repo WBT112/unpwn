@@ -85,10 +85,25 @@ public sealed class GeneratedCredentialExportService(
                     CredentialExportFailureCode.DestinationUnavailable);
             }
 
-            var marked = await _repository.MarkExportedAsync(
-                request.Selections.Select(selection => selection.Reference).ToArray(),
-                request.OperationId,
-                cancellationToken);
+            GeneratedCredentialBatchResult marked;
+            try
+            {
+                // Once the plaintext file has reached its final destination, cancellation must no
+                // longer hide that external side effect. Always attempt the encrypted lifecycle
+                // update and report the file-created state explicitly if it cannot be committed.
+                marked = await _repository.MarkExportedAsync(
+                    request.Selections.Select(selection => selection.Reference).ToArray(),
+                    request.OperationId,
+                    CancellationToken.None);
+            }
+            catch (Exception)
+            {
+                return CredentialExportResult.Failure(
+                    CredentialExportFailureCode.StateUpdateFailedAfterFileCreation,
+                    fileCreated: true,
+                    destinationPath);
+            }
+
             return marked.Succeeded
                 ? CredentialExportResult.Success(destinationPath, marked.Credentials.Count)
                 : CredentialExportResult.Failure(

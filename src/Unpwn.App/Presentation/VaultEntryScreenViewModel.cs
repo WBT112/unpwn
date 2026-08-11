@@ -455,6 +455,17 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(ValidationMessage));
     }
 
+    public override void Deactivate()
+    {
+        ClearSensitiveInputs();
+        if (Stage == VaultEntryStage.ChangePassword && _vaultLifecycle.Snapshot.IsUnlocked)
+        {
+            SetStage(VaultEntryStage.UnlockedVault);
+        }
+
+        base.Deactivate();
+    }
+
     private void Begin()
     {
         _wizard.BeginTrustedDeviceCheck(DateTimeOffset.UtcNow);

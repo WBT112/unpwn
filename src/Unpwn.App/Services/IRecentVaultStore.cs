@@ -13,6 +13,10 @@ public interface IRecentVaultStore
 
 public sealed class JsonRecentVaultStore(string? path = null) : IRecentVaultStore
 {
+    private static readonly StringComparer PathComparer = OperatingSystem.IsWindows()
+        ? StringComparer.OrdinalIgnoreCase
+        : StringComparer.Ordinal;
+
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
     {
         WriteIndented = true,
@@ -49,7 +53,7 @@ public sealed class JsonRecentVaultStore(string? path = null) : IRecentVaultStor
                     !string.IsNullOrWhiteSpace(reference.Path) &&
                     !string.IsNullOrWhiteSpace(reference.DisplayName))
                 .Select(reference => reference with { Path = Path.GetFullPath(reference.Path) })
-                .DistinctBy(reference => reference.Path, StringComparer.OrdinalIgnoreCase)
+                .DistinctBy(reference => reference.Path, PathComparer)
                 .OrderByDescending(reference => reference.LastOpenedAt)
                 .Take(8)
                 .ToArray() ?? [];

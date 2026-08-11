@@ -39,9 +39,12 @@ public sealed record CredentialExportSelection(
 
         if (!string.IsNullOrWhiteSpace(AccountUri) &&
             (!Uri.TryCreate(AccountUri, UriKind.Absolute, out var uri) ||
-             uri.Scheme is not ("https" or "http")))
+             uri.Scheme is not ("https" or "http") ||
+             string.IsNullOrWhiteSpace(uri.Host) ||
+             !string.IsNullOrEmpty(uri.UserInfo)))
         {
-            throw new InvalidOperationException("A credential export URI must be absolute HTTP or HTTPS.");
+            throw new InvalidOperationException(
+                "A credential export URI must be absolute HTTP or HTTPS without embedded credentials.");
         }
     }
 }

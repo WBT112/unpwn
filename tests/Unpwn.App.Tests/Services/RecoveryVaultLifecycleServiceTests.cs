@@ -183,6 +183,25 @@ public sealed class RecoveryVaultLifecycleServiceTests
         Assert.True(File.Exists(vaultPath));
     }
 
+    [Fact]
+    public async Task RecentVaultPathsUseTheOperatingSystemCaseRules()
+    {
+        using var directory = new TemporaryDirectory();
+        var store = new JsonRecentVaultStore(Path.Combine(directory.Path, "recent.json"));
+        var upperCasePath = Path.Combine(directory.Path, "Recovery.db");
+        var lowerCasePath = Path.Combine(directory.Path, "recovery.db");
+        await store.SaveAsync(
+            [
+                new RecentVaultReference(upperCasePath, "Upper", DateTimeOffset.UnixEpoch),
+                new RecentVaultReference(lowerCasePath, "Lower", DateTimeOffset.UnixEpoch.AddMinutes(1)),
+            ],
+            CancellationToken.None);
+
+        var loaded = await store.LoadAsync(CancellationToken.None);
+
+        Assert.Equal(OperatingSystem.IsWindows() ? 1 : 2, loaded.Count);
+    }
+
     private static RecoveryWizardSessionService PrepareWizard(DateTimeOffset occurredAt)
     {
         var wizard = new RecoveryWizardSessionService(occurredAt);

@@ -333,7 +333,8 @@ public sealed class CsvAccountImportService
     private static bool IsSupportedAccountUrl(string value) =>
         Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
         (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp) &&
-        !string.IsNullOrWhiteSpace(uri.Host);
+        !string.IsNullOrWhiteSpace(uri.Host) &&
+        string.IsNullOrEmpty(uri.UserInfo);
 
     private static Dictionary<string, int> CreateHeaderIndexes(IReadOnlyList<string> headers) =>
         headers

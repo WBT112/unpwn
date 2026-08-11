@@ -144,6 +144,7 @@ public sealed class CsvImportScreenViewModel(
 {
     private readonly IAccountInventoryService _inventory =
         inventory ?? throw new ArgumentNullException(nameof(inventory));
+    private int _importActive;
 
     public CsvImportScreenViewModel(ILocalizationService localization)
         : this(new UnavailableAccountInventoryService(), localization)
@@ -153,20 +154,32 @@ public sealed class CsvImportScreenViewModel(
     public IReadOnlyList<ExistingAccountReference> ExistingAccounts =>
         _inventory.GetExistingAccountReferences();
 
-    public Task<AccountInventoryOperationResult> ImportAsync(
+    public async Task<AccountInventoryOperationResult> ImportAsync(
         IReadOnlyCollection<ImportAccountCandidate> candidates,
         ImportDuplicateResolution? duplicateResolution,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(candidates);
-        if (duplicateResolution == ImportDuplicateResolution.SkipDuplicates &&
-            candidates.Count > 0 &&
-            candidates.All(candidate => candidate.DuplicateKind != CsvDuplicateKind.None))
+        if (Interlocked.CompareExchange(ref _importActive, 1, 0) != 0)
         {
-            return Task.FromResult(AccountInventoryOperationResult.Success(affectedAccounts: 0));
+            return AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.Conflict);
         }
 
-        return _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+        try
+        {
+            if (duplicateResolution == ImportDuplicateResolution.SkipDuplicates &&
+                candidates.Count > 0 &&
+                candidates.All(candidate => candidate.DuplicateKind != CsvDuplicateKind.None))
+            {
+                return AccountInventoryOperationResult.Success(affectedAccounts: 0);
+            }
+
+            return await _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _importActive, 0);
+        }
     }
 
     public static string GetImportResultResourceKey(AccountInventoryOperationResult result)

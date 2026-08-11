@@ -147,6 +147,49 @@ public sealed class GeneratedCredentialExportServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CancellationDuringStateUpdateAfterFileCreationIsReportedPrecisely()
+    {
+        var repository = new TestCredentialRepository
+        {
+            CancelExportStateUpdate = true,
+        };
+        var selection = repository.Add("file-created-before-cancellation");
+        var destination = Destination("state-cancellation.csv");
+        var service = new GeneratedCredentialExportService(repository);
+
+        var result = await service.ExportAsync(
+            Request(selection, destination),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.True(result.FileCreated);
+        Assert.Equal(
+            CredentialExportFailureCode.StateUpdateFailedAfterFileCreation,
+            result.FailureCode);
+        Assert.True(File.Exists(destination));
+    }
+
+    [Fact]
+    public async Task EmbeddedCredentialsInAccountUriAreRejectedBeforeExport()
+    {
+        var repository = new TestCredentialRepository();
+        var selection = repository.Add("not-exported") with
+        {
+            AccountUri = "https://user:old-password@example.test/account",
+        };
+        var destination = Destination("invalid-uri.csv");
+        var service = new GeneratedCredentialExportService(repository);
+
+        var result = await service.ExportAsync(
+            Request(selection, destination),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(CredentialExportFailureCode.InvalidInput, result.FailureCode);
+        Assert.False(File.Exists(destination));
+    }
+
+    [Fact]
     public async Task RepeatedCompletedOperationDoesNotCreateAnotherFile()
     {
         var repository = new TestCredentialRepository();
@@ -200,6 +243,8 @@ public sealed class GeneratedCredentialExportServiceTests : IDisposable
         public Dictionary<Guid, GeneratedCredentialMetadata> Metadata { get; } = [];
 
         public bool FailExportStateUpdate { get; init; }
+
+        public bool CancelExportStateUpdate { get; init; }
 
         public bool IsUnlocked => true;
 
@@ -272,6 +317,11 @@ public sealed class GeneratedCredentialExportServiceTests : IDisposable
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            if (CancelExportStateUpdate)
+            {
+                throw new OperationCanceledException();
+            }
+
             if (FailExportStateUpdate)
             {
                 return Task.FromResult(GeneratedCredentialBatchResult.Failure(

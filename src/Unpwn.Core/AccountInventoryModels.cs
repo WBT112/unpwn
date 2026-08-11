@@ -156,9 +156,12 @@ public sealed record AccountInventoryEntry(
 
         if (!string.IsNullOrWhiteSpace(AccountUrl) &&
             (!Uri.TryCreate(AccountUrl, UriKind.Absolute, out var uri) ||
-             uri.Scheme is not ("https" or "http")))
+             uri.Scheme is not ("https" or "http") ||
+             string.IsNullOrWhiteSpace(uri.Host) ||
+             !string.IsNullOrEmpty(uri.UserInfo)))
         {
-            throw new InvalidOperationException("An account URL must be an absolute HTTP or HTTPS URL.");
+            throw new InvalidOperationException(
+                "An account URL must be an absolute HTTP or HTTPS URL without embedded credentials.");
         }
 
         foreach (var role in Roles)
