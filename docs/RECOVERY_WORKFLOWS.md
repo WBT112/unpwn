@@ -224,6 +224,29 @@ Localization validation separately verifies that referenced display keys exist i
 
 The shipped provider catalog validates all repository workflows through `RepositoryWorkflowCatalog.ValidateAll()`. Provider workflow changes should add or update catalog entries and regression tests that prove the definition remains structurally and semantically safe.
 
+## Generic manual workflow for unsupported providers
+
+Accounts without a matching reviewed provider definition use the repository-controlled
+`generic/manual-account-recovery` workflow. The UI labels it as general, non-provider-specific
+guidance; it must never be presented with the same confidence as a reviewed provider workflow.
+Its stable authenticated-change, password-reset, and manual-recovery paths keep unsupported accounts
+inside the normal dependency plan, persisted action state, credential handoff, risk model, and
+completion review.
+
+The generic definition contains no provider recovery locations or trusted-origin metadata. Arbitrary
+provider IDs and names therefore cannot expand a navigation allowlist. Only an imported absolute HTTPS
+account URL may be passed to the existing `/.well-known/change-password` discovery boundary for the
+authenticated password-change action. A discovered destination is shown for a separate user decision
+before opening; an unsafe URL, unexpected redirect, network failure, or missing URL falls back to the
+manual instructions without guessing a destination.
+
+Provider-dependent session, MFA/passkey, recovery-option, application, device, token, and key reviews
+are required checklist actions, but the guidance tells users to act only on controls that are visibly
+available and relevant. A genuinely absent control uses the existing confirmed truly-not-applicable
+transition and a non-secret reason. A relevant control that cannot be completed remains an explicit
+unresolved risk. Browser navigation never completes an action, and every completion still requires
+explicit acknowledgement of repository-controlled criteria.
+
 ## GitHub consumer account workflow
 
 The repository workflow for GitHub.com consumer accounts guides authenticated password changes,

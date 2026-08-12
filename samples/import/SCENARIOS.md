@@ -50,7 +50,7 @@ Use these deliberate setup steps to reproduce planning and workflow states:
 | Accepted unresolved risk | Explicitly accept a remaining required-action risk and confirm the account is not represented as fully secured. |
 | Browser return | Open a reviewed destination and return to unpwn without confirming completion. The action must remain incomplete. |
 | Plan recalculation | Complete, block, fail, or accept risk on a material action and verify the recommendation is recalculated. |
-| Unsupported provider | Use `Manual fallback account`; no reviewed workflow should be guessed for `unsupported.example`. |
+| Unsupported provider | Use `Manual fallback account`; the visibly labelled generic manual workflow should remain in the normal plan, and no provider URL or control should be guessed for `unsupported.example`. |
 
 ## Import edge-case fixture
 

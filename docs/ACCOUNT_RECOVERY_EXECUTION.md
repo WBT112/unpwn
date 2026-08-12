@@ -23,6 +23,12 @@ An execution is bound to:
 
 Loading an execution against a different provider, workflow, version, or path fails closed. Repository workflow changes therefore cannot silently reinterpret persisted action state.
 
+If a reviewed provider workflow is added after an account has already recorded generic-workflow
+history, the application first detects the identity mismatch and then attempts the exact stable
+generic definition. A matching generic execution remains active and is visibly labelled as preserved
+general history. It is not migrated, replaced, or marked complete automatically; corrupted or
+otherwise mismatched state still fails closed.
+
 ## Action state
 
 Every action instance is identified by its repository definition ID and stores:

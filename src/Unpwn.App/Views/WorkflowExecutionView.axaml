@@ -23,6 +23,26 @@
       <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
     </Border>
 
+    <Border IsVisible="{Binding IsGeneralManualWorkflow}"
+            Padding="14" CornerRadius="8" BorderThickness="2"
+            BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+            AutomationProperties.Name="{Binding WorkflowTrustTitle}">
+      <StackPanel Spacing="5">
+        <TextBlock FontWeight="SemiBold" Text="{Binding WorkflowTrustTitle}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding WorkflowTrustMessage}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsReviewedProviderWorkflow}"
+            Padding="14" CornerRadius="8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+            AutomationProperties.Name="{Binding WorkflowTrustTitle}">
+      <StackPanel Spacing="5">
+        <TextBlock FontWeight="SemiBold" Text="{Binding WorkflowTrustTitle}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding WorkflowTrustMessage}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
     <Border IsVisible="{Binding !HasExecution}"
             Padding="18" CornerRadius="10"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
@@ -86,12 +106,17 @@
                     Padding="14" CornerRadius="8"
                     Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
               <StackPanel Spacing="7">
-                <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Navigation.Title}" />
+                <TextBlock FontWeight="SemiBold" Text="{Binding NavigationLocationTitle}" />
                 <TextBlock Text="{DynamicResource Workflow.Navigation.Destination}" />
                 <TextBlock Text="{Binding OfficialLocationText}" TextWrapping="Wrap" />
                 <TextBlock Text="{DynamicResource Workflow.Navigation.ExpectedOrigins}" />
                 <TextBlock Text="{Binding ExpectedOriginsText}" TextWrapping="Wrap" />
                 <TextBlock Text="{DynamicResource Workflow.Navigation.Disclaimer}" TextWrapping="Wrap" />
+                <Button IsVisible="{Binding HasPreparedNavigation}"
+                        HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="workflow-open-discovered-page"
+                        Content="{DynamicResource Workflow.Navigation.OpenDiscovered}"
+                        Command="{Binding OpenOfficialPageCommand}" />
               </StackPanel>
             </Border>
 

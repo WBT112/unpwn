@@ -67,10 +67,13 @@
   <data name="Workflow.Automation.Assisted" xml:space="preserve"><value>Unterstützung: sichtbare Browserhilfe</value></data>
   <data name="Workflow.Automation.Automated" xml:space="preserve"><value>Unterstützung: begrenzte Automatisierung mit ausdrücklicher Autorisierung</value></data>
   <data name="Workflow.Navigation.Title" xml:space="preserve"><value>Offizielle Wiederherstellungsseite</value></data>
+  <data name="Workflow.Navigation.DiscoveredTitle" xml:space="preserve"><value>Sicher ermitteltes Ziel des Konto-Ursprungs</value></data>
   <data name="Workflow.Navigation.Destination" xml:space="preserve"><value>Ziel</value></data>
   <data name="Workflow.Navigation.ExpectedOrigins" xml:space="preserve"><value>Erwarteter Ursprung</value></data>
   <data name="Workflow.Navigation.Disclaimer" xml:space="preserve"><value>Prüfe Ziel und Ursprung vor dem Öffnen. Das Öffnen der Seite, die Rückkehr zu unpwn oder verstrichene Zeit schließen diese Aktion nicht ab.</value></data>
   <data name="Workflow.Navigation.Open" xml:space="preserve"><value>Offizielle Seite öffnen</value></data>
+  <data name="Workflow.Navigation.OpenDiscovered" xml:space="preserve"><value>Angezeigte Seite öffnen</value></data>
+  <data name="Workflow.Navigation.Discovered" xml:space="preserve"><value>Ein standardisiertes Passwortänderungsziel desselben Ursprungs wurde gefunden. Prüfe das angezeigte Ziel und den Ursprung und entscheide dann, ob du es öffnest. Die Aktion bleibt unverändert.</value></data>
   <data name="Workflow.Navigation.Opened" xml:space="preserve"><value>Die offizielle Seite wurde geöffnet. Die Aktion bleibt unverändert, bis du ihre Abschlusskriterien ausdrücklich bestätigst.</value></data>
   <data name="Workflow.Navigation.Unavailable" xml:space="preserve"><value>Die offizielle Seite konnte nicht sicher geöffnet werden. Fahre mit der angezeigten manuellen Anleitung fort.</value></data>
   <data name="Workflow.Navigation.Rejected" xml:space="preserve"><value>Das Betriebssystem hat die Seite nicht geöffnet. Keine Wiederherstellungsaktion wurde als abgeschlossen markiert.</value></data>
@@ -123,7 +126,6 @@
   <data name="Workflow.Plan.Status.BlockedCycle" xml:space="preserve"><value>Durch einen Abhängigkeitszyklus blockiert</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Entsperre einen Vault und lade ein Kontoinventar, bevor du die Kontowiederherstellung beginnst.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>Das ausgewählte Konto ist im verschlüsselten Inventar nicht mehr verfügbar.</value></data>
-  <data name="Workflow.Validation.ProviderUnsupported" xml:space="preserve"><value>Für diesen Anbieter ist kein geprüfter Repository-Workflow verfügbar. Verwende das Kontoinventar und manuelle Hinweise; unpwn errät keine Anbieteranweisungen.</value></data>
   <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Wähle vor dem Start einen Wiederherstellungspfad.</value></data>
   <data name="Workflow.Validation.CriteriaRequired" xml:space="preserve"><value>Bestätige die Abschlusskriterien ausdrücklich, bevor du den Abschluss erfasst.</value></data>
   <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Gib eine nicht geheime Begründung für dieses Ergebnis ein.</value></data>
@@ -140,8 +142,15 @@
   <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Warum dies als Nächstes kommt: {0}</value></data>
   <data name="Workflow.Guided.Primary.StartAndOpen" xml:space="preserve"><value>Diesen Schritt starten und offizielle Seite öffnen</value></data>
   <data name="Workflow.Guided.Primary.Start" xml:space="preserve"><value>Diesen Schritt starten</value></data>
+  <data name="Workflow.Guided.Primary.StartAndDiscover" xml:space="preserve"><value>Diesen Schritt starten und nach einer sicheren Passwortseite suchen</value></data>
   <data name="Workflow.Guided.Primary.RetryAndOpen" xml:space="preserve"><value>Erneut versuchen und offizielle Seite öffnen</value></data>
   <data name="Workflow.Guided.Primary.Retry" xml:space="preserve"><value>Diesen Schritt erneut versuchen</value></data>
+  <data name="Workflow.Guided.Primary.RetryAndDiscover" xml:space="preserve"><value>Erneut versuchen und nach einer sicheren Passwortseite suchen</value></data>
+  <data name="Workflow.Trust.Reviewed.Title" xml:space="preserve"><value>Geprüfter Anbieter-Workflow</value></data>
+  <data name="Workflow.Trust.Reviewed.Message" xml:space="preserve"><value>Diese dienstspezifischen Hinweise und Ziele wurden im unpwn-Repository geprüft. Anbieterseiten können sich dennoch ändern und Navigation beweist niemals Erfolg.</value></data>
+  <data name="Workflow.Trust.General.Title" xml:space="preserve"><value>Allgemeine manuelle Hinweise – nicht anbieterspezifisch</value></data>
+  <data name="Workflow.Trust.General.Message" xml:space="preserve"><value>Für diesen Dienst ist kein anbieterspezifisch geprüfter Workflow verfügbar. unpwn kann durch eine konservative manuelle Prüfliste führen, aber verfügbare Seiten und Sicherheitsfunktionen können abweichen.</value></data>
+  <data name="Workflow.Trust.GeneralPreserved.Message" xml:space="preserve"><value>Inzwischen ist ein geprüfter Anbieter-Workflow verfügbar, aber für dieses Konto besteht bereits Verlauf aus dem allgemeinen Workflow. unpwn bewahrt ihn und migriert oder vervollständigt ihn nicht automatisch.</value></data>
   <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Hat dieser Schritt wirklich funktioniert?</value></data>
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Erledigt</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>Ich kann nicht fortfahren</value></data>

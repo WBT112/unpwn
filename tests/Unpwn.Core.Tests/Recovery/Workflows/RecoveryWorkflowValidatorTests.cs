@@ -10,7 +10,7 @@ public sealed class RecoveryWorkflowValidatorTests
     [Fact]
     public void RepositoryCatalogWorkflowsAreValid()
     {
-        WorkflowValidationResult result = RepositoryWorkflowCatalog.ValidateAll(new DateOnly(2026, 8, 10));
+        WorkflowValidationResult result = RepositoryWorkflowCatalog.ValidateAll(new DateOnly(2026, 8, 12));
 
         Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Diagnostics.Select(diagnostic => diagnostic.ToString())));
     }

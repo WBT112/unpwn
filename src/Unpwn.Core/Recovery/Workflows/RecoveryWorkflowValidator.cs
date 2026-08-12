@@ -22,6 +22,31 @@ public sealed class RecoveryWorkflowValidator
         RequireText(workflow.SupportedAccountType, null, "account-type-required", "SupportedAccountType is required.", diagnostics, workflowId);
         RequireText(workflow.WorkflowVersion, null, "workflow-version-required", "WorkflowVersion is required.", diagnostics, workflowId);
 
+        if (!Enum.IsDefined(workflow.TrustLevel))
+        {
+            diagnostics.Add(new(workflowId, null, "workflow-trust-level-invalid", "TrustLevel is invalid."));
+        }
+
+        if (workflow.TrustLevel == RecoveryWorkflowTrustLevel.GeneralManualGuidance &&
+            workflow.RecoveryLocations.Count > 0)
+        {
+            diagnostics.Add(new(
+                workflowId,
+                null,
+                "general-workflow-provider-location-forbidden",
+                "General manual guidance cannot declare provider-specific recovery locations or trusted origins."));
+        }
+
+        if (workflow.AllowsAccountOriginDiscovery &&
+            workflow.TrustLevel != RecoveryWorkflowTrustLevel.GeneralManualGuidance)
+        {
+            diagnostics.Add(new(
+                workflowId,
+                null,
+                "account-origin-discovery-requires-general-workflow",
+                "Account-origin discovery is restricted to explicitly general manual guidance."));
+        }
+
         if (workflow.VerifiedAt == default)
         {
             diagnostics.Add(new(workflowId, null, "verification-date-required", "VerifiedAt is required."));
@@ -44,7 +69,8 @@ public sealed class RecoveryWorkflowValidator
         string workflowId,
         List<WorkflowValidationDiagnostic> diagnostics)
     {
-        if (workflow.RecoveryLocations.Count == 0)
+        if (workflow.RecoveryLocations.Count == 0 &&
+            workflow.TrustLevel != RecoveryWorkflowTrustLevel.GeneralManualGuidance)
         {
             diagnostics.Add(new(workflowId, null, "recovery-location-required", "At least one recovery location is required."));
             return;
@@ -175,6 +201,18 @@ public sealed class RecoveryWorkflowValidator
             if (action.AutomationSupport == AutomationSupport.Automated)
             {
                 diagnostics.Add(new(workflowId, action.Id, "automation-support-too-high", "Repository workflows cannot claim fully automated recovery support."));
+            }
+
+            if (action.AutomationSupport == AutomationSupport.Navigation &&
+                action.RecoveryLocationId is null &&
+                !(workflow.AllowsAccountOriginDiscovery &&
+                  action.Type == RecoveryActionType.ChangePassword))
+            {
+                diagnostics.Add(new(
+                    workflowId,
+                    action.Id,
+                    "navigation-source-required",
+                    "Navigation requires a reviewed location or explicitly allowed account-origin password discovery."));
             }
 
             if (action.RecoveryLocationId is { } locationId &&
