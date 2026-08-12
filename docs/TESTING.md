@@ -131,6 +131,13 @@ failure and explicit retry, canceled release, orphan discovery without automatic
 warning, unexpected-entry rejection, and recursive cleanup of synthetic browser/download files. No
 test marker contains an account identifier or synthetic secret.
 
+Guided Recovery Browser tests verify that the validated handoff opens beside assistant guidance,
+same-account action navigation installs the next reviewed origin boundary, and external navigation is
+used only through its explicit fallback. Checklist tests inject atomic-write failure and require the
+checkmark to remain unrecorded; successful explicit acknowledgements must reload after browser close
+without changing the action from `InProgress`. Browser navigation, return, close, and host failure are
+asserted to make no canonical completion transition.
+
 ### Application-shell view-model tests
 
 The desktop presentation layer must be testable without opening native windows.

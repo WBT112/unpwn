@@ -20,6 +20,49 @@ public sealed record WorkflowActionItemViewModel(
 
 public sealed record WorkflowPlanReturnRequest(string FeedbackResourceKey);
 
+public sealed record RecoveryBrowserWorkspaceRequest(
+    Guid AccountId,
+    RecoveryNavigationHandoff Handoff,
+    RecoveryBrowserContentMode ContentMode);
+
+public sealed class WorkflowCompletionCriterionViewModel : ObservableObject
+{
+    private bool _isAcknowledged;
+
+    internal WorkflowCompletionCriterionViewModel(
+        string resourceKey,
+        string text,
+        bool isAcknowledged,
+        Func<string, bool, CancellationToken, Task> persist,
+        Func<string> failureMessage)
+    {
+        ResourceKey = resourceKey;
+        Text = text;
+        _isAcknowledged = isAcknowledged;
+        ToggleCommand = new AsyncCommand(
+            token => persist(ResourceKey, !IsAcknowledged, token),
+            failureMessage);
+    }
+
+    public string ResourceKey { get; }
+
+    public string Text { get; private set; }
+
+    public bool IsAcknowledged
+    {
+        get => _isAcknowledged;
+        internal set => SetProperty(ref _isAcknowledged, value);
+    }
+
+    public AsyncCommand ToggleCommand { get; }
+
+    internal void RefreshText(string text)
+    {
+        Text = text;
+        OnPropertyChanged(nameof(Text));
+    }
+}
+
 public enum GuidedRecoveryProblem
 {
     LostAccess,
@@ -45,6 +88,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private readonly IExternalNavigationService _externalNavigation;
     private readonly IConfirmationDialogService _confirmationDialog;
     private readonly IGeneratedCredentialRepository? _generatedCredentials;
+    private readonly IRecoveryBrowserSessionLifecycle? _browserSessions;
     private Guid? _requestedAccountId;
     private string? _requestedActionId;
     private AccountInventoryEntry? _account;
@@ -59,7 +103,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private WorkflowActionItemViewModel? _selectedAction;
     private string _reason = string.Empty;
     private string _notes = string.Empty;
-    private bool _completionCriteriaAcknowledged;
+    private WorkflowCompletionCriterionViewModel[] _completionCriteria = [];
     private string? _validationKey;
     private string? _navigationStatusKey;
     private ExternalNavigationFailureCode _navigationFailureCode;
@@ -67,6 +111,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private GuidedRecoveryProblemOption? _selectedProblem;
     private bool _isProblemReviewVisible;
     private bool _isAdvancedStatusVisible;
+    private bool _isBrowserWorkspaceVisible;
     private long _currentActionFocusRequest;
 
     public WorkflowExecutionScreenViewModel(
@@ -77,7 +122,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         IExternalNavigationService externalNavigation,
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
-        IGeneratedCredentialRepository? generatedCredentials = null)
+        IGeneratedCredentialRepository? generatedCredentials = null,
+        IRecoveryBrowserSessionLifecycle? browserSessions = null)
         : base(
             AppRoute.Workflow,
             localization,
@@ -94,6 +140,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _externalNavigation = externalNavigation ?? throw new ArgumentNullException(nameof(externalNavigation));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         _generatedCredentials = generatedCredentials;
+        _browserSessions = browserSessions;
 
         RefreshCommand = Command(LoadAsync, () => _inventory.CurrentInventory is not null);
         BeginCommand = Command(BeginAsync, () => _account is not null && _workflow is not null && _execution is null && SelectedPath is not null);
@@ -139,6 +186,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         MarkNotApplicableCommand = Command(MarkNotApplicableAsync, CanTransitionCurrentAction);
         AcceptRiskCommand = Command(AcceptRiskAsync, CanAcceptRisk);
         SaveNotesCommand = Command(SaveNotesAsync, () => _execution is not null && CurrentActionState is not null);
+        OpenRecoveryBrowserCommand = Command(OpenRecoveryBrowserAsync, () => HasNavigationOpportunity);
         OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => HasNavigationOpportunity);
         GenerateCredentialCommand = Command(GenerateCredentialAsync, CanGenerateCredential);
         GuidedPrimaryActionCommand = Command(GuidedPrimaryActionAsync, CanRunGuidedPrimaryAction);
@@ -157,6 +205,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     }
 
     public event EventHandler<WorkflowPlanReturnRequest>? PlanReturnRequested;
+
+    public event EventHandler<RecoveryBrowserWorkspaceRequest>? RecoveryBrowserRequested;
+
+    internal IRecoveryBrowserSessionLifecycle? BrowserSessions => _browserSessions;
 
     public AsyncCommand RefreshCommand { get; }
 
@@ -189,6 +241,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand SaveNotesCommand { get; }
 
     public AsyncCommand OpenOfficialPageCommand { get; }
+
+    public AsyncCommand OpenRecoveryBrowserCommand { get; }
 
     public AsyncCommand GenerateCredentialCommand { get; }
 
@@ -237,7 +291,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
             _notes = CurrentActionState?.UserNotes ?? string.Empty;
             OnPropertyChanged(nameof(Notes));
-            CompletionCriteriaAcknowledged = false;
+            RefreshCompletionCriteria();
             _navigationStatusKey = null;
             _navigationFailureCode = ExternalNavigationFailureCode.None;
             _preparedNavigation = null;
@@ -266,18 +320,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         set => SetProperty(ref _notes, value ?? string.Empty);
     }
 
-    public bool CompletionCriteriaAcknowledged
-    {
-        get => _completionCriteriaAcknowledged;
-        set
-        {
-            if (SetProperty(ref _completionCriteriaAcknowledged, value))
-            {
-                ClearValidation();
-                CompleteActionCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
+    public IReadOnlyList<WorkflowCompletionCriterionViewModel> CompletionCriteria =>
+        _completionCriteria;
+
+    public bool CompletionCriteriaAcknowledged =>
+        _completionCriteria.Length > 0 && _completionCriteria.All(criterion => criterion.IsAcknowledged);
 
     public IReadOnlyList<GuidedRecoveryProblemOption> ProblemOptions => _problemOptions;
 
@@ -315,6 +362,23 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     }
 
     public bool IsGuidedActionVisible => !IsAdvancedStatusVisible;
+
+    public bool IsBrowserWorkspaceVisible
+    {
+        get => _isBrowserWorkspaceVisible;
+        private set
+        {
+            if (SetProperty(ref _isBrowserWorkspaceVisible, value))
+            {
+                OnPropertyChanged(nameof(AssistantGridColumn));
+                OnPropertyChanged(nameof(AssistantGridColumnSpan));
+            }
+        }
+    }
+
+    public int AssistantGridColumn => IsBrowserWorkspaceVisible ? 1 : 0;
+
+    public int AssistantGridColumnSpan => IsBrowserWorkspaceVisible ? 1 : 2;
 
     public long CurrentActionFocusRequest
     {
@@ -545,10 +609,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         ? string.Empty
         : Localization.GetString($"Workflow.Automation.{CurrentDefinition.AutomationSupport}");
 
-    public IReadOnlyList<string> CompletionCriteria => CurrentDefinition?.Guidance.CompletionCriteriaKeys
-        .Select(Localization.GetString)
-        .ToArray() ?? [];
-
     public string PrerequisitesText
     {
         get
@@ -609,6 +669,24 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _requestedAccountId = accountId;
         _requestedActionId = actionId;
         _ = RefreshCommand.ExecuteAsync();
+    }
+
+    public void ReportRecoveryBrowserOpenResult(bool succeeded, bool workspaceVisible = false)
+    {
+        IsBrowserWorkspaceVisible = succeeded || workspaceVisible;
+        _navigationStatusKey = succeeded
+            ? "Workflow.Browser.Opened"
+            : "Workflow.Browser.Unavailable";
+        NotifyNavigationStatus();
+    }
+
+    public void ReportRecoveryBrowserClosed()
+    {
+        IsBrowserWorkspaceVisible = false;
+        _navigationStatusKey = CompletionCriteriaAcknowledged
+            ? "Workflow.Browser.ClosedConfirmed"
+            : "Workflow.Browser.ClosedIncomplete";
+        NotifyNavigationStatus();
     }
 
     public async Task AttachCredentialReferenceAsync(
@@ -883,8 +961,60 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             returnToPlan: false);
         if (CurrentActionState?.Status == RecoveryActionStatus.InProgress && HasNavigationOpportunity)
         {
-            await OpenOfficialPageAsync(cancellationToken);
+            await OpenRecoveryBrowserAsync(cancellationToken);
         }
+    }
+
+    private async Task SetCompletionCriterionAsync(
+        string resourceKey,
+        bool acknowledged,
+        CancellationToken cancellationToken)
+    {
+        if (_execution is null || CurrentActionState?.Status != RecoveryActionStatus.InProgress)
+        {
+            return;
+        }
+
+        var acknowledgedCriteria = CurrentActionState.AcknowledgedCompletionCriteria.ToHashSet(
+            StringComparer.Ordinal);
+        if (acknowledged)
+        {
+            acknowledgedCriteria.Add(resourceKey);
+        }
+        else
+        {
+            acknowledgedCriteria.Remove(resourceKey);
+        }
+
+        await ApplyAsync(
+            AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements,
+            cancellationToken,
+            acknowledgedCompletionCriteria: [.. acknowledgedCriteria],
+            returnToPlan: false,
+            preserveNavigation: true);
+    }
+
+    private async Task OpenRecoveryBrowserAsync(CancellationToken cancellationToken)
+    {
+        var handoff = await PrepareNavigationAsync(cancellationToken);
+        if (handoff is null || _account is null || _browserSessions is null)
+        {
+            if (_browserSessions is null)
+            {
+                _navigationStatusKey = "Workflow.Browser.Unavailable";
+                NotifyNavigationStatus();
+            }
+            return;
+        }
+
+        _navigationStatusKey = "Workflow.Browser.Opening";
+        NotifyNavigationStatus();
+        RecoveryBrowserRequested?.Invoke(
+            this,
+            new RecoveryBrowserWorkspaceRequest(
+                _account.Id,
+                handoff,
+                RecoveryBrowserContentMode.Recovery));
     }
 
     private async Task ApplyGuidedProblemAsync(CancellationToken cancellationToken)
@@ -946,20 +1076,29 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private async Task OpenOfficialPageAsync(CancellationToken cancellationToken)
     {
-        if (_workflow is null || CurrentDefinition is null)
+        var handoff = await PrepareNavigationAsync(cancellationToken);
+        if (handoff is null)
         {
             return;
         }
 
+        var opened = await _externalNavigation.OpenAsync(handoff.Destination, cancellationToken);
+        _navigationFailureCode = opened.FailureCode;
+        _navigationStatusKey = opened.Succeeded ? "Workflow.Navigation.OpenedExternal" : null;
+        NotifyNavigationStatus();
+    }
+
+    private async Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
+        CancellationToken cancellationToken)
+    {
+        if (_workflow is null || CurrentDefinition is null)
+        {
+            return null;
+        }
+
         if (_preparedNavigation is { } prepared)
         {
-            var openedPrepared = await _externalNavigation.OpenAsync(
-                prepared.Destination,
-                cancellationToken);
-            _navigationFailureCode = openedPrepared.FailureCode;
-            _navigationStatusKey = openedPrepared.Succeeded ? "Workflow.Navigation.Opened" : null;
-            NotifyNavigationStatus();
-            return;
+            return prepared;
         }
 
         var accountUri = Uri.TryCreate(_account?.AccountUrl, UriKind.Absolute, out var parsed)
@@ -980,24 +1119,16 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             _navigationFailureCode = ExternalNavigationFailureCode.Unavailable;
             _navigationStatusKey = null;
             NotifyNavigationStatus();
-            return;
+            return null;
         }
 
-        if (location is null)
-        {
-            _preparedNavigation = handoff;
-            _navigationFailureCode = ExternalNavigationFailureCode.None;
-            _navigationStatusKey = "Workflow.Navigation.Discovered";
-            NotifyCurrentActionProperties();
-            NotifyNavigationStatus();
-            RaiseCommandStates();
-            return;
-        }
-
-        var opened = await _externalNavigation.OpenAsync(handoff.Destination, cancellationToken);
-        _navigationFailureCode = opened.FailureCode;
-        _navigationStatusKey = opened.Succeeded ? "Workflow.Navigation.Opened" : null;
+        _preparedNavigation = handoff;
+        _navigationFailureCode = ExternalNavigationFailureCode.None;
+        _navigationStatusKey = "Workflow.Navigation.Prepared";
+        NotifyCurrentActionProperties();
         NotifyNavigationStatus();
+        RaiseCommandStates();
+        return handoff;
     }
 
     private async Task ApplyFromInputAsync(
@@ -1025,8 +1156,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         string? userNotes = null,
         bool completionCriteriaAcknowledged = false,
         GeneratedCredentialReference? credentialReference = null,
+        string[]? acknowledgedCompletionCriteria = null,
         RecoveryPath? selectedPath = null,
-        bool returnToPlan = false)
+        bool returnToPlan = false,
+        bool preserveNavigation = false)
     {
         if (_account is null || _workflow is null || _execution is null)
         {
@@ -1049,9 +1182,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                 CreateProjectionContext())
             {
                 SelectedPath = selectedPath,
+                AcknowledgedCompletionCriteria = acknowledgedCompletionCriteria,
             },
             cancellationToken);
-        ApplyResult(result);
+        ApplyResult(result, preserveNavigation);
         var blockedByPrerequisite = transition == AccountRecoveryExecutionTransitionKind.StartAction &&
             result.State is not null &&
             SelectedAction is not null &&
@@ -1068,7 +1202,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         PlanReturnRequested?.Invoke(this, new WorkflowPlanReturnRequest(feedbackKey));
     }
 
-    private void ApplyResult(AccountRecoveryExecutionResult result)
+    private void ApplyResult(
+        AccountRecoveryExecutionResult result,
+        bool preserveNavigation = false)
     {
         if (!result.Succeeded)
         {
@@ -1079,10 +1215,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         var hadExecution = _execution is not null;
         _execution = result.State;
         _reason = string.Empty;
-        _completionCriteriaAcknowledged = false;
-        _navigationStatusKey = null;
-        _navigationFailureCode = ExternalNavigationFailureCode.None;
-        _preparedNavigation = null;
+        if (!preserveNavigation)
+        {
+            _navigationStatusKey = null;
+            _navigationFailureCode = ExternalNavigationFailureCode.None;
+            _preparedNavigation = null;
+        }
         IsProblemReviewVisible = false;
         ClearValidation();
         RefreshProjection();
@@ -1233,6 +1371,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         _requestedActionId = null;
         _notes = CurrentActionState?.UserNotes ?? string.Empty;
+        RefreshCompletionCriteria();
         OnPropertyChanged(nameof(Actions));
         OnPropertyChanged(nameof(SelectedAction));
         OnPropertyChanged(nameof(Notes));
@@ -1313,6 +1452,34 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private bool CanCompleteCurrentAction() =>
         CurrentActionState?.Status == RecoveryActionStatus.InProgress && CompletionCriteriaAcknowledged;
+
+    private void RefreshCompletionCriteria()
+    {
+        var existing = _completionCriteria.ToDictionary(item => item.ResourceKey, StringComparer.Ordinal);
+        var acknowledged = CurrentActionState?.AcknowledgedCompletionCriteria.ToHashSet(
+            StringComparer.Ordinal) ?? [];
+        _completionCriteria = CurrentDefinition?.Guidance.CompletionCriteriaKeys
+            .Select(key =>
+            {
+                if (existing.TryGetValue(key, out var item))
+                {
+                    item.RefreshText(Localization.GetString(key));
+                    item.IsAcknowledged = acknowledged.Contains(key);
+                    return item;
+                }
+
+                return new WorkflowCompletionCriterionViewModel(
+                    key,
+                    Localization.GetString(key),
+                    acknowledged.Contains(key),
+                    SetCompletionCriterionAsync,
+                    () => Localization.GetString("Workflow.Command.Error"));
+            })
+            .ToArray() ?? [];
+        OnPropertyChanged(nameof(CompletionCriteria));
+        OnPropertyChanged(nameof(CompletionCriteriaAcknowledged));
+        CompleteActionCommand.RaiseCanExecuteChanged();
+    }
 
     private bool CanRunGuidedPrimaryAction() => CurrentActionState?.Status is
         RecoveryActionStatus.Open or RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or
@@ -1464,6 +1631,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                      CompleteActionCommand, RequireUserActionCommand, BlockActionCommand,
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,
                      SaveNotesCommand, OpenOfficialPageCommand,
+                     OpenRecoveryBrowserCommand,
                      GenerateCredentialCommand, GuidedPrimaryActionCommand,
                      ApplyGuidedProblemCommand,
                  })

@@ -36,6 +36,8 @@ public sealed record RecoveryActionExecutionState(
     NotApplicableDisposition? NotApplicableDisposition,
     GeneratedCredentialReference? CredentialReference)
 {
+    public string[] AcknowledgedCompletionCriteria { get; init; } = [];
+
     public static RecoveryActionExecutionState Create(RecoveryActionDefinition definition)
     {
         ArgumentNullException.ThrowIfNull(definition);
@@ -64,6 +66,7 @@ public sealed record RecoveryActionExecutionState(
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentException.ThrowIfNullOrWhiteSpace(DefinitionId);
         ArgumentNullException.ThrowIfNull(ReasonArguments);
+        ArgumentNullException.ThrowIfNull(AcknowledgedCompletionCriteria);
         if (!string.Equals(DefinitionId, definition.Id, StringComparison.Ordinal))
         {
             throw new InvalidOperationException("A recovery action execution must match its definition identifier.");
@@ -143,6 +146,15 @@ public sealed record RecoveryActionExecutionState(
             {
                 throw new InvalidOperationException("A credential reference must belong to the same account execution.");
             }
+        }
+
+        var definedCriteria = definition.Guidance.CompletionCriteriaKeys.ToHashSet(StringComparer.Ordinal);
+        if (AcknowledgedCompletionCriteria.Distinct(StringComparer.Ordinal).Count() !=
+                AcknowledgedCompletionCriteria.Length ||
+            AcknowledgedCompletionCriteria.Any(criterion => !definedCriteria.Contains(criterion)))
+        {
+            throw new InvalidOperationException(
+                "Completion acknowledgements must reference distinct repository-controlled criteria.");
         }
     }
 
@@ -281,6 +293,7 @@ public sealed record AccountRecoveryExecutionState(
             action.CompletedAt is not null ||
             action.UserReason is not null ||
             action.UserNotes is not null ||
+            action.AcknowledgedCompletionCriteria.Length > 0 ||
             action.CredentialReference is not null);
         if (hasMaterialActionState)
         {
@@ -389,6 +402,41 @@ public sealed record AccountRecoveryExecutionState(
             UpdatedAt = occurredAt,
             HasUnresolvedRisk = false,
             NotApplicableDisposition = null,
+            AcknowledgedCompletionCriteria = [],
+        }, occurredAt);
+    }
+
+    public AccountRecoveryExecutionState SetCompletionCriteriaAcknowledgements(
+        RecoveryWorkflowDefinition workflow,
+        string definitionId,
+        IReadOnlyCollection<string> acknowledgedCriteria,
+        DateTimeOffset occurredAt)
+    {
+        ArgumentNullException.ThrowIfNull(acknowledgedCriteria);
+        var definition = GetDefinition(workflow, definitionId);
+        var action = GetAction(definitionId);
+        if (action.Status != RecoveryActionStatus.InProgress)
+        {
+            throw new InvalidOperationException(
+                "Completion criteria may be acknowledged only while the action is in progress.");
+        }
+
+        ValidateTimestamp(occurredAt);
+        var definedCriteria = definition.Guidance.CompletionCriteriaKeys.ToHashSet(StringComparer.Ordinal);
+        var normalized = acknowledgedCriteria
+            .Distinct(StringComparer.Ordinal)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        if (normalized.Any(criterion => !definedCriteria.Contains(criterion)))
+        {
+            throw new InvalidOperationException(
+                "Completion acknowledgements must reference repository-controlled criteria.");
+        }
+
+        return ReplaceAction(action with
+        {
+            AcknowledgedCompletionCriteria = normalized,
+            UpdatedAt = occurredAt,
         }, occurredAt);
     }
 
@@ -418,6 +466,8 @@ public sealed record AccountRecoveryExecutionState(
             UpdatedAt = occurredAt,
             HasUnresolvedRisk = false,
             NotApplicableDisposition = null,
+            AcknowledgedCompletionCriteria =
+                [.. GetDefinition(workflow, definitionId).Guidance.CompletionCriteriaKeys],
         }, occurredAt);
     }
 

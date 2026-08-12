@@ -71,7 +71,23 @@
 
     <StackPanel IsVisible="{Binding HasExecution}" Spacing="18">
       <StackPanel IsVisible="{Binding IsGuidedActionVisible}" Spacing="18">
+        <Grid ColumnDefinitions="2*,*" ColumnSpacing="18">
+          <Border x:Name="BrowserWorkspacePanel"
+                  Grid.Column="0"
+                  IsVisible="{Binding IsBrowserWorkspaceVisible}"
+                  MinWidth="340"
+                  Focusable="True"
+                  Padding="12"
+                  CornerRadius="12"
+                  BorderThickness="2"
+                  BorderBrush="{DynamicResource SystemControlHighlightAccentBrush}"
+                  AutomationProperties.AutomationId="workflow-browser-workspace">
+            <ContentControl x:Name="BrowserWorkspaceHost" />
+          </Border>
         <Border x:Name="CurrentActionCard"
+                Grid.Column="{Binding AssistantGridColumn}"
+                Grid.ColumnSpan="{Binding AssistantGridColumnSpan}"
+                MinWidth="300"
                 Focusable="True"
                 AutomationProperties.AutomationId="workflow-current-action"
                 AutomationProperties.LiveSetting="Polite"
@@ -115,7 +131,11 @@
                 <Button IsVisible="{Binding HasPreparedNavigation}"
                         HorizontalAlignment="Left"
                         AutomationProperties.AutomationId="workflow-open-discovered-page"
-                        Content="{DynamicResource Workflow.Navigation.OpenDiscovered}"
+                        Content="{DynamicResource Workflow.Browser.OpenPrepared}"
+                        Command="{Binding OpenRecoveryBrowserCommand}" />
+                <Button HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="workflow-open-external-fallback"
+                        Content="{DynamicResource Workflow.Browser.ExternalFallback}"
                         Command="{Binding OpenOfficialPageCommand}" />
               </StackPanel>
             </Border>
@@ -141,16 +161,21 @@
               <StackPanel Spacing="10">
                 <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Completion.Title}" />
                 <TextBlock Text="{DynamicResource Workflow.Completion.Help}" TextWrapping="Wrap" />
-                <ItemsControl ItemsSource="{Binding CompletionCriteria}">
+                <ItemsControl AutomationProperties.AutomationId="workflow-criteria-acknowledge"
+                              ItemsSource="{Binding CompletionCriteria}">
                   <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                      <TextBlock Margin="0,3" Text="{ReflectionBinding}" TextWrapping="Wrap" />
+                    <DataTemplate x:DataType="vm:WorkflowCompletionCriterionViewModel">
+                      <CheckBox Margin="0,3"
+                                AutomationProperties.Name="{Binding Text}"
+                                Content="{Binding Text}"
+                                IsChecked="{Binding IsAcknowledged, Mode=OneWay}"
+                                Command="{Binding ToggleCommand}" />
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
-                <CheckBox AutomationProperties.AutomationId="workflow-criteria-acknowledge"
-                          Content="{DynamicResource Workflow.Completion.Acknowledge}"
-                          IsChecked="{Binding CompletionCriteriaAcknowledged, Mode=TwoWay}" />
+                <TextBlock AutomationProperties.LiveSetting="Polite"
+                           Text="{DynamicResource Workflow.Browser.CriteriaPersistedHelp}"
+                           TextWrapping="Wrap" />
                 <Button HorizontalAlignment="Left"
                         AutomationProperties.AutomationId="workflow-done"
                         Content="{DynamicResource Workflow.Guided.Done}"
@@ -170,6 +195,7 @@
                     Command="{Binding ShowProblemReviewCommand}" />
           </StackPanel>
         </Border>
+        </Grid>
 
         <Border IsVisible="{Binding IsProblemReviewVisible}"
                 AutomationProperties.AutomationId="workflow-problem-review"
@@ -327,7 +353,15 @@
               <StackPanel Spacing="10">
                 <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Outcome.Title}" />
                 <TextBox Text="{Binding Reason, Mode=TwoWay}" MaxLength="1000" PlaceholderText="{DynamicResource Workflow.Reason.Placeholder}" TextWrapping="Wrap" />
-                <CheckBox Content="{DynamicResource Workflow.Completion.Acknowledge}" IsChecked="{Binding CompletionCriteriaAcknowledged, Mode=TwoWay}" />
+                <ItemsControl ItemsSource="{Binding CompletionCriteria}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:WorkflowCompletionCriterionViewModel">
+                      <CheckBox Content="{Binding Text}"
+                                IsChecked="{Binding IsAcknowledged, Mode=OneWay}"
+                                Command="{Binding ToggleCommand}" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
                 <WrapPanel ItemSpacing="8" LineSpacing="8">
                   <Button Content="{DynamicResource Workflow.Action.Start}" Command="{Binding StartActionCommand}" />
                   <Button Content="{DynamicResource Workflow.Action.Retry}" Command="{Binding RetryActionCommand}" />

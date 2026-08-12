@@ -183,6 +183,75 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ChecklistAcknowledgementCommitsBeforeItIsReloadedAsRecorded()
+    {
+        var store = new InMemoryAtomicRecordStore();
+        var session = new ProjectionSessionService(CreateSession());
+        var workflow = CreateWorkflow();
+        var accountId = Guid.NewGuid();
+        var service = new AccountRecoveryExecutionService(
+            store,
+            session,
+            _mutations,
+            () => StartedAt.AddMinutes(store.BatchWrites + 1));
+        var created = await service.CreateAsync(
+            new AccountRecoveryExecutionCreateRequest(
+                Guid.NewGuid(),
+                accountId,
+                workflow,
+                RecoveryPath.AuthenticatedChange,
+                ProjectionContext()),
+            CancellationToken.None);
+        var started = await service.ApplyAsync(
+            TransitionRequest(
+                Guid.NewGuid(),
+                accountId,
+                created.State!.Revision,
+                workflow,
+                AccountRecoveryExecutionTransitionKind.StartAction,
+                "identify-account"),
+            CancellationToken.None);
+        var criterion = workflow.Actions[0].Guidance.CompletionCriteriaKeys.Single();
+
+        store.FailBatchWrites = true;
+        var failed = await service.ApplyAsync(
+            TransitionRequest(
+                Guid.NewGuid(),
+                accountId,
+                started.State!.Revision,
+                workflow,
+                AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements,
+                "identify-account") with
+            {
+                AcknowledgedCompletionCriteria = [criterion],
+            },
+            CancellationToken.None);
+        store.FailBatchWrites = false;
+        var afterFailure = await service.LoadAsync(accountId, workflow, CancellationToken.None);
+
+        Assert.False(failed.Succeeded);
+        Assert.Empty(afterFailure.State!.GetAction("identify-account").AcknowledgedCompletionCriteria);
+
+        var saved = await service.ApplyAsync(
+            TransitionRequest(
+                Guid.NewGuid(),
+                accountId,
+                afterFailure.State.Revision,
+                workflow,
+                AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements,
+                "identify-account") with
+            {
+                AcknowledgedCompletionCriteria = [criterion],
+            },
+            CancellationToken.None);
+        var reloaded = await service.LoadAsync(accountId, workflow, CancellationToken.None);
+
+        Assert.True(saved.Succeeded);
+        Assert.Equal([criterion], reloaded.State!.GetAction("identify-account").AcknowledgedCompletionCriteria);
+        Assert.Equal(RecoveryActionStatus.InProgress, reloaded.State.GetAction("identify-account").Status);
+    }
+
+    [Fact]
     public async Task CompletingADependencyRecalculatesWaitingAccountsInTheAtomicProjection()
     {
         var dependencyId = Guid.NewGuid();

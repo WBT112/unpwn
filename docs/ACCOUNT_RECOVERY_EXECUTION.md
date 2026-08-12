@@ -41,8 +41,9 @@ Every action instance is identified by its repository definition ID and stores:
 - start, completion, and update timestamps
 - unresolved-risk and not-applicable disposition
 - optional opaque `GeneratedCredentialReference`
+- stable resource keys for explicitly acknowledged completion criteria
 
-The aggregate never stores translated labels, provider-page content, browser state, reset links, MFA secrets, recovery codes, cookies, or generated secret values.
+The aggregate never stores translated labels, provider-page content, browser state, reset links, MFA secrets, recovery codes, cookies, or generated secret values. Completion acknowledgements reference only repository-controlled criterion keys from the matching action definition.
 
 ## Structured reasons
 
@@ -119,8 +120,10 @@ The normal journey makes only the current recommended action visually dominant. 
 account and action are next, shows relevant warnings and prerequisites, and displays the reviewed
 destination and expected origin before navigation. Starting or retrying a navigable step may open the
 official page, but opening it, returning to unpwn, elapsed time, and restart never complete the action.
-The **Done** action remains disabled until the repository-controlled completion criteria are visibly
-acknowledged.
+Each completion criterion is persisted atomically before its checkmark is shown as recorded. Those
+explicit acknowledgements survive browser close and conservative restart, but do not complete the
+action. The **Done** action remains disabled until every repository-controlled criterion is visibly
+acknowledged and still requires its separate explicit confirmation.
 
 If the user cannot continue, the presentation asks one understandable follow-up question and maps the
 answer to the existing canonical transition model:

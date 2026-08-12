@@ -75,6 +75,16 @@
   <data name="Workflow.Navigation.OpenDiscovered" xml:space="preserve"><value>Open the displayed page</value></data>
   <data name="Workflow.Navigation.Discovered" xml:space="preserve"><value>A same-origin standard change-password destination was found. Review the displayed destination and origin, then choose whether to open it. The action remains unchanged.</value></data>
   <data name="Workflow.Navigation.Opened" xml:space="preserve"><value>The official page was opened. The action remains unchanged until you explicitly confirm its completion criteria.</value></data>
+  <data name="Workflow.Navigation.OpenedExternal" xml:space="preserve"><value>The official page opened in your external browser as an explicit fallback. The action remains unchanged.</value></data>
+  <data name="Workflow.Navigation.Prepared" xml:space="preserve"><value>The reviewed destination is ready. Opening it does not change recovery progress.</value></data>
+  <data name="Workflow.Browser.OpenPrepared" xml:space="preserve"><value>Open in Recovery Browser</value></data>
+  <data name="Workflow.Browser.ExternalFallback" xml:space="preserve"><value>Use external browser instead</value></data>
+  <data name="Workflow.Browser.Opening" xml:space="preserve"><value>The reviewed destination is being opened in the isolated Recovery Browser.</value></data>
+  <data name="Workflow.Browser.Opened" xml:space="preserve"><value>Recovery Browser and guidance are visible together. Provider-page activity does not change recovery progress.</value></data>
+  <data name="Workflow.Browser.Unavailable" xml:space="preserve"><value>The isolated Recovery Browser is unavailable. You may deliberately use the external-browser fallback; no security controls were silently downgraded.</value></data>
+  <data name="Workflow.Browser.ClosedConfirmed" xml:space="preserve"><value>The browser session was closed and cleaned. Your explicit checklist confirmations remain stored; the action is still open until you choose Done.</value></data>
+  <data name="Workflow.Browser.ClosedIncomplete" xml:space="preserve"><value>The browser session was closed and cleaned. Unconfirmed completion criteria remain open and the action was not completed.</value></data>
+  <data name="Workflow.Browser.CriteriaPersistedHelp" xml:space="preserve"><value>Each checkmark is stored in the encrypted workspace before it appears selected. Browser navigation or closing cannot select it.</value></data>
   <data name="Workflow.Navigation.Unavailable" xml:space="preserve"><value>The official page could not be opened safely. Continue with the displayed manual guidance.</value></data>
   <data name="Workflow.Navigation.Rejected" xml:space="preserve"><value>The operating system did not open the page. No recovery action was marked complete.</value></data>
   <data name="Workflow.Completion.Title" xml:space="preserve"><value>Completion criteria</value></data>
@@ -140,12 +150,12 @@
   <data name="Workflow.Guided.Warning.Title" xml:space="preserve"><value>Important before you continue</value></data>
   <data name="Workflow.Guided.Prerequisites.Title" xml:space="preserve"><value>What needs to be ready first</value></data>
   <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Why this is next: {0}</value></data>
-  <data name="Workflow.Guided.Primary.StartAndOpen" xml:space="preserve"><value>Start this step and open the official page</value></data>
+  <data name="Workflow.Guided.Primary.StartAndOpen" xml:space="preserve"><value>Start this step in Recovery Browser</value></data>
   <data name="Workflow.Guided.Primary.Start" xml:space="preserve"><value>Start this step</value></data>
-  <data name="Workflow.Guided.Primary.StartAndDiscover" xml:space="preserve"><value>Start this step and check for a safe password page</value></data>
-  <data name="Workflow.Guided.Primary.RetryAndOpen" xml:space="preserve"><value>Try again and open the official page</value></data>
+  <data name="Workflow.Guided.Primary.StartAndDiscover" xml:space="preserve"><value>Find a safe password page and start in Recovery Browser</value></data>
+  <data name="Workflow.Guided.Primary.RetryAndOpen" xml:space="preserve"><value>Retry this step in Recovery Browser</value></data>
   <data name="Workflow.Guided.Primary.Retry" xml:space="preserve"><value>Try this step again</value></data>
-  <data name="Workflow.Guided.Primary.RetryAndDiscover" xml:space="preserve"><value>Try again and check for a safe password page</value></data>
+  <data name="Workflow.Guided.Primary.RetryAndDiscover" xml:space="preserve"><value>Find a safe password page and retry in Recovery Browser</value></data>
   <data name="Workflow.Trust.Reviewed.Title" xml:space="preserve"><value>Reviewed provider workflow</value></data>
   <data name="Workflow.Trust.Reviewed.Message" xml:space="preserve"><value>This service-specific guidance and its destinations were reviewed in the unpwn repository. Provider pages can still change, and navigation never proves success.</value></data>
   <data name="Workflow.Trust.General.Title" xml:space="preserve"><value>General manual guidance — not provider-specific</value></data>

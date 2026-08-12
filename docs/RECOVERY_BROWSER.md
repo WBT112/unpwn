@@ -6,9 +6,9 @@ The Recovery Browser is an unpwn-controlled embedded provider work surface. It u
 `NativeWebView`, backed by WebView2 on Windows and WPE WebKit on Linux. It is not a general browser,
 a custom engine, a Playwright replacement, or a source of canonical recovery truth.
 
-Issue #92 established the host and its fail-closed security boundary. Issue #93 adds account-bound
-reuse, cleanup, orphan detection, and crash recovery. The normal guided-workflow integration belongs
-to Issue #94, and credential handoff belongs to Issue #95.
+Issue #92 established the host and its fail-closed security boundary. Issue #93 added account-bound
+reuse, cleanup, orphan detection, and crash recovery. Issue #94 integrates that lifecycle into the
+guided recovery workspace. Credential handoff belongs to Issue #95.
 
 ## Dependency and truth boundary
 
@@ -27,6 +27,24 @@ Navigation-started, navigation-completed, redirect, popup, download, permission,
 update only transient browser presentation state. They cannot complete an action, acknowledge a
 criterion, change risk, or advance the wizard. Only the existing explicit canonical recovery
 transitions may do that.
+
+## Guided workspace
+
+For a reviewed navigable action, the normal guided path shows the provider page and the current
+assistant panel side by side. The assistant remains the only place where the user can explicitly
+confirm repository-controlled completion criteria, choose **Done**, or record that work cannot
+continue. The external operating-system browser remains a deliberately labelled fallback; embedded
+host failure never causes a silent downgrade.
+
+Each criterion checkmark is a canonical execution transition. It stores only the stable criterion
+resource key in the encrypted `account-execution` record and updates the UI only after the atomic
+execution/dashboard write succeeds. It stores no provider URL, DOM, page text, screenshot, response,
+cookie, or inferred evidence. Checkmarks therefore survive controlled browser close and restart,
+while the action itself stays in progress until the separate explicit **Done** confirmation succeeds.
+
+The same account can navigate to a subsequent reviewed action handoff while retaining its isolated
+profile. The host replaces its origin boundary only from that new validated handoff. A request for a
+different account remains blocked by the session lifecycle until cleanup completes.
 
 ## Navigation policy
 
@@ -116,8 +134,8 @@ boundary and lifecycle remain mandatory rather than claiming equivalent controls
 
 No silent fallback to an unhardened WebView or a separate ordinary browser profile is allowed.
 Downloads remain blocked; any browser-created file is covered by recursive profile cleanup, and there
-is no workflow-approved download/export path yet. The existing explicit external-navigation path
-remains the fallback until the later integration issue.
+is no workflow-approved download/export path yet. The existing external-navigation safety path is
+available only through the explicit fallback control.
 
 ## Testing
 
@@ -129,4 +147,6 @@ opaque profile root. Lifecycle tests cover same-account reuse, cross-account blo
 ordering, engine-clear failure with authoritative directory deletion, resource-release failure,
 cancellation, delete retry, crash/orphan discovery, unexpected root entries, startup non-resume,
 recursive file cleanup, shell warning/retry, and opaque marker content. Tests do not contact or mutate
-live providers.
+live providers. Guided-workspace tests additionally cover reviewed handoff projection, explicit
+fallback, persistence failure before visual acknowledgement, close/reload without completion,
+same-account reviewed navigation, and the absence of browser-driven recovery transitions.

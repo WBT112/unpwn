@@ -29,6 +29,7 @@ public enum AccountRecoveryExecutionTransitionKind
     SetAccessLost,
     SetWaitingForProviderReview,
     StartAction,
+    SetCompletionCriteriaAcknowledgements,
     CompleteAction,
     RequireUserAction,
     BlockAction,
@@ -83,6 +84,8 @@ public sealed record AccountRecoveryExecutionTransitionRequest(
     AccountRecoveryProjectionContext ProjectionContext)
 {
     public RecoveryPath? SelectedPath { get; init; }
+
+    public string[]? AcknowledgedCompletionCriteria { get; init; }
 }
 
 public sealed record AccountRecoveryExecutionResult(

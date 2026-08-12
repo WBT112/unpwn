@@ -115,6 +115,9 @@ public sealed class AccessibilityHeadlessTests
             var currentAction = FindByAutomationId(view, "workflow-current-action");
             Assert.True(Assert.IsType<Control>(currentAction, exactMatch: false).Focusable);
             Assert.NotNull(FindByAutomationId(view, "workflow-primary-action"));
+            var browserWorkspace = FindByAutomationId(view, "workflow-browser-workspace");
+            Assert.True(Assert.IsType<Control>(browserWorkspace, exactMatch: false).Focusable);
+            Assert.NotNull(FindByAutomationId(view, "workflow-open-external-fallback"));
             Assert.NotNull(FindByAutomationId(view, "workflow-criteria-acknowledge"));
             Assert.NotNull(FindByAutomationId(view, "workflow-done"));
             Assert.NotNull(FindByAutomationId(view, "workflow-cannot-continue"));
@@ -123,6 +126,29 @@ public sealed class AccessibilityHeadlessTests
             Assert.NotNull(FindByAutomationId(view, "workflow-generate-credential"));
             Assert.NotNull(FindByAutomationId(view, "workflow-show-advanced"));
             Assert.NotNull(FindByAutomationId(view, "workflow-show-guided"));
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task RecoveryActionChangeDoesNotStealFocusFromActiveBrowserWorkspace()
+    {
+        await Session.Dispatch(() =>
+        {
+            var view = new WorkflowExecutionView();
+            var window = new Window { Content = view };
+            window.Show();
+            var browserWorkspace = Assert.IsType<Control>(
+                FindByAutomationId(view, "workflow-browser-workspace"),
+                exactMatch: false);
+            browserWorkspace.IsVisible = true;
+            browserWorkspace.Focus(NavigationMethod.Tab);
+            Dispatcher.UIThread.RunJobs();
+
+            view.FocusCurrentActionUnlessBrowserHasFocus();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Same(browserWorkspace, window.FocusManager?.GetFocusedElement());
+            window.Close();
         }, CancellationToken.None);
     }
 

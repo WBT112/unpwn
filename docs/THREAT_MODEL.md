@@ -208,9 +208,9 @@ Provider content remains untrusted and can contain deceptive UI. Platform engine
 WebKit does not expose every WebView2 autofill control through the maintained Avalonia surface.
 Dedicated profile storage and conservative cleanup limit cross-profile reuse, but an operating-system
 or engine crash may leave data until the explicit retry succeeds. Filesystem snapshots, backups, and
-storage-device behavior can retain deleted bytes; the UI must not claim forensic erasure. The
-assistant integration in Issue #94 must preserve this lifecycle instead of constructing profiles
-directly.
+storage-device behavior can retain deleted bytes; the UI must not claim forensic erasure. The guided
+assistant uses this lifecycle through the composition root and never constructs or switches profiles
+from browser observations.
 
 ### Malicious, incorrect, or incomplete translation
 
