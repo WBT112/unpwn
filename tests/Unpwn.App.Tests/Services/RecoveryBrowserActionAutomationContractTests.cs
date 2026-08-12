@@ -1,4 +1,5 @@
 using Unpwn.App.Services;
+using Unpwn.Application.Recovery;
 using Unpwn.Core;
 using Xunit;
 
