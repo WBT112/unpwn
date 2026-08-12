@@ -98,7 +98,7 @@ public sealed class RecoveryBrowserCredentialInsertionCoordinatorTests
             {
                 order.Add("insert");
                 Assert.Equal(1, repository.ReadSecretCalls);
-                Assert.Equal(new byte[] { 65, 66, 67 }, secret.ToArray());
+                Assert.Equal("ABC"u8.ToArray(), secret.ToArray());
                 Assert.Equal(0, repository.MarkUsedCalls);
                 return Task.FromResult(RecoveryBrowserCredentialAssistanceResult.Inserted);
             },
@@ -274,7 +274,7 @@ public sealed class RecoveryBrowserCredentialInsertionCoordinatorTests
             Guid operationId,
             CancellationToken cancellationToken) => Unsupported();
 
-        private Task<GeneratedCredentialOperationResult> Unsupported() =>
+        private static Task<GeneratedCredentialOperationResult> Unsupported() =>
             Task.FromResult(GeneratedCredentialOperationResult.Failure(
                 GeneratedCredentialFailureCode.InvalidInput));
 
