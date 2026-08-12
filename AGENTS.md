@@ -32,6 +32,7 @@ Then read the relevant recovery, browser, vault, import, UI, localization, or pe
 - `Unpwn.Core` is platform-neutral and must not depend on Avalonia, SQLite, browser engines, OS APIs, localization, or provider infrastructure.
 - Use existing canonical domain and application services; do not create parallel recovery state machines in view models, browser adapters, or provider code.
 - `Unpwn.App` is the composition root and owns presentation/localization and native Recovery Browser integration.
+- Future provider-specific `ASSISTED` or `AUTOMATED` browser behavior must use the scoped `RecoveryBrowserActionAutomationContract`; do not add generic DOM automation or treat an adapter result as canonical recovery success.
 - Canonical IDs, states, URLs, serialized values, audit types, and error codes remain language-neutral.
 - Logically related security-sensitive state changes must preserve the documented atomic/idempotent persistence rules.
 

@@ -100,7 +100,11 @@ Browser observations are transient presentation context and have no dependency p
 
 `RecoveryBrowserSessionLifecycle` owns temporary account-isolated browser-profile state separately from the encrypted workspace. Account association exists only in memory; persistent markers are opaque and support cleanup retry/orphan detection only. Browser resources are cleared and released before profile-directory deletion. The browser lifecycle never writes recovery execution state.
 
-Provider-reviewed credential insertion is an optional UI/browser adapter capability. Manual Reveal/Copy remains the safe default, and arbitrary provider DOM is never used to infer a password field.
+Provider-reviewed browser assistance and future provider-specific action automation share a scoped `RecoveryBrowserActionAutomationContract`. The contract binds a stable adapter identifier to one provider/action pair, the canonical `AutomationSupport` level, browser content mode, exact expected origins, and whether the adapter is assist-only or may mutate provider state. The current credential-insertion path is registered through this boundary as `ASSISTED` and assist-only.
+
+The contract is an extension and validation boundary, not authorization to execute arbitrary browser code. `NONE` and `NAVIGATION` actions cannot use it, an `ASSISTED` adapter cannot claim provider mutation, synthetic adapters remain HTTP(S)-loopback-only, and production adapter origins remain HTTPS-only. The workflow validator still rejects `AUTOMATED` workflow claims today. Enabling a real `AUTOMATED` action requires a separate provider/action implementation and security review that deliberately changes that policy; browser observations must still never become canonical proof of recovery success.
+
+Manual Reveal/Copy remains the safe default, and arbitrary provider DOM is never used to infer a password field or automation target.
 
 See [Recovery Location Discovery](RECOVERY_LOCATION_DISCOVERY.md), [Recovery Browser Security Boundary](RECOVERY_BROWSER.md), and [Generated Credentials](GENERATED_CREDENTIALS.md).
 
