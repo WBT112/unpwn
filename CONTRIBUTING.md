@@ -30,12 +30,11 @@ Requires the .NET 10 SDK.
 ```shell
 dotnet restore unpwn.slnx
 dotnet build unpwn.slnx --no-restore
-pwsh tests/Unpwn.SyntheticProvider.Tests/bin/Debug/net10.0/playwright.ps1 install chromium
 dotnet test unpwn.slnx --no-build
 dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
 ```
 
-The authoritative CI, synthetic-provider, browser-test, artifact, and secret-scanning rules are in [Testing Strategy](docs/TESTING.md).
+The authoritative CI, synthetic-provider, Recovery Browser, artifact, and secret-scanning rules are in [Testing Strategy](docs/TESTING.md).
 
 ## Specialized changes
 
@@ -51,9 +50,9 @@ Follow [Localization](docs/LOCALIZATION.md). User-facing text belongs in version
 
 Follow [Vault Security](docs/VAULT_SECURITY.md), [Threat Model](docs/THREAT_MODEL.md), and the relevant credential/persistence documents. Do not invent custom cryptographic primitives or expose secrets through diagnostics.
 
-### UI
+### Recovery Browser and UI
 
-Follow [UI Foundation](docs/UI_FOUNDATION.md). Security meaning must not depend on color alone, longer localized text must remain usable, and recovery logic belongs outside code-behind.
+Follow [Recovery Browser Security Boundary](docs/RECOVERY_BROWSER.md) and [UI Foundation](docs/UI_FOUNDATION.md). Browser observations must never become recovery truth. Security meaning must not depend on color alone, longer localized text must remain usable, and recovery logic belongs outside code-behind.
 
 ## Security reports
 
