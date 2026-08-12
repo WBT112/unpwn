@@ -203,6 +203,7 @@
   <data name="Shell.Assistant.Heading" xml:space="preserve"><value>YOUR NEXT RECOVERY TASK</value></data>
   <data name="Shell.Assistant.WhyHeading" xml:space="preserve"><value>WHY THIS MATTERS</value></data>
   <data name="Shell.Assistant.OpenTask" xml:space="preserve"><value>Open current task</value></data>
+  <data name="Shell.Assistant.OpenCsvImport" xml:space="preserve"><value>Open CSV import</value></data>
   <data name="Shell.Assistant.OpenReport" xml:space="preserve"><value>Open report</value></data>
   <data name="Shell.Assistant.Resume" xml:space="preserve"><value>Resume recovery</value></data>
   <data name="Shell.Assistant.Pause" xml:space="preserve"><value>Pause</value></data>
@@ -220,7 +221,7 @@
   <data name="Shell.Guided.Open" xml:space="preserve"><value>Open step</value></data>
   <data name="Shell.Guided.Continue" xml:space="preserve"><value>Continue</value></data>
   <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Open this step to continue the recovery.</value></data>
-  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Add or import at least one account before continuing.</value></data>
+  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Import at least one account from CSV before continuing. Accounts can be reviewed and corrected in the next step.</value></data>
   <data name="Shell.Guided.RoleConfirmationRequired" xml:space="preserve"><value>Confirm or reject every suggested account role before continuing.</value></data>
   <data name="Shell.Guided.Paused" xml:space="preserve"><value>Resume the recovery session before continuing.</value></data>
   <data name="Shell.Guided.Terminal" xml:space="preserve"><value>This recovery session is complete and remains available as a read-only report.</value></data>

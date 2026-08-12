@@ -56,7 +56,8 @@ to the encrypted vault before the in-memory state changes.
 
 The post-intake gates are deterministic:
 
-- inventory cannot advance until at least one account exists;
+- the account-inventory assistant task opens CSV import as the primary path after incident intake;
+- inventory cannot advance until at least one imported account exists, after which the assistant opens account and role review;
 - identity review cannot advance while an inferred role is still only `Suggested`;
 - recovery planning routes to outstanding account work first, then credential handoff, then completion preflight;
 - returning from material account work recalculates the plan from the latest persisted projections;
