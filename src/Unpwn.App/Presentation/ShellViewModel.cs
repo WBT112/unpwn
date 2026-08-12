@@ -147,9 +147,9 @@ public sealed class ShellViewModel : ObservableObject
         _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
         _guidedWizard?.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
         _persistenceStatus?.StatusChanged += PersistenceStatus_OnStatusChanged;
-        if (_browserSessions is not null)
+        if (_browserSessions is { } activeBrowserSessions)
         {
-            _browserSessions.StateChanged += BrowserSessions_OnStateChanged;
+            activeBrowserSessions.StateChanged += BrowserSessions_OnStateChanged;
         }
 
         _localization.CultureChanged += Localization_OnCultureChanged;
