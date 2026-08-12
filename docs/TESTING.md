@@ -118,6 +118,13 @@ The initial deterministic harness lives in `tests/Unpwn.SyntheticProvider.Tests`
 
 The synthetic provider must expose explicit scenario controls so tests do not depend on timing, randomness, or external services.
 
+The embedded Recovery Browser host additionally has headless desktop tests that render an explicit
+loopback synthetic-provider destination in `NativeWebView`. They verify visible origin, Back/Forward,
+Reload, Stop and Close controls, exact-origin navigation, popup denial, platform security-event
+projection, and opaque unpwn-owned profile paths. HTTP remains unavailable outside the explicit
+synthetic loopback mode. Native WebView2 and WPE WebKit behavior is also built on Windows and Linux;
+normal CI never navigates to a live provider.
+
 ### Application-shell view-model tests
 
 The desktop presentation layer must be testable without opening native windows.

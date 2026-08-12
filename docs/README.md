@@ -29,6 +29,7 @@ This directory contains the detailed project documentation. Each topic should ha
 - [Recovery Workflows](RECOVERY_WORKFLOWS.md) — provider workflow semantics and validation
 - [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md) — canonical per-account/action execution state
 - [Recovery Location Discovery](RECOVERY_LOCATION_DISCOVERY.md) — safe provider navigation handoff
+- [Recovery Browser Security Boundary](RECOVERY_BROWSER.md) — embedded host, origin policy, and platform controls
 - [Browser Assistance Prototype](BROWSER_ASSISTANCE_PROTOTYPE.md) — bounded Playwright workflow and rollout decision
 
 ## Vault and credentials

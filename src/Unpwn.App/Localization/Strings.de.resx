@@ -262,4 +262,21 @@
   <data name="Vault.Open.Tooltip" xml:space="preserve"><value>Das Entsperren eines Tresors ist in diesem Shell-Issue nicht umgesetzt.</value></data>
   <data name="Vault.Section.Description" xml:space="preserve"><value>Erstellen und Entsperren werden im eigenen Tresor-Issue angeschlossen.</value></data>
   <data name="Vault.Section.Title" xml:space="preserve"><value>Wiederherstellungstresor</value></data>
+  <data name="RecoveryBrowser.Back" xml:space="preserve"><value>Zurück</value></data>
+  <data name="RecoveryBrowser.Forward" xml:space="preserve"><value>Vor</value></data>
+  <data name="RecoveryBrowser.Reload" xml:space="preserve"><value>Neu laden</value></data>
+  <data name="RecoveryBrowser.Stop" xml:space="preserve"><value>Laden stoppen</value></data>
+  <data name="RecoveryBrowser.Close" xml:space="preserve"><value>Browser-Sitzung schließen</value></data>
+  <data name="RecoveryBrowser.Origin" xml:space="preserve"><value>Aktueller HTTPS-Ursprung</value></data>
+  <data name="RecoveryBrowser.OriginUnavailable" xml:space="preserve"><value>Es ist kein freigegebener Ursprung geladen.</value></data>
+  <data name="RecoveryBrowser.ContextDisclaimer" xml:space="preserve"><value>Browserinhalte sind nur Kontext. Sie beweisen niemals, dass eine Wiederherstellungsmaßnahme erfolgreich war oder ein Konto sicher ist.</value></data>
+  <data name="RecoveryBrowser.Security.UnsafeNavigationBlocked" xml:space="preserve"><value>Eine unsichere oder nicht unterstützte Navigation wurde blockiert.</value></data>
+  <data name="RecoveryBrowser.Security.UnexpectedOriginBlocked" xml:space="preserve"><value>Die Navigation zu einem unerwarteten Anbieterursprung wurde blockiert.</value></data>
+  <data name="RecoveryBrowser.Security.PopupBlocked" xml:space="preserve"><value>Ein Popup oder neues Fenster der Anbieterseite wurde blockiert.</value></data>
+  <data name="RecoveryBrowser.Security.DownloadBlocked" xml:space="preserve"><value>Ein Download wurde blockiert. Downloads sind im Recovery Browser standardmäßig deaktiviert.</value></data>
+  <data name="RecoveryBrowser.Security.PermissionBlocked" xml:space="preserve"><value>Eine Berechtigungsanfrage der Webseite wurde abgelehnt.</value></data>
+  <data name="RecoveryBrowser.Security.ExternalProtocolBlocked" xml:space="preserve"><value>Eine Anfrage für eine externe Anwendung oder ein externes Protokoll wurde blockiert.</value></data>
+  <data name="RecoveryBrowser.Security.TlsErrorBlocked" xml:space="preserve"><value>Die Seite wurde blockiert, weil ihre sichere Verbindung nicht geprüft werden konnte.</value></data>
+  <data name="RecoveryBrowser.Security.ClientCertificateBlocked" xml:space="preserve"><value>Die Anfrage einer Webseite nach einem Clientzertifikat wurde blockiert.</value></data>
+  <data name="RecoveryBrowser.Security.PlatformHardeningUnavailable" xml:space="preserve"><value>Der Recovery Browser wurde angehalten, weil erforderliche Sicherheitskontrollen der Plattform nicht verfügbar sind.</value></data>
 </root>

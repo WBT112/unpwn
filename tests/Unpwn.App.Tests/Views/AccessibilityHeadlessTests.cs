@@ -17,7 +17,7 @@ namespace Unpwn.App.Tests.Views;
 
 public sealed class AccessibilityHeadlessTests
 {
-    private static readonly HeadlessUnitTestSession Session =
+    internal static readonly HeadlessUnitTestSession Session =
         HeadlessUnitTestSession.StartNew(typeof(TestApplication));
 
     [Fact]
@@ -279,5 +279,5 @@ public sealed class AccessibilityHeadlessTests
             AutomationProperties.GetAutomationId(element) == automationId);
     }
 
-    private sealed class TestApplication : global::Avalonia.Application;
+    internal sealed class TestApplication : global::Avalonia.Application;
 }

@@ -1,0 +1,54 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Unpwn.App.Views.RecoveryBrowserView">
+  <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+    <WrapPanel Grid.Row="0" ItemSpacing="8" LineSpacing="8">
+      <Button x:Name="BackButton"
+              AutomationProperties.AutomationId="recovery-browser-back"
+              Content="{DynamicResource RecoveryBrowser.Back}"
+              Click="Back_OnClick" />
+      <Button x:Name="ForwardButton"
+              AutomationProperties.AutomationId="recovery-browser-forward"
+              Content="{DynamicResource RecoveryBrowser.Forward}"
+              Click="Forward_OnClick" />
+      <Button AutomationProperties.AutomationId="recovery-browser-reload"
+              Content="{DynamicResource RecoveryBrowser.Reload}"
+              Click="Reload_OnClick" />
+      <Button AutomationProperties.AutomationId="recovery-browser-stop"
+              Content="{DynamicResource RecoveryBrowser.Stop}"
+              Click="Stop_OnClick" />
+      <Button AutomationProperties.AutomationId="recovery-browser-close"
+              Content="{DynamicResource RecoveryBrowser.Close}"
+              Click="Close_OnClick" />
+    </WrapPanel>
+
+    <Border Grid.Row="1"
+            Padding="10"
+            CornerRadius="6"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <StackPanel Spacing="3">
+        <TextBlock FontWeight="SemiBold"
+                   Text="{DynamicResource RecoveryBrowser.Origin}" />
+        <TextBlock x:Name="OriginText"
+                   AutomationProperties.AutomationId="recovery-browser-origin"
+                   AutomationProperties.LiveSetting="Polite"
+                   Text="{DynamicResource RecoveryBrowser.OriginUnavailable}"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="SecurityStatusText"
+                   AutomationProperties.AutomationId="recovery-browser-security-status"
+                   AutomationProperties.LiveSetting="Assertive"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource RecoveryBrowser.ContextDisclaimer}"
+                   TextWrapping="Wrap" />
+      </StackPanel>
+    </Border>
+
+    <Border Grid.Row="2"
+            MinHeight="360"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+      <ContentControl x:Name="BrowserContent"
+                      AutomationProperties.AutomationId="recovery-browser-content" />
+    </Border>
+  </Grid>
+</UserControl>

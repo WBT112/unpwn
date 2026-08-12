@@ -171,6 +171,39 @@ Mitigations:
 - tests and verification metadata for provider workflows
 - workflow execution uses canonical identifiers rather than translated display text
 
+### Embedded provider content escapes the Recovery Browser boundary
+
+Risk:
+
+A provider page, redirect, popup, download, permission request, external protocol, or invalid TLS
+connection reaches a capability or destination that the current reviewed recovery action did not
+authorize. Browser state could also be confused with canonical recovery evidence.
+
+Mitigations:
+
+- provider entry goes through the existing validated recovery-location handoff
+- top-level navigation is limited to exact expected origins and HTTPS; HTTP is accepted only for an
+  explicit loopback synthetic-test mode
+- file, data, JavaScript, custom, and external application schemes fail closed
+- popups/new windows, downloads, website permissions, client certificates, and TLS exceptions are
+  denied by default
+- platform browser controls are configured behind WebView2 and WPE WebKit adapters before navigation
+- the browser uses an opaque unpwn-owned data path instead of a normal user browser profile
+- WebView2 password autosave, general autofill, OS-account SSO, developer tools, browser accelerator
+  keys, and default context menus are disabled
+- WPE WebKit uses a dedicated data/cache location, disables persistent credential storage, developer
+  tools, permissions, downloads, and TLS exceptions where its native API exposes those controls
+- current origin and denied capabilities are visible in localized application chrome
+- browser events do not call canonical recovery execution services
+
+Residual risk:
+
+Provider content remains untrusted and can contain deceptive UI. Platform engines differ, and WPE
+WebKit does not expose every WebView2 autofill control through the maintained Avalonia surface.
+Dedicated profile storage limits cross-profile reuse; the complete clean-close, crash, stale-data,
+and cross-account lifecycle is intentionally the security work of Issue #93 and must be complete
+before the embedded browser becomes the normal recovery path.
+
 ### Malicious, incorrect, or incomplete translation
 
 Risk:
@@ -250,7 +283,9 @@ unpwn does not:
 
 ## Security Principle
 
-Automation should reduce workload while keeping critical security decisions visible to the user. Recovery status must communicate uncertainty and unresolved risk rather than create false assurance.
+Automation should reduce workload while keeping critical security decisions visible to the user.
+Browser observations are context, not recovery truth. Recovery status must communicate uncertainty
+and unresolved risk rather than create false assurance.
 
 Localization must preserve that same security meaning. A missing or unclear translation is a security defect, not merely a cosmetic issue.
 

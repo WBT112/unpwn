@@ -262,4 +262,21 @@
   <data name="Vault.Open.Tooltip" xml:space="preserve"><value>Vault unlock is not implemented in this shell issue.</value></data>
   <data name="Vault.Section.Description" xml:space="preserve"><value>Vault creation and unlock operations will be connected in the dedicated vault-entry implementation.</value></data>
   <data name="Vault.Section.Title" xml:space="preserve"><value>Recovery vault</value></data>
+  <data name="RecoveryBrowser.Back" xml:space="preserve"><value>Back</value></data>
+  <data name="RecoveryBrowser.Forward" xml:space="preserve"><value>Forward</value></data>
+  <data name="RecoveryBrowser.Reload" xml:space="preserve"><value>Reload</value></data>
+  <data name="RecoveryBrowser.Stop" xml:space="preserve"><value>Stop loading</value></data>
+  <data name="RecoveryBrowser.Close" xml:space="preserve"><value>Close browser session</value></data>
+  <data name="RecoveryBrowser.Origin" xml:space="preserve"><value>Current HTTPS origin</value></data>
+  <data name="RecoveryBrowser.OriginUnavailable" xml:space="preserve"><value>No approved origin is loaded.</value></data>
+  <data name="RecoveryBrowser.ContextDisclaimer" xml:space="preserve"><value>Browser content is context only. It never proves that a recovery action succeeded or that an account is safe.</value></data>
+  <data name="RecoveryBrowser.Security.UnsafeNavigationBlocked" xml:space="preserve"><value>An unsafe or unsupported navigation was blocked.</value></data>
+  <data name="RecoveryBrowser.Security.UnexpectedOriginBlocked" xml:space="preserve"><value>Navigation to an unexpected provider origin was blocked.</value></data>
+  <data name="RecoveryBrowser.Security.PopupBlocked" xml:space="preserve"><value>A provider popup or new-window request was blocked.</value></data>
+  <data name="RecoveryBrowser.Security.DownloadBlocked" xml:space="preserve"><value>A download was blocked. Recovery Browser downloads are disabled by default.</value></data>
+  <data name="RecoveryBrowser.Security.PermissionBlocked" xml:space="preserve"><value>A website permission request was denied.</value></data>
+  <data name="RecoveryBrowser.Security.ExternalProtocolBlocked" xml:space="preserve"><value>An external application or protocol request was blocked.</value></data>
+  <data name="RecoveryBrowser.Security.TlsErrorBlocked" xml:space="preserve"><value>The page was blocked because its secure connection could not be validated.</value></data>
+  <data name="RecoveryBrowser.Security.ClientCertificateBlocked" xml:space="preserve"><value>A website request for a client certificate was blocked.</value></data>
+  <data name="RecoveryBrowser.Security.PlatformHardeningUnavailable" xml:space="preserve"><value>Recovery Browser stopped because required platform security controls are unavailable.</value></data>
 </root>
