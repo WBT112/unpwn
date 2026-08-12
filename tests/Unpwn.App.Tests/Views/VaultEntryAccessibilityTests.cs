@@ -1,7 +1,7 @@
+using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.LogicalTree;
-using Unpwn.App.Tests.Views;
 using Unpwn.App.Views;
 using Xunit;
 
