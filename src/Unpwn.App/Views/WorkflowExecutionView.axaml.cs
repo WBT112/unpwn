@@ -116,7 +116,8 @@ public partial class WorkflowExecutionView : AccessibleScreen
         RecoveryBrowserWorkspaceRequest request)
     {
         RemoveCredentialHandoff();
-        var services = (Application.Current as global::Unpwn.App.App)?.RecoveryCredentialHandoffServices;
+        var services = (Avalonia.Application.Current as global::Unpwn.App.App)
+            ?.RecoveryCredentialHandoffServices;
         var actionId = workflow.SelectedAction?.DefinitionId;
         if (services is null || string.IsNullOrWhiteSpace(actionId) || _browserView is null)
         {
