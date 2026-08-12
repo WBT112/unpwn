@@ -22,6 +22,9 @@ public sealed class ResourceLocalizationService : ILocalizationService
             "Unpwn.App.Localization.VaultStrings",
             typeof(ResourceLocalizationService).Assembly),
         new(
+            "Unpwn.App.Localization.VaultEntryUxStrings",
+            typeof(ResourceLocalizationService).Assembly),
+        new(
             "Unpwn.App.Localization.DashboardStrings",
             typeof(ResourceLocalizationService).Assembly),
         new(
