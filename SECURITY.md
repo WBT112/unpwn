@@ -16,13 +16,14 @@ unpwn does not:
 - bypass MFA, CAPTCHA, identity verification, or account-ownership checks;
 - guarantee that a provider restores access;
 - guarantee that a completed workflow proves an account is secure;
-- guarantee forensic erasure of plaintext exports.
+- treat browser navigation, redirects, form state, credential insertion, or browser close as proof that a recovery action succeeded;
+- guarantee forensic erasure of plaintext exports or temporary browser-profile data.
 
-The detailed security assumptions and mitigations are documented in [Threat Model](docs/THREAT_MODEL.md). Vault cryptography and secret handling are documented in [Vault Security](docs/VAULT_SECURITY.md).
+The detailed security assumptions and mitigations are documented in [Threat Model](docs/THREAT_MODEL.md). Vault cryptography and secret handling are documented in [Vault Security](docs/VAULT_SECURITY.md). The embedded provider-session/origin boundary is documented in [Recovery Browser Security Boundary](docs/RECOVERY_BROWSER.md).
 
 ## Sensitive data
 
-Recovery data is local-first in the MVP. Old passwords are not stored. Credentials, vault keys, reset data, MFA secrets, cookies, and other sensitive values must not appear in logs, telemetry, crash reports, audit summaries, localization diagnostics, or public test artifacts.
+Recovery data is local-first in the MVP. Old passwords are not stored. Credentials, vault keys, reset data, MFA secrets, cookies, browser state, and other sensitive values must not appear in logs, telemetry, crash reports, audit summaries, localization diagnostics, or public test artifacts.
 
 ## Reporting a vulnerability
 
@@ -32,6 +33,6 @@ Recovery data is local-first in the MVP. Old passwords are not stored. Credentia
 
 Do not open a public issue containing exploit details or sensitive user data. If no private channel is available, open only a minimal public issue requesting a private security contact.
 
-A broken provider workflow that is not itself a vulnerability can be reported through a normal issue or pull request. Use private reporting when a workflow could expose credentials, send users to an attacker-controlled location, perform an unsafe action, weaken vault protection, or leak recovery data.
+A broken provider workflow that is not itself a vulnerability can be reported through a normal issue or pull request. Use private reporting when a workflow could expose credentials, send users to an attacker-controlled location, perform an unsafe action, weaken vault/browser isolation, or leak recovery data.
 
 Please allow maintainers a reasonable opportunity to investigate before public disclosure.
