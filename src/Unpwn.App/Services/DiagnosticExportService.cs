@@ -196,7 +196,7 @@ public sealed class FileDiagnosticFileWriter : IDiagnosticFileWriter
         try
         {
             await File.WriteAllBytesAsync(temporaryPath, content.ToArray(), cancellationToken);
-            File.Move(temporaryPath, fullPath, overwrite: true);
+            File.Move(temporaryPath, fullPath, overwrite: false);
         }
         finally
         {
