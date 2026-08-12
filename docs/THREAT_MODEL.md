@@ -212,6 +212,50 @@ storage-device behavior can retain deleted bytes; the UI must not claim forensic
 assistant uses this lifecycle through the composition root and never constructs or switches profiles
 from browser observations.
 
+### Credential leakage or unsafe automatic browser insertion
+
+Risk:
+
+A malicious or changed provider page could trick generic automation into putting a newly generated
+credential into the wrong field or origin. Browser script failures could also leak a credential if
+script text, page content, screenshots, traces, or exception messages were retained. Treating a field
+insertion or form submission as proof of successful recovery would create false assurance.
+
+Mitigations:
+
+- manual Reveal/Copy remains the safe default and uses the existing short-lived credential lease and
+  owned-clipboard safeguards
+- generic and unsupported-provider workflows never receive automatic DOM password-field discovery
+- field insertion requires a repository-controlled provider/action adapter with explicit content mode,
+  exact expected origins, page evidence, and exact selectors
+- Issue #95 initially exposes the insertion adapter only in loopback `SyntheticTest` mode; real
+  providers remain manual until a separate adapter is reviewed
+- every attempt requires a fresh visible user authorization
+- the browser inspects origin/page evidence before the credential is read from the vault
+- MFA, CAPTCHA, email-link handoff, wrong origin, missing/duplicated fields, or changed content stops
+  before secret retrieval
+- after inspection, the credential is obtained only through a short-lived `CredentialSecretLease`
+- the browser re-checks the exact contract immediately before insertion rather than trusting an old
+  inspection result
+- the insertion code sets only the reviewed new-password and confirmation fields and never submits
+  the form
+- browser script results contain only stable non-secret status codes; script exception details are
+  not copied to diagnostics because the insertion script contains the transient credential
+- screenshots and tracing containing real credentials remain prohibited
+- successful insertion may explicitly mark the credential lifecycle as `Used`, but never as
+  `Confirmed`, and never completes the recovery action
+- provider success remains a user/provider verification decision under the canonical execution model
+- browser close and vault lock clear materialized reveal state and request cleanup of an unpwn-owned
+  clipboard value
+
+Residual risk:
+
+Provider markup can change between repository review and use, and script execution is part of the
+untrusted browser interaction surface. The fail-closed contract reduces but cannot eliminate that
+risk. If expected evidence changes, unpwn must fall back to manual Reveal/Copy instead of guessing.
+A malicious provider page necessarily receives a credential when the user deliberately enters or
+inserts it; unpwn cannot make a hostile provider trustworthy.
+
 ### Malicious, incorrect, or incomplete translation
 
 Risk:
@@ -287,6 +331,8 @@ unpwn does not:
 - bypass identity verification or account-ownership checks
 - guarantee account recovery
 - guarantee that a plaintext export has been securely erased
+- provide generic automatic password-field detection for arbitrary providers
+- interpret browser navigation, field insertion, or submission as proof that a recovery action succeeded
 - guarantee the quality of unofficial modified translations outside released repository resources
 
 ## Security Principle
