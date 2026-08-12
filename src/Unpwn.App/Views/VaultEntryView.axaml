@@ -301,43 +301,5 @@
         </StackPanel>
       </StackPanel>
     </Border>
-
-    <Border IsVisible="{Binding IsDiagnosticExportAvailable}"
-            Padding="20"
-            CornerRadius="10"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="12">
-        <TextBlock Classes="section-title"
-                   Text="{DynamicResource Vault.Diagnostics.Title}" />
-        <TextBlock Text="{DynamicResource Vault.Diagnostics.Description}"
-                   TextWrapping="Wrap" />
-        <Button HorizontalAlignment="Left"
-                Command="{Binding CreateDiagnosticPreviewCommand}"
-                Content="{DynamicResource Vault.Diagnostics.Preview}" />
-        <StackPanel IsVisible="{Binding HasDiagnosticPreview}" Spacing="10">
-          <TextBlock FontWeight="SemiBold"
-                     Text="{DynamicResource Vault.Diagnostics.PreviewHeading}" />
-          <TextBox MinHeight="150"
-                   MaxHeight="260"
-                   IsReadOnly="True"
-                   AcceptsReturn="True"
-                   Text="{Binding DiagnosticPreviewText}"
-                   TextWrapping="NoWrap" />
-          <TextBlock Text="{DynamicResource Vault.Diagnostics.Destination}" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-            <TextBox Grid.Column="0"
-                     Text="{Binding DiagnosticDestinationPath, Mode=TwoWay}" />
-            <Button Grid.Column="1"
-                    Click="ChooseDiagnosticPathButton_OnClick"
-                    Content="{DynamicResource Vault.Diagnostics.Browse}" />
-          </Grid>
-          <CheckBox IsChecked="{Binding DiagnosticPreviewApproved, Mode=TwoWay}"
-                    Content="{DynamicResource Vault.Diagnostics.Approve}" />
-          <Button HorizontalAlignment="Left"
-                  Command="{Binding ExportDiagnosticsCommand}"
-                  Content="{DynamicResource Vault.Diagnostics.Export}" />
-        </StackPanel>
-      </StackPanel>
-    </Border>
   </StackPanel>
 </UserControl>
