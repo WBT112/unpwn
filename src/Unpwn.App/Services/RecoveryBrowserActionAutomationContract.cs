@@ -57,7 +57,8 @@ public sealed record RecoveryBrowserActionAutomationContract(
             }
 
             if (ContentMode == RecoveryBrowserContentMode.SyntheticTest &&
-                (!parsed.IsLoopback || parsed.Scheme is not (Uri.UriSchemeHttp or Uri.UriSchemeHttps)))
+                (!parsed.IsLoopback ||
+                 (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps)))
             {
                 throw new InvalidOperationException(
                     "Synthetic browser automation origins must remain on HTTP(S) loopback.");
