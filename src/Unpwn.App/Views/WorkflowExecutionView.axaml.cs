@@ -107,10 +107,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
     private void BrowserView_OnSessionClosed(object? sender, EventArgs eventArgs)
     {
-        if (_browserView is not null)
-        {
-            _browserView.SessionClosed -= BrowserView_OnSessionClosed;
-        }
+        _browserView?.SessionClosed -= BrowserView_OnSessionClosed;
         _browserView = null;
         BrowserWorkspaceHost.Content = null;
         _subscribedViewModel?.ReportRecoveryBrowserClosed();

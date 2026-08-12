@@ -137,6 +137,7 @@ public sealed class AccessibilityHeadlessTests
             var view = new WorkflowExecutionView();
             var window = new Window { Content = view };
             window.Show();
+            Dispatcher.UIThread.RunJobs();
             var browserWorkspace = Assert.IsType<Control>(
                 FindByAutomationId(view, "workflow-browser-workspace"),
                 exactMatch: false);
