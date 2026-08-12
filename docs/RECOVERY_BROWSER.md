@@ -8,7 +8,8 @@ a custom engine, a Playwright replacement, or a source of canonical recovery tru
 
 Issue #92 established the host and its fail-closed security boundary. Issue #93 added account-bound
 reuse, cleanup, orphan detection, and crash recovery. Issue #94 integrates that lifecycle into the
-guided recovery workspace. Credential handoff belongs to Issue #95.
+guided recovery workspace. Issue #95 adds in-context generated-credential handoff and a bounded,
+repository-reviewed assistance contract without changing the recovery truth boundary.
 
 ## Dependency and truth boundary
 
@@ -21,12 +22,14 @@ reviewed origin set. It contains no Avalonia, WebView2, WebKit, vault, or recove
 - the `IRecoveryBrowserHost` presentation contract;
 - the `AvaloniaRecoveryBrowserHost` adapter around `NativeWebView`;
 - platform hardening adapters for WebView2 and WPE WebKit;
-- localized Recovery Browser chrome and visible security events.
+- localized Recovery Browser chrome and visible security events;
+- the presentation-only credential handoff and repository-controlled browser-assistance catalog.
 
-Navigation-started, navigation-completed, redirect, popup, download, permission, TLS, and close events
-update only transient browser presentation state. They cannot complete an action, acknowledge a
-criterion, change risk, or advance the wizard. Only the existing explicit canonical recovery
-transitions may do that.
+Navigation-started, navigation-completed, redirect, popup, download, permission, TLS, close, field
+insertion, and form-state events update only transient browser/presentation state. They cannot
+complete an action, acknowledge a completion criterion, confirm that a credential works, change risk,
+or advance the wizard. Only the existing explicit canonical recovery and credential-lifecycle
+operations may do that.
 
 ## Guided workspace
 
@@ -45,6 +48,62 @@ while the action itself stays in progress until the separate explicit **Done** c
 The same account can navigate to a subsequent reviewed action handoff while retaining its isolated
 profile. The host replaces its origin boundary only from that new validated handoff. A request for a
 different account remains blocked by the session lifecycle until cleanup completes.
+
+## Generated credential handoff
+
+Password-change and password-reset actions continue to generate credentials through the canonical
+`IGeneratedCredentialRepository` and attach only a `GeneratedCredentialReference` to the canonical
+execution action. When an attached credential exists, the Recovery Browser assistant panel can expose
+that same credential in context without creating a parallel credential model.
+
+The in-context presentation follows the existing credential safeguards:
+
+- reveal is deliberate and expires after 15 seconds;
+- copy uses the owned clipboard path and expires after 30 seconds;
+- the UI can explicitly mark the credential as used and later confirm that it works;
+- browser close and vault lock immediately drop any revealed string and request owned-clipboard
+  cleanup;
+- a clipboard cleanup failure remains visible and instructs the user to clear it manually;
+- no plaintext credential enters execution notes, reasons, browser-session metadata, URLs,
+  diagnostics, logs, screenshots, traces, accessibility labels, or persisted UI state.
+
+The presentation resolves the credential reference from the current canonical account-execution
+record. It never chooses a credential merely because it is the newest record for an account.
+
+Closing the browser does not mark a credential as used or working. A credential becomes `Used` only
+through an explicit lifecycle operation. It becomes `Confirmed` only through the existing explicit
+confirmation after use.
+
+## Bounded provider-reviewed insertion
+
+Assisted field insertion is an optional layer above manual Reveal/Copy. It is not generic DOM
+automation and is unavailable unless a repository-controlled adapter matches the exact provider,
+action, content mode, expected origins, and page evidence.
+
+The first shipped adapter is deliberately **synthetic-test only**. No live provider gets automatic
+field insertion from Issue #95 merely because its page contains password-like inputs. Generic and
+unsupported-provider workflows therefore remain manual Reveal/Copy unless a separate reviewed
+provider/action adapter is added later.
+
+A reviewed insertion attempt follows this order:
+
+1. show a fresh visible authorization describing the credential insertion;
+2. inspect the current browser origin and exact repository-controlled page contract **without reading
+   the credential**;
+3. stop for MFA, CAPTCHA, email-link handoff, wrong origin, missing/duplicated fields, or changed page
+   structure;
+4. only after the inspection is ready, obtain a temporary `CredentialSecretLease` from the unlocked
+   vault;
+5. immediately re-check the exact selectors and set only the reviewed new-password and confirmation
+   fields;
+6. dispatch normal input/change events so the provider UI can observe the edit;
+7. never press the submit button and never translate insertion into recovery completion;
+8. after a successful insertion, explicitly record the credential as `Used` through the canonical
+   credential repository. Whether it actually works still requires user/provider verification.
+
+The browser adapter returns only small non-secret result codes. Script exceptions are deliberately
+collapsed to non-secret failure results rather than copied into diagnostics because an insertion
+script necessarily contains the transient credential while it is executing.
 
 ## Navigation policy
 
@@ -90,12 +149,14 @@ authenticated provider session automatically.
 
 An explicit clean close runs in this order:
 
-1. mark cleanup pending without storing account data;
-2. ask the platform engine to clear all browsing data while it is still alive;
-3. stop navigation, detach the native view, and wait for the adapter to release profile resources;
-4. recursively delete the complete dedicated profile, including cache and browser-created temporary
+1. persist already explicit unpwn confirmations through their canonical services;
+2. clear any materialized in-context credential presentation and owned clipboard state;
+3. mark browser cleanup pending without storing account data;
+4. ask the platform engine to clear all browsing data while it is still alive;
+5. stop navigation, detach the native view, and wait for the adapter to release profile resources;
+6. recursively delete the complete dedicated profile, including cache and browser-created temporary
    or download files;
-5. report success only when the directory no longer exists.
+7. report success only when the directory no longer exists.
 
 WebView2 uses its profile browsing-data API. WPE WebKit uses its website-data manager to clear all
 website-data types. Directory deletion is still authoritative: if the engine-level clear fails but
@@ -150,3 +211,11 @@ recursive file cleanup, shell warning/retry, and opaque marker content. Tests do
 live providers. Guided-workspace tests additionally cover reviewed handoff projection, explicit
 fallback, persistence failure before visual acknowledgement, close/reload without completion,
 same-account reviewed navigation, and the absence of browser-driven recovery transitions.
+
+Credential-assistance headless tests exercise the synthetic reviewed contract, exact current-origin
+checking, changed/missing page evidence, MFA/CAPTCHA/email-link stop markers, and successful field
+insertion without form submission. Existing credential-presentation tests cover bounded reveal,
+clipboard cleanup/failure, and vault-lock clearing; the Recovery Browser reuses those same canonical
+credential/clipboard services and additionally clears its materialized presentation on browser close.
+The CI artifact scan remains responsible for rejecting the repository's synthetic secret markers from
+generated test artifacts.
