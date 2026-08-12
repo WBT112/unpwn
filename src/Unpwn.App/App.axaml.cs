@@ -13,6 +13,8 @@ namespace Unpwn.App;
 
 public partial class App : Avalonia.Application
 {
+    internal RecoveryCredentialHandoffServices? RecoveryCredentialHandoffServices { get; private set; }
+
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     public override void OnFrameworkInitializationCompleted()
@@ -59,6 +61,14 @@ public partial class App : Avalonia.Application
             var externalNavigation = new AvaloniaExternalNavigationService(() => mainWindow);
             var credentialExport = new GeneratedCredentialExportService(vaultLifecycle);
             var credentialClipboard = new AvaloniaCredentialClipboardService(() => mainWindow);
+            RecoveryCredentialHandoffServices = new RecoveryCredentialHandoffServices(
+                vaultLifecycle,
+                credentialClipboard,
+                vaultLifecycle,
+                accountInventory,
+                accountRecovery,
+                confirmationDialog,
+                RepositoryRecoveryBrowserCredentialAssistanceCatalog.Instance);
             var guidedWizard = new GuidedRecoveryWizardService(
                 resilientRecordStore,
                 wizard,
@@ -128,6 +138,7 @@ public partial class App : Avalonia.Application
                 workspaceMutations.Dispose();
                 vaultLifecycle.Dispose();
                 browserSessions.Dispose();
+                RecoveryCredentialHandoffServices = null;
                 runStateService.Complete();
             };
             desktop.MainWindow = mainWindow;

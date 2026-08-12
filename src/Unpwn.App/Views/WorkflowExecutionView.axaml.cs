@@ -13,11 +13,13 @@ namespace Unpwn.App.Views;
 [SuppressMessage(
     "Design",
     "CA1001:Types that own disposable fields should be disposable",
-    Justification = "The embedded browser is released through its asynchronous account-session cleanup boundary.")]
+    Justification = "The embedded browser and credential handoff are released through the visual/session lifecycle.")]
 public partial class WorkflowExecutionView : AccessibleScreen
 {
     private WorkflowExecutionScreenViewModel? _subscribedViewModel;
     private RecoveryBrowserView? _browserView;
+    private RecoveryCredentialHandoffViewModel? _credentialHandoffViewModel;
+    private RecoveryCredentialHandoffView? _credentialHandoffView;
 
     public WorkflowExecutionView()
     {
@@ -34,6 +36,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         UnsubscribeFromViewModel();
+        RemoveCredentialHandoff();
         if (_browserView is not null)
         {
             _ = _browserView.CloseSessionAsync();
@@ -97,21 +100,79 @@ public partial class WorkflowExecutionView : AccessibleScreen
         viewModel.ReportRecoveryBrowserOpenResult(
             opened,
             _browserView.SessionSnapshot.State != RecoveryBrowserSessionLifecycleState.Idle);
-        if (opened)
+        if (!opened)
         {
-            Dispatcher.UIThread.Post(
-                () => BrowserWorkspacePanel.Focus(NavigationMethod.Tab),
-                DispatcherPriority.Loaded);
+            return;
         }
+
+        await AttachCredentialHandoffAsync(viewModel, request);
+        Dispatcher.UIThread.Post(
+            () => BrowserWorkspacePanel.Focus(NavigationMethod.Tab),
+            DispatcherPriority.Loaded);
     }
 
-    private void BrowserView_OnSessionClosed(object? sender, EventArgs eventArgs)
+    private async Task AttachCredentialHandoffAsync(
+        WorkflowExecutionScreenViewModel workflow,
+        RecoveryBrowserWorkspaceRequest request)
     {
+        RemoveCredentialHandoff();
+        var services = (Avalonia.Application.Current as global::Unpwn.App.App)
+            ?.RecoveryCredentialHandoffServices;
+        var actionId = workflow.SelectedAction?.DefinitionId;
+        if (services is null || string.IsNullOrWhiteSpace(actionId) || _browserView is null)
+        {
+            return;
+        }
+
+        var handoff = new RecoveryCredentialHandoffViewModel(
+            workflow,
+            services,
+            request,
+            actionId,
+            (contract, token) => _browserView?.InspectCredentialInsertionAsync(contract, token) ??
+                Task.FromResult(RecoveryBrowserCredentialAssistanceResult.Failure(
+                    RecoveryBrowserCredentialAssistanceState.Unavailable,
+                    RecoveryBrowserCredentialAssistanceFailureCode.BrowserUnavailable)),
+            (contract, secret, token) => _browserView?.InsertCredentialAsync(contract, secret, token) ??
+                Task.FromResult(RecoveryBrowserCredentialAssistanceResult.Failure(
+                    RecoveryBrowserCredentialAssistanceState.Unavailable,
+                    RecoveryBrowserCredentialAssistanceFailureCode.BrowserUnavailable)));
+        var view = new RecoveryCredentialHandoffView { DataContext = handoff };
+        _credentialHandoffViewModel = handoff;
+        _credentialHandoffView = view;
+        if (CurrentActionCard.Child is StackPanel assistantPanel)
+        {
+            assistantPanel.Children.Add(view);
+        }
+
+        await handoff.InitializeAsync();
+    }
+
+    private async void BrowserView_OnSessionClosed(object? sender, EventArgs eventArgs)
+    {
+        if (_credentialHandoffViewModel is not null)
+        {
+            await _credentialHandoffViewModel.OnBrowserClosedAsync();
+        }
+
         _browserView?.SessionClosed -= BrowserView_OnSessionClosed;
         _browserView = null;
         BrowserWorkspaceHost.Content = null;
         _subscribedViewModel?.ReportRecoveryBrowserClosed();
         FocusCurrentAction();
+    }
+
+    private void RemoveCredentialHandoff()
+    {
+        if (_credentialHandoffView is not null &&
+            CurrentActionCard.Child is StackPanel assistantPanel)
+        {
+            assistantPanel.Children.Remove(_credentialHandoffView);
+        }
+
+        _credentialHandoffViewModel?.Dispose();
+        _credentialHandoffViewModel = null;
+        _credentialHandoffView = null;
     }
 
     private void ViewModel_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)

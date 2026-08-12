@@ -140,6 +140,23 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         return true;
     }
 
+    public Task<RecoveryBrowserCredentialAssistanceResult> InspectCredentialInsertionAsync(
+        RecoveryBrowserCredentialInsertionContract contract,
+        CancellationToken cancellationToken = default) =>
+        _host?.InspectCredentialInsertionAsync(contract, cancellationToken) ?? Task.FromResult(
+            RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.Unavailable,
+                RecoveryBrowserCredentialAssistanceFailureCode.BrowserUnavailable));
+
+    public Task<RecoveryBrowserCredentialAssistanceResult> InsertCredentialAsync(
+        RecoveryBrowserCredentialInsertionContract contract,
+        ReadOnlyMemory<byte> secretUtf8,
+        CancellationToken cancellationToken = default) =>
+        _host?.InsertCredentialAsync(contract, secretUtf8, cancellationToken) ?? Task.FromResult(
+            RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.Unavailable,
+                RecoveryBrowserCredentialAssistanceFailureCode.BrowserUnavailable));
+
     public void Dispose()
     {
         _sessionLifecycle.StateChanged -= SessionLifecycle_OnStateChanged;

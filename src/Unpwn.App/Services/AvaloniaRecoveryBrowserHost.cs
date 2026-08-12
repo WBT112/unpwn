@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
 using Unpwn.Application.Recovery;
 
@@ -11,6 +12,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     private IRecoveryBrowserPlatformAdapter? _platformAdapter;
     private TaskCompletionSource _platformReleased = CompletedRelease();
     private RecoveryBrowserHostSnapshot _snapshot = ClosedSnapshot;
+    private RecoveryBrowserContentMode? _contentMode;
 
     public AvaloniaRecoveryBrowserHost(NativeWebView webView)
         : this(webView, RecoveryBrowserPlatformAdapter.Create)
@@ -57,6 +59,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         _platformAdapter.SecurityEvent += PlatformAdapter_OnSecurityEvent;
         _webView.IsVisible = true;
         _boundary = boundary;
+        _contentMode = request.ContentMode;
         Publish(_snapshot with
         {
             State = RecoveryBrowserHostState.Starting,
@@ -102,6 +105,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         }
 
         _boundary = boundary;
+        _contentMode = contentMode;
         _webView.Navigate(handoff.Destination);
         return true;
     }
@@ -113,6 +117,84 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     public bool Reload() => _boundary is not null && _webView.Refresh();
 
     public bool StopLoading() => _boundary is not null && _webView.Stop();
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Browser script exceptions can contain the submitted script. Fail closed without surfacing or retaining exception text so credential material cannot enter diagnostics.")]
+    public async Task<RecoveryBrowserCredentialAssistanceResult> InspectCredentialInsertionAsync(
+        RecoveryBrowserCredentialInsertionContract contract,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        cancellationToken.ThrowIfCancellationRequested();
+        var boundaryResult = ValidateCredentialContract(contract);
+        if (boundaryResult is not null)
+        {
+            return boundaryResult;
+        }
+
+        try
+        {
+            var result = await _webView.InvokeScript(
+                RecoveryBrowserCredentialScript.BuildInspection(contract)).WaitAsync(cancellationToken);
+            return RecoveryBrowserCredentialScript.Parse(result);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.ManualGuidanceRequired,
+                RecoveryBrowserCredentialAssistanceFailureCode.InvocationFailed);
+        }
+    }
+
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Browser script exceptions can contain the submitted script. Fail closed without surfacing or retaining exception text so credential material cannot enter diagnostics.")]
+    public async Task<RecoveryBrowserCredentialAssistanceResult> InsertCredentialAsync(
+        RecoveryBrowserCredentialInsertionContract contract,
+        ReadOnlyMemory<byte> secretUtf8,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (secretUtf8.IsEmpty)
+        {
+            return RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.ManualGuidanceRequired,
+                RecoveryBrowserCredentialAssistanceFailureCode.UnexpectedContent);
+        }
+
+        var boundaryResult = ValidateCredentialContract(contract);
+        if (boundaryResult is not null)
+        {
+            return boundaryResult;
+        }
+
+        try
+        {
+            // The script rechecks every repository-controlled selector immediately before insertion.
+            // It never submits the form and returns only a non-secret state token.
+            var result = await _webView.InvokeScript(
+                RecoveryBrowserCredentialScript.BuildInsertion(contract, secretUtf8)).WaitAsync(cancellationToken);
+            return RecoveryBrowserCredentialScript.Parse(result);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception)
+        {
+            return RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.ManualGuidanceRequired,
+                RecoveryBrowserCredentialAssistanceFailureCode.InvocationFailed);
+        }
+    }
 
     public Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
         _platformAdapter?.ClearBrowsingDataAsync(cancellationToken) ?? Task.CompletedTask;
@@ -130,6 +212,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         }
         _platformAdapter = null;
         _boundary = null;
+        _contentMode = null;
         _webView.IsVisible = false;
         Publish(ClosedSnapshot);
     }
@@ -143,6 +226,53 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         _webView.NavigationStarted -= WebView_OnNavigationStarted;
         _webView.NavigationCompleted -= WebView_OnNavigationCompleted;
         _webView.NewWindowRequested -= WebView_OnNewWindowRequested;
+    }
+
+    private RecoveryBrowserCredentialAssistanceResult? ValidateCredentialContract(
+        RecoveryBrowserCredentialInsertionContract contract)
+    {
+        try
+        {
+            contract.Validate();
+        }
+        catch (InvalidOperationException)
+        {
+            return RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.ManualGuidanceRequired,
+                RecoveryBrowserCredentialAssistanceFailureCode.UnexpectedContent);
+        }
+
+        if (_boundary is null ||
+            _contentMode != contract.ContentMode ||
+            _snapshot.State != RecoveryBrowserHostState.Ready ||
+            string.IsNullOrWhiteSpace(_snapshot.VisibleOrigin))
+        {
+            return RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.Unavailable,
+                RecoveryBrowserCredentialAssistanceFailureCode.BrowserUnavailable);
+        }
+
+        var currentOrigin = _snapshot.VisibleOrigin;
+        var originAllowed = contract.ExpectedOrigins.Any(origin =>
+            TryNormalizeOrigin(origin, out var normalized) &&
+            string.Equals(normalized, currentOrigin, StringComparison.OrdinalIgnoreCase));
+        return originAllowed
+            ? null
+            : RecoveryBrowserCredentialAssistanceResult.Failure(
+                RecoveryBrowserCredentialAssistanceState.ManualGuidanceRequired,
+                RecoveryBrowserCredentialAssistanceFailureCode.WrongOrigin);
+    }
+
+    private static bool TryNormalizeOrigin(string value, out string? origin)
+    {
+        origin = null;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var parsed) || parsed.UserInfo.Length != 0)
+        {
+            return false;
+        }
+
+        origin = parsed.GetLeftPart(UriPartial.Authority);
+        return true;
     }
 
     private void WebView_OnEnvironmentRequested(

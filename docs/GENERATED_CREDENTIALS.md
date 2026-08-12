@@ -33,6 +33,10 @@ CredentialId + AccountId
 
 The reference contains no secret value. A caller must hold an unlocked vault and explicitly request a temporary secret lease to reveal or use the credential.
 
+The guided Recovery Browser resolves the attached reference from the current canonical
+`account-execution` action. It does not pick a credential merely because it is the newest record for
+an account. Only this opaque reference is shared with recovery state.
+
 ## Lifecycle
 
 The encrypted metadata records:
@@ -67,9 +71,44 @@ cryptographic hash of the current clipboard text so later user content is not er
 If automatic clipboard cleanup cannot be verified, the UI keeps the failure visible and instructs
 the user to clear the clipboard manually.
 
+For an active password-change/reset action, the managed Recovery Browser also exposes the attached
+credential beside the provider page. The existing Generate action remains part of the canonical
+workflow screen; after attachment, the in-context panel provides deliberate Reveal, Hide, Copy,
+Mark-used, and Confirm-working controls using the same repository and clipboard services. Closing the
+Recovery Browser or locking the vault removes any revealed/materialized secret and requests owned
+clipboard cleanup. Browser close itself does not mark the credential as used or working.
+
 Managed UI strings cannot be deterministically zeroed by .NET. They are therefore created only for
 an explicit temporary reveal or clipboard operation, are never logged or persisted, and references
 are dropped when the presentation state is cleared.
+
+## Bounded browser assistance
+
+Automatic field insertion is not a generic password-form feature. `RepositoryRecoveryBrowserCredentialAssistanceCatalog`
+returns an insertion contract only for an explicitly repository-reviewed provider/action adapter.
+The contract fixes the provider/action identity, browser content mode, expected origins, page evidence,
+and exact new-password/confirmation selectors. Unsupported/generic providers do not receive DOM
+insertion merely because a page contains password-like inputs.
+
+Issue #95 initially ships only a loopback synthetic-test adapter. Production provider workflows
+continue to use Reveal/Copy/manual entry until a separate provider/action adapter is reviewed and
+added.
+
+A bounded insertion is deliberately ordered so the secret is obtained late:
+
+1. the user explicitly authorizes that insertion attempt;
+2. unpwn inspects current origin/page evidence without reading the credential;
+3. wrong origin, changed controls, MFA, CAPTCHA, or email-link handoff stops without a vault secret
+   lease;
+4. only a ready inspection opens a temporary `CredentialSecretLease`;
+5. the browser re-checks the exact repository-controlled selectors immediately before insertion;
+6. the new and confirmation fields are populated, but the form is not submitted;
+7. successful insertion is separately recorded as credential `Used`; it is never equivalent to
+   `Confirmed` and never completes the recovery action.
+
+Browser-script results contain only stable non-secret status codes. Exception text from a script
+execution is not copied into logs/diagnostics because the transient insertion script contains the
+credential while executing.
 
 ## Deletion boundary
 
@@ -136,5 +175,11 @@ Tests cover:
 - missing credentials preventing partial output
 - file-created/state-update-failed reporting
 - repeated operation handling
+- deliberate reveal and presentation clearing
+- owned clipboard countdown, cleanup, and visible cleanup failure
+- vault-lock clearing of reveal/clipboard state
+- synthetic reviewed browser insertion without form submission
+- wrong-origin, changed-page, MFA, CAPTCHA, and email-link stop conditions
+- rejection of generic production DOM insertion
 
 The credential UI provides reveal and clipboard timers, destination warnings, password-manager import confirmation, and post-import cleanup prompts. Completion preflight reads only credential metadata and reports separate counts for unexported credentials, unconfirmed password-manager imports, retained vault credentials, and pending plaintext cleanup; it never reads credential secret material.
