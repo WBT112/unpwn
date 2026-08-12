@@ -65,3 +65,21 @@ public sealed record RecoveryBrowserActionAutomationContract(
         }
     }
 }
+
+public static class RecoveryBrowserActionAutomationContractExtensions
+{
+    public static RecoveryBrowserActionAutomationContract AsActionAutomationContract(
+        this RecoveryBrowserCredentialInsertionContract contract)
+    {
+        ArgumentNullException.ThrowIfNull(contract);
+
+        return new RecoveryBrowserActionAutomationContract(
+            $"{contract.ProviderId}/{contract.ActionDefinitionId}/credential-insertion-v1",
+            contract.ProviderId,
+            contract.ActionDefinitionId,
+            AutomationSupport.Assisted,
+            contract.ContentMode,
+            contract.ExpectedOrigins,
+            RecoveryBrowserAutomationEffect.AssistOnly);
+    }
+}
