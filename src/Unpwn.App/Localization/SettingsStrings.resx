@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Settings.Open" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings.WindowTitle" xml:space="preserve"><value>unpwn — Settings and support</value></data>
+  <data name="Settings.Title" xml:space="preserve"><value>Settings and support</value></data>
+  <data name="Settings.Description" xml:space="preserve"><value>Change non-recovery application preferences and create a sanitized local diagnostic export for support.</value></data>
+  <data name="Settings.Language.Title" xml:space="preserve"><value>Language</value></data>
+  <data name="Settings.Language.Description" xml:space="preserve"><value>unpwn starts in the supported operating-system UI language. You can change the language for the current process here.</value></data>
+  <data name="Settings.Status.Title" xml:space="preserve"><value>Settings ready</value></data>
+  <data name="Settings.Status.Message" xml:space="preserve"><value>Application preferences and support tools do not change recovery results.</value></data>
+</root>

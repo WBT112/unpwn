@@ -162,7 +162,7 @@ public sealed class AccessibilityHeadlessTests
 
             Assert.Equal(760, window.MinWidth);
             Assert.Equal(560, window.MinHeight);
-            Assert.NotNull(FindByAutomationId(window, "shell-language"));
+            Assert.NotNull(FindByAutomationId(window, "shell-settings"));
             Assert.NotNull(FindByAutomationId(window, "shell-navigation"));
             Assert.NotNull(FindByAutomationId(window, "shell-lock-vault"));
             Assert.NotNull(FindByAutomationId(window, "shell-assistant-primary"));

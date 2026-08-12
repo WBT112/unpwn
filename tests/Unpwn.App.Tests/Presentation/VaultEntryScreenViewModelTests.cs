@@ -2,7 +2,6 @@ using System.Globalization;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
-using Unpwn.Application.Diagnostics;
 using Unpwn.Core;
 using Xunit;
 
@@ -174,47 +173,6 @@ public sealed class VaultEntryScreenViewModelTests
         Assert.Equal(RecoveryWizardStepId.TrustedDeviceCheck, wizard.Current.CurrentStep);
     }
 
-    [Fact]
-    public async Task DiagnosticExportRequiresVisiblePreviewPathAndExplicitApproval()
-    {
-        var diagnosticStore = new BoundedSecretSafeDiagnosticStore();
-        new SecretSafeDiagnostics(diagnosticStore).ReportFailure(
-            DiagnosticOperation.WorkspaceSave,
-            new IOException("UNPWN_TEST_SECRET_not-in-preview"));
-        var writer = new TestDiagnosticWriter();
-        var diagnosticExport = new DiagnosticExportService(
-            diagnosticStore,
-            new SecretSafeDiagnostics(diagnosticStore),
-            writer);
-        var viewModel = CreateViewModel(
-            new TestVaultLifecycleService(),
-            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
-            diagnosticExportService: diagnosticExport);
-
-        Assert.True(viewModel.IsDiagnosticExportAvailable);
-        Assert.False(viewModel.ExportDiagnosticsCommand.CanExecute(null));
-
-        viewModel.CreateDiagnosticPreviewCommand.Execute(null);
-
-        Assert.True(viewModel.HasDiagnosticPreview);
-        Assert.Contains("UNPWN1007", viewModel.DiagnosticPreviewText, StringComparison.Ordinal);
-        Assert.DoesNotContain(
-            "UNPWN_TEST_SECRET_",
-            viewModel.DiagnosticPreviewText,
-            StringComparison.Ordinal);
-        Assert.False(viewModel.ExportDiagnosticsCommand.CanExecute(null));
-
-        viewModel.DiagnosticDestinationPath = "synthetic-diagnostics.json";
-        viewModel.DiagnosticPreviewApproved = true;
-        var outcome = await viewModel.ExportDiagnosticsCommand.ExecuteAsync();
-
-        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.NotNull(writer.Content);
-        Assert.False(viewModel.HasDiagnosticPreview);
-        Assert.Equal(string.Empty, viewModel.DiagnosticDestinationPath);
-        Assert.Equal(AppVisualState.Success, viewModel.Status.State);
-    }
-
     private static RelayCommand GetDecisionCommand(
         VaultEntryScreenViewModel viewModel,
         TrustedDeviceDecision decision)
@@ -235,30 +193,14 @@ public sealed class VaultEntryScreenViewModelTests
         RecoveryWizardSessionService wizard,
         ResourceLocalizationService? localization = null,
         TimeSpan? passwordRevealDuration = null,
-        IPresentationDelay? passwordRevealDelay = null,
-        IDiagnosticExportService? diagnosticExportService = null) =>
+        IPresentationDelay? passwordRevealDelay = null) =>
         new(
             lifecycle,
             wizard,
             new TestConfirmationDialogService(),
             localization ?? CreateLocalization(),
             passwordRevealDuration,
-            passwordRevealDelay,
-            diagnosticExportService);
-
-    private sealed class TestDiagnosticWriter : IDiagnosticFileWriter
-    {
-        public string? Content { get; private set; }
-
-        public Task WriteAtomicallyAsync(
-            string destinationPath,
-            ReadOnlyMemory<byte> content,
-            CancellationToken cancellationToken)
-        {
-            Content = System.Text.Encoding.UTF8.GetString(content.Span);
-            return Task.CompletedTask;
-        }
-    }
+            passwordRevealDelay);
 
     private sealed class TestPresentationDelay : IPresentationDelay
     {

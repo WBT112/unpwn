@@ -64,36 +64,6 @@ public partial class VaultEntryView : AccessibleScreen
         }
     }
 
-    private async void ChooseDiagnosticPathButton_OnClick(
-        object? sender,
-        RoutedEventArgs eventArgs)
-    {
-        if (DataContext is not VaultEntryScreenViewModel viewModel ||
-            TopLevel.GetTopLevel(this)?.StorageProvider is not { } storageProvider)
-        {
-            return;
-        }
-
-        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
-        {
-            Title = viewModel.Localization.GetString("Vault.Diagnostics.FilePicker.Title"),
-            SuggestedFileName = "unpwn-diagnostics.json",
-            DefaultExtension = "json",
-            FileTypeChoices =
-            [
-                new FilePickerFileType(viewModel.Localization.GetString("Vault.Diagnostics.FilePicker.Type"))
-                {
-                    Patterns = ["*.json"],
-                    MimeTypes = ["application/json"],
-                },
-            ],
-        });
-        if (file?.Path.IsFile == true)
-        {
-            viewModel.DiagnosticDestinationPath = file.Path.LocalPath;
-        }
-    }
-
     private static FilePickerFileType CreateVaultFileType(
         VaultEntryScreenViewModel viewModel) =>
         new(viewModel.Localization.GetString("Vault.FilePicker.Type"))

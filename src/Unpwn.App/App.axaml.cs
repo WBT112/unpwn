@@ -79,6 +79,8 @@ public partial class App : Avalonia.Application
                 diagnosticStore,
                 diagnostics,
                 applicationVersion: typeof(App).Assembly.GetName().Version?.ToString());
+            var settings = new SettingsScreenViewModel(localization, diagnosticExport);
+            var applicationPreferences = FileApplicationPreferences.CreateDefault();
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
@@ -92,7 +94,6 @@ public partial class App : Avalonia.Application
                 credentialExport,
                 credentialClipboard,
                 localization,
-                diagnosticExport,
                 browserSessions);
             var shell = new ShellViewModel(
                 screenFactory,
@@ -125,11 +126,14 @@ public partial class App : Avalonia.Application
             {
                 DataContext = shell,
             };
+            mainWindow.AttachApplicationPreferences(applicationPreferences);
+            mainWindow.AttachSettings(settings);
             mainWindow.AttachInactivityMonitor(vaultLifecycle);
             desktop.Exit += (_, _) =>
             {
                 AppDomain.CurrentDomain.UnhandledException -= domainFailureHandler;
                 TaskScheduler.UnobservedTaskException -= taskFailureHandler;
+                settings.Dispose();
                 sessionVaultBridge.Dispose();
                 guidedWizard.Dispose();
                 locationDiscovery.Dispose();

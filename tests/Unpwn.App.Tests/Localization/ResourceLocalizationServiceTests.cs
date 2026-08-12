@@ -16,6 +16,17 @@ public sealed class ResourceLocalizationServiceTests
     }
 
     [Fact]
+    public void EnglishSystemCultureUsesEnglishResourcesAndFormattingCulture()
+    {
+        var culture = CultureInfo.GetCultureInfo("en-GB");
+        var localization = new ResourceLocalizationService(culture);
+
+        Assert.Equal("en", localization.CurrentLanguageCode);
+        Assert.Equal(culture, localization.CurrentCulture);
+        Assert.Equal("Settings and support", localization.GetString("Settings.Title"));
+    }
+
+    [Fact]
     public void ExactGermanCultureUsesGermanResourcesAndFormattingCulture()
     {
         var culture = CultureInfo.GetCultureInfo("de-DE");
@@ -25,6 +36,16 @@ public sealed class ResourceLocalizationServiceTests
         Assert.Equal(culture, localization.CurrentCulture);
         Assert.Equal("Tresor", localization.GetString("Shell.Navigation.Vault.Label"));
         Assert.Contains("1234,5", localization.Format("Import.Candidate.Row", 1234.5m, "Dienst", "Konto", string.Empty));
+    }
+
+    [Fact]
+    public void PseudoSystemCultureDoesNotSelectPseudoLocalization()
+    {
+        var localization = new ResourceLocalizationService(
+            CultureInfo.GetCultureInfo(ResourceLocalizationService.PseudoLanguageCode));
+
+        Assert.Equal(ResourceLocalizationService.DefaultLanguageCode, localization.CurrentLanguageCode);
+        Assert.Equal("Settings and support", localization.GetString("Settings.Title"));
     }
 
     [Fact]
