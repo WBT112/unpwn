@@ -1,0 +1,79 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Unpwn.App.Presentation"
+             xmlns:views="using:Unpwn.App.Views"
+             x:Class="Unpwn.App.Views.SettingsView"
+             x:DataType="vm:SettingsScreenViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="28" MaxWidth="900" Spacing="22">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="page-title" Text="{Binding Title}" />
+        <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <views:StatusBannerView DataContext="{Binding Status}" />
+
+      <Border Padding="20"
+              CornerRadius="10"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="section-title" Text="{DynamicResource Settings.Language.Title}" />
+          <TextBlock Text="{Binding LanguageDescription}" TextWrapping="Wrap" />
+          <ComboBox Width="220"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="settings-language"
+                    AutomationProperties.Name="{DynamicResource Shell.Language.Label}"
+                    ItemsSource="{Binding LanguageOptions}"
+                    SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:LanguageOptionViewModel">
+                <TextBlock Text="{Binding DisplayName}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+        </StackPanel>
+      </Border>
+
+      <Border Padding="20"
+              CornerRadius="10"
+              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+        <StackPanel Spacing="12">
+          <TextBlock Classes="section-title"
+                     Text="{DynamicResource Vault.Diagnostics.Title}" />
+          <TextBlock Text="{DynamicResource Vault.Diagnostics.Description}"
+                     TextWrapping="Wrap" />
+          <Button HorizontalAlignment="Left"
+                  AutomationProperties.AutomationId="settings-diagnostics-preview"
+                  Command="{Binding CreateDiagnosticPreviewCommand}"
+                  Content="{DynamicResource Vault.Diagnostics.Preview}" />
+          <StackPanel IsVisible="{Binding HasDiagnosticPreview}" Spacing="10">
+            <TextBlock FontWeight="SemiBold"
+                       Text="{DynamicResource Vault.Diagnostics.PreviewHeading}" />
+            <TextBox MinHeight="150"
+                     MaxHeight="260"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     Text="{Binding DiagnosticPreviewText}"
+                     TextWrapping="NoWrap" />
+            <TextBlock Text="{DynamicResource Vault.Diagnostics.Destination}" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+              <TextBox Grid.Column="0"
+                       AutomationProperties.AutomationId="settings-diagnostics-destination"
+                       Text="{Binding DiagnosticDestinationPath, Mode=TwoWay}" />
+              <Button Grid.Column="1"
+                      Click="ChooseDiagnosticPathButton_OnClick"
+                      Content="{DynamicResource Vault.Diagnostics.Browse}" />
+            </Grid>
+            <CheckBox AutomationProperties.AutomationId="settings-diagnostics-approve"
+                      IsChecked="{Binding DiagnosticPreviewApproved, Mode=TwoWay}"
+                      Content="{DynamicResource Vault.Diagnostics.Approve}" />
+            <Button HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="settings-diagnostics-export"
+                    Command="{Binding ExportDiagnosticsCommand}"
+                    Content="{DynamicResource Vault.Diagnostics.Export}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>
