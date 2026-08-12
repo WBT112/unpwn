@@ -62,6 +62,26 @@ and saved before it appears recorded, so it remains visible after a controlled b
 restart. The action still requires the separate **Done** confirmation. Blocked, failed, unavailable,
 or deliberately accepted risks remain visible.
 
+For password-change/reset actions, generate the new credential from the current recovery step. After
+it has been attached to that action, the Recovery Browser assistant can show its lifecycle and offer
+**Reveal for 15 seconds**, **Copy for 30 seconds**, **Hide now**, **Mark as used**, and **Confirm
+credential works**. The secret is not stored in the checklist or browser session. Closing the Recovery
+Browser or locking the vault hides a revealed secret and requests cleanup of an unpwn-owned clipboard
+value. If automatic clipboard cleanup fails, follow the visible instruction and clear the clipboard
+manually.
+
+A button to insert the generated credential appears only when unpwn has an explicitly reviewed
+provider/action page contract. The insertion requires a fresh confirmation, checks the current origin
+and exact expected page structure before reading the credential, and stops for MFA, CAPTCHA,
+email-link handoff, an unexpected origin, or a changed page. It fills only the reviewed new-password
+and confirmation fields. It does **not** press Submit, confirm that the password works, or complete the
+recovery action.
+
+The initial Issue #95 insertion adapter is synthetic/development-only. Real provider and generic
+manual workflows therefore continue to use Reveal/Copy and manual entry until a separate
+provider/action adapter has been reviewed. unpwn never guesses password fields on an unsupported
+website.
+
 ### 8. Export new credentials
 
 New credentials may be generated and held temporarily in the encrypted vault. Export them to an established password manager when appropriate.
@@ -89,6 +109,8 @@ unpwn does not:
 - bypass MFA, CAPTCHA, identity verification, or ownership checks;
 - guarantee that a provider will restore access;
 - guarantee that an account is secure merely because a workflow was completed;
+- interpret browser navigation or credential insertion as proof that a provider accepted a change;
+- provide generic automatic password-field detection for unsupported providers;
 - replace a dedicated password manager.
 
 For the security model and known limitations, see [Security Policy](../SECURITY.md) and [Threat Model](THREAT_MODEL.md).
