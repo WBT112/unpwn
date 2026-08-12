@@ -75,30 +75,25 @@ public static class VaultPathPolicy
     }
 }
 
-public sealed class PlatformVaultPathProvider : IVaultPathProvider
+public sealed class PlatformVaultPathProvider(
+    string? dataRootOverride = null,
+    Func<string, bool>? pathExists = null,
+    Action<string>? ensureDirectory = null) : IVaultPathProvider
 {
     private const UnixFileMode PrivateDirectoryMode =
         UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
 
-    private readonly string _dataRoot;
-    private readonly Func<string, bool> _pathExists;
-    private readonly Action<string> _ensureDirectory;
-
-    public PlatformVaultPathProvider(
-        string? dataRootOverride = null,
-        Func<string, bool>? pathExists = null,
-        Action<string>? ensureDirectory = null)
-    {
-        _dataRoot = dataRootOverride is null
-            ? ResolveCurrentLocalDataRoot()
-            : Path.GetFullPath(dataRootOverride);
-        _pathExists = pathExists ?? (path => File.Exists(path) || Directory.Exists(path));
-        _ensureDirectory = ensureDirectory ?? EnsurePrivateDirectory;
-    }
+    private readonly string? _dataRootOverride = dataRootOverride is null
+        ? null
+        : Path.GetFullPath(dataRootOverride);
+    private readonly Func<string, bool> _pathExists =
+        pathExists ?? (path => File.Exists(path) || Directory.Exists(path));
+    private readonly Action<string> _ensureDirectory = ensureDirectory ?? EnsurePrivateDirectory;
 
     public string GetNextDefaultVaultPath()
     {
-        var applicationDirectory = Path.Combine(_dataRoot, "unpwn");
+        var dataRoot = _dataRootOverride ?? ResolveCurrentLocalDataRoot();
+        var applicationDirectory = Path.Combine(dataRoot, "unpwn");
         var vaultDirectory = Path.Combine(applicationDirectory, "vaults");
         _ensureDirectory(applicationDirectory);
         _ensureDirectory(vaultDirectory);
