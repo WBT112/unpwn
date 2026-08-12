@@ -1,185 +1,85 @@
-# Generated Credentials and Secure Export Core
+# Generated Credentials and Secure Export
 
 ## Purpose
 
-unpwn may generate a new credential while guiding an account recovery. The generated credential is temporary recovery data stored in the encrypted Recovery Vault until the user exports it to an established password manager or deliberately deletes it.
+unpwn may generate a new credential while guiding account recovery. Generated credentials are temporary recovery data held in the encrypted Recovery Vault until they are moved to an established password manager or deliberately deleted.
 
 This capability never accepts, imports, or stores an old password.
 
-## Generation
+## Generation and secret lifetime
 
-`ICredentialPasswordGenerator` returns a temporary UTF-8 byte buffer generated with `RandomNumberGenerator`. The default policy creates 24 ASCII characters and includes lowercase, uppercase, digits, and symbols. Every selected character class is represented before the remaining positions are filled and the complete result is cryptographically shuffled.
+`ICredentialPasswordGenerator` produces a temporary UTF-8 buffer using cryptographically secure randomness. The default policy creates 24 ASCII characters and includes the selected lowercase, uppercase, digit, and symbol classes before cryptographically shuffling the complete result.
 
-The public generated-credential repository API contains no string parameter for entering an existing password. A generated secret is returned only through `CredentialSecretLease`, which zeroes its byte buffer on disposal.
+The generated-credential repository exposes no API for storing an existing password. Plaintext is returned only through a disposable `CredentialSecretLease`, whose byte buffer is zeroed on disposal.
 
-## Encrypted persistence
+Managed UI strings cannot be deterministically zeroed by .NET. Therefore plaintext strings are created only for deliberate short-lived reveal/clipboard operations, are never logged or persisted, and references are dropped when presentation state is cleared.
 
-Each generated credential is stored as an authenticated encrypted `generated-credential` record in the Recovery Vault. The encrypted record contains:
+## Encrypted persistence and stable references
 
-- opaque credential and account identifiers
-- lifecycle timestamps and revision
-- structured audit events with opaque operation identifiers
-- the generated UTF-8 secret while it is retained
+Each generated credential is stored as an authenticated encrypted `generated-credential` record. The record contains opaque credential/account identifiers, lifecycle metadata, structured audit events, and the generated UTF-8 secret while it is retained.
 
-The secret is not placed in account notes, workflow labels, audit summaries, logs, notifications, or diagnostics.
-
-## Stable reference
-
-Workflow state refers to a generated credential only through `GeneratedCredentialReference`:
+Recovery execution refers to the secret only through `GeneratedCredentialReference`:
 
 ```text
 CredentialId + AccountId
 ```
 
-The reference contains no secret value. A caller must hold an unlocked vault and explicitly request a temporary secret lease to reveal or use the credential.
+The reference contains no secret. Reading plaintext requires an unlocked vault and an explicit temporary lease.
 
-The guided Recovery Browser resolves the attached reference from the current canonical
-`account-execution` action. It does not pick a credential merely because it is the newest record for
-an account. Only this opaque reference is shared with recovery state.
+The Recovery Browser resolves the reference attached to the current canonical recovery action. It must not select a credential merely because it is the newest record for an account.
 
 ## Lifecycle
 
-The encrypted metadata records:
+Credential metadata tracks generation, use, confirmation, export, password-manager import confirmation/postponement, plaintext-export cleanup confirmation, deletion, revision, and structured audit events.
 
-- `GeneratedAt`
-- `UsedAt`
-- `ConfirmedAt`
-- `ExportedAt`
-- `ExportCount`
-- `PasswordManagerImportConfirmedAt`
-- whether import confirmation was deliberately postponed
-- `PlaintextExportCleanupConfirmedAt`
-- `DeletedAt`
-- revision
-- structured audit events
+Lifecycle mutations use opaque operation IDs and are idempotent where specified. Confirmation requires prior recorded use. Deleted credentials cannot be revealed or mutated as active credentials.
 
-Lifecycle operations require an opaque operation ID. Repeating the same operation ID for the same event is idempotent and does not create duplicate audit entries or export counts.
+File creation, password-manager import confirmation, and plaintext cleanup are deliberately separate states. A repeated deliberate export reopens the relevant handoff/cleanup state rather than pretending prior cleanup still applies.
 
-Confirmation requires a prior recorded use. Deleted credentials cannot be revealed or changed.
+## Desktop and Recovery Browser presentation
 
-The password-manager handoff is intentionally separate from file creation. A user may confirm or
-postpone the import, revoke an incorrect import confirmation, and independently confirm cleanup of
-the plaintext export. A deliberate repeat export reopens both handoff and cleanup state.
+The normal credential UI keeps secrets concealed and offers explicit short-lived reveal and owned clipboard copy. Reveal lasts 15 seconds and clipboard ownership lasts 30 seconds. Vault lock and relevant navigation/session boundaries clear materialized presentation state. Clipboard cleanup verifies ownership before removing content so later user clipboard data is not erased accidentally.
 
-## Desktop presentation
+When an active password-change/reset action has an attached credential, the Recovery Browser assistant reuses the same repository/lifecycle services for Reveal, Hide, Copy, Mark used, and Confirm working. Browser close clears materialized reveal state and requests owned-clipboard cleanup. Browser close itself does not mark the credential used or confirmed.
 
-The desktop credential screen supports generation for a selected account and opaque attachment to
-password-change or password-reset workflow actions. Lists always show a concealed placeholder, not
-the secret. Reveal lasts 15 seconds and clipboard ownership lasts 30 seconds. Navigation, vault
-locking, and language changes clear both presentation states. Clipboard cleanup first verifies a
-cryptographic hash of the current clipboard text so later user content is not erased.
-If automatic clipboard cleanup cannot be verified, the UI keeps the failure visible and instructs
-the user to clear the clipboard manually.
+Detailed browser/session/origin rules live in [Recovery Browser Security Boundary](RECOVERY_BROWSER.md) rather than being duplicated here.
 
-For an active password-change/reset action, the managed Recovery Browser also exposes the attached
-credential beside the provider page. The existing Generate action remains part of the canonical
-workflow screen; after attachment, the in-context panel provides deliberate Reveal, Hide, Copy,
-Mark-used, and Confirm-working controls using the same repository and clipboard services. Closing the
-Recovery Browser or locking the vault removes any revealed/materialized secret and requests owned
-clipboard cleanup. Browser close itself does not mark the credential as used or working.
+## Provider-reviewed insertion
 
-Managed UI strings cannot be deterministically zeroed by .NET. They are therefore created only for
-an explicit temporary reveal or clipboard operation, are never logged or persisted, and references
-are dropped when the presentation state is cleared.
+Automatic field insertion is not a generic password-form feature. Manual Reveal/Copy remains the safe default.
 
-## Bounded browser assistance
+A repository-controlled insertion contract must match the exact provider, recovery action, content mode, expected origins, page evidence, and exact new-password/confirmation selectors. Unsupported/generic providers do not receive DOM insertion merely because a page contains password-like inputs.
 
-Automatic field insertion is not a generic password-form feature. `RepositoryRecoveryBrowserCredentialAssistanceCatalog`
-returns an insertion contract only for an explicitly repository-reviewed provider/action adapter.
-The contract fixes the provider/action identity, browser content mode, expected origins, page evidence,
-and exact new-password/confirmation selectors. Unsupported/generic providers do not receive DOM
-insertion merely because a page contains password-like inputs.
+Before any secret lease is opened, the current origin/page contract is inspected. MFA, CAPTCHA, email-link handoff, unexpected origin, missing/duplicated fields, or changed content stops assistance. A ready attempt then obtains a short-lived secret lease, immediately re-checks the exact contract, and fills only the reviewed fields.
 
-Issue #95 initially ships only a loopback synthetic-test adapter. Production provider workflows
-continue to use Reveal/Copy/manual entry until a separate provider/action adapter is reviewed and
-added.
+The managed insertion path does not submit the provider form. Successful insertion may record the credential as `Used`; it never records it as `Confirmed` and never completes the recovery action.
 
-A bounded insertion is deliberately ordered so the secret is obtained late:
+The repository currently exposes automatic insertion only for the explicit synthetic-test contract. Real-provider and generic/manual workflows remain Reveal/Copy/manual entry unless a separate provider/action adapter is reviewed.
 
-1. the user explicitly authorizes that insertion attempt;
-2. unpwn inspects current origin/page evidence without reading the credential;
-3. wrong origin, changed controls, MFA, CAPTCHA, or email-link handoff stops without a vault secret
-   lease;
-4. only a ready inspection opens a temporary `CredentialSecretLease`;
-5. the browser re-checks the exact repository-controlled selectors immediately before insertion;
-6. the new and confirmation fields are populated, but the form is not submitted;
-7. successful insertion is separately recorded as credential `Used`; it is never equivalent to
-   `Confirmed` and never completes the recovery action.
+## Export boundary
 
-Browser-script results contain only stable non-secret status codes. Exception text from a script
-execution is not copied into logs/diagnostics because the transient insertion script contains the
-credential while executing.
+The export core supports generic CSV and Bitwarden-compatible login CSV for explicitly selected generated-credential references.
+
+Plaintext export requires an explicit acknowledgement and destination. The parent directory must exist and an existing destination is not overwritten.
+
+The write lifecycle is:
+
+1. validate selected metadata and secret leases;
+2. create a temporary file in the destination directory;
+3. write and flush the complete export;
+4. atomically move it to the final destination without overwrite;
+5. update encrypted credential lifecycle state.
+
+The final move is the plaintext-file commit boundary. If lifecycle persistence fails after that move, unpwn reports that a plaintext file exists and still requires cleanup; it must not claim the export never happened.
+
+CSV output is deterministic UTF-8, culture-independent, correctly quoted, and writes plaintext only from temporary secret leases. Machine-readable headers are stable and not localized.
 
 ## Deletion boundary
 
-Deleting a generated credential:
-
-- zeroes the current in-memory secret buffer
-- replaces the encrypted credential record with metadata that contains no secret
-- retains the structured deletion audit event
-
-This is temporary-record cleanup, not a forensic erasure guarantee. SQLite pages, WAL files, filesystem snapshots, storage-device behavior, and backups may retain prior ciphertext. The UI must not claim otherwise.
-
-## Export formats
-
-The core export service supports:
-
-- generic CSV
-- Bitwarden-compatible login CSV
-
-Only explicitly selected credential references are loaded and written. Export requires explicit acknowledgement that the destination file is plaintext and may be exposed by synchronized, shared, network, or backed-up locations.
-
-The destination must be selected explicitly, its parent directory must already exist, and an existing destination is never overwritten.
-
-## Export write behavior
-
-Exports use a temporary file in the destination directory:
-
-1. validate all selected metadata and secret leases
-2. create a new temporary file
-3. write and flush the complete selected export
-4. atomically move the temporary file to the final destination without overwrite
-5. atomically mark all selected encrypted credential records as exported
-
-If file creation succeeds but the encrypted lifecycle update fails, the result explicitly reports `StateUpdateFailedAfterFileCreation`. It never claims that no plaintext file exists.
-Moving the completed temporary file to its final destination is the cancellation commit boundary.
-Once that move succeeds, the lifecycle update is attempted without caller cancellation; any failure
-is still reported with `FileCreated` set so the user can clean up the plaintext file.
-
-A retry with an operation ID that is already recorded as exported does not create another file. A new operation ID represents a deliberate repeated export and increments the export count after success.
-
-## CSV handling
-
-The CSV writer:
-
-- emits deterministic UTF-8 without relying on the selected GUI culture
-- quotes commas, quotes, and line breaks
-- writes the secret from the temporary byte lease rather than adding it to user notes or diagnostics
-- contains only selected credential records
-
-Machine-readable headers are stable and not localized.
+Deleting a generated credential removes revealable plaintext from the active encrypted record and retains only non-secret lifecycle/audit metadata as designed. This is application-level cleanup, not a forensic-erasure guarantee: prior ciphertext may remain in SQLite pages/WAL, filesystem snapshots, backups, or storage-device history.
 
 ## Testing
 
-Tests cover:
+Tests cover generation policy, encrypted persistence/reopen, lifecycle ordering/idempotency, deletion, reveal/clipboard timers, lock/session clearing, clipboard cleanup failure, export commit boundaries, password-manager handoff, selected-only CSV output, existing-destination protection, missing-credential failure, synthetic reviewed browser insertion, late vault retrieval, browser stop conditions, no automatic submission/completion, and secret-artifact scanning.
 
-- generation policy and selected character classes
-- encrypted persistence and reopening
-- lifecycle ordering and idempotent operations
-- deletion and removal of revealable secret data
-- atomic export-state rollback for multiple credentials
-- explicit plaintext acknowledgement
-- selected-only generic CSV export
-- Bitwarden CSV output
-- existing destination protection
-- missing credentials preventing partial output
-- file-created/state-update-failed reporting
-- repeated operation handling
-- deliberate reveal and presentation clearing
-- owned clipboard countdown, cleanup, and visible cleanup failure
-- vault-lock clearing of reveal/clipboard state
-- synthetic reviewed browser insertion without form submission
-- wrong-origin, changed-page, MFA, CAPTCHA, and email-link stop conditions
-- rejection of generic production DOM insertion
-
-The credential UI provides reveal and clipboard timers, destination warnings, password-manager import confirmation, and post-import cleanup prompts. Completion preflight reads only credential metadata and reports separate counts for unexported credentials, unconfirmed password-manager imports, retained vault credentials, and pending plaintext cleanup; it never reads credential secret material.
+See [Vault Security](VAULT_SECURITY.md), [Recovery Browser Security Boundary](RECOVERY_BROWSER.md), and [Testing Strategy](TESTING.md) for their canonical boundaries.
