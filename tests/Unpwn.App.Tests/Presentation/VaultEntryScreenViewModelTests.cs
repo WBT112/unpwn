@@ -34,12 +34,102 @@ public sealed class VaultEntryScreenViewModelTests
     }
 
     [Fact]
-    public async Task CreatingVaultValidatesPasswordAndClearsItAfterUse()
+    public async Task ReturningUserGetsNewestExistingVaultAsPrimaryAction()
+    {
+        var older = Path.GetFullPath("older-vault.db");
+        var newest = Path.GetFullPath("newest-vault.db");
+        var lifecycle = new TestVaultLifecycleService
+        {
+            RecentVaults =
+            [
+                new RecentVaultReference(newest, "Newest recovery", DateTimeOffset.UnixEpoch.AddHours(2)),
+                new RecentVaultReference(older, "Older recovery", DateTimeOffset.UnixEpoch.AddHours(1)),
+            ],
+        };
+        var pathProvider = new TestVaultPathProvider(existingPaths: [older, newest]);
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            vaultPathProvider: pathProvider);
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+
+        Assert.True(viewModel.IsVaultChoiceVisible);
+        Assert.True(viewModel.HasPrimaryRecentVault);
+        Assert.Equal("Newest recovery", viewModel.PrimaryVaultDisplayName);
+        Assert.Equal("Open last vault", viewModel.PrimaryVaultActionText);
+        Assert.DoesNotContain(Path.GetDirectoryName(newest)!, viewModel.PrimaryVaultPathContext, StringComparison.Ordinal);
+
+        var outcome = await viewModel.PrimaryVaultActionCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.True(viewModel.IsOpenVaultVisible);
+        Assert.Equal(newest, viewModel.OpenPath);
+        Assert.Equal(0, lifecycle.VaultOperationCalls);
+    }
+
+    [Fact]
+    public async Task FirstRunPrimaryActionOpensCreateWithDefaultPath()
+    {
+        var defaultPath = Path.GetFullPath("safe-default-vault.db");
+        var lifecycle = new TestVaultLifecycleService();
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            vaultPathProvider: new TestVaultPathProvider(defaultPath));
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+
+        Assert.False(viewModel.HasPrimaryRecentVault);
+        Assert.Equal("Create a new vault", viewModel.PrimaryVaultActionText);
+
+        var outcome = await viewModel.PrimaryVaultActionCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.True(viewModel.IsCreateVaultVisible);
+        Assert.Equal(defaultPath, viewModel.CreatePath);
+        Assert.Equal(0, lifecycle.VaultOperationCalls);
+    }
+
+    [Fact]
+    public async Task StaleRecentVaultIsNotOfferedAndNeverOpenedOrRecreatedAtStalePath()
+    {
+        var stalePath = Path.GetFullPath("deleted-vault.db");
+        var defaultPath = Path.GetFullPath("new-default-vault.db");
+        var lifecycle = new TestVaultLifecycleService
+        {
+            RecentVaults =
+            [
+                new RecentVaultReference(stalePath, "Deleted recovery", DateTimeOffset.UnixEpoch),
+            ],
+        };
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            vaultPathProvider: new TestVaultPathProvider(defaultPath));
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+
+        Assert.False(viewModel.HasPrimaryRecentVault);
+        Assert.Empty(viewModel.RecentVaults);
+
+        await viewModel.PrimaryVaultActionCommand.ExecuteAsync();
+
+        Assert.True(viewModel.IsCreateVaultVisible);
+        Assert.Equal(defaultPath, viewModel.CreatePath);
+        Assert.NotEqual(stalePath, viewModel.CreatePath);
+        Assert.Equal(0, lifecycle.VaultOperationCalls);
+    }
+
+    [Fact]
+    public async Task CreatingVaultClearsPasswordAndRequestsOverviewNavigation()
     {
         const string password = "UNPWN_TEST_SECRET_long-vault-password";
         var lifecycle = new TestVaultLifecycleService();
         var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
         var viewModel = CreateViewModel(lifecycle, wizard);
+        var continueRequested = false;
+        viewModel.ContinueRequested += (_, _) => continueRequested = true;
         viewModel.BeginCommand.Execute(null);
         viewModel.TrustedDeviceYesCommand.Execute(null);
         viewModel.ShowCreateVaultCommand.Execute(null);
@@ -65,6 +155,75 @@ public sealed class VaultEntryScreenViewModelTests
         Assert.Equal(string.Empty, viewModel.CreatePassword);
         Assert.Equal(string.Empty, viewModel.ConfirmCreatePassword);
         Assert.True(viewModel.IsUnlockedVaultVisible);
+        Assert.True(continueRequested);
+    }
+
+    [Fact]
+    public async Task OpeningVaultClearsPasswordAndRequestsOverviewNavigation()
+    {
+        const string password = "UNPWN_TEST_SECRET_existing-vault-password";
+        var vaultPath = Path.GetFullPath("existing-vault.db");
+        var lifecycle = new TestVaultLifecycleService();
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            vaultPathProvider: new TestVaultPathProvider(existingPaths: [vaultPath]));
+        var continueRequested = false;
+        viewModel.ContinueRequested += (_, _) => continueRequested = true;
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+        viewModel.ShowOpenVaultCommand.Execute(null);
+        viewModel.OpenPath = vaultPath;
+        viewModel.OpenPassword = password;
+
+        var outcome = await viewModel.OpenVaultCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+        Assert.True(continueRequested);
+    }
+
+    [Fact]
+    public async Task UnlockingCurrentVaultClearsPasswordAndRequestsOverviewNavigation()
+    {
+        const string password = "UNPWN_TEST_SECRET_locked-vault-password";
+        var vaultPath = Path.GetFullPath("locked-vault.db");
+        var lifecycle = new TestVaultLifecycleService();
+        lifecycle.SetLocked(vaultPath, "Locked recovery");
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch));
+        var continueRequested = false;
+        viewModel.ContinueRequested += (_, _) => continueRequested = true;
+        viewModel.OpenPassword = password;
+
+        var outcome = await viewModel.UnlockCurrentVaultCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+        Assert.True(continueRequested);
+    }
+
+    [Fact]
+    public async Task TrustedDeviceReassessmentLocksVaultBeforeRequestingNewDecision()
+    {
+        var vaultPath = Path.GetFullPath("open-vault.db");
+        var lifecycle = new TestVaultLifecycleService();
+        lifecycle.SetUnlocked(vaultPath, "Open recovery");
+        var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
+        var viewModel = CreateViewModel(lifecycle, wizard);
+
+        var outcome = await viewModel.ReassessTrustedDeviceCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(1, lifecycle.LockCalls);
+        Assert.True(viewModel.IsTrustedDeviceCheckVisible);
+        Assert.Equal(TrustedDeviceDecision.NotAnswered, wizard.Current.TrustedDeviceDecision);
+
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+
+        Assert.True(viewModel.IsLockedVaultVisible);
+        Assert.Equal(TrustedDeviceDecision.Trusted, wizard.Current.TrustedDeviceDecision);
     }
 
     [Fact]
@@ -193,14 +352,39 @@ public sealed class VaultEntryScreenViewModelTests
         RecoveryWizardSessionService wizard,
         ResourceLocalizationService? localization = null,
         TimeSpan? passwordRevealDuration = null,
-        IPresentationDelay? passwordRevealDelay = null) =>
+        IPresentationDelay? passwordRevealDelay = null,
+        IVaultPathProvider? vaultPathProvider = null) =>
         new(
             lifecycle,
             wizard,
             new TestConfirmationDialogService(),
             localization ?? CreateLocalization(),
             passwordRevealDuration,
-            passwordRevealDelay);
+            passwordRevealDelay,
+            vaultPathProvider ?? new TestVaultPathProvider());
+
+    private sealed class TestVaultPathProvider : IVaultPathProvider
+    {
+        private readonly HashSet<string> _existingPaths;
+
+        public TestVaultPathProvider(
+            string? defaultPath = null,
+            IEnumerable<string>? existingPaths = null)
+        {
+            DefaultPath = defaultPath ?? Path.GetFullPath("synthetic-default-vault.db");
+            _existingPaths = new HashSet<string>(
+                existingPaths ?? [],
+                OperatingSystem.IsWindows()
+                    ? StringComparer.OrdinalIgnoreCase
+                    : StringComparer.Ordinal);
+        }
+
+        public string DefaultPath { get; }
+
+        public string GetNextDefaultVaultPath() => DefaultPath;
+
+        public bool IsExistingVaultPath(string path) => _existingPaths.Contains(path);
+    }
 
     private sealed class TestPresentationDelay : IPresentationDelay
     {
@@ -238,13 +422,15 @@ public sealed class VaultEntryScreenViewModelTests
 
         public int VaultOperationCalls { get; private set; }
 
+        public int LockCalls { get; private set; }
+
         public string? LastPassword { get; private set; }
 
         public ShellContext Current { get; private set; } = ShellContext.Locked;
 
         public VaultLifecycleSnapshot Snapshot { get; private set; } = VaultLifecycleSnapshot.Empty;
 
-        public IReadOnlyList<RecentVaultReference> RecentVaults { get; } = [];
+        public IReadOnlyList<RecentVaultReference> RecentVaults { get; set; } = [];
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -260,7 +446,9 @@ public sealed class VaultEntryScreenViewModelTests
 
         public Task<VaultOperationResult> UnlockCurrentAsync(
             string vaultPassword,
-            CancellationToken cancellationToken) => CompleteVaultOperation("synthetic-vault.db", vaultPassword);
+            CancellationToken cancellationToken) => CompleteVaultOperation(
+                Snapshot.CurrentPath ?? "synthetic-vault.db",
+                vaultPassword);
 
         public Task<VaultOperationResult> ChangePasswordAsync(
             string currentVaultPassword,
@@ -274,8 +462,13 @@ public sealed class VaultEntryScreenViewModelTests
 
         public Task LockAsync(CancellationToken cancellationToken)
         {
+            LockCalls++;
             Current = ShellContext.Locked;
-            Snapshot = Snapshot with { Status = VaultLifecycleStatus.Locked };
+            Snapshot = Snapshot with
+            {
+                Status = VaultLifecycleStatus.Locked,
+                LastLockReason = VaultLockReason.User,
+            };
             ContextChanged?.Invoke(this, EventArgs.Empty);
             VaultStateChanged?.Invoke(this, EventArgs.Empty);
             return Task.CompletedTask;
@@ -283,7 +476,19 @@ public sealed class VaultEntryScreenViewModelTests
 
         public Task RemoveRecentReferenceAsync(
             string path,
-            CancellationToken cancellationToken) => Task.CompletedTask;
+            CancellationToken cancellationToken)
+        {
+            RecentVaults = RecentVaults
+                .Where(reference => !string.Equals(
+                    reference.Path,
+                    path,
+                    OperatingSystem.IsWindows()
+                        ? StringComparison.OrdinalIgnoreCase
+                        : StringComparison.Ordinal))
+                .ToArray();
+            VaultStateChanged?.Invoke(this, EventArgs.Empty);
+            return Task.CompletedTask;
+        }
 
         public Task<VaultOperationResult> DeleteVaultFileAsync(
             string path,
@@ -296,6 +501,30 @@ public sealed class VaultEntryScreenViewModelTests
         public Task CheckInactivityAsync(
             DateTimeOffset occurredAt,
             CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public void SetLocked(string path, string displayName)
+        {
+            Snapshot = new VaultLifecycleSnapshot(
+                VaultLifecycleStatus.Locked,
+                path,
+                displayName,
+                VaultLockReason.User,
+                IsInactivityWarningVisible: false,
+                InactivityLocksAt: null);
+            Current = ShellContext.Locked;
+        }
+
+        public void SetUnlocked(string path, string displayName)
+        {
+            Snapshot = new VaultLifecycleSnapshot(
+                VaultLifecycleStatus.Unlocked,
+                path,
+                displayName,
+                VaultLockReason.None,
+                IsInactivityWarningVisible: false,
+                InactivityLocksAt: null);
+            Current = ShellContext.Unlocked(displayName);
+        }
 
         public void Dispose()
         {
