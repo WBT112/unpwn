@@ -21,6 +21,23 @@ public sealed class RecoveryBrowserActionAutomationContractTests
         contract.Validate();
     }
 
+    [Fact]
+    public void AutomatedProviderMutationContractCanBeRepresented()
+    {
+        var contract = new RecoveryBrowserActionAutomationContract(
+            "example/invalidate-sessions/v1",
+            "example",
+            "invalidate-sessions",
+            AutomationSupport.Automated,
+            RecoveryBrowserContentMode.Recovery,
+            ["https://accounts.example.com"],
+            RecoveryBrowserAutomationEffect.ProviderMutation);
+
+        contract.Validate();
+        Assert.Equal(AutomationSupport.Automated, contract.Support);
+        Assert.Equal(RecoveryBrowserAutomationEffect.ProviderMutation, contract.Effect);
+    }
+
     [Theory]
     [InlineData(AutomationSupport.None)]
     [InlineData(AutomationSupport.Navigation)]
