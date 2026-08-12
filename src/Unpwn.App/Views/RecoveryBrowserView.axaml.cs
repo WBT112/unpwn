@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml.MarkupExtensions;
-using Avalonia.VisualTree;
 using Unpwn.App.Services;
 
 namespace Unpwn.App.Views;
@@ -94,7 +93,7 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
             _session!.ProfileDataPath);
         var hostAccepted = Start(hostRequest);
         if (hostAccepted &&
-            (this.GetVisualRoot() is null || await WaitForPlatformActivationAsync(cancellationToken)))
+            (TopLevel.GetTopLevel(this) is null || await WaitForPlatformActivationAsync(cancellationToken)))
         {
             return true;
         }
