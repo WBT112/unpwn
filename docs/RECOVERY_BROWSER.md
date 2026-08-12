@@ -2,220 +2,131 @@
 
 ## Purpose
 
-The Recovery Browser is an unpwn-controlled embedded provider work surface. It uses Avalonia
-`NativeWebView`, backed by WebView2 on Windows and WPE WebKit on Linux. It is not a general browser,
-a custom engine, a Playwright replacement, or a source of canonical recovery truth.
+The Recovery Browser is an unpwn-controlled embedded provider work surface. It uses Avalonia `NativeWebView`, backed by WebView2 on Windows and WPE WebKit on Linux.
 
-Issue #92 established the host and its fail-closed security boundary. Issue #93 added account-bound
-reuse, cleanup, orphan detection, and crash recovery. Issue #94 integrates that lifecycle into the
-guided recovery workspace. Issue #95 adds in-context generated-credential handoff and a bounded,
-repository-reviewed assistance contract without changing the recovery truth boundary.
+It is not a general-purpose browser and it is not a source of canonical recovery truth. Its job is to keep the provider website, current recovery guidance, explicit checklist, and credential handoff in one coherent workspace while preserving the existing recovery state machine.
 
-## Dependency and truth boundary
+## Truth and dependency boundary
 
-The platform-neutral `RecoveryBrowserSecurityBoundary` in `Unpwn.Application` consumes the existing
-`RecoveryNavigationHandoff`. It accepts only destinations whose origin appears in the handoff's exact
-reviewed origin set. It contains no Avalonia, WebView2, WebKit, vault, or recovery-transition code.
+The platform-neutral `RecoveryBrowserSecurityBoundary` consumes an already validated `RecoveryNavigationHandoff` and accepts only destinations within its exact reviewed origin set. Browser-host implementation details remain outside `Unpwn.Core`.
 
-`Unpwn.App` owns:
+`Unpwn.App` owns the embedded host, platform hardening, localized browser chrome, temporary session lifecycle, and presentation-only credential assistance.
 
-- the `IRecoveryBrowserHost` presentation contract;
-- the `AvaloniaRecoveryBrowserHost` adapter around `NativeWebView`;
-- platform hardening adapters for WebView2 and WPE WebKit;
-- localized Recovery Browser chrome and visible security events;
-- the presentation-only credential handoff and repository-controlled browser-assistance catalog.
-
-Navigation-started, navigation-completed, redirect, popup, download, permission, TLS, close, field
-insertion, and form-state events update only transient browser/presentation state. They cannot
-complete an action, acknowledge a completion criterion, confirm that a credential works, change risk,
-or advance the wizard. Only the existing explicit canonical recovery and credential-lifecycle
-operations may do that.
+Navigation, redirects, popups, downloads, permissions, TLS events, browser close, field insertion, and provider form state update only transient browser/presentation state. They cannot complete an action, acknowledge a criterion, confirm that a credential works, change risk, or advance the wizard. Only explicit canonical recovery and credential-lifecycle operations may change those states.
 
 ## Guided workspace
 
-For a reviewed navigable action, the normal guided path shows the provider page and the current
-assistant panel side by side. The assistant remains the only place where the user can explicitly
-confirm repository-controlled completion criteria, choose **Done**, or record that work cannot
-continue. The external operating-system browser remains a deliberately labelled fallback; embedded
-host failure never causes a silent downgrade.
+For a reviewed navigable action, the normal guided path presents the provider page and assistant panel together. The assistant remains the place where the user confirms completion criteria, chooses **Done**, or records that work cannot continue.
 
-Each criterion checkmark is a canonical execution transition. It stores only the stable criterion
-resource key in the encrypted `account-execution` record and updates the UI only after the atomic
-execution/dashboard write succeeds. It stores no provider URL, DOM, page text, screenshot, response,
-cookie, or inferred evidence. Checkmarks therefore survive controlled browser close and restart,
-while the action itself stays in progress until the separate explicit **Done** confirmation succeeds.
+The external operating-system browser is an explicitly labelled fallback. Embedded-host failure must never silently downgrade to the external browser.
 
-The same account can navigate to a subsequent reviewed action handoff while retaining its isolated
-profile. The host replaces its origin boundary only from that new validated handoff. A request for a
-different account remains blocked by the session lifecycle until cleanup completes.
-
-## Generated credential handoff
-
-Password-change and password-reset actions continue to generate credentials through the canonical
-`IGeneratedCredentialRepository` and attach only a `GeneratedCredentialReference` to the canonical
-execution action. When an attached credential exists, the Recovery Browser assistant panel can expose
-that same credential in context without creating a parallel credential model.
-
-The in-context presentation follows the existing credential safeguards:
-
-- reveal is deliberate and expires after 15 seconds;
-- copy uses the owned clipboard path and expires after 30 seconds;
-- the UI can explicitly mark the credential as used and later confirm that it works;
-- browser close and vault lock immediately drop any revealed string and request owned-clipboard
-  cleanup;
-- a clipboard cleanup failure remains visible and instructs the user to clear it manually;
-- no plaintext credential enters execution notes, reasons, browser-session metadata, URLs,
-  diagnostics, logs, screenshots, traces, accessibility labels, or persisted UI state.
-
-The presentation resolves the credential reference from the current canonical account-execution
-record. It never chooses a credential merely because it is the newest record for an account.
-
-Closing the browser does not mark a credential as used or working. A credential becomes `Used` only
-through an explicit lifecycle operation. It becomes `Confirmed` only through the existing explicit
-confirmation after use.
-
-## Bounded provider-reviewed insertion
-
-Assisted field insertion is an optional layer above manual Reveal/Copy. It is not generic DOM
-automation and is unavailable unless a repository-controlled adapter matches the exact provider,
-action, content mode, expected origins, and page evidence.
-
-The first shipped adapter is deliberately **synthetic-test only**. No live provider gets automatic
-field insertion from Issue #95 merely because its page contains password-like inputs. Generic and
-unsupported-provider workflows therefore remain manual Reveal/Copy unless a separate reviewed
-provider/action adapter is added later.
-
-A reviewed insertion attempt follows this order:
-
-1. show a fresh visible authorization describing the credential insertion;
-2. inspect the current browser origin and exact repository-controlled page contract **without reading
-   the credential**;
-3. stop for MFA, CAPTCHA, email-link handoff, wrong origin, missing/duplicated fields, or changed page
-   structure;
-4. only after the inspection is ready, obtain a temporary `CredentialSecretLease` from the unlocked
-   vault;
-5. immediately re-check the exact selectors and set only the reviewed new-password and confirmation
-   fields;
-6. dispatch normal input/change events so the provider UI can observe the edit;
-7. never press the submit button and never translate insertion into recovery completion;
-8. after a successful insertion, explicitly record the credential as `Used` through the canonical
-   credential repository. Whether it actually works still requires user/provider verification.
-
-The browser adapter returns only small non-secret result codes. Script exceptions are deliberately
-collapsed to non-secret failure results rather than copied into diagnostics because an insertion
-script necessarily contains the transient credential while it is executing.
+Each checklist checkmark is persisted through the canonical encrypted account-execution state before the UI reports it as recorded. No provider DOM, screenshot, page text, response body, cookie, or URL is stored as proof. Browser close/restart therefore preserves only explicit unpwn state, not inferred provider success.
 
 ## Navigation policy
 
-Production recovery content requires absolute HTTPS URLs without embedded user information. Every
-top-level navigation and redirect must match one exact expected origin. Subdomains are not inherited.
-The host blocks file, data, JavaScript, custom, and external-application schemes. An explicit
-`SyntheticTest` mode permits HTTP only on loopback so deterministic local provider pages can be
-rendered without weakening production requests.
+Production provider content requires absolute HTTPS destinations without embedded user information. Every top-level navigation/redirect must remain within the exact expected-origin set. Subdomains are not implicitly trusted.
 
-New-window and popup requests are always handled and denied. The host does not convert them into
-same-tab navigation because that would silently change the reviewed navigation semantics. Downloads
-and website permissions are denied by default. TLS errors and client-certificate requests are not
-overridden. A platform that cannot install its required security controls is reported unavailable and
-navigation is stopped.
+The host blocks file, data, JavaScript, custom, and external-application schemes. Popups/new windows are denied rather than silently converted into same-tab navigation. Downloads and website permissions are denied by default. TLS errors and client-certificate requests are not overridden.
 
-The visible chrome shows only the normalized origin, never a path, query, fragment, reset token, or
-credential-bearing URL. Browser security events use stable codes mapped to localized UI resources.
+An explicit `SyntheticTest` content mode permits HTTP only on loopback for deterministic local test pages. This test boundary must not weaken production requests.
 
-## Profile boundary
+Visible browser chrome shows the normalized origin rather than a full path/query/fragment so reset tokens or credential-bearing URLs are not exposed unnecessarily.
 
-Every host request receives an opaque profile path below:
+## Profile and session isolation
 
-```text
-<LocalApplicationData>/unpwn/recovery-browser/profiles/<opaque-id>
-```
+The Recovery Browser never points at or imports a normal Chrome, Edge, Firefox, or other user profile. Each session uses an opaque unpwn-owned profile path below the local Recovery Browser data root. Profile/session identifiers contain no provider, account name, email address, URL, or credential.
 
-The host rejects paths outside that root. It never points at or imports Chrome, Edge, Firefox, or
-another ordinary browser profile. Profile identifiers contain no provider, account, email address, or
-other user data. The path is temporary operational browser state, not a vault record or recovery
-status.
+`RecoveryBrowserSessionLifecycle` owns one active browser profile at a time:
 
-## Session lifecycle
+- the account association exists only in process memory;
+- the same recovery account may reuse its profile across multiple actions;
+- a different account cannot inherit that authenticated state;
+- account switching remains blocked until cleanup succeeds;
+- no authenticated provider session is automatically reconstructed after application restart.
 
-`RecoveryBrowserSessionLifecycle` owns one active browser profile at a time. The account identifier
-is retained only in process memory. The on-disk directory and marker contain an independent opaque
-session identifier plus the static lifecycle state `active` or `cleanup-pending`; they contain no
-account, provider, email address, URL, cookie, credential, or recovery-state value.
+Browser cookies/session storage are temporary operational state, not Recovery Vault records and not canonical recovery evidence.
 
-The same account may reuse its active profile across multiple recovery actions. A different account
-cannot start until the active session has been cleaned successfully. Suspension is deliberately not
-persisted: an application restart never reconstructs the account association and never resumes an
-authenticated provider session automatically.
+## Clean close and abnormal termination
 
-An explicit clean close runs in this order:
+A controlled close runs conservatively:
 
-1. persist already explicit unpwn confirmations through their canonical services;
-2. clear any materialized in-context credential presentation and owned clipboard state;
-3. mark browser cleanup pending without storing account data;
-4. ask the platform engine to clear all browsing data while it is still alive;
-5. stop navigation, detach the native view, and wait for the adapter to release profile resources;
-6. recursively delete the complete dedicated profile, including cache and browser-created temporary
-   or download files;
-7. report success only when the directory no longer exists.
+1. explicit unpwn confirmations are already persisted through canonical services;
+2. materialized credential presentation and owned clipboard state are cleared;
+3. the browser session is marked cleanup-pending without storing account data;
+4. the platform engine is asked to clear browsing data;
+5. navigation/native browser resources are stopped and released;
+6. the complete dedicated profile directory is deleted;
+7. cleanup is reported successful only when the owned profile no longer remains.
 
-WebView2 uses its profile browsing-data API. WPE WebKit uses its website-data manager to clear all
-website-data types. Directory deletion is still authoritative: if the engine-level clear fails but
-release and deletion succeed, no profile residue remains. If resource release or deletion fails, the
-failure stays visible and retryable; deletion is never raced against a live adapter.
+Resource-release or deletion failure is visible and retryable. The implementation must not race profile deletion against a live browser adapter.
 
-At startup, every opaque directory left below the profile root is classified as orphaned. The shell
-shows an assertive warning and offers explicit discard/retry. New browser sessions remain blocked
-until the orphan is removed. Unexpected entries, symlinks, reparse points, and unreadable storage fail
-closed instead of being ignored or followed. Because no account association is persisted, the only
-restart policy is discard and re-authenticate; automatic resume is unavailable.
+At startup, opaque profile directories left from an abnormal termination are treated as orphaned. New embedded sessions remain blocked until cleanup succeeds. Because account association is not persisted, stale authenticated sessions are discarded rather than automatically resumed. Unexpected entries, symlinks/reparse points, or unreadable profile storage fail closed.
 
-Closing, crashing, cleanup, or restarting changes no action, completion criterion, risk, plan, or
-wizard state. Explicit recovery confirmations must already have been committed through the canonical
-encrypted services before a caller ends the operational browser session.
+Cleanup is not a forensic-erasure guarantee. Filesystem snapshots, backups, storage-device behavior, or an operating-system/browser crash may retain data beyond the application's direct control.
+
+## Generated credential handoff
+
+Password-change/reset actions may attach only a `GeneratedCredentialReference` to canonical execution state. The Recovery Browser resolves that exact action reference; it does not choose a credential merely because it is the newest one for an account.
+
+In-context controls reuse the normal credential safeguards:
+
+- deliberate short-lived reveal;
+- owned, time-bounded clipboard copy;
+- explicit Mark used and Confirm working lifecycle operations;
+- clearing materialized reveal state on vault lock and browser close;
+- visible clipboard-cleanup failure;
+- no plaintext credential in notes, browser-session metadata, URLs, diagnostics, logs, screenshots, traces, accessibility labels, or persisted UI state.
+
+Browser close itself never marks a credential used or working.
+
+## Provider-reviewed insertion
+
+Automatic insertion is optional and narrow. Manual Reveal/Copy is the safe default.
+
+An insertion adapter is available only when a repository-controlled contract matches the exact provider, action, content mode, expected origins, page evidence, and exact field selectors. Generic/unsupported providers never receive automatic password-field discovery.
+
+A reviewed insertion attempt follows this order:
+
+1. obtain fresh visible user authorization;
+2. inspect current origin and page evidence **without reading the secret**;
+3. stop on MFA, CAPTCHA, email-link handoff, wrong origin, missing/duplicated fields, or changed content;
+4. only after a ready inspection, obtain a short-lived `CredentialSecretLease` from the unlocked vault;
+5. immediately re-check the exact contract and set only the reviewed new-password/confirmation fields;
+6. dispatch normal input/change events for the provider UI;
+7. do not submit the form;
+8. after successful insertion, the credential may be explicitly recorded as `Used`, never automatically `Confirmed`, and the recovery action remains incomplete until the user confirms its canonical completion criteria.
+
+The repository currently exposes automatic insertion only for the explicit synthetic-test contract. Real-provider and generic workflows therefore remain manual unless a provider/action adapter is separately reviewed and added.
+
+Browser-script results are reduced to stable non-secret codes. Script exception details are not copied into diagnostics because script execution may temporarily contain the credential.
 
 ## Platform behavior
 
 ### Windows
 
-Avalonia hosts the installed WebView2 runtime. Before creation, unpwn supplies the dedicated user-data
-folder and Recovery profile name, disables OS-primary-account SSO and developer tools, and avoids the
-ordinary Edge profile. After the adapter is created, unpwn disables password autosave, general
-autofill, browser accelerator keys, and default context menus. It subscribes directly to WebView2
-permission, download, external-scheme, server-certificate, and client-certificate events and denies
-them.
+Avalonia hosts the installed WebView2 runtime using the dedicated unpwn data directory. The adapter disables or denies platform features that would expand the recovery boundary, including password autosave/general autofill where exposed, OS-account SSO, developer tools, default context menus/browser accelerators, permissions, downloads, external schemes, and certificate exceptions.
 
 ### Linux
 
-Avalonia hosts WPE WebKit using its offscreen embedded control. The system needs the WPE WebKit,
-libwpe, and WPE backend runtime libraries documented by Avalonia. unpwn supplies dedicated data and
-cache directories, disables developer tools and persistent credential storage, and attaches native
-handlers that deny permissions, cancel downloads, and reject TLS-error exceptions. WPE WebKit does
-not expose every WebView2 form-autofill toggle through the maintained host; the dedicated profile
-boundary and lifecycle remain mandatory rather than claiming equivalent controls.
+Avalonia hosts WPE WebKit with dedicated data/cache locations. The adapter disables persistent credential storage/developer tools where exposed and denies permissions, downloads, and TLS exceptions. WPE WebKit does not expose every WebView2 control through the maintained host; the dedicated profile boundary and conservative lifecycle remain mandatory instead of claiming identical platform hardening.
 
-No silent fallback to an unhardened WebView or a separate ordinary browser profile is allowed.
-Downloads remain blocked; any browser-created file is covered by recursive profile cleanup, and there
-is no workflow-approved download/export path yet. The existing external-navigation safety path is
-available only through the explicit fallback control.
+No platform may silently fall back to an unhardened profile or host.
 
 ## Testing
 
-Application tests exercise exact-origin handling, unsafe schemes, user-information rejection,
-loopback-only synthetic HTTP, invalid handoffs, and default-denied capabilities. Avalonia headless
-tests render a synthetic provider URI inside `NativeWebView`, verify the visible origin and required
-controls, block unexpected origins and popups, project denied platform capabilities, and validate the
-opaque profile root. Lifecycle tests cover same-account reuse, cross-account blocking, cleanup
-ordering, engine-clear failure with authoritative directory deletion, resource-release failure,
-cancellation, delete retry, crash/orphan discovery, unexpected root entries, startup non-resume,
-recursive file cleanup, shell warning/retry, and opaque marker content. Tests do not contact or mutate
-live providers. Guided-workspace tests additionally cover reviewed handoff projection, explicit
-fallback, persistence failure before visual acknowledgement, close/reload without completion,
-same-account reviewed navigation, and the absence of browser-driven recovery transitions.
+Tests use synthetic/loopback content only and cover:
 
-Credential-assistance headless tests exercise the synthetic reviewed contract, exact current-origin
-checking, changed/missing page evidence, MFA/CAPTCHA/email-link stop markers, and successful field
-insertion without form submission. Existing credential-presentation tests cover bounded reveal,
-clipboard cleanup/failure, and vault-lock clearing; the Recovery Browser reuses those same canonical
-credential/clipboard services and additionally clears its materialized presentation on browser close.
-The CI artifact scan remains responsible for rejecting the repository's synthetic secret markers from
-generated test artifacts.
+- exact-origin and unsafe-scheme behavior;
+- visible origin and browser controls;
+- popup/download/permission/default-deny behavior;
+- opaque profile paths and account isolation;
+- clear → release → delete cleanup ordering;
+- cleanup failure/retry, abnormal termination, orphan detection, and no auto-resume;
+- checklist persistence with no browser-driven recovery transition;
+- explicit external-browser fallback;
+- credential reveal/copy/lock/close cleanup;
+- provider-reviewed synthetic insertion, late vault retrieval, wrong origin, changed content, MFA/CAPTCHA/email-link stops, and no form submission;
+- rejection of generic automatic DOM insertion;
+- synthetic-secret artifact scanning.
+
+See [Testing Strategy](TESTING.md), [Generated Credentials](GENERATED_CREDENTIALS.md), and [Threat Model](THREAT_MODEL.md) for their respective canonical rules.

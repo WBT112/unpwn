@@ -51,16 +51,6 @@ jobs:
       - name: Build
         run: dotnet build unpwn.slnx --configuration Release --no-restore
 
-      - name: Install Playwright Chromium and system dependencies
-        if: runner.os == 'Linux'
-        shell: pwsh
-        run: tests/Unpwn.SyntheticProvider.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
-
-      - name: Install Playwright Chromium
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: tests/Unpwn.SyntheticProvider.Tests/bin/Release/net10.0/playwright.ps1 install chromium
-
       - name: Build and test with coverage
         if: runner.os == 'Linux'
         run: >-

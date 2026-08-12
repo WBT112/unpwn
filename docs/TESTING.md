@@ -2,167 +2,76 @@
 
 ## Purpose
 
-unpwn handles security-sensitive recovery workflows. Tests must verify workflow correctness, state transitions, progress reporting, vault behavior, localization behavior, and browser-assistance boundaries without relying on real accounts or unstable provider websites.
+unpwn handles security-sensitive recovery workflows. Tests verify workflow correctness, state transitions, persistence, vault behavior, localization, credential handling, and Recovery Browser boundaries without relying on real accounts or unstable provider pages.
 
-The normal pull-request test suite must be deterministic, repeatable, and safe to run in public CI.
+The normal pull-request suite must be deterministic, repeatable, and safe to run in public CI.
 
-## Testing Principles
+## Testing principles
 
-- Use synthetic credentials and synthetic account data only.
-- Do not use real accounts, reset links, cookies, MFA secrets, API tokens, or personal information in tests.
-- Do not make destructive changes to live provider accounts.
-- Keep live-provider checks read-only and separate from the blocking pull-request suite.
-- Treat logs, traces, screenshots, crash output, localization diagnostics, and CI artifacts as potentially public.
-- A workflow is not considered tested only because its file matches a schema. Its recovery logic and failure paths must also be exercised.
-- A language is not considered supported only because a resource file compiles. Fallback, formatting, layout, accessibility, and security meaning must also be tested.
+- Use synthetic credentials, account data, browser content, and reset scenarios only.
+- Never use real credentials, reset links, cookies, MFA secrets, API tokens, recovery codes, or personal information in tests.
+- Never perform destructive or state-changing actions against live provider accounts.
+- Keep live-provider checks read-only and separate from blocking pull-request CI.
+- Treat logs, exceptions, traces, screenshots, crash output, localization diagnostics, and CI artifacts as potentially public.
+- Test semantic failure paths, not only schema validity or happy paths.
+- Browser observations are context, not recovery truth: navigation, redirect, close, restart, DOM state, or credential insertion must not complete canonical recovery work.
 
-## Test Layers
+## Test layers
 
-### 1. Structural workflow validation
+### 1. Workflow validation
 
-Every workflow definition must pass a machine-readable schema or equivalent validator.
+Every provider workflow must pass structural and semantic validation. Validation covers required metadata, stable identifiers, recovery paths, action prerequisites, completion criteria, recovery locations, expected origins, automation-support claims, and localization resources.
 
-Structural validation should cover:
+Semantic validation rejects unsafe or contradictory definitions such as duplicate IDs, missing prerequisites, cycles, insecure production URLs, unexpected origins, future verification dates, required actions without completion criteria, impossible path combinations, embedded secrets, or translated display text used as control data.
 
-- required metadata
-- workflow and provider identifiers
-- supported account type
-- workflow version
-- verification date
-- known action types
-- known recovery paths
-- known automation support levels
-- required and optional actions
-- prerequisite references
-- recovery locations
-- completion criteria
-- referenced localization keys where user-facing workflow guidance is defined
+### 2. Recovery contract and domain tests
 
-### 2. Semantic workflow validation
+Provider contract scenarios exercise the Recovery Engine without a browser. Representative scenarios include authenticated password change, password reset, blocked dependencies, lost MFA access, expired/unavailable recovery links, manual recovery, required-action failure, blocked work, unresolved-risk acceptance, and access that cannot be restored.
 
-Semantic validators must reject definitions that are structurally valid but unsafe or contradictory.
+Domain/state-machine tests cover valid and invalid transitions, deterministic planning, progress calculation, completion preflight, credential lifecycle, idempotency, and persistence revisions. Required actions cannot be silently skipped. `NOT_APPLICABLE` and risk acceptance retain their required reason/disposition.
 
-Checks should include:
+Representative domain and parsing tests run under multiple cultures to prove that UI culture does not change canonical behavior.
 
-- duplicate workflow or action identifiers
-- missing prerequisite targets
-- cyclic action dependencies
-- insecure non-HTTPS URLs unless explicitly justified for a local test fixture
-- unexpected provider origins
-- verification dates in the future
-- required actions without completion criteria
-- impossible recovery-path combinations
-- automation claims that exceed the implemented capability
-- embedded secrets or personal test data
-- translated display text used as control data
+### 3. Synthetic provider and Recovery Browser tests
 
-Validation failures should identify the workflow, action, and rule that failed through structured codes. Presentation tests separately verify the localized diagnostic text.
+`tests/Unpwn.SyntheticProvider.Tests` provides a local deterministic ASP.NET Core provider on loopback. It exposes explicit scenarios for login, re-authentication, password change/reset, email-link handoff, MFA, CAPTCHA, expired links, provider errors, unexpected content, and manual recovery. The fixture uses synthetic identifiers only and never routes tests to a live provider.
 
-### 3. Recovery contract tests
+The embedded Recovery Browser is tested through its current managed-browser contracts rather than through a second standalone browser automation state machine.
 
-Each provider workflow must define deterministic scenarios that exercise the Recovery Engine without a browser.
+Coverage includes:
 
-Minimum scenario coverage should include:
+- exact expected-origin handling and unsafe-scheme rejection;
+- visible origin and recovery-oriented browser controls;
+- popup, download, permission, external-protocol, TLS, and unsupported-capability denial;
+- opaque unpwn-owned profile paths;
+- same-account profile reuse and cross-account isolation;
+- browser-data clear, native-resource release, then profile deletion ordering;
+- cleanup failure/retry and orphan detection after abnormal termination;
+- no automatic resume of stale authenticated browser state;
+- explicit checklist persistence without browser-driven completion;
+- explicit external-browser fallback when the embedded host is unavailable;
+- synthetic provider-reviewed credential insertion with late vault retrieval;
+- wrong-origin, changed-page, MFA, CAPTCHA, and email-link stop conditions;
+- no form submission or canonical completion caused by credential insertion;
+- rejection of generic automatic password-field discovery.
 
-- authenticated password change is available
-- password reset through a secured primary email account
-- password reset blocked by an unsecured dependency
-- MFA device unavailable
-- reset link expired or unavailable
-- manual account recovery required
-- a required action fails
-- a required action is blocked
-- the user accepts an unresolved risk
-- account access cannot be restored
+Normal CI never navigates to or mutates live providers.
 
-Contract tests should verify:
+### 4. Application and UI tests
 
-- selected recovery path
-- generated action set
-- action order and prerequisites
-- blocking conditions
-- account status
-- unresolved-risk handling
-- critical-account readiness
-- weighted progress calculations
+View-model tests cover locked startup, navigation, command concurrency, validation, persistence failures, runtime language changes, safe-message mapping, guided recovery, account review, browser handoff, credential presentation, and completion review.
 
-Contract tests use canonical IDs and values and must pass independently of the selected UI culture.
+Avalonia headless tests cover screen-entry focus, focus after validation, dialogs, live-region metadata, browser/assistant interaction, and important accessibility states without opening a normal desktop window. These tests supplement rather than replace the manual Windows/NVDA and Ubuntu/Orca release checklist in [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md).
 
-### 4. State-machine and domain tests
+Security meaning must not depend on color alone, and pseudo-localization/minimum-window testing must keep warnings and primary controls visible or reachable.
 
-Unit tests must cover valid and invalid transitions for sessions, accounts, and recovery actions.
+### 5. End-to-end smoke journeys
 
-Required actions must not be silently skipped. `NOT_APPLICABLE` must require a recorded reason. Audit events must not contain secret fields or localized summaries.
+The blocking suite includes an `EndToEndSmoke` category that composes real application services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session creation, canonical CSV import, identity-role review, dependency-aware planning, repository-controlled provider workflows, explicit action completion, generated-credential handoff and cleanup, completion review, locking, reopening, and persisted-state validation after an application-style restart.
 
-Run representative domain and parsing tests under more than one ambient culture to prove that UI culture does not change canonical behavior.
+Negative smoke coverage verifies that an untrusted or uncertain device decision cannot create a sensitive recovery workspace. All paths use synthetic identities and local files.
 
-### 5. Synthetic provider integration tests
-
-Browser assistance must be tested against a local deterministic test provider, not against live Google, Microsoft, GitHub, or other third-party websites.
-
-The synthetic provider should be a small local ASP.NET Core application that can simulate:
-
-- login and re-authentication
-- authenticated password change
-- forgot-password flow
-- reset-link handoff
-- MFA pause
-- CAPTCHA pause
-- expired reset link
-- unexpected page content
-- provider error
-- network delay or interruption
-- manual-recovery handoff
-
-The initial deterministic harness lives in `tests/Unpwn.SyntheticProvider.Tests`. It starts a local ASP.NET Core app on loopback with explicit scenario query parameters for login, re-authentication, password change, password reset, email-link handoff, MFA pause, CAPTCHA pause, expired links, provider errors, unexpected content, and manual-recovery handoff. The harness must keep using synthetic identifiers only and must not route tests to live providers.
-
-The synthetic provider must expose explicit scenario controls so tests do not depend on timing, randomness, or external services.
-
-The embedded Recovery Browser host additionally has headless desktop tests that render an explicit
-loopback synthetic-provider destination in `NativeWebView`. They verify visible origin, Back/Forward,
-Reload, Stop and Close controls, exact-origin navigation, popup denial, platform security-event
-projection, and opaque unpwn-owned profile paths. HTTP remains unavailable outside the explicit
-synthetic loopback mode. Native WebView2 and WPE WebKit behavior is also built on Windows and Linux;
-normal CI never navigates to a live provider.
-
-Recovery Browser lifecycle tests use opaque temporary directories and fake native-resource leases.
-They assert engine-clear/release/delete ordering, same-account reuse, cross-account denial, cleanup
-failure and explicit retry, canceled release, orphan discovery without automatic resume, startup UI
-warning, unexpected-entry rejection, and recursive cleanup of synthetic browser/download files. No
-test marker contains an account identifier or synthetic secret.
-
-Guided Recovery Browser tests verify that the validated handoff opens beside assistant guidance,
-same-account action navigation installs the next reviewed origin boundary, and external navigation is
-used only through its explicit fallback. Checklist tests inject atomic-write failure and require the
-checkmark to remain unrecorded; successful explicit acknowledgements must reload after browser close
-without changing the action from `InProgress`. Browser navigation, return, close, and host failure are
-asserted to make no canonical completion transition.
-
-### Application-shell view-model tests
-
-The desktop presentation layer must be testable without opening native windows.
-
-View-model tests cover locked startup, route navigation, global lock visibility, constructor-injected services, busy and cancellation states, repeated command execution, stable error-code mapping, runtime language changes, and localized safe-message fallback.
-
-Visual-state tests verify that blocked, failed, and unresolved-risk states have distinct localized text and symbols in addition to color.
-
-Avalonia headless integration tests verify screen-entry focus, focus after validation, safe dialog
-focus, and live-region metadata without opening native windows. They supplement the existing
-view-model tests for every critical desktop flow; they do not validate native UIA or AT-SPI bridges.
-The Windows/NVDA and Ubuntu/Orca checklist in
-[Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md) is a release gate.
-
-### End-to-end smoke journeys
-
-The blocking suite includes a small `EndToEndSmoke` category that composes the real application
-services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session
-creation, canonical CSV import, role review, a repository-controlled provider workflow, explicit
-action completion, generated-credential handoff and cleanup, completion review, locking, reopening,
-and persisted-state validation after an application-style restart. Negative smoke coverage verifies
-that an untrusted or uncertain device decision cannot create a vault. All paths use only synthetic
-identities and local files; they never navigate to or mutate a live provider.
-
-Run only this fast cross-component safety net with:
+Run the focused smoke category with:
 
 ```pwsh
 dotnet test tests/Unpwn.App.Tests/Unpwn.App.Tests.csproj --configuration Release --filter Category=EndToEndSmoke
@@ -170,129 +79,48 @@ dotnet test tests/Unpwn.App.Tests/Unpwn.App.Tests.csproj --configuration Release
 
 ### 6. Localization and culture tests
 
-Localization tests follow [Localization and Multilingual GUI](LOCALIZATION.md).
+Localization tests verify:
 
-Required coverage includes:
+- complete English source resources and deterministic fallback;
+- key and placeholder parity for shipped translations;
+- exact/neutral culture lookup;
+- parameter formatting and plural handling;
+- pseudo-localization and long-string behavior;
+- localized accessibility names/descriptions;
+- invariant parsing of IDs, URLs, origins, workflow versions, and serialized security data;
+- import behavior independent of selected GUI language;
+- no localized values in canonical domain, audit, vault, workflow, or authorization state.
 
-- every referenced key exists in complete English source resources
-- exact-culture lookup, such as `de-DE`
-- neutral-parent fallback, such as `de`
-- fallback to English
-- visible missing-key behavior when the English key is absent
-- resource-key parity for every shipped translation
-- preservation of formatting placeholders
-- parameterized messages with the selected UI culture
-- zero, one, and other plural variants where applicable
-- runtime language switching and view-model refresh
-- localized accessibility names and descriptions
-- date, time, number, and percentage formatting
-- invariant parsing of GUIDs, URLs, origins, workflow versions, and serialized data under multiple UI cultures
-- import behavior that does not change with the GUI language
-- no localized values in canonical domain, audit, vault, or workflow state
-- no direct user-facing string literals in presentation code where a practical analyzer or repository convention can enforce this
+Missing security-critical resources or translations that alter canonical security meaning are release-blocking defects.
 
-Pseudo-localization should:
+### 7. Scheduled live-provider smoke checks
 
-- visibly delimit every resource
-- expand text length
-- exercise accented or non-ASCII characters
-- preserve placeholders
-- expose concatenated-sentence and clipping defects
+Live-provider checks are read-only health observations, not account-recovery tests. They may check official recovery URLs, HTTPS, expected-origin redirect chains, plausibility of the final destination, and stale workflow verification dates.
 
-At the documented minimum window size, critical warnings, confirmation consequences, blocked states, and primary actions must remain visible or reachable through scrolling.
+They must not use credentials/cookies, submit forms, trigger reset emails or MFA, create accounts, capture sensitive DOM, or upload browser storage.
 
-Missing default resources, broken placeholders, absent security-critical warnings, or localization behavior that changes canonical security logic are release-blocking.
+The implementation lives in `Unpwn.Automation` with `tools/Unpwn.ProviderSmokeChecks`. `.github/workflows/provider-smoke-checks.yml` runs it on its documented schedule/manual dispatch, separate from pull-request CI. Provider blocking, rate limiting, transient unavailability, and cross-origin redirects remain observations requiring review rather than automatic compromise/workflow conclusions.
 
-### 7. Playwright test mode
+### 8. Release verification
 
-Production browser assistance and CI browser testing have different execution rules.
+Before a supported release:
 
-Production mode:
+- run the complete deterministic CI suite;
+- validate every shipped workflow definition and compatibility with persisted sessions;
+- manually review changed provider workflows and only update verification metadata after real review;
+- review unresolved provider uncertainty;
+- verify localization completeness, placeholder parity, pseudo-localization, and minimum-window behavior;
+- execute and record the Windows/NVDA and Ubuntu/Orca accessibility checklist;
+- review vault, export, Recovery Browser, credential-insertion, and interruption boundaries;
+- confirm packaging/update behavior without weakening the trusted-device or browser-profile model.
 
-- browser window must be visible
-- headless execution is rejected
-- the user can pause or abort
-- sensitive submission requires explicit authorization
-- unexpected page content stops the workflow
+## Pull-request CI
 
-Test mode:
+`.github/workflows/ci.yml` is authoritative. It currently runs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting/analyzer verification runs on Linux. Linux also collects Cobertura coverage, merges it, enforces the numeric gate, scans generated artifacts for synthetic secret markers, and uploads short-lived test/coverage artifacts. Windows uploads test artifacts only on failure after the same secret-safety check.
 
-- headless execution is allowed
-- target must be the local synthetic provider
-- credentials and account data must be synthetic
-- no network access to live providers is required
+The Linux coverage gate requires at least 80% line and 80% branch coverage across platform-neutral production assemblies (`Unpwn.Core`, `Unpwn.Application`, `Unpwn.Import`, `Unpwn.Export`, `Unpwn.Vault`, `Unpwn.Providers`, and `Unpwn.Automation`). `Unpwn.App` is validated through view-model, Avalonia headless, integration, and manual accessibility layers rather than the numeric gate. Presentation-independent behavior should not be moved into `Unpwn.App` merely to avoid coverage requirements.
 
-The production guard that rejects headless mode must itself be covered by a test.
-
-Browser tests use stable automation IDs or canonical selectors rather than translated visible labels. A small set of end-to-end tests should still run with a secondary or pseudo-localized culture to verify displayed guidance and layout.
-
-### 8. Scheduled live-provider smoke checks
-
-Live-provider checks are read-only health checks. They are not end-to-end account-recovery tests.
-
-They may verify:
-
-- official recovery URLs are reachable
-- HTTPS is used
-- redirect chains remain within expected origins
-- the final destination is plausible
-- a workflow verification date has become stale
-
-They must not:
-
-- use credentials or cookies
-- submit login, password-change, or reset forms
-- trigger reset emails, MFA challenges, or CAPTCHA
-- create accounts
-- upload browser storage state
-- capture sensitive DOM content
-
-These checks should run on a schedule and through manual dispatch. They should initially report warnings rather than block normal pull requests because provider bot protection, regional variants, and transient outages can produce false alarms.
-
-Smoke checks use canonical URLs and origins and are independent of the selected GUI language.
-
-The implementation lives in `Unpwn.Automation` with a small repository tool under
-`tools/Unpwn.ProviderSmokeChecks`. `.github/workflows/provider-smoke-checks.yml` runs it weekly and
-through manual dispatch; it is deliberately not a pull-request trigger. Requests use `GET` with no
-body, credentials, cookies, or referrer, and redirects are followed manually only while every hop
-remains HTTPS and within the location's exact expected-origin list.
-
-The job writes an issue-ready Markdown table to the GitHub step summary and warning annotations to
-the log. Redirect diagnostics contain origins only; exception messages, response bodies, DOM data,
-screenshots, traces, cookies, and browser storage are neither retained nor uploaded. Provider blocking,
-rate limiting, transient unavailability, and unexpected cross-origin redirects remain distinct
-observations requiring manual review rather than being reported as confirmed workflow defects.
-
-### 9. Release verification
-
-Before release:
-
-- run the complete deterministic CI suite
-- validate every shipped workflow definition
-- verify workflow-version compatibility with persisted sessions
-- review changed provider workflows manually
-- update `VerifiedAt` only after an actual review
-- record unresolved provider uncertainties
-- verify English resource completeness
-- verify key and placeholder parity for every shipped translation
-- review security-sensitive translations for meaning
-- run pseudo-localization and minimum-window checks
-- execute and record the Windows/NVDA and Ubuntu/Orca accessibility checklist
-
-## Pull-Request CI
-
-The current baseline is implemented in `.github/workflows/ci.yml`. It performs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting and analyzer verification run once on Linux. Cobertura coverage collection, synthetic-secret artifact scanning, and the normal successful artifact upload also run on Linux. Windows uploads test artifacts only when its build or tests fail. Successful retained artifacts use the configured short retention period.
-
-The Linux job merges the per-test-project Cobertura files and enforces at least 80% line coverage
-and 80% branch coverage across the platform-neutral production assemblies (`Unpwn.Core`,
-`Unpwn.Application`, `Unpwn.Import`, `Unpwn.Export`, `Unpwn.Vault`, `Unpwn.Providers`, and
-`Unpwn.Automation`). `Unpwn.App` is reported through its own view-model, Avalonia headless, and
-manual accessibility test layers, but is excluded from this numeric gate: native desktop
-composition, generated Avalonia plumbing, and visual bindings do not produce a comparable LOC or
-branch signal. This exclusion must not be extended to presentation-independent behavior; such logic
-belongs in a platform-neutral assembly and remains inside the gate.
-
-To reproduce the blocking coverage check locally after a Release build:
+To reproduce the coverage check after a Release build:
 
 ```pwsh
 dotnet test unpwn.slnx --configuration Release --no-build --collect:"XPlat Code Coverage" --results-directory artifacts/test-results -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura
@@ -301,92 +129,24 @@ dotnet tool run reportgenerator '-reports:artifacts/test-results/**/coverage.cob
 ./eng/verify-coverage.ps1 -CoveragePath artifacts/coverage/Cobertura.xml -MinimumLineRate 0.80 -MinimumBranchRate 0.80
 ```
 
-Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The application diagnostic boundary records a bounded operation, stable event ID, static message, and exception type only. It returns a new static-message exception for propagation; source exception messages, inner exceptions, stack traces, localization formatting arguments, and imported values are deliberately excluded because they may contain secrets.
+Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The artifact scan must reject retained test output containing those markers.
 
-Persistence-resilience tests inject disk-full-style I/O failures, denied access, locked/conflicting
-stores, version incompatibility, and cancellation during an in-flight write. They assert that no
-failure is shown as saved, an explicit retry is visible, repeated operation IDs remain idempotent, and
-prepared projections are published only after a successful atomic write. Recovery-boundary tests
-simulate a stale process marker and an unhandled exception, then verify that startup remains usable,
-the vault is locked without advancing the wizard, and diagnostics contain no synthetic secret marker.
-Diagnostic-export tests use a deliberately malicious diagnostic source, preview/approval token
-mismatches, and writer failures to verify allowlist re-sanitization and strictly local atomic output.
+## Security and persistence failure coverage
 
-The blocking pull-request suite should eventually run:
+Persistence-resilience tests inject I/O failures, denied access, conflicting/stale revisions, incompatible/corrupt state, and cancellation around commit boundaries. They assert that failures are not shown as saved, retries are explicit, operation IDs remain idempotent where required, and prepared projections become visible only after successful atomic persistence.
 
-1. restore dependencies
-2. build with warnings treated according to project policy
-3. formatting and analyzer checks
-4. unit tests
-5. workflow structural validation
-6. workflow semantic validation
-7. provider contract tests
-8. recovery state-machine and progress tests
-9. localization key, fallback, formatting, and culture-invariance tests
-10. pseudo-localization or long-string UI checks
-11. synthetic-provider integration tests
-12. Playwright tests against the local provider
-13. checks that representative secrets do not appear in logs, database files, exceptions, localization diagnostics, traces, screenshots, or uploaded artifacts
+Recovery-boundary tests cover stale process markers, unhandled exceptions, locked-vault recovery, and secret-safe diagnostics. Export tests distinguish file creation from lifecycle-state updates and preserve warnings when plaintext may already exist.
 
-No pull-request job should require access to a real provider account.
+A failing secret-leak, unsafe-origin, unauthenticated-vault, invalid workflow, nonce-reuse, browser-completion, localization-semantic, or persistence-integrity test is a security failure, not a flaky test to be retried away.
 
-## Platform Matrix
+## Test data and artifacts
 
-The core solution should build and run unit tests on Windows and at least one non-Windows runner.
+Use recognizable synthetic data. The canonical import fixtures live under `samples/import/` and cover normal recovery data, password-manager-style mapping/secret-column exclusion, duplicate handling, and deterministic edge cases.
 
-Localization lookup and culture-invariance tests run on both supported CI operating systems where practical. Platform-specific differences in available cultures or fonts must be documented and must not produce silent security-text loss.
+Synthetic values must never be accepted by production code as implicit evidence that test mode is active; test-only browser behavior requires explicit configuration and loopback validation.
 
-Browser-assistance tests may use a narrower supported runner matrix if required, but platform-specific limitations must be documented and must not introduce dependencies into `Unpwn.Core`.
+Do not retain browser profiles, cookies, DOM snapshots, real account identifiers, or secrets in CI artifacts. Screenshots/traces are only appropriate when a test layer can guarantee synthetic content and the relevant artifact policy explicitly permits them.
 
-## Test Data
+## Flaky tests
 
-Use recognizable synthetic secret markers, for example values beginning with `UNPWN_TEST_SECRET_`, so tests can scan logs, files, and artifacts for accidental leakage.
-
-The repository-controlled fixtures under `samples/import/` are the canonical manual recovery smoke-test data set. `generic-recovery-sample.csv` covers every shipped provider workflow and recovery path, `bitwarden-recovery-sample.csv` exercises password-manager-style mapping and secret-column exclusion, and `import-edge-cases.csv` provides deterministic duplicate and row-diagnostic cases. Their companion scenario matrix documents post-import roles, dependencies, blocked work, lost access, and unresolved-risk setup without encoding unsupported fields into CSV.
-
-Synthetic reset tokens, credentials, account identifiers, localization arguments, and imported values must never be accepted by production code as trusted test-mode indicators. Test mode must be selected through explicit application configuration and restricted target validation.
-
-Localization tests use synthetic non-secret values and must not place secrets into resource files, pseudo-localized screenshots, or formatting-failure output.
-
-## CI Artifacts
-
-For local synthetic-provider failures, CI may upload:
-
-- test results
-- sanitized logs
-- Playwright traces
-- screenshots
-- pseudo-localization screenshots
-- videos where justified
-
-Artifacts must contain synthetic data only and should be retained for the shortest useful period.
-
-For live-provider smoke checks, do not upload:
-
-- screenshots after any input
-- DOM snapshots or Playwright traces
-- cookies
-- local storage or session storage
-- browser profiles
-- account identifiers
-
-## Flaky Tests
-
-Do not solve flaky tests with broad retries.
-
-First identify whether the failure is caused by:
-
-- uncontrolled time
-- randomness
-- shared mutable state
-- network dependency
-- race conditions
-- ambient culture leakage
-- platform font or layout assumptions
-- insufficient synthetic-provider controls
-
-Retries may be used only for narrowly understood infrastructure failures and must not hide deterministic product defects.
-
-## Security Failures
-
-A test that detects secret leakage, invalid workflow validation, nonce reuse, unauthenticated vault data, unsafe production automation mode, missing security-critical resources, translated control data, or culture-dependent canonical parsing is release-blocking.
+Do not solve flaky tests with broad retries. First identify uncontrolled time, randomness, shared mutable state, external network dependency, race conditions, ambient culture leakage, platform layout assumptions, or insufficient synthetic-provider controls. Retries are reserved for narrowly understood infrastructure failures and must not hide deterministic defects.

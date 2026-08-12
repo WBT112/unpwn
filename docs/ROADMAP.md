@@ -1,52 +1,46 @@
 # unpwn Roadmap
 
-The roadmap prioritizes a trustworthy guided recovery flow over broad automation. Detailed tasks and acceptance criteria live in GitHub issues.
+The roadmap prioritizes a trustworthy guided recovery flow over broad automation. Detailed tasks and acceptance criteria belong in GitHub issues; this document describes the current product direction rather than repeating a closed issue sequence.
 
 ## Current foundation
 
-The repository already contains the main technical foundations for the MVP:
+The repository now contains the main end-to-end foundations for the desktop MVP:
 
-- platform-neutral recovery domain and state machines;
-- encrypted local Recovery Vault;
-- trusted-device and vault-entry flow;
-- recovery session and risk-first dashboard;
-- account inventory, roles, dependencies, and deterministic planning;
-- reviewed CSV import;
-- generated-credential lifecycle and secure export core;
-- safe recovery-location discovery;
-- multilingual Avalonia presentation foundation;
-- atomic workspace persistence for the critical recovery state;
-- canonical per-account recovery execution state.
+- trusted-device gate and encrypted local Recovery Vault;
+- incident intake, recovery session, risk-first dashboard, pause/lock/resume, and final completion review;
+- account inventory, CSV import, identity/recovery roles, dependencies, and deterministic planning;
+- reviewed provider workflows plus a clearly distinguished generic manual fallback;
+- canonical per-account/action recovery execution with explicit completion criteria and unresolved-risk handling;
+- generated-credential lifecycle, password-manager handoff, secure export, and cleanup tracking;
+- assistant-first guided recovery UX;
+- an integrated managed Recovery Browser with isolated temporary profiles, safe navigation boundaries, cleanup/orphan handling, and explicit external-browser fallback;
+- bounded in-context credential assistance that remains manual by default and enables insertion only for explicitly reviewed provider/action contracts;
+- multilingual Avalonia presentation, accessibility baseline, atomic workspace persistence, resilience tests, and cross-platform CI.
 
-## Current focus
+## Current focus: stabilization and release readiness
 
-### Guided account recovery
+The next work should be driven by review and validation rather than adding another broad feature layer. Priorities are:
 
-The next major product step is [Issue #34](https://github.com/WBT112/unpwn/issues/34): turn the existing recovery state and provider workflows into the user-facing, action-by-action account recovery experience.
+1. exercise representative full recovery journeys from a user's perspective and turn concrete defects or friction into focused issues;
+2. complete security review of the current trust boundaries, especially vault, Recovery Browser, credential handoff, exports, and interrupted-work behavior;
+3. keep provider workflows current and add provider-specific browser assistance only when the user value justifies the maintenance/security cost;
+4. perform the documented Windows/NVDA and Ubuntu/Orca accessibility acceptance checks and minimum-window validation;
+5. define supported installation, packaging, update, and release-signing behavior before calling the desktop build production-ready;
+6. keep documentation, tests, dependencies, and obsolete experimental code lean as the implementation evolves.
 
-The UI must explain why an account is recommended, keep prerequisites and unresolved risks visible, show official recovery locations and expected origins, and require explicit confirmation of completion criteria. Opening a provider page never proves success.
-
-## Before the MVP release
-
-After guided account recovery, the remaining MVP work centers on:
-
-- credential export and cleanup UX;
-- completion review and final report;
-- remaining resilience/error-handling work from Issue #37;
-- accessibility and minimum-window verification;
-- additional reviewed provider workflows and end-to-end integration coverage;
-- release packaging and security review.
+The absence of an open issue is not evidence that a release is ready. New work should be created from observed product, security, accessibility, provider, or release-readiness gaps.
 
 ## Later
 
 Possible later work includes:
 
-- macOS and Linux packaging;
-- more provider workflows and password-manager formats;
+- macOS packaging and broader Linux packaging validation;
+- more reviewed provider workflows and password-manager formats;
 - more reviewed GUI languages and RTL support;
-- improved dependency suggestions and recommendations;
-- carefully bounded browser assistance.
+- improved dependency suggestions and recommendation explanations;
+- carefully reviewed provider-specific credential insertion where it is stable enough to maintain;
+- a separately researched bootable recovery environment for cases where the normal host cannot reasonably be trusted.
 
-Automation remains secondary to clear recovery guidance, dependency-aware ordering, and honest progress reporting.
+Automation remains secondary to clear guidance, dependency-aware ordering, explicit human confirmation, and honest reporting of unresolved risk.
 
-For product scope see [Vision](VISION.md). For the detailed issue sequence use the repository's GitHub issues and the MVP UI epic.
+For product scope see [Vision](VISION.md), for security boundaries see [Threat Model](THREAT_MODEL.md), and for the current browser architecture see [Recovery Browser Security Boundary](RECOVERY_BROWSER.md).

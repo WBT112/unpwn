@@ -1,6 +1,6 @@
 # Coding Agent Instructions
 
-unpwn is a local-first account-recovery assistant for users who suspect that their digital identity has been compromised. It is not an antivirus, password manager, or autonomous recovery bot.
+unpwn is a local-first account-recovery assistant for users who suspect that their digital identity has been compromised. It is not an antivirus, password manager, general-purpose browser, or autonomous recovery bot.
 
 ## Read first
 
@@ -13,28 +13,29 @@ At minimum, understand:
 - [Threat Model](docs/THREAT_MODEL.md)
 - [Testing Strategy](docs/TESTING.md)
 
-Then read the relevant workflow, vault, import, UI, localization, or persistence document.
+Then read the relevant recovery, browser, vault, import, UI, localization, or persistence document.
 
 ## Non-negotiable product rules
 
 - Guide recovery; do not claim to detect or remove malware.
 - Do not guarantee that a device or account is safe.
 - Keep sensitive external actions visible to the user.
-- Opening or returning from a provider page never means an action succeeded.
+- Browser observations are context, not recovery truth: navigation, redirect, form state, browser close/restart, or credential insertion never proves success.
 - Required actions cannot be silently skipped.
 - Blocked, failed, lost-access, and unresolved-risk states must remain visible.
 - Do not bypass CAPTCHA, MFA, identity verification, rate limits, or ownership checks.
 - Do not turn the Recovery Vault into a general password manager.
+- Do not import normal browser profiles or add generic automatic password-field detection.
 
 ## Architecture rules
 
-- `Unpwn.Core` is platform-neutral and must not depend on Avalonia, SQLite, Playwright, OS APIs, localization, or provider infrastructure.
-- Use existing canonical domain and application services; do not create parallel recovery state machines in view models or provider code.
-- `Unpwn.App` is the composition root and owns presentation/localization concerns.
+- `Unpwn.Core` is platform-neutral and must not depend on Avalonia, SQLite, browser engines, OS APIs, localization, or provider infrastructure.
+- Use existing canonical domain and application services; do not create parallel recovery state machines in view models, browser adapters, or provider code.
+- `Unpwn.App` is the composition root and owns presentation/localization and native Recovery Browser integration.
 - Canonical IDs, states, URLs, serialized values, audit types, and error codes remain language-neutral.
 - Logically related security-sensitive state changes must preserve the documented atomic/idempotent persistence rules.
 
-See [Architecture](docs/ARCHITECTURE.md).
+See [Architecture](docs/ARCHITECTURE.md) and [Recovery Browser Security Boundary](docs/RECOVERY_BROWSER.md).
 
 ## Security rules
 
@@ -50,7 +51,7 @@ Do not invent cryptographic primitives. Follow [Vault Security](docs/VAULT_SECUR
 - Never use translated text as control data.
 - Security meaning must not rely on color alone.
 - Layout must tolerate longer and pseudo-localized text.
-- Recovery logic does not belong in code-behind.
+- Recovery logic does not belong in code-behind; native UI/browser bridging may live there only behind the documented presentation boundary.
 
 See [UI Foundation](docs/UI_FOUNDATION.md) and [Localization](docs/LOCALIZATION.md).
 
