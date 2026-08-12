@@ -42,6 +42,7 @@ public sealed class RecoveryBrowserCredentialInsertionCoordinator(
         ArgumentNullException.ThrowIfNull(authorizeAsync);
         ArgumentNullException.ThrowIfNull(inspectAsync);
         ArgumentNullException.ThrowIfNull(insertAsync);
+        contract.AsActionAutomationContract().Validate();
         cancellationToken.ThrowIfCancellationRequested();
 
         if (!await authorizeAsync(cancellationToken))
