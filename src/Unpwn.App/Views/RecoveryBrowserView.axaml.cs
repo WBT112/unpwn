@@ -49,6 +49,8 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
 
     public RecoveryBrowserHostSnapshot? Snapshot => _host?.Snapshot;
 
+    public event EventHandler? SessionClosed;
+
     public RecoveryBrowserSessionLifecycleSnapshot SessionSnapshot =>
         _sessionLifecycle.Current;
 
@@ -60,7 +62,16 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         cancellationToken.ThrowIfCancellationRequested();
         if (_host is not null)
         {
-            return false;
+            if (_session?.AccountId != request.AccountId)
+            {
+                UpdateSessionSnapshot(_sessionLifecycle.Current with
+                {
+                    FailureCode = RecoveryBrowserSessionFailureCode.AccountSwitchRequiresCleanup,
+                });
+                return false;
+            }
+
+            return _host.Navigate(request.Handoff, request.ContentMode);
         }
 
         var started = _sessionLifecycle.Start(request.AccountId);
@@ -258,10 +269,15 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
 
     private async void Close_OnClick(object? sender, RoutedEventArgs args)
     {
+        await CloseSessionAsync(CancellationToken.None);
+    }
+
+    public async Task<bool> CloseSessionAsync(CancellationToken cancellationToken = default)
+    {
         if (_session is null)
         {
             Dispose();
-            return;
+            return true;
         }
 
         RecoveryBrowserSessionCleanupResult result;
@@ -270,21 +286,24 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         {
             result = await _sessionLifecycle.RetryOrphanCleanupAsync(
                 _session.SessionId,
-                CancellationToken.None);
+                cancellationToken);
         }
         else
         {
             result = await _sessionLifecycle.EndAsync(
                 _session.SessionId,
                 this,
-                CancellationToken.None);
+                cancellationToken);
         }
 
         if (result.Succeeded)
         {
             _session = null;
+            SessionClosed?.Invoke(this, EventArgs.Empty);
             Dispose();
         }
+
+        return result.Succeeded;
     }
 
     private static RecoveryBrowserSessionLifecycle CreateDefaultSessionLifecycle() => new(

@@ -93,7 +93,8 @@ public sealed class AppScreenFactory : IScreenFactory
         IGeneratedCredentialExportService credentialExportService,
         ICredentialClipboardService credentialClipboard,
         ILocalizationService localization,
-        IDiagnosticExportService? diagnosticExportService = null)
+        IDiagnosticExportService? diagnosticExportService = null,
+        IRecoveryBrowserSessionLifecycle? browserSessions = null)
         : this(
             confirmationDialog,
             vaultLifecycle,
@@ -109,7 +110,8 @@ public sealed class AppScreenFactory : IScreenFactory
             diagnosticExportService,
             localization,
             functionalWorkflow: true,
-            functionalCredentials: true)
+            functionalCredentials: true,
+            browserSessions: browserSessions)
     {
     }
 
@@ -128,7 +130,8 @@ public sealed class AppScreenFactory : IScreenFactory
         IDiagnosticExportService? diagnosticExportService,
         ILocalizationService localization,
         bool functionalWorkflow = false,
-        bool functionalCredentials = false)
+        bool functionalCredentials = false,
+        IRecoveryBrowserSessionLifecycle? browserSessions = null)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
@@ -164,7 +167,8 @@ public sealed class AppScreenFactory : IScreenFactory
                     externalNavigation!,
                     confirmationDialog,
                     localization,
-                    functionalCredentials ? credentialRepository : null)
+                    functionalCredentials ? credentialRepository : null,
+                    browserSessions)
                 : new PlaceholderScreenViewModel(
                     AppRoute.Workflow,
                     localization,

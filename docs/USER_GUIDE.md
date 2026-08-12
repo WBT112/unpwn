@@ -52,9 +52,15 @@ For each account, recovery may involve more than changing a password. Depending 
 
 ### 7. Confirm each action explicitly
 
-Opening an official provider page does **not** mark a recovery action as complete. Returning to unpwn does not mark it complete either.
+For reviewed actions, unpwn normally opens the provider page inside the Recovery Browser beside the
+current instructions and checklist. Use the clearly labelled external-browser fallback only when the
+embedded host is unavailable or unsuitable. Opening a page, navigating, returning, or closing either
+browser does **not** mark a recovery action as complete.
 
-Complete an action only after you have checked its stated completion criteria. Blocked, failed, unavailable, or deliberately accepted risks remain visible.
+Check each stated completion criterion only after it is actually true. Each checkmark is encrypted
+and saved before it appears recorded, so it remains visible after a controlled browser close or
+restart. The action still requires the separate **Done** confirmation. Blocked, failed, unavailable,
+or deliberately accepted risks remain visible.
 
 ### 8. Export new credentials
 

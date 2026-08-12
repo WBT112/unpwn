@@ -82,7 +82,8 @@ public partial class App : Avalonia.Application
                 credentialExport,
                 credentialClipboard,
                 localization,
-                diagnosticExport);
+                diagnosticExport,
+                browserSessions);
             var shell = new ShellViewModel(
                 screenFactory,
                 vaultLifecycle,

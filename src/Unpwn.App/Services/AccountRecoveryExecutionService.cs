@@ -362,6 +362,14 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 state.SetAccessState(RecoveryAccessState.WaitingForProviderReview, request.UserReason, occurredAt),
             AccountRecoveryExecutionTransitionKind.StartAction =>
                 state.StartAction(request.Workflow, RequireActionId(request), occurredAt),
+            AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements =>
+                state.SetCompletionCriteriaAcknowledgements(
+                    request.Workflow,
+                    RequireActionId(request),
+                    request.AcknowledgedCompletionCriteria
+                        ?? throw new InvalidOperationException(
+                            "The transition requires completion-criteria acknowledgements."),
+                    occurredAt),
             AccountRecoveryExecutionTransitionKind.CompleteAction =>
                 state.CompleteAction(
                     request.Workflow,

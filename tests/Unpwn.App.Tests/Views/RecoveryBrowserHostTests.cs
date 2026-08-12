@@ -164,6 +164,40 @@ public sealed class RecoveryBrowserHostTests
         }, CancellationToken.None);
     }
 
+    [Fact]
+    public async Task SameAccountWorkspaceCanMoveOnlyToANewReviewedActionHandoff()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            var webView = new NativeWebView();
+            using var host = new AvaloniaRecoveryBrowserHost(
+                webView,
+                _ => new TestPlatformAdapter());
+            Assert.True(host.Start(Request(
+                new Uri("https://accounts.example.test/recovery"),
+                RecoveryBrowserContentMode.Recovery)));
+            var window = new Window { Content = webView };
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(25);
+            var next = new Uri("https://security.example.test/mfa");
+
+            Assert.True(host.Navigate(
+                Handoff(next),
+                RecoveryBrowserContentMode.Recovery));
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(25);
+
+            Assert.Equal(next, webView.Source);
+            Assert.Equal("https://security.example.test", host.Snapshot.VisibleOrigin);
+            Assert.False(host.Navigate(new Uri("https://attacker.example/mfa")));
+            Assert.Equal(
+                RecoveryBrowserSecurityEventCode.UnexpectedOriginBlocked,
+                host.Snapshot.LastSecurityEvent);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
     [Theory]
     [InlineData(RecoveryBrowserSecurityEventCode.DownloadBlocked)]
     [InlineData(RecoveryBrowserSecurityEventCode.PermissionBlocked)]
@@ -304,6 +338,17 @@ public sealed class RecoveryBrowserHostTests
             mode,
             RecoveryBrowserProfilePath.CreateOwnedProfileRoot(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
+    }
+
+    private static RecoveryNavigationHandoff Handoff(Uri destination)
+    {
+        var origin = destination.GetLeftPart(UriPartial.Authority);
+        return new RecoveryNavigationHandoff(
+            destination,
+            origin,
+            [origin],
+            RecoveryLocationResolutionSource.ProviderDefined,
+            RequiresVisibleConfirmation: true);
     }
 
     private sealed class TestPlatformAdapter : IRecoveryBrowserPlatformAdapter

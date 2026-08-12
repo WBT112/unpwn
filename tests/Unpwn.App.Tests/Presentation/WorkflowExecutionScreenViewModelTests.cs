@@ -136,13 +136,65 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
         Assert.Equal(RecoveryActionStatus.InProgress, fixture.Execution.State!.GetAction("identify-account-auth").Status);
 
-        viewModel.CompletionCriteriaAcknowledged = true;
+        foreach (var criterion in viewModel.CompletionCriteria)
+        {
+            await criterion.ToggleCommand.ExecuteAsync();
+        }
         Assert.True(viewModel.CompleteActionCommand.CanExecute(null));
         await viewModel.CompleteActionCommand.ExecuteAsync();
 
         Assert.Equal(RecoveryActionStatus.Completed, fixture.Execution.State.GetAction("identify-account-auth").Status);
         Assert.Single(returned);
         Assert.Equal(1, fixture.ConfirmationCalls);
+    }
+
+    [Fact]
+    public async Task ChecklistConfirmationSurvivesBrowserCloseAndReloadWithoutCompletingAction()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.StartActionCommand.ExecuteAsync();
+        var criterion = Assert.Single(viewModel.CompletionCriteria);
+
+        await criterion.ToggleCommand.ExecuteAsync();
+        var recordedRevision = fixture.Execution.State!.Revision;
+        viewModel.ReportRecoveryBrowserClosed();
+
+        Assert.True(criterion.IsAcknowledged);
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State.GetAction(viewModel.SelectedAction!.DefinitionId).Status);
+        Assert.Contains("still open", viewModel.NavigationStatus, StringComparison.Ordinal);
+
+        var resumed = fixture.CreateViewModel();
+        await resumed.RefreshCommand.ExecuteAsync();
+
+        Assert.True(Assert.Single(resumed.CompletionCriteria).IsAcknowledged);
+        Assert.True(resumed.CompletionCriteriaAcknowledged);
+        Assert.Equal(recordedRevision, fixture.Execution.State.Revision);
+        Assert.True(resumed.CompleteActionCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task FailedChecklistPersistenceDoesNotDisplayARecordedCheckmark()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.StartActionCommand.ExecuteAsync();
+        var criterion = Assert.Single(viewModel.CompletionCriteria);
+        fixture.Execution.FailNextApply = true;
+
+        await criterion.ToggleCommand.ExecuteAsync();
+
+        Assert.False(criterion.IsAcknowledged);
+        Assert.False(viewModel.CompletionCriteriaAcknowledged);
+        Assert.True(viewModel.HasValidationMessage);
+        Assert.Empty(fixture.Execution.State!.GetAction(viewModel.SelectedAction!.DefinitionId)
+            .AcknowledgedCompletionCriteria);
     }
 
     [Fact]
@@ -252,28 +304,34 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
-    public async Task GuidedOfficialPageStartsButNeverCompletesTheAction()
+    public async Task GuidedRecoveryBrowserStartsButNeverCompletesTheAction()
     {
         var fixture = new Fixture { Confirm = true };
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
-        viewModel.CompletionCriteriaAcknowledged = true;
+        foreach (var criterion in viewModel.CompletionCriteria)
+        {
+            await criterion.ToggleCommand.ExecuteAsync();
+        }
         await viewModel.CompleteActionCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "change-password");
+        var browserRequests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => browserRequests.Add(request);
 
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
 
-        Assert.Equal(1, fixture.ExternalNavigation.OpenCalls);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        var browserRequest = Assert.Single(browserRequests);
         Assert.Equal(
             "https://github.com/settings/security",
-            fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
+            browserRequest.Handoff.Destination.AbsoluteUri);
         Assert.Equal(
             RecoveryActionStatus.InProgress,
             fixture.Execution.State!.GetAction("change-password").Status);
         Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
-        Assert.Contains("remains unchanged", viewModel.NavigationStatus, StringComparison.Ordinal);
+        Assert.Contains("isolated Recovery Browser", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -476,7 +534,10 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
-        viewModel.CompletionCriteriaAcknowledged = true;
+        foreach (var criterion in viewModel.CompletionCriteria)
+        {
+            await criterion.ToggleCommand.ExecuteAsync();
+        }
         await viewModel.CompleteActionCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
             action.DefinitionId == "change-password");
@@ -632,7 +693,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
                     return Task.FromResult(Confirm);
                 }),
                 Localization,
-                Credentials);
+                Credentials,
+                new TestBrowserSessionLifecycle());
 
         private static RecoveryAccountDashboardEntry DashboardEntry(
             Guid accountId,
@@ -657,6 +719,41 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 WaitingForAccountIds: []);
     }
 
+    private sealed class TestBrowserSessionLifecycle : IRecoveryBrowserSessionLifecycle
+    {
+        public event EventHandler<RecoveryBrowserSessionLifecycleSnapshot>? StateChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public RecoveryBrowserSessionLifecycleSnapshot Current { get; } = new(
+            RecoveryBrowserSessionLifecycleState.Idle,
+            null,
+            [],
+            RecoveryBrowserSessionFailureCode.None);
+
+        public RecoveryBrowserSessionLifecycleSnapshot InspectStartup() => Current;
+
+        public RecoveryBrowserSessionStartResult Start(Guid accountId) =>
+            new(null, false, RecoveryBrowserSessionFailureCode.StorageUnavailable);
+
+        public Task<RecoveryBrowserSessionCleanupResult> EndAsync(
+            Guid sessionId,
+            IRecoveryBrowserSessionResources resources,
+            CancellationToken cancellationToken) => Task.FromResult(
+                new RecoveryBrowserSessionCleanupResult(
+                    false,
+                    RecoveryBrowserSessionFailureCode.SessionNotFound));
+
+        public Task<RecoveryBrowserSessionCleanupResult> RetryOrphanCleanupAsync(
+            Guid sessionId,
+            CancellationToken cancellationToken) => Task.FromResult(
+                new RecoveryBrowserSessionCleanupResult(
+                    false,
+                    RecoveryBrowserSessionFailureCode.SessionNotFound));
+    }
+
     private sealed class TestExecutionService : IAccountRecoveryExecutionService
     {
         private DateTimeOffset _clock = StartedAt.AddMinutes(2);
@@ -664,6 +761,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         public AccountRecoveryExecutionState? State { get; private set; }
 
         public int ApplyCalls { get; private set; }
+
+        public bool FailNextApply { get; set; }
 
         public void Seed(AccountRecoveryExecutionState state) => State = state;
 
@@ -710,6 +809,12 @@ public sealed class WorkflowExecutionScreenViewModelTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             ApplyCalls++;
+            if (FailNextApply)
+            {
+                FailNextApply = false;
+                return Task.FromResult(AccountRecoveryExecutionResult.Failure(
+                    AccountRecoveryExecutionFailureCode.PersistenceFailure));
+            }
             if (State is null || State.Revision != request.ExpectedRevision)
             {
                 return Task.FromResult(AccountRecoveryExecutionResult.Failure(
@@ -731,6 +836,12 @@ public sealed class WorkflowExecutionScreenViewModelTests
                         State.SetAccessState(RecoveryAccessState.WaitingForProviderReview, request.UserReason, time),
                     AccountRecoveryExecutionTransitionKind.StartAction =>
                         State.StartAction(request.Workflow, request.ActionDefinitionId!, time),
+                    AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements =>
+                        State.SetCompletionCriteriaAcknowledgements(
+                            request.Workflow,
+                            request.ActionDefinitionId!,
+                            request.AcknowledgedCompletionCriteria!,
+                            time),
                     AccountRecoveryExecutionTransitionKind.CompleteAction =>
                         State.CompleteAction(
                             request.Workflow,

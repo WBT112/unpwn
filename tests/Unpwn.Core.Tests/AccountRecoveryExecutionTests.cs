@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Unpwn.Core;
 using Xunit;
 
@@ -65,6 +66,37 @@ public sealed class AccountRecoveryExecutionTests
 
         Assert.Equal(AccountRecoveryStatus.FullyReviewed, state.RecoveryStatus);
         state.Validate(workflow);
+    }
+
+    [Fact]
+    public void ExplicitCompletionCriteriaPersistWithoutCompletingTheAction()
+    {
+        var workflow = CreateWorkflow();
+        var state = AccountRecoveryExecutionState.Create(
+                Guid.NewGuid(),
+                workflow,
+                RecoveryPath.AuthenticatedChange,
+                StartedAt)
+            .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1));
+        var criterion = workflow.Actions.Single(action => action.Id == "identify-account")
+            .Guidance.CompletionCriteriaKeys.Single();
+
+        state = state.SetCompletionCriteriaAcknowledgements(
+            workflow,
+            "identify-account",
+            [criterion],
+            StartedAt.AddMinutes(2));
+        var serialized = JsonSerializer.SerializeToUtf8Bytes(state);
+        var reloaded = JsonSerializer.Deserialize<AccountRecoveryExecutionState>(serialized)!;
+
+        Assert.Equal(RecoveryActionStatus.InProgress, reloaded.GetAction("identify-account").Status);
+        Assert.Equal([criterion], reloaded.GetAction("identify-account").AcknowledgedCompletionCriteria);
+        Assert.Throws<InvalidOperationException>(() => reloaded.SetCompletionCriteriaAcknowledgements(
+            workflow,
+            "identify-account",
+            ["Workflow.Test.Unknown"],
+            StartedAt.AddMinutes(3)));
+        reloaded.Validate(workflow);
     }
 
     [Fact]
@@ -144,6 +176,27 @@ public sealed class AccountRecoveryExecutionTests
             Assert.Equal(state.Actions[index].ReasonArguments, reloaded.Actions[index].ReasonArguments);
             Assert.Equal(state.Actions[index].UserNotes, reloaded.Actions[index].UserNotes);
         }
+    }
+
+    [Fact]
+    public void ExecutionWrittenBeforeChecklistPersistenceLoadsConservatively()
+    {
+        var workflow = CreateWorkflow();
+        var state = AccountRecoveryExecutionState.Create(
+            Guid.NewGuid(),
+            workflow,
+            RecoveryPath.AuthenticatedChange,
+            StartedAt);
+        var json = JsonNode.Parse(JsonSerializer.Serialize(state))!.AsObject();
+        foreach (var action in json["Actions"]!.AsArray())
+        {
+            action!.AsObject().Remove("AcknowledgedCompletionCriteria");
+        }
+
+        var reloaded = JsonSerializer.Deserialize<AccountRecoveryExecutionState>(json.ToJsonString())!;
+
+        Assert.All(reloaded.Actions, action => Assert.Empty(action.AcknowledgedCompletionCriteria));
+        reloaded.Validate(workflow);
     }
 
     [Fact]

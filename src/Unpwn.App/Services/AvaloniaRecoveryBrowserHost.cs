@@ -84,6 +84,28 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         return true;
     }
 
+    public bool Navigate(
+        RecoveryNavigationHandoff handoff,
+        RecoveryBrowserContentMode contentMode)
+    {
+        ArgumentNullException.ThrowIfNull(handoff);
+        if (_boundary is null ||
+            !RecoveryBrowserSecurityBoundary.TryCreate(handoff, contentMode, out var boundary))
+        {
+            return false;
+        }
+
+        var decision = boundary!.EvaluateTopLevelNavigation(handoff.Destination);
+        if (!decision.IsAllowed)
+        {
+            return false;
+        }
+
+        _boundary = boundary;
+        _webView.Navigate(handoff.Destination);
+        return true;
+    }
+
     public bool GoBack() => _boundary is not null && _webView.GoBack();
 
     public bool GoForward() => _boundary is not null && _webView.GoForward();

@@ -53,6 +53,8 @@ public interface IRecoveryBrowserHost
 
     bool Navigate(Uri destination);
 
+    bool Navigate(RecoveryNavigationHandoff handoff, RecoveryBrowserContentMode contentMode);
+
     bool GoBack();
 
     bool GoForward();
