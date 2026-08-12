@@ -413,57 +413,47 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
             return;
         }
 
-        var confirmed = await _services.Confirmation.ConfirmAsync(
-            new SensitiveConfirmationRequest(
-                Localization.GetString("Credentials.Assistance.Confirmation.Action"),
-                _workflow.AccountName,
-                Localization.GetString("Credentials.Assistance.Confirmation.Consequence"),
-                Localization.GetString("Credentials.Assistance.Confirmation.Confirm"),
-                Localization.GetString("Confirmation.Risk.Sensitive"),
-                isDestructive: false),
-            cancellationToken);
-        if (!confirmed)
-        {
-            SetStatus("Credentials.Assistance.Denied");
-            return;
-        }
-
-        // Inspect without a secret first. If the origin/page changed or the provider presents an
-        // MFA/CAPTCHA/email handoff, no credential is read from the vault.
-        var inspection = await _inspect(contract, cancellationToken);
-        if (inspection.State != RecoveryBrowserCredentialAssistanceState.ReadyForAuthorization)
-        {
-            SetAssistanceStatus(inspection);
-            return;
-        }
-
-        using var lease = await _services.Credentials.ReadSecretAsync(reference, cancellationToken);
-        if (lease is null)
-        {
-            SetStatus("Credentials.Error.Repository.NotFound");
-            return;
-        }
-
-        var insertion = await _insert(contract, lease.SecretUtf8, cancellationToken);
-        if (!insertion.Succeeded)
-        {
-            SetAssistanceStatus(insertion);
-            return;
-        }
-
-        var markedUsed = await _services.Credentials.MarkUsedAsync(
+        var coordinator = new RecoveryBrowserCredentialInsertionCoordinator(_services.Credentials);
+        var outcome = await coordinator.ExecuteAsync(
             reference,
-            Guid.NewGuid(),
+            contract,
+            token => _services.Confirmation.ConfirmAsync(
+                new SensitiveConfirmationRequest(
+                    Localization.GetString("Credentials.Assistance.Confirmation.Action"),
+                    _workflow.AccountName,
+                    Localization.GetString("Credentials.Assistance.Confirmation.Consequence"),
+                    Localization.GetString("Credentials.Assistance.Confirmation.Confirm"),
+                    Localization.GetString("Confirmation.Risk.Sensitive"),
+                    isDestructive: false),
+                token),
+            _inspect,
+            _insert,
             cancellationToken);
-        if (!markedUsed.Succeeded)
-        {
-            SetStatus("Credentials.Assistance.InsertedStateSaveFailed");
-            return;
-        }
 
-        _metadata = markedUsed.Metadata;
-        NotifyCredentialState();
-        SetStatus("Credentials.Assistance.Inserted");
+        switch (outcome.Code)
+        {
+            case RecoveryBrowserCredentialInsertionOutcomeCode.AuthorizationDenied:
+                SetStatus("Credentials.Assistance.Denied");
+                break;
+            case RecoveryBrowserCredentialInsertionOutcomeCode.InspectionStopped:
+            case RecoveryBrowserCredentialInsertionOutcomeCode.InsertionStopped:
+                SetAssistanceStatus(outcome.BrowserResult!);
+                break;
+            case RecoveryBrowserCredentialInsertionOutcomeCode.CredentialUnavailable:
+                SetStatus("Credentials.Error.Repository.NotFound");
+                break;
+            case RecoveryBrowserCredentialInsertionOutcomeCode.InsertedStateSaveFailed:
+                SetStatus("Credentials.Assistance.InsertedStateSaveFailed");
+                break;
+            case RecoveryBrowserCredentialInsertionOutcomeCode.InsertedAndRecordedUsed:
+                _metadata = outcome.Metadata;
+                NotifyCredentialState();
+                SetStatus("Credentials.Assistance.Inserted");
+                break;
+            default:
+                SetStatus("Credentials.Assistance.Unavailable");
+                break;
+        }
     }
 
     private async Task ClearClipboardAsync(bool showFailure, CancellationToken cancellationToken)
