@@ -12,7 +12,7 @@ public sealed record RecoveryBrowserActionAutomationContract(
     string AdapterId,
     string ProviderId,
     string ActionDefinitionId,
-    AutomationSupport AutomationSupport,
+    AutomationSupport Support,
     RecoveryBrowserContentMode ContentMode,
     IReadOnlyList<string> ExpectedOrigins,
     RecoveryBrowserAutomationEffect Effect)
@@ -29,14 +29,14 @@ public sealed record RecoveryBrowserActionAutomationContract(
                 "A browser automation contract requires an adapter, provider, action, and explicit expected origins.");
         }
 
-        if (AutomationSupport is not AutomationSupport.Assisted and not AutomationSupport.Automated)
+        if (Support is not AutomationSupport.Assisted and not AutomationSupport.Automated)
         {
             throw new InvalidOperationException(
                 "A browser automation contract must represent an ASSISTED or AUTOMATED action capability.");
         }
 
         if (Effect == RecoveryBrowserAutomationEffect.ProviderMutation &&
-            AutomationSupport != AutomationSupport.Automated)
+            Support != AutomationSupport.Automated)
         {
             throw new InvalidOperationException(
                 "Provider-mutating browser automation requires AUTOMATED support.");
