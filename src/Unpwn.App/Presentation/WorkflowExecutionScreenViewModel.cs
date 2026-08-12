@@ -51,6 +51,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private AccountInventoryPlanItem? _planItem;
     private RecoveryWorkflowDefinition? _workflow;
     private AccountRecoveryExecutionState? _execution;
+    private RecoveryNavigationHandoff? _preparedNavigation;
+    private bool _reviewedWorkflowAvailable;
     private RecoveryPathOptionViewModel[] _pathOptions = [];
     private RecoveryPathOptionViewModel? _selectedPath;
     private WorkflowActionItemViewModel[] _actions = [];
@@ -137,7 +139,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         MarkNotApplicableCommand = Command(MarkNotApplicableAsync, CanTransitionCurrentAction);
         AcceptRiskCommand = Command(AcceptRiskAsync, CanAcceptRisk);
         SaveNotesCommand = Command(SaveNotesAsync, () => _execution is not null && CurrentActionState is not null);
-        OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => CurrentLocation is not null);
+        OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => HasNavigationOpportunity);
         GenerateCredentialCommand = Command(GenerateCredentialAsync, CanGenerateCredential);
         GuidedPrimaryActionCommand = Command(GuidedPrimaryActionAsync, CanRunGuidedPrimaryAction);
         ShowProblemReviewCommand = new RelayCommand(
@@ -238,6 +240,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             CompletionCriteriaAcknowledged = false;
             _navigationStatusKey = null;
             _navigationFailureCode = ExternalNavigationFailureCode.None;
+            _preparedNavigation = null;
             IsProblemReviewVisible = false;
             CurrentActionFocusRequest++;
             NotifyCurrentActionProperties();
@@ -323,11 +326,33 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     public bool HasWorkflow => _workflow is not null;
 
+    public bool IsGeneralManualWorkflow =>
+        _workflow?.TrustLevel == RecoveryWorkflowTrustLevel.GeneralManualGuidance;
+
+    public bool IsReviewedProviderWorkflow =>
+        _workflow?.TrustLevel == RecoveryWorkflowTrustLevel.ReviewedProvider;
+
+    public string WorkflowTrustTitle => Localization.GetString(IsGeneralManualWorkflow
+        ? "Workflow.Trust.General.Title"
+        : "Workflow.Trust.Reviewed.Title");
+
+    public string WorkflowTrustMessage => Localization.GetString(IsGeneralManualWorkflow
+        ? _reviewedWorkflowAvailable
+            ? "Workflow.Trust.GeneralPreserved.Message"
+            : "Workflow.Trust.General.Message"
+        : "Workflow.Trust.Reviewed.Message");
+
     public bool HasExecution => _execution is not null;
 
     public bool HasCurrentAction => CurrentDefinition is not null;
 
-    public bool HasOfficialLocation => CurrentLocation is not null;
+    public bool HasOfficialLocation => CurrentLocation is not null || _preparedNavigation is not null;
+
+    public bool HasPreparedNavigation => _preparedNavigation is not null;
+
+    public string NavigationLocationTitle => Localization.GetString(IsGeneralManualWorkflow
+        ? "Workflow.Navigation.DiscoveredTitle"
+        : "Workflow.Navigation.Title");
 
     public bool HasCredentialReference => CurrentActionState?.CredentialReference is not null;
 
@@ -343,7 +368,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public bool HasCurrentActionFinished => CurrentActionState?.Status is
         RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable;
 
-    public string GuidedPrimaryActionText => CurrentActionState?.Status is
+    public string GuidedPrimaryActionText => CanDiscoverCurrentLocation && _preparedNavigation is null
+        ? Localization.GetString(CurrentActionState?.Status is
+            RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction
+                ? "Workflow.Guided.Primary.RetryAndDiscover"
+                : "Workflow.Guided.Primary.StartAndDiscover")
+        : CurrentActionState?.Status is
         RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction
             ? Localization.GetString(HasOfficialLocation
                 ? "Workflow.Guided.Primary.RetryAndOpen"
@@ -533,11 +563,14 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public string OfficialLocationText => CurrentLocation?.Url.AbsoluteUri ?? string.Empty;
+    public string OfficialLocationText =>
+        _preparedNavigation?.Destination.AbsoluteUri ?? CurrentLocation?.Url.AbsoluteUri ?? string.Empty;
 
-    public string ExpectedOriginsText => CurrentLocation is null
-        ? string.Empty
-        : string.Join(", ", CurrentLocation.ExpectedOrigins);
+    public string ExpectedOriginsText => _preparedNavigation is not null
+        ? string.Join(", ", _preparedNavigation.ExpectedOrigins)
+        : CurrentLocation is null
+            ? string.Empty
+            : string.Join(", ", CurrentLocation.ExpectedOrigins);
 
     public string CredentialReferenceText => CurrentActionState?.CredentialReference is { } reference
         ? Localization.Format("Workflow.Credential.Reference", reference.CredentialId)
@@ -624,6 +657,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         ClearValidation();
         _navigationStatusKey = null;
         _navigationFailureCode = ExternalNavigationFailureCode.None;
+        _preparedNavigation = null;
         var inventory = _inventory.CurrentInventory;
         if (inventory is null)
         {
@@ -639,16 +673,29 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         }
 
         _planItem = _inventory.CurrentPlan?.Items.SingleOrDefault(item => item.AccountId == _account.Id);
-        _workflow = ResolveWorkflow(_account);
+        var reviewedWorkflow = ResolveReviewedWorkflow(_account);
+        _reviewedWorkflowAvailable = reviewedWorkflow is not null;
+        _workflow = reviewedWorkflow ??
+            RepositoryWorkflowCatalog.CreateGenericManualWorkflow(_account.ProviderId);
         _execution = null;
-        if (_workflow is null)
-        {
-            _validationKey = "Workflow.Validation.ProviderUnsupported";
-            RefreshProjection();
-            return;
-        }
 
         var loaded = await _executionService.LoadAsync(_account.Id, _workflow, cancellationToken);
+        if (reviewedWorkflow is not null &&
+            loaded.FailureCode == AccountRecoveryExecutionFailureCode.Corrupted)
+        {
+            var genericWorkflow = RepositoryWorkflowCatalog.CreateGenericManualWorkflow(
+                _account.ProviderId);
+            var preserved = await _executionService.LoadAsync(
+                _account.Id,
+                genericWorkflow,
+                cancellationToken);
+            if (preserved.Succeeded)
+            {
+                _workflow = genericWorkflow;
+                loaded = preserved;
+            }
+        }
+
         if (loaded.Succeeded)
         {
             _execution = loaded.State;
@@ -834,7 +881,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             AccountRecoveryExecutionTransitionKind.StartAction,
             cancellationToken,
             returnToPlan: false);
-        if (CurrentActionState?.Status == RecoveryActionStatus.InProgress && HasOfficialLocation)
+        if (CurrentActionState?.Status == RecoveryActionStatus.InProgress && HasNavigationOpportunity)
         {
             await OpenOfficialPageAsync(cancellationToken);
         }
@@ -899,26 +946,51 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private async Task OpenOfficialPageAsync(CancellationToken cancellationToken)
     {
-        if (_workflow is null || CurrentDefinition is null || CurrentLocation is null)
+        if (_workflow is null || CurrentDefinition is null)
         {
+            return;
+        }
+
+        if (_preparedNavigation is { } prepared)
+        {
+            var openedPrepared = await _externalNavigation.OpenAsync(
+                prepared.Destination,
+                cancellationToken);
+            _navigationFailureCode = openedPrepared.FailureCode;
+            _navigationStatusKey = openedPrepared.Succeeded ? "Workflow.Navigation.Opened" : null;
+            NotifyNavigationStatus();
             return;
         }
 
         var accountUri = Uri.TryCreate(_account?.AccountUrl, UriKind.Absolute, out var parsed)
             ? parsed
             : null;
+        var location = CurrentLocation;
         var discovery = await _locationDiscovery.DiscoverAsync(
             new RecoveryLocationDiscoveryRequest(
                 _workflow,
                 CurrentDefinition.RecoveryLocationId,
                 accountUri,
-                RecoveryLocationSelectionPolicy.ProviderDefinedOnly),
+                location is null
+                    ? RecoveryLocationSelectionPolicy.WellKnownFirst
+                    : RecoveryLocationSelectionPolicy.ProviderDefinedOnly),
             cancellationToken);
         if (!discovery.Succeeded || discovery.Handoff is not { RequiresVisibleConfirmation: true } handoff)
         {
             _navigationFailureCode = ExternalNavigationFailureCode.Unavailable;
             _navigationStatusKey = null;
             NotifyNavigationStatus();
+            return;
+        }
+
+        if (location is null)
+        {
+            _preparedNavigation = handoff;
+            _navigationFailureCode = ExternalNavigationFailureCode.None;
+            _navigationStatusKey = "Workflow.Navigation.Discovered";
+            NotifyCurrentActionProperties();
+            NotifyNavigationStatus();
+            RaiseCommandStates();
             return;
         }
 
@@ -1010,6 +1082,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _completionCriteriaAcknowledged = false;
         _navigationStatusKey = null;
         _navigationFailureCode = ExternalNavigationFailureCode.None;
+        _preparedNavigation = null;
         IsProblemReviewVisible = false;
         ClearValidation();
         RefreshProjection();
@@ -1056,7 +1129,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             : inventory.Accounts.FirstOrDefault();
     }
 
-    private static RecoveryWorkflowDefinition? ResolveWorkflow(AccountInventoryEntry account)
+    private static RecoveryWorkflowDefinition? ResolveReviewedWorkflow(AccountInventoryEntry account)
     {
         var accountHost = Uri.TryCreate(account.AccountUrl, UriKind.Absolute, out var accountUri)
             ? accountUri.Host
@@ -1322,6 +1395,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     {
         OnPropertyChanged(nameof(HasAccount));
         OnPropertyChanged(nameof(HasWorkflow));
+        OnPropertyChanged(nameof(IsGeneralManualWorkflow));
+        OnPropertyChanged(nameof(IsReviewedProviderWorkflow));
+        OnPropertyChanged(nameof(WorkflowTrustTitle));
+        OnPropertyChanged(nameof(WorkflowTrustMessage));
         OnPropertyChanged(nameof(HasExecution));
         OnPropertyChanged(nameof(AccountName));
         OnPropertyChanged(nameof(ProviderName));
@@ -1346,6 +1423,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     {
         OnPropertyChanged(nameof(HasCurrentAction));
         OnPropertyChanged(nameof(HasOfficialLocation));
+        OnPropertyChanged(nameof(HasPreparedNavigation));
+        OnPropertyChanged(nameof(NavigationLocationTitle));
         OnPropertyChanged(nameof(HasCredentialReference));
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(CanRunGuidedPrimary));
@@ -1403,6 +1482,14 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _generatedCredentials?.IsUnlocked == true && _account is not null && _execution is not null &&
         CurrentDefinition?.Type is RecoveryActionType.ChangePassword or RecoveryActionType.ResetPassword &&
         CurrentActionState?.CredentialReference is null;
+
+    private bool CanDiscoverCurrentLocation =>
+        _workflow?.AllowsAccountOriginDiscovery == true &&
+        CurrentDefinition?.Type == RecoveryActionType.ChangePassword &&
+        Uri.TryCreate(_account?.AccountUrl, UriKind.Absolute, out _);
+
+    private bool HasNavigationOpportunity =>
+        _preparedNavigation is not null || CurrentLocation is not null || CanDiscoverCurrentLocation;
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs)
     {

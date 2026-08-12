@@ -14,7 +14,9 @@ public sealed class ProviderWorkflowGuidanceTests
         var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
         var english = localization.GetResourceKeys("en").ToHashSet(StringComparer.Ordinal);
         var german = localization.GetResourceKeys("de").ToHashSet(StringComparer.Ordinal);
-        var required = RepositoryWorkflowCatalog.Workflows
+        var workflows = RepositoryWorkflowCatalog.Workflows
+            .Append(RepositoryWorkflowCatalog.CreateGenericManualWorkflow("unsupported.example"));
+        var required = workflows
             .SelectMany(workflow => workflow.Actions)
             .SelectMany(action => EnumerateKeys(action.Guidance))
             .ToHashSet(StringComparer.Ordinal);

@@ -433,10 +433,17 @@ public static class RepositoryWorkflowCatalog
             diagnostics.AddRange(RecoveryWorkflowValidator.Validate(workflow, currentDate).Diagnostics);
         }
 
+        diagnostics.AddRange(RecoveryWorkflowValidator.Validate(
+            CreateGenericManualWorkflow("synthetic.unsupported.example"),
+            currentDate).Diagnostics);
+
         return diagnostics.Count == 0
             ? WorkflowValidationResult.Valid
             : WorkflowValidationResult.FromDiagnostics(diagnostics);
     }
+
+    public static RecoveryWorkflowDefinition CreateGenericManualWorkflow(string providerId) =>
+        GenericManualRecoveryWorkflow.Create(providerId);
 
     private static RecoveryActionDefinition Required(
         string id,

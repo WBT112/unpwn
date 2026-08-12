@@ -63,6 +63,12 @@ A repository-defined `RecoveryLocationDefinition` is accepted only when:
 
 When standards-based discovery fails and a valid reviewed provider location exists, the result uses `ProviderFallback` and retains the structured fallback reason. If no safe fallback exists, the caller receives a failure and must show manual guidance rather than guessing a URL.
 
+The generic unsupported-provider workflow deliberately has no provider fallback and no trusted-origin
+metadata. For its authenticated password-change action, discovery may derive only the standard
+endpoint from the validated HTTPS origin of the account URL. A successful handoff is displayed before
+a separate open action. Password-reset and manual-recovery destinations are never inferred from an
+unknown provider ID, name, or arbitrary path.
+
 ## Visible navigation handoff
 
 A successful result contains:

@@ -257,4 +257,49 @@
   <data name="Workflow.Credential.Generate" xml:space="preserve"><value>Generate and attach new credential</value></data>
   <data name="Workflow.Credential.GenerationFailed" xml:space="preserve"><value>A new credential could not be generated and attached.</value></data>
   <data name="Workflow.Credential.GenerationHelp" xml:space="preserve"><value>Password-change and reset actions store only an opaque reference. Reveal or copy the generated value on the Credentials page.</value></data>
+  <data name="Workflow.Generic.Action.identify-account.Title" xml:space="preserve"><value>Confirm the account and service</value></data>
+  <data name="Workflow.Generic.Action.identify-account.Instruction" xml:space="preserve"><value>Confirm which account is affected, which service operates it, and whether you still have an authenticated session. This guidance has not been verified for this provider.</value></data>
+  <data name="Workflow.Generic.Action.identify-account.Warning" xml:space="preserve"><value>Do not enter passwords, reset links, verification codes, MFA secrets, recovery codes, cookies, browser data, or identity documents into unpwn.</value></data>
+  <data name="Workflow.Generic.Action.identify-account.Completion" xml:space="preserve"><value>Account and access context recorded</value></data>
+  <data name="Workflow.Generic.Action.identify-account.Criterion.1" xml:space="preserve"><value>The exact affected account, service, and current access situation have been identified.</value></data>
+  <data name="Workflow.Generic.Action.change-password.Title" xml:space="preserve"><value>Change the password if the service offers it</value></data>
+  <data name="Workflow.Generic.Action.change-password.Instruction" xml:space="preserve"><value>Use the service's authenticated security settings to set a new unique password. unpwn may safely check the account origin's standard change-password endpoint, but it does not verify the provider's controls.</value></data>
+  <data name="Workflow.Generic.Action.change-password.Warning" xml:space="preserve"><value>Review any displayed destination before opening it. Discovery and browser navigation never prove that the password changed.</value></data>
+  <data name="Workflow.Generic.Action.change-password.Completion" xml:space="preserve"><value>Password change outcome recorded</value></data>
+  <data name="Workflow.Generic.Action.change-password.Criterion.1" xml:space="preserve"><value>A new unique password was set through the service's authenticated flow.</value></data>
+  <data name="Workflow.Generic.Action.reset-password.Title" xml:space="preserve"><value>Use the service's password reset</value></data>
+  <data name="Workflow.Generic.Action.reset-password.Instruction" xml:space="preserve"><value>Starting from a provider page you independently trust, use its password-reset flow and a recovery channel you already control. Set a new unique password if access is restored.</value></data>
+  <data name="Workflow.Generic.Action.reset-password.Warning" xml:space="preserve"><value>unpwn does not know this provider's official reset URL and will not guess one. It cannot bypass CAPTCHA, MFA, identity, ownership, waiting-period, or rate-limit checks.</value></data>
+  <data name="Workflow.Generic.Action.reset-password.Completion" xml:space="preserve"><value>Password reset outcome recorded</value></data>
+  <data name="Workflow.Generic.Action.reset-password.Criterion.1" xml:space="preserve"><value>The provider restored access and a new unique password was set through its reset flow.</value></data>
+  <data name="Workflow.Generic.Action.manual-recovery.Title" xml:space="preserve"><value>Use the service's manual recovery process</value></data>
+  <data name="Workflow.Generic.Action.manual-recovery.Instruction" xml:space="preserve"><value>Starting from a provider page you independently trust, follow its support or manual account-recovery process and record whether review is pending, access was restored, or access remains lost.</value></data>
+  <data name="Workflow.Generic.Action.manual-recovery.Warning" xml:space="preserve"><value>This process is provider-controlled. unpwn cannot prove ownership, influence review, bypass security checks, or guarantee account recovery.</value></data>
+  <data name="Workflow.Generic.Action.manual-recovery.Completion" xml:space="preserve"><value>Manual recovery outcome recorded</value></data>
+  <data name="Workflow.Generic.Action.manual-recovery.Criterion.1" xml:space="preserve"><value>The current outcome of the provider's manual recovery process has been explicitly documented.</value></data>
+  <data name="Workflow.Generic.Action.review-sessions.Title" xml:space="preserve"><value>Review sessions and trusted devices if available</value></data>
+  <data name="Workflow.Generic.Action.review-sessions.Instruction" xml:space="preserve"><value>If the service visibly offers session or trusted-device controls, review them and revoke unknown or unnecessary access. Otherwise record that this capability is truly not applicable.</value></data>
+  <data name="Workflow.Generic.Action.review-sessions.Warning" xml:space="preserve"><value>Do not assume that changing a password revoked existing sessions. If the control should exist but cannot be completed, keep it as an unresolved risk.</value></data>
+  <data name="Workflow.Generic.Action.review-sessions.Completion" xml:space="preserve"><value>Available session controls reviewed</value></data>
+  <data name="Workflow.Generic.Action.review-sessions.Criterion.1" xml:space="preserve"><value>Visible sessions and trusted devices were reviewed and unknown access was revoked where possible.</value></data>
+  <data name="Workflow.Generic.Action.review-sign-in-methods.Title" xml:space="preserve"><value>Review MFA, passkeys, and sign-in methods if available</value></data>
+  <data name="Workflow.Generic.Action.review-sign-in-methods.Instruction" xml:space="preserve"><value>If visibly available, review MFA methods, passkeys, security keys, app passwords, and recovery codes and remove anything unrecognized. Otherwise record the control's actual disposition.</value></data>
+  <data name="Workflow.Generic.Action.review-sign-in-methods.Warning" xml:space="preserve"><value>Never copy authenticator secrets, recovery codes, or private keys into unpwn notes.</value></data>
+  <data name="Workflow.Generic.Action.review-sign-in-methods.Completion" xml:space="preserve"><value>Available sign-in methods reviewed</value></data>
+  <data name="Workflow.Generic.Action.review-sign-in-methods.Criterion.1" xml:space="preserve"><value>Visible MFA, passkey, and other sign-in methods were reviewed and corrected where possible.</value></data>
+  <data name="Workflow.Generic.Action.review-recovery-options.Title" xml:space="preserve"><value>Review recovery options if available</value></data>
+  <data name="Workflow.Generic.Action.review-recovery-options.Instruction" xml:space="preserve"><value>If the service exposes recovery email, telephone, trusted-contact, or similar options, review and correct them. Otherwise record the control's actual disposition.</value></data>
+  <data name="Workflow.Generic.Action.review-recovery-options.Warning" xml:space="preserve"><value>Only retain recovery channels you control. Do not store verification messages, links, or codes in unpwn.</value></data>
+  <data name="Workflow.Generic.Action.review-recovery-options.Completion" xml:space="preserve"><value>Available recovery options reviewed</value></data>
+  <data name="Workflow.Generic.Action.review-recovery-options.Criterion.1" xml:space="preserve"><value>Visible recovery options were reviewed and unauthorized or obsolete entries were corrected where possible.</value></data>
+  <data name="Workflow.Generic.Action.review-connected-access.Title" xml:space="preserve"><value>Review connected access if relevant and available</value></data>
+  <data name="Workflow.Generic.Action.review-connected-access.Instruction" xml:space="preserve"><value>Review connected applications, trusted devices, tokens, API keys, or signing keys only when the service visibly offers them and they are relevant to this account. Revoke unknown access carefully.</value></data>
+  <data name="Workflow.Generic.Action.review-connected-access.Warning" xml:space="preserve"><value>Revocation can interrupt legitimate devices, integrations, or automation. Never copy token or private-key values into unpwn.</value></data>
+  <data name="Workflow.Generic.Action.review-connected-access.Completion" xml:space="preserve"><value>Relevant connected access reviewed</value></data>
+  <data name="Workflow.Generic.Action.review-connected-access.Criterion.1" xml:space="preserve"><value>Visible and relevant connected access was reviewed and unknown access was revoked where possible.</value></data>
+  <data name="Workflow.Generic.Action.document-completion.Title" xml:space="preserve"><value>Review the outcome and remaining risks</value></data>
+  <data name="Workflow.Generic.Action.document-completion.Instruction" xml:space="preserve"><value>Review every recorded outcome, confirm that absent controls were explicitly marked, and leave blocked work, lost access, or unresolved risk visible for the final recovery review.</value></data>
+  <data name="Workflow.Generic.Action.document-completion.Warning" xml:space="preserve"><value>Completing general guidance does not prove that the provider account or device is secure.</value></data>
+  <data name="Workflow.Generic.Action.document-completion.Completion" xml:space="preserve"><value>General recovery outcome reviewed</value></data>
+  <data name="Workflow.Generic.Action.document-completion.Criterion.1" xml:space="preserve"><value>All generic actions and their unresolved outcomes have been explicitly reviewed without claiming that the account is secure.</value></data>
 </root>

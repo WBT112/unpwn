@@ -8,7 +8,19 @@ public sealed record RecoveryWorkflowDefinition(
     string WorkflowVersion,
     DateOnly VerifiedAt,
     IReadOnlyList<RecoveryLocationDefinition> RecoveryLocations,
-    IReadOnlyList<RecoveryActionDefinition> Actions);
+    IReadOnlyList<RecoveryActionDefinition> Actions)
+{
+    public RecoveryWorkflowTrustLevel TrustLevel { get; init; } =
+        RecoveryWorkflowTrustLevel.ReviewedProvider;
+
+    public bool AllowsAccountOriginDiscovery { get; init; }
+}
+
+public enum RecoveryWorkflowTrustLevel
+{
+    ReviewedProvider,
+    GeneralManualGuidance,
+}
 
 public sealed record RecoveryLocationDefinition(
     string Id,

@@ -445,6 +445,107 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task UnsupportedProviderUsesClearlyLabelledGeneralWorkflow()
+    {
+        var fixture = new Fixture(
+            providerId: "unsupported.example",
+            accountUrl: "https://unsupported.example.test/account");
+        var viewModel = fixture.CreateViewModel();
+
+        await viewModel.RefreshCommand.ExecuteAsync();
+
+        Assert.True(viewModel.HasWorkflow);
+        Assert.True(viewModel.IsGeneralManualWorkflow);
+        Assert.False(viewModel.IsReviewedProviderWorkflow);
+        Assert.Contains("not provider-specific", viewModel.WorkflowTrustTitle, StringComparison.Ordinal);
+        Assert.Contains("may differ", viewModel.WorkflowTrustMessage, StringComparison.Ordinal);
+        Assert.Equal(3, viewModel.PathOptions.Count);
+        Assert.False(viewModel.HasValidationMessage);
+    }
+
+    [Fact]
+    public async Task GenericPasswordDiscoveryRequiresReviewBeforeOpeningAndNeverCompletesAction()
+    {
+        var fixture = new Fixture(
+            providerId: "unsupported.example",
+            accountUrl: "https://unsupported.example.test/account")
+        {
+            Confirm = true,
+        };
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+        viewModel.CompletionCriteriaAcknowledged = true;
+        await viewModel.CompleteActionCommand.ExecuteAsync();
+        viewModel.SelectedAction = viewModel.Actions.Single(action =>
+            action.DefinitionId == "change-password");
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.Equal(1, fixture.LocationDiscovery.Calls);
+        Assert.Equal(RecoveryLocationSelectionPolicy.WellKnownFirst,
+            fixture.LocationDiscovery.LastRequest?.SelectionPolicy);
+        Assert.True(viewModel.HasPreparedNavigation);
+        Assert.Contains("/.well-known/change-password", viewModel.OfficialLocationText, StringComparison.Ordinal);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        var revision = fixture.Execution.State!.Revision;
+
+        await viewModel.OpenOfficialPageCommand.ExecuteAsync();
+
+        Assert.Equal(1, fixture.ExternalNavigation.OpenCalls);
+        Assert.Equal(revision, fixture.Execution.State.Revision);
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State.GetAction("change-password").Status);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("http://unsupported.example.test/account")]
+    public async Task GenericWorkflowProvidesManualGuidanceWhenSafeNavigationIsUnavailable(
+        string accountUrl)
+    {
+        var fixture = new Fixture("unsupported.example", accountUrl);
+        fixture.LocationDiscovery.Result = RecoveryLocationDiscoveryResult.Failure(
+            RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin);
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        viewModel.SelectedAction = viewModel.Actions.Single(action =>
+            action.DefinitionId == "change-password");
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.False(viewModel.HasPreparedNavigation);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        Assert.DoesNotContain("unsupported.example.test/account", viewModel.NavigationStatus, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExistingGenericHistoryIsPreservedWhenReviewedWorkflowBecomesAvailable()
+    {
+        var fixture = new Fixture();
+        var generic = RepositoryWorkflowCatalog.CreateGenericManualWorkflow("github.com");
+        var state = AccountRecoveryExecutionState.Create(
+            fixture.AccountId,
+            generic,
+            RecoveryPath.ManualRecovery,
+            StartedAt.AddMinutes(1));
+        state = state.StartAction(generic, "identify-account-manual", StartedAt.AddMinutes(2));
+        fixture.Execution.Seed(state);
+        var viewModel = fixture.CreateViewModel();
+
+        await viewModel.RefreshCommand.ExecuteAsync();
+
+        Assert.True(viewModel.IsGeneralManualWorkflow);
+        Assert.True(viewModel.HasExecution);
+        Assert.Contains("keeps that history", viewModel.WorkflowTrustMessage, StringComparison.Ordinal);
+        Assert.Equal(state.Revision, fixture.Execution.State?.Revision);
+        Assert.Equal("identify-account-manual", viewModel.SelectedAction?.DefinitionId);
+    }
+
+    [Fact]
     public async Task VaultLockClearsMaterializedAccountAndExecutionState()
     {
         var fixture = new Fixture();
@@ -466,7 +567,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         public Fixture(
             string providerId = "github.com",
-            string accountUrl = "https://github.com/settings/security")
+            string? accountUrl = "https://github.com/settings/security")
         {
             var account = new AccountInventoryEntry(
                 _accountId,
@@ -495,6 +596,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         public ResourceLocalizationService Localization { get; } = new(CultureInfo.GetCultureInfo("en"));
 
+        public Guid AccountId => _accountId;
+
         public TestInventoryService Inventory { get; }
 
         public TestSessionService Session { get; }
@@ -502,6 +605,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         public TestExecutionService Execution { get; } = new();
 
         public TestExternalNavigationService ExternalNavigation { get; } = new();
+
+        public TestLocationDiscoveryService LocationDiscovery { get; } = new();
 
         public TestGeneratedCredentialRepository Credentials { get; } = new();
 
@@ -519,7 +624,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 Inventory,
                 Session,
                 Execution,
-                new TestLocationDiscoveryService(),
+                LocationDiscovery,
                 ExternalNavigation,
                 new TestConfirmationDialogService((_, _) =>
                 {
@@ -560,15 +665,30 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         public int ApplyCalls { get; private set; }
 
+        public void Seed(AccountRecoveryExecutionState state) => State = state;
+
         public Task<AccountRecoveryExecutionResult> LoadAsync(
             Guid accountId,
             RecoveryWorkflowDefinition workflow,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(State is null
-                ? AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.NotFound)
-                : AccountRecoveryExecutionResult.Success(State));
+            if (State is null)
+            {
+                return Task.FromResult(AccountRecoveryExecutionResult.Failure(
+                    AccountRecoveryExecutionFailureCode.NotFound));
+            }
+
+            try
+            {
+                State.Validate(workflow);
+                return Task.FromResult(AccountRecoveryExecutionResult.Success(State));
+            }
+            catch (InvalidOperationException)
+            {
+                return Task.FromResult(AccountRecoveryExecutionResult.Failure(
+                    AccountRecoveryExecutionFailureCode.Corrupted));
+            }
         }
 
         public Task<AccountRecoveryExecutionResult> CreateAsync(
@@ -662,11 +782,36 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
     private sealed class TestLocationDiscoveryService : IRecoveryLocationDiscoveryService
     {
+        public int Calls { get; private set; }
+
+        public RecoveryLocationDiscoveryRequest? LastRequest { get; private set; }
+
+        public RecoveryLocationDiscoveryResult? Result { get; set; }
+
         public Task<RecoveryLocationDiscoveryResult> DiscoverAsync(
             RecoveryLocationDiscoveryRequest request,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            Calls++;
+            LastRequest = request;
+            if (Result is not null)
+            {
+                return Task.FromResult(Result);
+            }
+
+            if (request.ProviderLocationId is null && request.AccountUri is { } accountUri)
+            {
+                var origin = accountUri.GetLeftPart(UriPartial.Authority);
+                return Task.FromResult(RecoveryLocationDiscoveryResult.Success(
+                    new RecoveryNavigationHandoff(
+                        new Uri($"{origin}/.well-known/change-password"),
+                        origin,
+                        [origin],
+                        RecoveryLocationResolutionSource.WellKnownChangePassword,
+                        RequiresVisibleConfirmation: true)));
+            }
+
             var location = request.Workflow.RecoveryLocations.Single(candidate =>
                 candidate.Id == request.ProviderLocationId);
             return Task.FromResult(RecoveryLocationDiscoveryResult.Success(

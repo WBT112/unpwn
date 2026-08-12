@@ -247,6 +247,138 @@ public sealed class RecoveryJourneySmokeTests
         Assert.All(reopened.Inventory.CurrentInventory.Accounts, account => account.Validate());
     }
 
+    [Fact]
+    [Trait("Category", "EndToEndSmoke")]
+    public async Task UnsupportedProviderRecoveryWithCredentialAndNotApplicableControlSurvivesRestart()
+    {
+        using var directory = new TemporaryDirectory();
+        var vaultPath = Path.Combine(directory.Path, "generic-unsupported.sqlite");
+        Guid accountId;
+        GeneratedCredentialReference credentialReference;
+
+        using (var journey = await RecoveryJourney.StartNewAsync(vaultPath, directory.Path))
+        {
+            await journey.CreateSessionAsync();
+            using var source = File.OpenText(FixturePath("generic-recovery-sample.csv"));
+            var preview = CsvAccountImportService.CreatePreview(
+                source,
+                new CsvColumnMapping("service", "account", "username", "url", []));
+            Assert.True((await journey.Inventory.ImportAsync(
+                preview.Candidates,
+                ImportDuplicateResolution.SkipDuplicates,
+                CancellationToken.None)).Succeeded);
+            var account = Assert.Single(
+                journey.Inventory.CurrentInventory!.Accounts,
+                candidate => candidate.ProviderId == "unsupported.example");
+            accountId = account.Id;
+            var workflow = RepositoryWorkflowCatalog.CreateGenericManualWorkflow(account.ProviderId);
+            var projection = journey.CreateProjection(account);
+            journey.Tick();
+            var execution = AssertSuccess(await journey.Execution.CreateAsync(
+                new AccountRecoveryExecutionCreateRequest(
+                    Guid.NewGuid(),
+                    account.Id,
+                    workflow,
+                    RecoveryPath.AuthenticatedChange,
+                    projection),
+                CancellationToken.None));
+            GeneratedCredentialReference? generatedReference = null;
+
+            foreach (var action in execution.Actions)
+            {
+                journey.Tick();
+                execution = AssertSuccess(await journey.ApplyAsync(
+                    execution,
+                    workflow,
+                    projection,
+                    AccountRecoveryExecutionTransitionKind.StartAction,
+                    action.DefinitionId));
+                journey.Tick();
+                if (action.DefinitionId == "change-password")
+                {
+                    using var generated = await journey.Vault.GenerateAsync(
+                        account.Id,
+                        CredentialGenerationPolicy.Default,
+                        Guid.NewGuid(),
+                        CancellationToken.None);
+                    Assert.True(generated.Succeeded);
+                    generatedReference = generated.Metadata!.Reference;
+                    execution = AssertSuccess(await journey.ApplyAsync(
+                        execution,
+                        workflow,
+                        projection,
+                        AccountRecoveryExecutionTransitionKind.AttachCredentialReference,
+                        action.DefinitionId,
+                        credentialReference: generatedReference));
+                    journey.Tick();
+                    Assert.True((await journey.Vault.MarkUsedAsync(
+                        generatedReference,
+                        Guid.NewGuid(),
+                        CancellationToken.None)).Succeeded);
+                    execution = AssertSuccess(await journey.ApplyAsync(
+                        execution,
+                        workflow,
+                        projection,
+                        AccountRecoveryExecutionTransitionKind.CompleteAction,
+                        action.DefinitionId,
+                        completionCriteriaAcknowledged: true));
+                    Assert.True((await journey.Vault.ConfirmAsync(
+                        generatedReference,
+                        Guid.NewGuid(),
+                        CancellationToken.None)).Succeeded);
+                }
+                else if (action.DefinitionId == "review-connected-access-auth")
+                {
+                    execution = AssertSuccess(await journey.ApplyAsync(
+                        execution,
+                        workflow,
+                        projection,
+                        AccountRecoveryExecutionTransitionKind.MarkTrulyNotApplicable,
+                        action.DefinitionId,
+                        userReason: "The synthetic service has no connected-access control."));
+                }
+                else
+                {
+                    execution = AssertSuccess(await journey.ApplyAsync(
+                        execution,
+                        workflow,
+                        projection,
+                        AccountRecoveryExecutionTransitionKind.CompleteAction,
+                        action.DefinitionId,
+                        completionCriteriaAcknowledged: true));
+                }
+            }
+
+            credentialReference = Assert.IsType<GeneratedCredentialReference>(generatedReference);
+            Assert.Equal(AccountRecoveryStatus.FullyReviewed, execution.RecoveryStatus);
+            Assert.Equal(
+                NotApplicableDisposition.TrulyNotApplicable,
+                execution.GetAction("review-connected-access-auth").NotApplicableDisposition);
+            await journey.Vault.LockAsync(CancellationToken.None);
+        }
+
+        using var reopened = await RecoveryJourney.OpenExistingAsync(vaultPath, directory.Path);
+        var reopenedAccount = Assert.Single(
+            reopened.Inventory.CurrentInventory!.Accounts,
+            candidate => candidate.Id == accountId);
+        Assert.Equal(accountId, reopenedAccount.Id);
+        var reopenedWorkflow = RepositoryWorkflowCatalog.CreateGenericManualWorkflow(
+            reopenedAccount.ProviderId);
+        var loaded = await reopened.Execution.LoadAsync(
+            accountId,
+            reopenedWorkflow,
+            CancellationToken.None);
+
+        Assert.True(loaded.Succeeded);
+        Assert.Equal(AccountRecoveryStatus.FullyReviewed, loaded.State!.RecoveryStatus);
+        Assert.Equal(
+            credentialReference,
+            loaded.State.GetAction("change-password").CredentialReference);
+        Assert.Equal(
+            NotApplicableDisposition.TrulyNotApplicable,
+            loaded.State.GetAction("review-connected-access-auth").NotApplicableDisposition);
+    }
+
     [Theory]
     [InlineData(TrustedDeviceDecision.NotTrusted)]
     [InlineData(TrustedDeviceDecision.Unsure)]
@@ -418,7 +550,8 @@ public sealed class RecoveryJourneySmokeTests
             AccountRecoveryExecutionTransitionKind transition,
             string actionId,
             bool completionCriteriaAcknowledged = false,
-            GeneratedCredentialReference? credentialReference = null) =>
+            GeneratedCredentialReference? credentialReference = null,
+            string? userReason = null) =>
             Execution.ApplyAsync(
                 new AccountRecoveryExecutionTransitionRequest(
                     Guid.NewGuid(),
@@ -427,7 +560,7 @@ public sealed class RecoveryJourneySmokeTests
                     workflow,
                     transition,
                     actionId,
-                    UserReason: null,
+                    UserReason: userReason,
                     UserNotes: null,
                     completionCriteriaAcknowledged,
                     credentialReference,

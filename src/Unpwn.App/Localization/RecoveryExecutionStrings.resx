@@ -67,10 +67,13 @@
   <data name="Workflow.Automation.Assisted" xml:space="preserve"><value>Support: visible browser assistance</value></data>
   <data name="Workflow.Automation.Automated" xml:space="preserve"><value>Support: bounded automation with explicit authorization</value></data>
   <data name="Workflow.Navigation.Title" xml:space="preserve"><value>Official recovery location</value></data>
+  <data name="Workflow.Navigation.DiscoveredTitle" xml:space="preserve"><value>Safely discovered account-origin location</value></data>
   <data name="Workflow.Navigation.Destination" xml:space="preserve"><value>Destination</value></data>
   <data name="Workflow.Navigation.ExpectedOrigins" xml:space="preserve"><value>Expected origin</value></data>
   <data name="Workflow.Navigation.Disclaimer" xml:space="preserve"><value>Check the destination and origin before opening it. Opening the page, returning to unpwn, or waiting does not complete this action.</value></data>
   <data name="Workflow.Navigation.Open" xml:space="preserve"><value>Open official page</value></data>
+  <data name="Workflow.Navigation.OpenDiscovered" xml:space="preserve"><value>Open the displayed page</value></data>
+  <data name="Workflow.Navigation.Discovered" xml:space="preserve"><value>A same-origin standard change-password destination was found. Review the displayed destination and origin, then choose whether to open it. The action remains unchanged.</value></data>
   <data name="Workflow.Navigation.Opened" xml:space="preserve"><value>The official page was opened. The action remains unchanged until you explicitly confirm its completion criteria.</value></data>
   <data name="Workflow.Navigation.Unavailable" xml:space="preserve"><value>The official page could not be opened safely. Continue with the displayed manual guidance.</value></data>
   <data name="Workflow.Navigation.Rejected" xml:space="preserve"><value>The operating system did not open the page. No recovery action was marked complete.</value></data>
@@ -123,7 +126,6 @@
   <data name="Workflow.Plan.Status.BlockedCycle" xml:space="preserve"><value>Blocked by a dependency cycle</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Unlock a vault and load an account inventory before starting account recovery.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>The selected account is no longer available in the encrypted inventory.</value></data>
-  <data name="Workflow.Validation.ProviderUnsupported" xml:space="preserve"><value>No reviewed repository workflow is available for this provider. Use the account inventory and manual guidance; unpwn will not guess provider instructions.</value></data>
   <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Select a recovery path before starting.</value></data>
   <data name="Workflow.Validation.CriteriaRequired" xml:space="preserve"><value>Explicitly acknowledge the completion criteria before recording completion.</value></data>
   <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Enter a non-secret reason for this outcome.</value></data>
@@ -140,8 +142,15 @@
   <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Why this is next: {0}</value></data>
   <data name="Workflow.Guided.Primary.StartAndOpen" xml:space="preserve"><value>Start this step and open the official page</value></data>
   <data name="Workflow.Guided.Primary.Start" xml:space="preserve"><value>Start this step</value></data>
+  <data name="Workflow.Guided.Primary.StartAndDiscover" xml:space="preserve"><value>Start this step and check for a safe password page</value></data>
   <data name="Workflow.Guided.Primary.RetryAndOpen" xml:space="preserve"><value>Try again and open the official page</value></data>
   <data name="Workflow.Guided.Primary.Retry" xml:space="preserve"><value>Try this step again</value></data>
+  <data name="Workflow.Guided.Primary.RetryAndDiscover" xml:space="preserve"><value>Try again and check for a safe password page</value></data>
+  <data name="Workflow.Trust.Reviewed.Title" xml:space="preserve"><value>Reviewed provider workflow</value></data>
+  <data name="Workflow.Trust.Reviewed.Message" xml:space="preserve"><value>This service-specific guidance and its destinations were reviewed in the unpwn repository. Provider pages can still change, and navigation never proves success.</value></data>
+  <data name="Workflow.Trust.General.Title" xml:space="preserve"><value>General manual guidance — not provider-specific</value></data>
+  <data name="Workflow.Trust.General.Message" xml:space="preserve"><value>No provider-specific reviewed workflow is available for this service. unpwn can guide a conservative manual checklist, but available pages and security controls may differ.</value></data>
+  <data name="Workflow.Trust.GeneralPreserved.Message" xml:space="preserve"><value>A reviewed provider workflow is now available, but this account already has general-workflow history. unpwn keeps that history and does not migrate or mark it complete automatically.</value></data>
   <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Did this step really work?</value></data>
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Done</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>I cannot continue</value></data>
