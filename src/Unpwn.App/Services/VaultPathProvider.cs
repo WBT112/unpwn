@@ -3,6 +3,8 @@ namespace Unpwn.App.Services;
 public interface IVaultPathProvider
 {
     string GetNextDefaultVaultPath();
+
+    bool IsExistingVaultPath(string path);
 }
 
 public static class VaultPathPolicy
@@ -101,6 +103,24 @@ public sealed class PlatformVaultPathProvider : IVaultPathProvider
         _ensureDirectory(applicationDirectory);
         _ensureDirectory(vaultDirectory);
         return VaultPathPolicy.SelectAvailableVaultPath(vaultDirectory, _pathExists);
+    }
+
+    public bool IsExistingVaultPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        try
+        {
+            return File.Exists(Path.GetFullPath(path));
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
     }
 
     private static string ResolveCurrentLocalDataRoot() => VaultPathPolicy.ResolveLocalDataRoot(
