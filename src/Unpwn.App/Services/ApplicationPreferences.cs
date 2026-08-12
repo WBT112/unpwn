@@ -97,8 +97,10 @@ public sealed class FileApplicationPreferences : IApplicationPreferences
             }
 
             var json = File.ReadAllText(_path);
-            return JsonSerializer.Deserialize<ApplicationPreferencesSnapshot>(json, SerializerOptions)
-                ?? ApplicationPreferencesSnapshot.Default;
+            var loaded = JsonSerializer.Deserialize<ApplicationPreferencesSnapshot>(json, SerializerOptions);
+            return loaded?.MainWindow is null
+                ? ApplicationPreferencesSnapshot.Default
+                : loaded;
         }
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or JsonException or
