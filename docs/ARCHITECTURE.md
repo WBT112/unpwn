@@ -13,7 +13,8 @@ Windows is the first target platform. Core recovery logic must remain portable t
 - SQLite
 - Argon2id and AES-256-GCM in the Recovery Vault
 - .NET resource files for presentation localization
-- Playwright for bounded browser assistance where implemented
+- Avalonia `NativeWebView` for the embedded Recovery Browser host
+- Playwright for optional bounded browser assistance research where implemented
 
 Detailed cryptographic rules live in [Vault Security](VAULT_SECURITY.md); localization rules live in [Localization](LOCALIZATION.md).
 
@@ -96,7 +97,15 @@ See [Localization](LOCALIZATION.md).
 
 Automation assists bounded recovery tasks. Opening or returning from an external provider page never proves that an action succeeded. CAPTCHA, MFA, identity verification, and ownership checks are not bypassed.
 
-See [Recovery Location Discovery](RECOVERY_LOCATION_DISCOVERY.md) and [Recovery Workflows](RECOVERY_WORKFLOWS.md).
+The embedded Recovery Browser contract and conservative origin policy live in `Unpwn.Application`.
+Avalonia and native WebView2/WPE WebKit details remain in `Unpwn.App` behind the browser-host and
+platform-adapter boundaries. Browser observations are transient presentation context and have no
+dependency path to canonical recovery transitions. The host consumes the validated
+`RecoveryNavigationHandoff`; it does not rediscover or infer provider destinations.
+
+See [Recovery Location Discovery](RECOVERY_LOCATION_DISCOVERY.md),
+[Recovery Browser Security Boundary](RECOVERY_BROWSER.md), and
+[Recovery Workflows](RECOVERY_WORKFLOWS.md).
 
 ## Documentation ownership
 
