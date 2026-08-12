@@ -209,7 +209,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
         await webView.InvokeScript(
             "document.body.setAttribute('data-unpwn-provider','synthetic');" +
             "document.body.setAttribute('data-unpwn-workflow','password-change');" +
-            "document.body.innerHTML='<input data-testid=\"new-password\"><input data-testid=\"confirm-password\"><button data-testid=\"submit-password-change\"></button>';" );
+            "document.body.innerHTML='<input data-testid=\"new-password\"><input data-testid=\"confirm-password\"><button data-testid=\"submit-password-change\"></button>';");
 
     private static RecoveryBrowserHostRequest Request(RecoveryNavigationHandoff handoff) => new(
         handoff,
