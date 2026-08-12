@@ -22,7 +22,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
             var handoff = Handoff(new Uri("http://127.0.0.1:43301/password-change"));
             var request = Request(handoff);
             Assert.True(host.Start(request));
-            using var window = new Window { Content = webView };
+            var window = new Window { Content = webView };
             window.Show();
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(50);
@@ -46,7 +46,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
 
             byte[] secret = [65, 66, 67, 33];
             var inserted = await host.InsertCredentialAsync(
-                contract,
+                contract!,
                 secret,
                 CancellationToken.None);
 
@@ -60,6 +60,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
             Assert.Contains("4", firstLength, StringComparison.Ordinal);
             Assert.Contains("4", secondLength, StringComparison.Ordinal);
             Assert.Contains("0", submitted, StringComparison.Ordinal);
+            window.Close();
         }, CancellationToken.None);
     }
 
@@ -79,7 +80,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
                 _ => new TestPlatformAdapter());
             var handoff = Handoff(new Uri("http://127.0.0.1:43302/password-change"));
             Assert.True(host.Start(Request(handoff)));
-            using var window = new Window { Content = webView };
+            var window = new Window { Content = webView };
             window.Show();
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(50);
@@ -101,6 +102,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
 
             Assert.Equal(expected, result.State);
             Assert.False(result.Succeeded);
+            window.Close();
         }, CancellationToken.None);
     }
 
@@ -115,7 +117,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
                 _ => new TestPlatformAdapter());
             var handoff = Handoff(new Uri("http://127.0.0.1:43303/password-change"));
             Assert.True(host.Start(Request(handoff)));
-            using var window = new Window { Content = webView };
+            var window = new Window { Content = webView };
             window.Show();
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(50);
@@ -142,6 +144,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
             Assert.Equal(
                 RecoveryBrowserCredentialAssistanceFailureCode.UnexpectedContent,
                 result.FailureCode);
+            window.Close();
         }, CancellationToken.None);
     }
 
@@ -156,7 +159,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
                 _ => new TestPlatformAdapter());
             var handoff = Handoff(new Uri("http://127.0.0.1:43304/password-change"));
             Assert.True(host.Start(Request(handoff)));
-            using var window = new Window { Content = webView };
+            var window = new Window { Content = webView };
             window.Show();
             Dispatcher.UIThread.RunJobs();
             await Task.Delay(50);
@@ -182,6 +185,7 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
             Assert.Equal(
                 RecoveryBrowserCredentialAssistanceFailureCode.WrongOrigin,
                 result.FailureCode);
+            window.Close();
         }, CancellationToken.None);
     }
 
