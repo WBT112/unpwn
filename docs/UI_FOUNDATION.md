@@ -123,10 +123,11 @@ Launcher success, browser return, and elapsed time never call an execution compl
 
 The Recovery Browser foundation provides a reusable embedded view with localized Back, Forward,
 Reload, Stop, Close, visible-origin, and security-status chrome. It accepts only a validated
-`RecoveryNavigationHandoff` and uses an unpwn-owned profile location. It is not yet the normal guided
-workflow path: account-bound session creation and cleanup are completed in Issue #93 before the
-assistant integration in Issue #94. This ordering prevents an embedded page from silently bypassing
-the session lifecycle or existing external-navigation fallback.
+`RecoveryNavigationHandoff` and uses an unpwn-owned profile location. Account-bound sessions may be
+reused only for the same account. Closing shows cleanup progress; a failure remains visible and can be
+retried. Startup presents orphaned session data as an assertive warning with explicit discard/retry,
+never as a resumed provider login. It is not yet the normal guided workflow path: Issue #94 must use
+this lifecycle when integrating the assistant and preserve the existing external-navigation fallback.
 
 The vault-entry screen exposes local diagnostics independently of vault unlock. Export requires a
 fresh preview of the exact sanitized JSON, an explicit approval checkbox, and a user-selected local

@@ -279,4 +279,10 @@
   <data name="RecoveryBrowser.Security.TlsErrorBlocked" xml:space="preserve"><value>Die Seite wurde blockiert, weil ihre sichere Verbindung nicht geprüft werden konnte.</value></data>
   <data name="RecoveryBrowser.Security.ClientCertificateBlocked" xml:space="preserve"><value>Die Anfrage einer Webseite nach einem Clientzertifikat wurde blockiert.</value></data>
   <data name="RecoveryBrowser.Security.PlatformHardeningUnavailable" xml:space="preserve"><value>Der Recovery Browser wurde angehalten, weil erforderliche Sicherheitskontrollen der Plattform nicht verfügbar sind.</value></data>
+  <data name="RecoveryBrowser.Session.Cleaning" xml:space="preserve"><value>Die Browserdaten werden gelöscht, bevor der eingebettete Browser seine Ressourcen freigibt.</value></data>
+  <data name="RecoveryBrowser.Session.AccountSwitchBlocked" xml:space="preserve"><value>Schließe und bereinige die Browser-Sitzung des aktuellen Kontos, bevor du ein anderes Wiederherstellungskonto öffnest.</value></data>
+  <data name="RecoveryBrowser.Session.CleanupFailed" xml:space="preserve"><value>Temporäre Browserdaten sind noch vorhanden. Die Bereinigung ist fehlgeschlagen und muss wiederholt werden, bevor ein anderes Wiederherstellungskonto den Recovery Browser verwenden kann.</value></data>
+  <data name="RecoveryBrowser.Session.Orphaned" xml:space="preserve"><value>Eine frühere Recovery-Browser-Sitzung wurde nicht sauber beendet. Ihre temporären Daten werden nicht automatisch fortgesetzt; lösche sie vor dem Start einer neuen Browser-Sitzung.</value></data>
+  <data name="RecoveryBrowser.Session.OrphanedTitle" xml:space="preserve"><value>Temporäre Browser-Sitzungsdaten sind noch vorhanden</value></data>
+  <data name="RecoveryBrowser.Session.RetryCleanup" xml:space="preserve"><value>Sichere Bereinigung wiederholen</value></data>
 </root>

@@ -279,4 +279,10 @@
   <data name="RecoveryBrowser.Security.TlsErrorBlocked" xml:space="preserve"><value>The page was blocked because its secure connection could not be validated.</value></data>
   <data name="RecoveryBrowser.Security.ClientCertificateBlocked" xml:space="preserve"><value>A website request for a client certificate was blocked.</value></data>
   <data name="RecoveryBrowser.Security.PlatformHardeningUnavailable" xml:space="preserve"><value>Recovery Browser stopped because required platform security controls are unavailable.</value></data>
+  <data name="RecoveryBrowser.Session.Cleaning" xml:space="preserve"><value>Browser data is being cleared before the embedded browser releases its resources.</value></data>
+  <data name="RecoveryBrowser.Session.AccountSwitchBlocked" xml:space="preserve"><value>Close and clean the current account's browser session before opening a different recovery account.</value></data>
+  <data name="RecoveryBrowser.Session.CleanupFailed" xml:space="preserve"><value>Temporary browser data remains. Cleanup failed and must be retried before another recovery account can use the Recovery Browser.</value></data>
+  <data name="RecoveryBrowser.Session.Orphaned" xml:space="preserve"><value>A previous Recovery Browser session did not end cleanly. Its temporary data will not be resumed automatically; discard it before starting a new browser session.</value></data>
+  <data name="RecoveryBrowser.Session.OrphanedTitle" xml:space="preserve"><value>Temporary browser session data remains</value></data>
+  <data name="RecoveryBrowser.Session.RetryCleanup" xml:space="preserve"><value>Retry secure cleanup</value></data>
 </root>

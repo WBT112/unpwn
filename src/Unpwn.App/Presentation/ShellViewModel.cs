@@ -16,6 +16,7 @@ public sealed class ShellViewModel : ObservableObject
     private readonly ILocalizationService _localization;
     private readonly IGuidedRecoveryWizardService? _guidedWizard;
     private readonly IWorkspacePersistenceStatus? _persistenceStatus;
+    private readonly IRecoveryBrowserSessionLifecycle? _browserSessions;
     private readonly bool _enforceNavigationPrerequisites;
     private IReadOnlyList<NavigationItemViewModel> _navigationItems;
     private readonly LanguageOptionViewModel[] _languageOptions;
@@ -43,6 +44,7 @@ public sealed class ShellViewModel : ObservableObject
             guidedWizard: null,
             persistenceStatus: null,
             runState: null,
+            browserSessions: null,
             localization,
             enforceNavigationPrerequisites: false)
     {
@@ -56,7 +58,8 @@ public sealed class ShellViewModel : ObservableObject
         ILocalizationService localization,
         IGuidedRecoveryWizardService? guidedWizard = null,
         IWorkspacePersistenceStatus? persistenceStatus = null,
-        ApplicationRunState? runState = null)
+        ApplicationRunState? runState = null,
+        IRecoveryBrowserSessionLifecycle? browserSessions = null)
         : this(
             screenFactory,
             vaultLifecycle,
@@ -65,6 +68,7 @@ public sealed class ShellViewModel : ObservableObject
             guidedWizard,
             persistenceStatus,
             runState,
+            browserSessions,
             localization,
             enforceNavigationPrerequisites: true)
     {
@@ -78,6 +82,7 @@ public sealed class ShellViewModel : ObservableObject
         IGuidedRecoveryWizardService? guidedWizard,
         IWorkspacePersistenceStatus? persistenceStatus,
         ApplicationRunState? runState,
+        IRecoveryBrowserSessionLifecycle? browserSessions,
         ILocalizationService localization,
         bool enforceNavigationPrerequisites)
     {
@@ -91,6 +96,7 @@ public sealed class ShellViewModel : ObservableObject
         _accountInventory = accountInventory;
         _guidedWizard = guidedWizard;
         _persistenceStatus = persistenceStatus;
+        _browserSessions = browserSessions;
         _hasStartupRecoveryWarning = runState?.PreviousExitWasAbnormal == true;
         _localization = localization;
         _enforceNavigationPrerequisites = enforceNavigationPrerequisites;
@@ -131,12 +137,20 @@ public sealed class ShellViewModel : ObservableObject
         DismissStartupRecoveryCommand = new RelayCommand(
             DismissStartupRecovery,
             () => HasStartupRecoveryWarning);
+        RetryBrowserSessionCleanupCommand = new AsyncCommand(
+            RetryBrowserSessionCleanupAsync,
+            () => _localization.GetString("RecoveryBrowser.Session.CleanupFailed"),
+            () => HasBrowserSessionCleanupWarning);
         _vaultLifecycle.ContextChanged += ShellContext_OnContextChanged;
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
         _recoverySession?.SessionChanged += RecoverySession_OnSessionChanged;
         _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
         _guidedWizard?.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
         _persistenceStatus?.StatusChanged += PersistenceStatus_OnStatusChanged;
+        if (_browserSessions is { } activeBrowserSessions)
+        {
+            activeBrowserSessions.StateChanged += BrowserSessions_OnStateChanged;
+        }
 
         _localization.CultureChanged += Localization_OnCultureChanged;
     }
@@ -251,7 +265,17 @@ public sealed class ShellViewModel : ObservableObject
 
     public RelayCommand DismissStartupRecoveryCommand { get; }
 
+    public AsyncCommand RetryBrowserSessionCleanupCommand { get; }
+
     public bool HasStartupRecoveryWarning => _hasStartupRecoveryWarning;
+
+    public bool HasBrowserSessionCleanupWarning =>
+        _browserSessions?.Current.HasUncleanSessionData == true;
+
+    public string BrowserSessionCleanupText => _localization.GetString(
+        _browserSessions?.Current.State == RecoveryBrowserSessionLifecycleState.CleanupFailed
+            ? "RecoveryBrowser.Session.CleanupFailed"
+            : "RecoveryBrowser.Session.Orphaned");
 
     public bool IsWorkspaceNavigationExpanded
     {
@@ -610,6 +634,7 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
         OnPropertyChanged(nameof(PersistenceStatusText));
+        OnPropertyChanged(nameof(BrowserSessionCleanupText));
         OnPropertyChanged(nameof(WorkspaceNavigationToggleText));
         LockCommand.RaiseCanExecuteChanged();
         RefreshGuidance();
@@ -865,6 +890,40 @@ public sealed class ShellViewModel : ObservableObject
         _hasStartupRecoveryWarning = false;
         OnPropertyChanged(nameof(HasStartupRecoveryWarning));
         DismissStartupRecoveryCommand.RaiseCanExecuteChanged();
+    }
+
+    private async Task RetryBrowserSessionCleanupAsync(CancellationToken cancellationToken)
+    {
+        if (_browserSessions is null)
+        {
+            return;
+        }
+
+        if (_browserSessions.Current.OrphanedSessions.Count == 0)
+        {
+            _browserSessions.InspectStartup();
+            return;
+        }
+
+        foreach (var orphan in _browserSessions.Current.OrphanedSessions.ToArray())
+        {
+            var result = await _browserSessions.RetryOrphanCleanupAsync(
+                orphan.SessionId,
+                cancellationToken);
+            if (!result.Succeeded)
+            {
+                break;
+            }
+        }
+    }
+
+    private void BrowserSessions_OnStateChanged(
+        object? sender,
+        RecoveryBrowserSessionLifecycleSnapshot snapshot)
+    {
+        OnPropertyChanged(nameof(HasBrowserSessionCleanupWarning));
+        OnPropertyChanged(nameof(BrowserSessionCleanupText));
+        RetryBrowserSessionCleanupCommand.RaiseCanExecuteChanged();
     }
 
     private void RefreshGuidance()

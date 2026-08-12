@@ -18,6 +18,8 @@ internal abstract class RecoveryBrowserPlatformAdapter(string profileDataPath)
 
     public abstract void Attach(IPlatformHandle? platformHandle);
 
+    public abstract Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
+
     public abstract void Dispose();
 
     protected void PublishSecurityEvent(RecoveryBrowserSecurityEventCode code) =>
@@ -97,6 +99,10 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
         _isConfigured = false;
     }
 
+    public override Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
+        _webView?.Profile.ClearBrowsingDataAsync().WaitAsync(cancellationToken) ??
+        Task.CompletedTask;
+
     internal static void HardenSettings(CoreWebView2Settings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -171,6 +177,9 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     : RecoveryBrowserPlatformAdapter
 {
     private const string WpeWebKitLibrary = "libWPEWebKit-2.0.so.1";
+    private const uint AllWebsiteDataTypes = 0x7FFF;
+    private static readonly AsyncReadyCallback WebsiteDataClearedCallback =
+        CompleteWebsiteDataClear;
     private readonly PermissionSignalCallback _permissionCallback;
     private readonly DownloadSignalCallback _downloadCallback;
     private readonly TlsSignalCallback _tlsCallback;
@@ -247,6 +256,42 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         _isConfigured = false;
     }
 
+    public override async Task ClearBrowsingDataAsync(CancellationToken cancellationToken)
+    {
+        if (_webView == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var manager = webkit_web_view_get_website_data_manager(_webView);
+        if (manager == IntPtr.Zero)
+        {
+            throw new InvalidOperationException(
+                "The WPE WebKit website-data manager is unavailable.");
+        }
+
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var handle = GCHandle.Alloc(completion);
+        try
+        {
+            webkit_website_data_manager_clear(
+                manager,
+                AllWebsiteDataTypes,
+                timespan: 0,
+                IntPtr.Zero,
+                Marshal.GetFunctionPointerForDelegate(WebsiteDataClearedCallback),
+                GCHandle.ToIntPtr(handle));
+        }
+        catch
+        {
+            handle.Free();
+            throw;
+        }
+
+        await completion.Task.WaitAsync(cancellationToken);
+    }
+
     private static ulong Connect(IntPtr instance, string signal, Delegate callback) =>
         g_signal_connect_data(
             instance,
@@ -309,6 +354,33 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         return 0;
     }
 
+    private static void CompleteWebsiteDataClear(
+        IntPtr sourceObject,
+        IntPtr result,
+        IntPtr userData)
+    {
+        var handle = GCHandle.FromIntPtr(userData);
+        var completion = (TaskCompletionSource)handle.Target!;
+        handle.Free();
+        IntPtr error = IntPtr.Zero;
+        if (webkit_website_data_manager_clear_finish(
+                sourceObject,
+                result,
+                ref error))
+        {
+            completion.TrySetResult();
+            return;
+        }
+
+        if (error != IntPtr.Zero)
+        {
+            g_error_free(error);
+        }
+
+        completion.TrySetException(new IOException(
+            "WPE WebKit did not clear the Recovery Browser profile data."));
+    }
+
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int PermissionSignalCallback(IntPtr sender, IntPtr request, IntPtr userData);
 
@@ -323,6 +395,12 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         uint errors,
         IntPtr userData);
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void AsyncReadyCallback(
+        IntPtr sourceObject,
+        IntPtr result,
+        IntPtr userData);
+
     [LibraryImport("libgobject-2.0.so.0", StringMarshalling = StringMarshalling.Utf8)]
     private static partial ulong g_signal_connect_data(
         IntPtr instance,
@@ -335,8 +413,30 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     [LibraryImport("libgobject-2.0.so.0")]
     private static partial void g_signal_handler_disconnect(IntPtr instance, ulong handlerId);
 
+    [LibraryImport("libglib-2.0.so.0")]
+    private static partial void g_error_free(IntPtr error);
+
     [LibraryImport(WpeWebKitLibrary)]
     private static partial IntPtr webkit_web_view_get_network_session(IntPtr webView);
+
+    [LibraryImport(WpeWebKitLibrary)]
+    private static partial IntPtr webkit_web_view_get_website_data_manager(IntPtr webView);
+
+    [LibraryImport(WpeWebKitLibrary)]
+    private static partial void webkit_website_data_manager_clear(
+        IntPtr manager,
+        uint types,
+        long timespan,
+        IntPtr cancellable,
+        IntPtr callback,
+        IntPtr userData);
+
+    [LibraryImport(WpeWebKitLibrary)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool webkit_website_data_manager_clear_finish(
+        IntPtr manager,
+        IntPtr result,
+        ref IntPtr error);
 
     [LibraryImport(WpeWebKitLibrary)]
     private static partial void webkit_network_session_set_persistent_credential_storage_enabled(
@@ -361,6 +461,9 @@ internal sealed class UnsupportedRecoveryBrowserPlatformAdapter(string profileDa
     public override void Attach(IPlatformHandle? platformHandle)
     {
     }
+
+    public override Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
+        Task.CompletedTask;
 
     public override void Dispose()
     {

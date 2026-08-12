@@ -125,6 +125,12 @@ projection, and opaque unpwn-owned profile paths. HTTP remains unavailable outsi
 synthetic loopback mode. Native WebView2 and WPE WebKit behavior is also built on Windows and Linux;
 normal CI never navigates to a live provider.
 
+Recovery Browser lifecycle tests use opaque temporary directories and fake native-resource leases.
+They assert engine-clear/release/delete ordering, same-account reuse, cross-account denial, cleanup
+failure and explicit retry, canceled release, orphan discovery without automatic resume, startup UI
+warning, unexpected-entry rejection, and recursive cleanup of synthetic browser/download files. No
+test marker contains an account identifier or synthetic secret.
+
 ### Application-shell view-model tests
 
 The desktop presentation layer must be testable without opening native windows.

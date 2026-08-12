@@ -66,6 +66,11 @@ Plaintext exports such as CSV are sensitive. Avoid synchronized folders where po
 
 Before finishing, review critical accounts, blocked or failed actions, lost access, unresolved risks, and any credentials that still need export or cleanup.
 
+If unpwn reports that a previous Recovery Browser session did not end cleanly, its temporary provider
+login is not resumed. Choose the displayed cleanup retry before opening another embedded provider
+session. A successful cleanup means the dedicated temporary browser directory was removed; it is not
+a forensic-erasure guarantee and it does not mark any recovery action as completed.
+
 A high progress value does not mean that everything is secure.
 
 After the completion preflight succeeds, review the final report and explicitly choose the outcome. Pausing, locking, or restarting preserves the wizard in the encrypted vault and resumes at a conservative review point; unpwn never treats an opened provider page as completed work.
