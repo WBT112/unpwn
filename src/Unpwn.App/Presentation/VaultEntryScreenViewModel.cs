@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Windows.Input;
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
 using Unpwn.Core;
@@ -23,7 +22,8 @@ public enum VaultEntryStage
 public sealed record RecentVaultReferenceViewModel(
     string Path,
     string DisplayName,
-    string DisplayText);
+    string DisplayText,
+    string PathContext);
 
 [SuppressMessage(
     "Design",
@@ -35,6 +35,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     private readonly IVaultLifecycleService _vaultLifecycle;
     private readonly RecoveryWizardSessionService _wizard;
     private readonly IConfirmationDialogService _confirmationDialog;
+    private readonly IVaultPathProvider _vaultPathProvider;
     private readonly TimeSpan _passwordRevealDuration;
     private readonly IPresentationDelay _passwordRevealDelay;
     private VaultEntryStage _stage;
@@ -63,7 +64,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
         TimeSpan? passwordRevealDuration = null,
-        IPresentationDelay? passwordRevealDelay = null)
+        IPresentationDelay? passwordRevealDelay = null,
+        IVaultPathProvider? vaultPathProvider = null)
         : base(
             AppRoute.VaultEntry,
             localization,
@@ -76,6 +78,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         _vaultLifecycle = vaultLifecycle ?? throw new ArgumentNullException(nameof(vaultLifecycle));
         _wizard = wizard ?? throw new ArgumentNullException(nameof(wizard));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
+        _vaultPathProvider = vaultPathProvider ?? new PlatformVaultPathProvider();
         _passwordRevealDuration = passwordRevealDuration ?? TimeSpan.FromSeconds(15);
         _passwordRevealDelay = passwordRevealDelay ?? SystemPresentationDelay.Instance;
         if (_passwordRevealDuration <= TimeSpan.Zero)
@@ -92,7 +95,10 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         BackToTrustedDeviceCommand = new RelayCommand(ReturnToTrustedDeviceCheck);
         EndForDeviceSafetyCommand = new RelayCommand(EndForDeviceSafety);
         RestartSafetyCheckCommand = new RelayCommand(RestartSafetyCheck);
-        ShowCreateVaultCommand = new RelayCommand(() => SetStage(VaultEntryStage.CreateVault));
+        PrimaryVaultActionCommand = new AsyncCommand(
+            PrimaryVaultActionAsync,
+            () => Localization.GetString("Vault.Command.Error"));
+        ShowCreateVaultCommand = new RelayCommand(ShowCreateVault);
         ShowOpenVaultCommand = new RelayCommand(() => SetStage(VaultEntryStage.OpenVault));
         BackToVaultChoiceCommand = new RelayCommand(() => SetStage(VaultEntryStage.VaultChoice));
         UseRecentVaultCommand = new RelayCommand(UseRecentVault, () => SelectedRecentVault is not null);
@@ -124,6 +130,10 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             ChangePasswordAsync,
             () => Localization.GetString("Vault.Command.Error"),
             CanChangePassword);
+        ReassessTrustedDeviceCommand = new AsyncCommand(
+            ReassessTrustedDeviceAsync,
+            () => Localization.GetString("Vault.Command.Error"),
+            () => _vaultLifecycle.Snapshot.IsUnlocked);
         ContinueCommand = new RelayCommand(
             () => ContinueRequested?.Invoke(this, EventArgs.Empty),
             () => _vaultLifecycle.Snapshot.IsUnlocked);
@@ -339,6 +349,17 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
     public bool HasRecentVaults => _recentVaults.Length > 0;
 
+    public RecentVaultReferenceViewModel? PrimaryRecentVault => _recentVaults.FirstOrDefault();
+
+    public bool HasPrimaryRecentVault => PrimaryRecentVault is not null;
+
+    public string PrimaryVaultActionText => Localization.GetString(
+        HasPrimaryRecentVault ? "Vault.Choice.OpenLast" : "Vault.Choice.Create");
+
+    public string PrimaryVaultDisplayName => PrimaryRecentVault?.DisplayName ?? string.Empty;
+
+    public string PrimaryVaultPathContext => PrimaryRecentVault?.PathContext ?? string.Empty;
+
     public RecentVaultReferenceViewModel? SelectedRecentVault
     {
         get => _selectedRecentVault;
@@ -373,6 +394,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
     public RelayCommand RestartSafetyCheckCommand { get; }
 
+    public AsyncCommand PrimaryVaultActionCommand { get; }
+
     public RelayCommand ShowCreateVaultCommand { get; }
 
     public RelayCommand ShowOpenVaultCommand { get; }
@@ -397,6 +420,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand ChangePasswordCommand { get; }
 
+    public AsyncCommand ReassessTrustedDeviceCommand { get; }
+
     public RelayCommand ContinueCommand { get; }
 
     protected override void RefreshLocalization()
@@ -406,6 +431,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CreatePasswordGuidance));
         OnPropertyChanged(nameof(NewPasswordGuidance));
         OnPropertyChanged(nameof(ValidationMessage));
+        OnPropertyChanged(nameof(PrimaryVaultActionText));
     }
 
     public override void Deactivate()
@@ -428,9 +454,15 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     private void RecordTrustedDeviceDecision(TrustedDeviceDecision decision)
     {
         _wizard.RecordTrustedDeviceDecision(decision, DateTimeOffset.UtcNow);
-        SetStage(decision == TrustedDeviceDecision.Trusted
-            ? VaultEntryStage.VaultChoice
-            : VaultEntryStage.TrustedDeviceGuidance);
+        if (decision != TrustedDeviceDecision.Trusted)
+        {
+            SetStage(VaultEntryStage.TrustedDeviceGuidance);
+            return;
+        }
+
+        SetStage(_vaultLifecycle.Snapshot.CanUnlockCurrent
+            ? VaultEntryStage.LockedVault
+            : VaultEntryStage.VaultChoice);
     }
 
     private void ReturnToTrustedDeviceCheck()
@@ -450,6 +482,51 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     {
         _wizard.BeginTrustedDeviceCheck(DateTimeOffset.UtcNow);
         SetStage(VaultEntryStage.TrustedDeviceCheck);
+    }
+
+    private async Task PrimaryVaultActionAsync(CancellationToken cancellationToken)
+    {
+        var primary = PrimaryRecentVault;
+        if (primary is null)
+        {
+            ShowCreateVault();
+            return;
+        }
+
+        if (!_vaultPathProvider.IsExistingVaultPath(primary.Path))
+        {
+            await _vaultLifecycle.RemoveRecentReferenceAsync(primary.Path, cancellationToken);
+            RefreshRecentVaults();
+            SetStage(VaultEntryStage.VaultChoice);
+            ShowFailure(VaultOperationFailureCode.NotFound);
+            return;
+        }
+
+        OpenPath = primary.Path;
+        SelectedRecentVault = primary;
+        SetStage(VaultEntryStage.OpenVault);
+    }
+
+    private void ShowCreateVault()
+    {
+        try
+        {
+            CreatePath = _vaultPathProvider.GetNextDefaultVaultPath();
+            SetStage(VaultEntryStage.CreateVault);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            CreatePath = string.Empty;
+            SetStage(VaultEntryStage.CreateVault);
+            ShowFailure(VaultOperationFailureCode.AccessDenied);
+        }
+        catch (Exception exception) when (
+            exception is IOException or InvalidOperationException or NotSupportedException or ArgumentException)
+        {
+            CreatePath = string.Empty;
+            SetStage(VaultEntryStage.CreateVault);
+            ShowFailure(VaultOperationFailureCode.IoFailure);
+        }
     }
 
     private void UseRecentVault()
@@ -478,11 +555,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        SetStage(VaultEntryStage.UnlockedVault);
-        SetLocalizedStatus(
-            AppVisualState.Success,
-            "Vault.Result.Created.Title",
-            "Vault.Result.Created.Message");
+        CompleteSuccessfulVaultEntry("Vault.Result.Created.Title", "Vault.Result.Created.Message");
     }
 
     private async Task OpenVaultAsync(CancellationToken cancellationToken)
@@ -492,19 +565,22 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var result = await _vaultLifecycle.OpenAsync(OpenPath, OpenPassword, cancellationToken);
+        var attemptedPath = OpenPath;
+        var result = await _vaultLifecycle.OpenAsync(attemptedPath, OpenPassword, cancellationToken);
         ClearSensitiveInputs();
         if (!result.Succeeded)
         {
+            if (result.FailureCode == VaultOperationFailureCode.NotFound)
+            {
+                await RemoveRecentReferenceIfKnownAsync(attemptedPath, cancellationToken);
+                SetStage(VaultEntryStage.VaultChoice);
+            }
+
             ShowFailure(result.FailureCode);
             return;
         }
 
-        SetStage(VaultEntryStage.UnlockedVault);
-        SetLocalizedStatus(
-            AppVisualState.Success,
-            "Vault.Result.Opened.Title",
-            "Vault.Result.Opened.Message");
+        CompleteSuccessfulVaultEntry("Vault.Result.Opened.Title", "Vault.Result.Opened.Message");
     }
 
     private async Task UnlockCurrentVaultAsync(CancellationToken cancellationToken)
@@ -523,11 +599,22 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
+        CompleteSuccessfulVaultEntry("Vault.Result.Opened.Title", "Vault.Result.Opened.Message");
+    }
+
+    private void CompleteSuccessfulVaultEntry(string titleKey, string messageKey)
+    {
         SetStage(VaultEntryStage.UnlockedVault);
-        SetLocalizedStatus(
-            AppVisualState.Success,
-            "Vault.Result.Opened.Title",
-            "Vault.Result.Opened.Message");
+        SetLocalizedStatus(AppVisualState.Success, titleKey, messageKey);
+        ContinueRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async Task ReassessTrustedDeviceAsync(CancellationToken cancellationToken)
+    {
+        await _vaultLifecycle.LockAsync(cancellationToken);
+        ClearSensitiveInputs();
+        _wizard.BeginTrustedDeviceCheck(DateTimeOffset.UtcNow);
+        SetStage(VaultEntryStage.TrustedDeviceCheck);
     }
 
     private async Task ChangePasswordAsync(CancellationToken cancellationToken)
@@ -578,6 +665,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
         await _vaultLifecycle.RemoveRecentReferenceAsync(selected.Path, cancellationToken);
         SelectedRecentVault = null;
+        RefreshRecentVaults();
         SetLocalizedStatus(
             AppVisualState.Success,
             "Vault.Result.ReferenceRemoved.Title",
@@ -613,10 +701,26 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         }
 
         SelectedRecentVault = null;
+        RefreshRecentVaults();
         SetLocalizedStatus(
             AppVisualState.Success,
             "Vault.Result.FileDeleted.Title",
             "Vault.Result.FileDeleted.Message");
+    }
+
+    private async Task RemoveRecentReferenceIfKnownAsync(
+        string path,
+        CancellationToken cancellationToken)
+    {
+        if (!_vaultLifecycle.RecentVaults.Any(reference =>
+                string.Equals(reference.Path, path, PathComparison)))
+        {
+            return;
+        }
+
+        await _vaultLifecycle.RemoveRecentReferenceAsync(path, cancellationToken);
+        SelectedRecentVault = null;
+        RefreshRecentVaults();
     }
 
     private void CancelChangePassword()
@@ -827,6 +931,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CurrentVaultDisplayName));
         OnPropertyChanged(nameof(CurrentVaultPath));
         ShowChangePasswordCommand.RaiseCanExecuteChanged();
+        ReassessTrustedDeviceCommand.RaiseCanExecuteChanged();
         ContinueCommand.RaiseCanExecuteChanged();
         UnlockCurrentVaultCommand.RaiseCanExecuteChanged();
 
@@ -862,20 +967,40 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         var selectedPath = SelectedRecentVault?.Path;
         _recentVaults =
         [
-            .. _vaultLifecycle.RecentVaults.Select(reference => new RecentVaultReferenceViewModel(
-                reference.Path,
-                reference.DisplayName,
-                Localization.Format(
-                    "Vault.Recent.Item",
+            .. _vaultLifecycle.RecentVaults
+                .Where(reference => _vaultPathProvider.IsExistingVaultPath(reference.Path))
+                .Select(reference => new RecentVaultReferenceViewModel(
+                    reference.Path,
                     reference.DisplayName,
-                    reference.LastOpenedAt))),
+                    Localization.Format(
+                        "Vault.Recent.Item",
+                        reference.DisplayName,
+                        reference.LastOpenedAt),
+                    GetPathContext(reference.Path))),
         ];
         OnPropertyChanged(nameof(RecentVaults));
         OnPropertyChanged(nameof(HasRecentVaults));
+        OnPropertyChanged(nameof(PrimaryRecentVault));
+        OnPropertyChanged(nameof(HasPrimaryRecentVault));
+        OnPropertyChanged(nameof(PrimaryVaultActionText));
+        OnPropertyChanged(nameof(PrimaryVaultDisplayName));
+        OnPropertyChanged(nameof(PrimaryVaultPathContext));
         SelectedRecentVault = selectedPath is null
             ? null
             : _recentVaults.SingleOrDefault(reference =>
-                string.Equals(reference.Path, selectedPath, StringComparison.Ordinal));
+                string.Equals(reference.Path, selectedPath, PathComparison));
+    }
+
+    private static string GetPathContext(string path)
+    {
+        var fileName = Path.GetFileName(path);
+        var directory = Path.GetDirectoryName(path);
+        var parentName = string.IsNullOrWhiteSpace(directory)
+            ? string.Empty
+            : Path.GetFileName(directory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+        return string.IsNullOrWhiteSpace(parentName)
+            ? fileName
+            : $"{parentName} / {fileName}";
     }
 
     private void SetStage(VaultEntryStage stage)
@@ -904,4 +1029,8 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(IsUnlockedVaultVisible));
         OnPropertyChanged(nameof(IsChangePasswordVisible));
     }
+
+    private static StringComparison PathComparison => OperatingSystem.IsWindows()
+        ? StringComparison.OrdinalIgnoreCase
+        : StringComparison.Ordinal;
 }

@@ -26,11 +26,19 @@ The application-preferences file is separate from the Recovery Vault and contain
 
 unpwn first asks whether you trust the device you are using. If you answer **No** or **Unsure**, the sensitive recovery flow stops before a vault is created or unlocked.
 
+If you later choose to reassess the device from an unlocked vault, unpwn locks the vault first and asks the trusted-device question again. Returning to that assessment does not preserve or invent a new trust answer.
+
 ### 2. Create or open a Recovery Vault
 
 The Recovery Vault stores recovery progress locally in encrypted form so you can stop and continue later.
 
+If a previously used vault still exists, unpwn presents that vault as the primary **Open last vault** action after the trusted-device check. Other vaults and creation remain available as secondary actions. A missing recent-vault reference is not opened and is never silently recreated at the old path.
+
+If there is no usable previous vault, **Create a new vault** becomes the primary action. unpwn preselects a user-local application-data location and a readable non-existing filename. On Linux the XDG data location is preferred when configured; on Windows the user-local application-data location is used. You can still choose another location before creation, and creation continues to fail rather than overwrite an existing vault file.
+
 Use a strong, unique vault password. The vault is a temporary recovery workspace, not a replacement for a password manager.
+
+After a vault is successfully created, opened, or unlocked, password fields are cleared and unpwn continues directly to the recovery overview. The Vault screen remains available afterwards for vault management such as changing the vault password or repeating the trusted-device assessment.
 
 ### 3. Record what happened
 

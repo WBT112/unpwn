@@ -110,42 +110,65 @@
         <StackPanel Spacing="16">
           <TextBlock Classes="section-title" Text="{DynamicResource Vault.Choice.Title}" />
           <TextBlock Text="{DynamicResource Vault.Choice.Description}" TextWrapping="Wrap" />
+
+          <Border IsVisible="{Binding HasPrimaryRecentVault}"
+                  Padding="14"
+                  CornerRadius="8"
+                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                  BorderThickness="1">
+            <StackPanel Spacing="4">
+              <TextBlock FontSize="12"
+                         FontWeight="Bold"
+                         Text="{DynamicResource Vault.Choice.LastUsedHeading}" />
+              <TextBlock FontSize="18"
+                         FontWeight="SemiBold"
+                         Text="{Binding PrimaryVaultDisplayName}" />
+              <TextBlock FontSize="12"
+                         Opacity="0.72"
+                         Text="{Binding PrimaryVaultPathContext}" />
+            </StackPanel>
+          </Border>
+
+          <Button Classes="initial-focus"
+                  AutomationProperties.AutomationId="vault-primary-action"
+                  HorizontalAlignment="Left"
+                  Command="{Binding PrimaryVaultActionCommand}"
+                  Content="{Binding PrimaryVaultActionText}" />
+
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Classes="initial-focus"
-                    AutomationProperties.AutomationId="vault-choose-create"
+            <Button AutomationProperties.AutomationId="vault-open-another"
+                    Command="{Binding ShowOpenVaultCommand}"
+                    Content="{DynamicResource Vault.Choice.OpenAnother}" />
+            <Button IsVisible="{Binding HasPrimaryRecentVault}"
+                    AutomationProperties.AutomationId="vault-create-new"
                     Command="{Binding ShowCreateVaultCommand}"
                     Content="{DynamicResource Vault.Choice.Create}" />
-            <Button Command="{Binding ShowOpenVaultCommand}"
-                    Content="{DynamicResource Vault.Choice.Open}" />
           </StackPanel>
-          <Button HorizontalAlignment="Left"
-                  Command="{Binding BackToTrustedDeviceCommand}"
-                  Content="{DynamicResource Vault.Choice.Back}" />
         </StackPanel>
       </Border>
 
-      <Border Padding="20"
+      <Border IsVisible="{Binding HasRecentVaults}"
+              Padding="20"
               CornerRadius="10"
               Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
         <StackPanel Spacing="12">
           <TextBlock Classes="section-title" Text="{DynamicResource Vault.Recent.Title}" />
-          <TextBlock IsVisible="{Binding !HasRecentVaults}"
-                     Text="{DynamicResource Vault.Recent.Empty}"
-                     TextWrapping="Wrap" />
-          <ListBox IsVisible="{Binding HasRecentVaults}"
-                   ItemsSource="{Binding RecentVaults}"
+          <ListBox ItemsSource="{Binding RecentVaults}"
                    SelectedItem="{Binding SelectedRecentVault, Mode=TwoWay}"
                    MaxHeight="180">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:RecentVaultReferenceViewModel">
                 <StackPanel Margin="6" Spacing="2">
                   <TextBlock FontWeight="SemiBold" Text="{Binding DisplayText}" />
-                  <TextBlock FontSize="11" Opacity="0.72" Text="{Binding Path}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock FontSize="11"
+                             Opacity="0.72"
+                             Text="{Binding PathContext}"
+                             TextTrimming="CharacterEllipsis" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <StackPanel IsVisible="{Binding HasRecentVaults}" Orientation="Horizontal" Spacing="10">
+          <StackPanel Orientation="Horizontal" Spacing="10">
             <Button Command="{Binding UseRecentVaultCommand}"
                     Content="{DynamicResource Vault.Recent.Open}" />
             <Button Command="{Binding RemoveRecentReferenceCommand}"
@@ -155,6 +178,11 @@
           </StackPanel>
         </StackPanel>
       </Border>
+
+      <Button HorizontalAlignment="Left"
+              AutomationProperties.AutomationId="vault-back-trusted-assessment"
+              Command="{Binding BackToTrustedDeviceCommand}"
+              Content="{DynamicResource Vault.Choice.TrustedAssessment}" />
     </StackPanel>
 
     <Border IsVisible="{Binding IsCreateVaultVisible}"
@@ -174,6 +202,10 @@
                   Click="ChooseCreatePathButton_OnClick"
                   Content="{DynamicResource Vault.Create.Browse}" />
         </Grid>
+        <TextBlock FontSize="12"
+                   Opacity="0.72"
+                   Text="{DynamicResource Vault.Create.DefaultPathHint}"
+                   TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Vault.Create.Password}" />
         <TextBox Text="{Binding CreatePassword, Mode=TwoWay}"
                  PasswordChar="{Binding CreatePasswordCharacter}" />
@@ -213,8 +245,7 @@
                   Content="{DynamicResource Vault.Open.Browse}" />
         </Grid>
         <TextBlock Text="{DynamicResource Vault.Open.Password}" />
-        <TextBox Classes="initial-focus"
-                 AutomationProperties.AutomationId="vault-unlock-password"
+        <TextBox AutomationProperties.AutomationId="vault-unlock-password"
                  AutomationProperties.Name="{DynamicResource Vault.Locked.Password}"
                  Text="{Binding OpenPassword, Mode=TwoWay}"
                  PasswordChar="{Binding OpenPasswordCharacter}" />
@@ -240,7 +271,9 @@
         <TextBlock FontWeight="SemiBold" Text="{Binding CurrentVaultDisplayName}" />
         <TextBlock FontSize="12" Opacity="0.72" Text="{Binding CurrentVaultPath}" TextTrimming="CharacterEllipsis" />
         <TextBlock Text="{DynamicResource Vault.Locked.Password}" />
-        <TextBox Text="{Binding OpenPassword, Mode=TwoWay}"
+        <TextBox Classes="initial-focus"
+                 AutomationProperties.AutomationId="vault-locked-password"
+                 Text="{Binding OpenPassword, Mode=TwoWay}"
                  PasswordChar="{Binding OpenPasswordCharacter}" />
         <CheckBox AutomationProperties.AutomationId="vault-unlock-reveal-password"
                   IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
@@ -268,6 +301,15 @@
           <Button Command="{Binding ShowChangePasswordCommand}"
                   Content="{DynamicResource Vault.Unlocked.ChangePassword}" />
         </StackPanel>
+        <Border Margin="0,8,0,0"
+                Padding="12,12,0,0"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                BorderThickness="0,1,0,0">
+          <Button HorizontalAlignment="Left"
+                  AutomationProperties.AutomationId="vault-reassess-trusted-device"
+                  Command="{Binding ReassessTrustedDeviceCommand}"
+                  Content="{DynamicResource Vault.Unlocked.ReassessTrustedDevice}" />
+        </Border>
       </StackPanel>
     </Border>
 
