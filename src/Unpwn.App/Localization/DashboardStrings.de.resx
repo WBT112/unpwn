@@ -108,7 +108,7 @@
   <data name="Dashboard.Status.Emergency.Title" xml:space="preserve"><value>Wirkungsstarker Wiederherstellungskanal muss geprüft werden</value></data>
   <data name="Dashboard.Status.Emergency.Message" xml:space="preserve"><value>Die Vorfallangaben erzeugen eine beratende Priorität. Sie beweisen keine Kompromittierung eines Kontos oder Geräts.</value></data>
   <data name="Dashboard.Status.Created.Title" xml:space="preserve"><value>Wiederherstellungssitzung angelegt</value></data>
-  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Fahre mit dem Konteninventar fort.</value></data>
+  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Fahre mit dem CSV-Import fort.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Sitzungsaktion fehlgeschlagen</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>Es wurden weder eine Quellfehlermeldung noch geheime Werte angezeigt. Prüfe die sichere Validierungsmeldung.</value></data>
   <data name="Dashboard.WizardStep.Welcome" xml:space="preserve"><value>Willkommen</value></data>
@@ -116,7 +116,7 @@
   <data name="Dashboard.WizardStep.TrustedDeviceGuidance" xml:space="preserve"><value>Hinweise zum vertrauenswürdigen Gerät</value></data>
   <data name="Dashboard.WizardStep.VaultEntry" xml:space="preserve"><value>Tresoreinstieg</value></data>
   <data name="Dashboard.WizardStep.IncidentIntake" xml:space="preserve"><value>Vorfallaufnahme</value></data>
-  <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Konteninventar</value></data>
+  <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Konten importieren</value></data>
   <data name="Dashboard.WizardStep.IdentityReview" xml:space="preserve"><value>Prüfung von Identitäten und Wiederherstellungswegen</value></data>
   <data name="Dashboard.WizardStep.RecoveryPlan" xml:space="preserve"><value>Wiederherstellungsplan</value></data>
   <data name="Dashboard.WizardStep.AccountRecovery" xml:space="preserve"><value>Kontowiederherstellung</value></data>

@@ -203,6 +203,7 @@
   <data name="Shell.Assistant.Heading" xml:space="preserve"><value>DEINE NÄCHSTE WIEDERHERSTELLUNGSAUFGABE</value></data>
   <data name="Shell.Assistant.WhyHeading" xml:space="preserve"><value>WARUM DAS WICHTIG IST</value></data>
   <data name="Shell.Assistant.OpenTask" xml:space="preserve"><value>Aktuelle Aufgabe öffnen</value></data>
+  <data name="Shell.Assistant.OpenCsvImport" xml:space="preserve"><value>CSV-Import öffnen</value></data>
   <data name="Shell.Assistant.OpenReport" xml:space="preserve"><value>Bericht öffnen</value></data>
   <data name="Shell.Assistant.Resume" xml:space="preserve"><value>Wiederherstellung fortsetzen</value></data>
   <data name="Shell.Assistant.Pause" xml:space="preserve"><value>Pausieren</value></data>
@@ -220,7 +221,7 @@
   <data name="Shell.Guided.Open" xml:space="preserve"><value>Schritt öffnen</value></data>
   <data name="Shell.Guided.Continue" xml:space="preserve"><value>Weiter</value></data>
   <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Öffne diesen Schritt, um mit der Wiederherstellung fortzufahren.</value></data>
-  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Füge mindestens ein Konto hinzu oder importiere es, bevor du fortfährst.</value></data>
+  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Importiere mindestens ein Konto aus einer CSV-Datei, bevor du fortfährst. Im nächsten Schritt kannst du die Konten prüfen und korrigieren.</value></data>
   <data name="Shell.Guided.RoleConfirmationRequired" xml:space="preserve"><value>Bestätige oder verwerfe alle vorgeschlagenen Kontorollen, bevor du fortfährst.</value></data>
   <data name="Shell.Guided.Paused" xml:space="preserve"><value>Setze die Wiederherstellungssitzung fort, bevor du weitergehst.</value></data>
   <data name="Shell.Guided.Terminal" xml:space="preserve"><value>Diese Wiederherstellungssitzung ist beendet und bleibt als schreibgeschützter Bericht verfügbar.</value></data>

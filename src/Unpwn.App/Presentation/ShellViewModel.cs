@@ -367,7 +367,9 @@ public sealed class ShellViewModel : ObservableObject
                 ? "Shell.Assistant.OpenReport"
                 : _guidedWizard?.NextDecision.CanMove == true
                     ? "Shell.Guided.Continue"
-                    : "Shell.Assistant.OpenTask");
+                    : _guidedWizard?.NextDecision.BlockCode == GuidedRecoveryBlockCode.AccountsRequired
+                        ? "Shell.Assistant.OpenCsvImport"
+                        : "Shell.Assistant.OpenTask");
 
     private bool IsGuidedPaused =>
         _recoverySession?.CurrentSession?.Status == RecoveryWorkspaceLifecycleStatus.Paused;
@@ -563,6 +565,12 @@ public sealed class ShellViewModel : ObservableObject
             "D",
             hasVault),
         new(
+            AppRoute.CsvImport,
+            _localization.GetString("Shell.Navigation.Import.Label"),
+            _localization.GetString("Shell.Navigation.Import.Description"),
+            "I",
+            canMutateInventory && !isPaused && !isTerminal),
+        new(
             AppRoute.Accounts,
             _localization.GetString("Shell.Navigation.Accounts.Label"),
             _localization.GetString("Shell.Navigation.Accounts.Description"),
@@ -586,12 +594,6 @@ public sealed class ShellViewModel : ObservableObject
             _localization.GetString("Shell.Navigation.Completion.Description"),
             "✓",
             (hasAccounts && !isPaused) || isTerminal),
-        new(
-            AppRoute.CsvImport,
-            _localization.GetString("Shell.Navigation.Import.Label"),
-            _localization.GetString("Shell.Navigation.Import.Description"),
-            "I",
-            canMutateInventory && !isPaused && !isTerminal),
     ];
     }
 
@@ -958,7 +960,8 @@ public sealed class ShellViewModel : ObservableObject
         {
             "vault-entry" => AppRoute.VaultEntry,
             "incident-intake" or "recovery-plan" => AppRoute.Dashboard,
-            "account-inventory" or "identity-review" => AppRoute.Accounts,
+            "account-inventory" => AppRoute.CsvImport,
+            "identity-review" => AppRoute.Accounts,
             "account-recovery" => AppRoute.Workflow,
             "credential-export" => AppRoute.CredentialsExport,
             "completion-preflight" or "final-report" => AppRoute.Completion,

@@ -32,11 +32,11 @@ public sealed class ShellViewModelTests
         [
             AppRoute.VaultEntry,
             AppRoute.Dashboard,
+            AppRoute.CsvImport,
             AppRoute.Accounts,
             AppRoute.Workflow,
             AppRoute.CredentialsExport,
             AppRoute.Completion,
-            AppRoute.CsvImport,
         ];
 
         Assert.Equal(expectedRoutes, shell.NavigationItems.Select(item => item.Route));
@@ -396,9 +396,10 @@ public sealed class ShellViewModelTests
 
         await shell.GuidedPrimaryCommand.ExecuteAsync();
 
-        Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
+        Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
         Assert.Equal(0, guided.AdvanceCalls);
-        Assert.Contains("at least one account", shell.GuidedRecommendationText, StringComparison.Ordinal);
+        Assert.Equal("Open CSV import", shell.GuidedPrimaryActionText);
+        Assert.Contains("Import at least one account", shell.GuidedRecommendationText, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -17,11 +17,11 @@ workspace disclosure:
 
 - vault entry
 - recovery dashboard
+- CSV import
 - accounts
 - workflow execution
 - credentials and export
 - completion
-- CSV import
 
 Route identifiers remain stable and language-neutral. Their visible labels are resource keys resolved through the localization service.
 
