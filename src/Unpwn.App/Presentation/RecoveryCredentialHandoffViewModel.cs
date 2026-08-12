@@ -67,6 +67,7 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
     private string? _statusKey;
     private CancellationTokenSource? _revealCancellation;
     private CancellationTokenSource? _clipboardCancellation;
+    private bool _browserOpen = true;
     private bool _disposed;
 
     internal RecoveryCredentialHandoffViewModel(
@@ -182,7 +183,8 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
         : Localization.GetString(_statusKey);
 
     public bool CanUseProviderReviewedAssistance =>
-        HasCredential && _assistanceContract is not null && _services.Credentials.IsUnlocked;
+        _browserOpen && HasCredential && _assistanceContract is not null &&
+        _services.Credentials.IsUnlocked;
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -193,7 +195,10 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
     public async Task OnBrowserClosedAsync(CancellationToken cancellationToken = default)
     {
         ThrowIfDisposed();
+        _browserOpen = false;
         ClearReveal();
+        OnPropertyChanged(nameof(CanUseProviderReviewedAssistance));
+        AssistInsertionCommand.RaiseCanExecuteChanged();
         await ClearClipboardAsync(showFailure: true, cancellationToken);
     }
 
@@ -402,7 +407,7 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
     {
         var contract = _assistanceContract;
         var reference = _reference;
-        if (contract is null || reference is null)
+        if (contract is null || reference is null || !_browserOpen)
         {
             SetStatus("Credentials.Assistance.Unavailable");
             return;
@@ -452,7 +457,6 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
             cancellationToken);
         if (!markedUsed.Succeeded)
         {
-            ApplyCredentialMutation(markedUsed, "Credentials.Assistance.Inserted");
             SetStatus("Credentials.Assistance.InsertedStateSaveFailed");
             return;
         }
@@ -571,10 +575,11 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
         HasCredential && _services.Credentials.IsUnlocked;
 
     private bool CanMarkUsed() =>
-        HasCredential && _metadata?.UsedAt is null;
+        HasCredential && _services.Credentials.IsUnlocked && _metadata?.UsedAt is null;
 
     private bool CanConfirmCredential() =>
-        HasCredential && _metadata is { UsedAt: not null, ConfirmedAt: null };
+        HasCredential && _services.Credentials.IsUnlocked &&
+        _metadata is { UsedAt: not null, ConfirmedAt: null };
 
     private void ClearReveal()
     {
@@ -651,11 +656,6 @@ public sealed class RecoveryCredentialHandoffViewModel : ObservableObject, IDisp
             string.Equals(workflow.ProviderId, accountHost, StringComparison.OrdinalIgnoreCase));
     }
 
-    private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(RecoveryCredentialHandoffViewModel));
-        }
-    }
+    private void ThrowIfDisposed() =>
+        ObjectDisposedException.ThrowIf(_disposed, this);
 }
