@@ -63,6 +63,15 @@ public interface IRecoveryBrowserHost
 
     bool StopLoading();
 
+    Task<RecoveryBrowserCredentialAssistanceResult> InspectCredentialInsertionAsync(
+        RecoveryBrowserCredentialInsertionContract contract,
+        CancellationToken cancellationToken);
+
+    Task<RecoveryBrowserCredentialAssistanceResult> InsertCredentialAsync(
+        RecoveryBrowserCredentialInsertionContract contract,
+        ReadOnlyMemory<byte> secretUtf8,
+        CancellationToken cancellationToken);
+
     Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
 
     void Close();
