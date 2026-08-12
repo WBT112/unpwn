@@ -37,7 +37,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     private readonly IConfirmationDialogService _confirmationDialog;
     private readonly TimeSpan _passwordRevealDuration;
     private readonly IPresentationDelay _passwordRevealDelay;
-    private readonly IDiagnosticExportService? _diagnosticExportService;
     private VaultEntryStage _stage;
     private string _createPath = string.Empty;
     private string _openPath = string.Empty;
@@ -57,9 +56,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     private CancellationTokenSource? _createRevealCancellation;
     private CancellationTokenSource? _openRevealCancellation;
     private CancellationTokenSource? _changeRevealCancellation;
-    private DiagnosticReportPreview? _diagnosticPreview;
-    private string _diagnosticDestinationPath = string.Empty;
-    private bool _diagnosticPreviewApproved;
 
     public VaultEntryScreenViewModel(
         IVaultLifecycleService vaultLifecycle,
@@ -67,8 +63,7 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
         TimeSpan? passwordRevealDuration = null,
-        IPresentationDelay? passwordRevealDelay = null,
-        IDiagnosticExportService? diagnosticExportService = null)
+        IPresentationDelay? passwordRevealDelay = null)
         : base(
             AppRoute.VaultEntry,
             localization,
@@ -83,7 +78,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         _passwordRevealDuration = passwordRevealDuration ?? TimeSpan.FromSeconds(15);
         _passwordRevealDelay = passwordRevealDelay ?? SystemPresentationDelay.Instance;
-        _diagnosticExportService = diagnosticExportService;
         if (_passwordRevealDuration <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(nameof(passwordRevealDuration));
@@ -133,13 +127,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         ContinueCommand = new RelayCommand(
             () => ContinueRequested?.Invoke(this, EventArgs.Empty),
             () => _vaultLifecycle.Snapshot.IsUnlocked);
-        CreateDiagnosticPreviewCommand = new RelayCommand(
-            CreateDiagnosticPreview,
-            () => _diagnosticExportService is not null);
-        ExportDiagnosticsCommand = new AsyncCommand(
-            ExportDiagnosticsAsync,
-            () => Localization.GetString("Vault.Diagnostics.CommandError"),
-            CanExportDiagnostics);
 
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
         RefreshRecentVaults();
@@ -412,40 +399,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
     public RelayCommand ContinueCommand { get; }
 
-    public RelayCommand CreateDiagnosticPreviewCommand { get; }
-
-    public AsyncCommand ExportDiagnosticsCommand { get; }
-
-    public bool IsDiagnosticExportAvailable => _diagnosticExportService is not null;
-
-    public bool HasDiagnosticPreview => _diagnosticPreview is not null;
-
-    public string DiagnosticPreviewText => _diagnosticPreview?.Content ?? string.Empty;
-
-    public string DiagnosticDestinationPath
-    {
-        get => _diagnosticDestinationPath;
-        set
-        {
-            if (SetProperty(ref _diagnosticDestinationPath, value ?? string.Empty))
-            {
-                ExportDiagnosticsCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
-    public bool DiagnosticPreviewApproved
-    {
-        get => _diagnosticPreviewApproved;
-        set
-        {
-            if (SetProperty(ref _diagnosticPreviewApproved, value))
-            {
-                ExportDiagnosticsCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
     protected override void RefreshLocalization()
     {
         base.RefreshLocalization();
@@ -671,62 +624,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         ClearSensitiveInputs();
         SetStage(VaultEntryStage.UnlockedVault);
     }
-
-    private void CreateDiagnosticPreview()
-    {
-        if (_diagnosticExportService is null)
-        {
-            return;
-        }
-
-        _diagnosticPreview = _diagnosticExportService.CreatePreview();
-        DiagnosticPreviewApproved = false;
-        OnPropertyChanged(nameof(HasDiagnosticPreview));
-        OnPropertyChanged(nameof(DiagnosticPreviewText));
-        ExportDiagnosticsCommand.RaiseCanExecuteChanged();
-        SetLocalizedStatus(
-            AppVisualState.Normal,
-            "Vault.Diagnostics.PreviewReady.Title",
-            "Vault.Diagnostics.PreviewReady.Message");
-    }
-
-    private async Task ExportDiagnosticsAsync(CancellationToken cancellationToken)
-    {
-        if (_diagnosticExportService is null || _diagnosticPreview is null)
-        {
-            return;
-        }
-
-        var result = await _diagnosticExportService.ExportAsync(
-            _diagnosticPreview,
-            DiagnosticDestinationPath,
-            DiagnosticPreviewApproved,
-            cancellationToken);
-        if (!result.Succeeded)
-        {
-            SetLocalizedStatus(
-                AppVisualState.Error,
-                "Vault.Diagnostics.ExportFailed.Title",
-                $"Vault.Diagnostics.Error.{result.FailureCode}");
-            return;
-        }
-
-        _diagnosticPreview = null;
-        DiagnosticPreviewApproved = false;
-        DiagnosticDestinationPath = string.Empty;
-        OnPropertyChanged(nameof(HasDiagnosticPreview));
-        OnPropertyChanged(nameof(DiagnosticPreviewText));
-        SetLocalizedStatus(
-            AppVisualState.Success,
-            "Vault.Diagnostics.Exported.Title",
-            "Vault.Diagnostics.Exported.Message");
-    }
-
-    private bool CanExportDiagnostics() =>
-        _diagnosticExportService is not null &&
-        _diagnosticPreview is not null &&
-        DiagnosticPreviewApproved &&
-        !string.IsNullOrWhiteSpace(DiagnosticDestinationPath);
 
     private bool ValidateNewVault(
         string path,
