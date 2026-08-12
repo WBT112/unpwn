@@ -103,6 +103,11 @@ platform-adapter boundaries. Browser observations are transient presentation con
 dependency path to canonical recovery transitions. The host consumes the validated
 `RecoveryNavigationHandoff`; it does not rediscover or infer provider destinations.
 
+The `RecoveryBrowserSessionLifecycle` in `Unpwn.App` owns temporary account-isolated browser-profile
+state separately from the encrypted workspace. Account association exists only in memory; persistent
+markers are opaque and support cleanup retry/orphan detection only. Browser resources are cleared and
+released before profile-directory deletion. This lifecycle never writes recovery execution state.
+
 See [Recovery Location Discovery](RECOVERY_LOCATION_DISCOVERY.md),
 [Recovery Browser Security Boundary](RECOVERY_BROWSER.md), and
 [Recovery Workflows](RECOVERY_WORKFLOWS.md).

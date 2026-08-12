@@ -38,6 +38,11 @@ public sealed record RecoveryBrowserHostRequest(
     RecoveryBrowserContentMode ContentMode,
     string ProfileDataPath);
 
+public sealed record RecoveryBrowserSessionStartRequest(
+    Guid AccountId,
+    RecoveryNavigationHandoff Handoff,
+    RecoveryBrowserContentMode ContentMode);
+
 public interface IRecoveryBrowserHost
 {
     event EventHandler<RecoveryBrowserHostSnapshot>? SnapshotChanged;
@@ -56,6 +61,8 @@ public interface IRecoveryBrowserHost
 
     bool StopLoading();
 
+    Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
+
     void Close();
 }
 
@@ -68,4 +75,6 @@ internal interface IRecoveryBrowserPlatformAdapter : IDisposable
     void ConfigureEnvironment(Avalonia.Controls.WebViewEnvironmentRequestedEventArgs args);
 
     void Attach(Avalonia.Platform.IPlatformHandle? platformHandle);
+
+    Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
 }

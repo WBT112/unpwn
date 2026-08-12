@@ -6,28 +6,95 @@ using Unpwn.App.Services;
 
 namespace Unpwn.App.Views;
 
-public partial class RecoveryBrowserView : UserControl, IDisposable
+public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBrowserSessionResources
 {
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
+    private readonly IRecoveryBrowserSessionLifecycle _sessionLifecycle;
+    private readonly bool _ownsSessionLifecycle;
     private AvaloniaRecoveryBrowserHost? _host;
+    private RecoveryBrowserSession? _session;
 
     public RecoveryBrowserView()
-        : this(RecoveryBrowserPlatformAdapter.Create)
+        : this(
+            CreateDefaultSessionLifecycle(),
+            RecoveryBrowserPlatformAdapter.Create,
+            ownsSessionLifecycle: true)
     {
     }
 
     internal RecoveryBrowserView(
         Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
+        : this(
+            CreateDefaultSessionLifecycle(),
+            platformAdapterFactory,
+            ownsSessionLifecycle: true)
     {
+    }
+
+    internal RecoveryBrowserView(
+        IRecoveryBrowserSessionLifecycle sessionLifecycle,
+        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
+        bool ownsSessionLifecycle = false)
+    {
+        _sessionLifecycle = sessionLifecycle ??
+            throw new ArgumentNullException(nameof(sessionLifecycle));
         _platformAdapterFactory = platformAdapterFactory ??
             throw new ArgumentNullException(nameof(platformAdapterFactory));
+        _ownsSessionLifecycle = ownsSessionLifecycle;
         InitializeComponent();
+        _sessionLifecycle.StateChanged += SessionLifecycle_OnStateChanged;
         UpdateSnapshot(null);
+        UpdateSessionSnapshot(_sessionLifecycle.Current);
     }
 
     public RecoveryBrowserHostSnapshot? Snapshot => _host?.Snapshot;
 
-    public bool Start(RecoveryBrowserHostRequest request)
+    public RecoveryBrowserSessionLifecycleSnapshot SessionSnapshot =>
+        _sessionLifecycle.Current;
+
+    public async Task<bool> StartAsync(
+        RecoveryBrowserSessionStartRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (_host is not null)
+        {
+            return false;
+        }
+
+        var started = _sessionLifecycle.Start(request.AccountId);
+        if (!started.Succeeded)
+        {
+            UpdateSessionSnapshot(_sessionLifecycle.Current with
+            {
+                FailureCode = started.FailureCode,
+            });
+            return false;
+        }
+
+        _session = started.Session;
+        var hostRequest = new RecoveryBrowserHostRequest(
+            request.Handoff,
+            request.ContentMode,
+            _session!.ProfileDataPath);
+        if (Start(hostRequest))
+        {
+            return true;
+        }
+
+        if (!started.WasReused)
+        {
+            await _sessionLifecycle.EndAsync(
+                _session.SessionId,
+                this,
+                cancellationToken);
+        }
+        _session = null;
+        return false;
+    }
+
+    internal bool Start(RecoveryBrowserHostRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (_host is not null)
@@ -38,7 +105,18 @@ public partial class RecoveryBrowserView : UserControl, IDisposable
         var webView = new NativeWebView();
         var host = new AvaloniaRecoveryBrowserHost(webView, _platformAdapterFactory);
         host.SnapshotChanged += Host_OnSnapshotChanged;
-        if (!host.Start(request))
+        try
+        {
+            if (!host.Start(request))
+            {
+                host.SnapshotChanged -= Host_OnSnapshotChanged;
+                host.Dispose();
+                return false;
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or ArgumentException or
+                InvalidOperationException)
         {
             host.SnapshotChanged -= Host_OnSnapshotChanged;
             host.Dispose();
@@ -53,6 +131,7 @@ public partial class RecoveryBrowserView : UserControl, IDisposable
 
     public void Dispose()
     {
+        _sessionLifecycle.StateChanged -= SessionLifecycle_OnStateChanged;
         if (_host is not null)
         {
             _host.SnapshotChanged -= Host_OnSnapshotChanged;
@@ -62,12 +141,41 @@ public partial class RecoveryBrowserView : UserControl, IDisposable
 
         BrowserContent.Content = null;
         UpdateSnapshot(null);
+        if (_ownsSessionLifecycle && _sessionLifecycle is IDisposable disposableLifecycle)
+        {
+            disposableLifecycle.Dispose();
+        }
         GC.SuppressFinalize(this);
+    }
+
+    public Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
+        _host?.ClearBrowsingDataAsync(cancellationToken) ?? Task.CompletedTask;
+
+    public async Task StopAndReleaseAsync(CancellationToken cancellationToken)
+    {
+        var host = _host;
+        if (host is null)
+        {
+            return;
+        }
+
+        host.StopLoading();
+        BrowserContent.Content = null;
+        await host.WaitForPlatformReleaseAsync(cancellationToken);
+        host.SnapshotChanged -= Host_OnSnapshotChanged;
+        host.Dispose();
+        _host = null;
+        UpdateSnapshot(null);
     }
 
     private void Host_OnSnapshotChanged(
         object? sender,
         RecoveryBrowserHostSnapshot snapshot) => UpdateSnapshot(snapshot);
+
+    private void SessionLifecycle_OnStateChanged(
+        object? sender,
+        RecoveryBrowserSessionLifecycleSnapshot snapshot) =>
+        UpdateSessionSnapshot(snapshot);
 
     private void UpdateSnapshot(RecoveryBrowserHostSnapshot? snapshot)
     {
@@ -102,6 +210,44 @@ public partial class RecoveryBrowserView : UserControl, IDisposable
             TextBlock.TextProperty,
             new DynamicResourceExtension(key).ProvideValue(null!));
 
+    private void UpdateSessionSnapshot(RecoveryBrowserSessionLifecycleSnapshot snapshot)
+    {
+        var key = snapshot.FailureCode switch
+        {
+            RecoveryBrowserSessionFailureCode.AccountSwitchRequiresCleanup =>
+                "RecoveryBrowser.Session.AccountSwitchBlocked",
+            RecoveryBrowserSessionFailureCode.OrphanedDataRequiresCleanup =>
+                "RecoveryBrowser.Session.Orphaned",
+            RecoveryBrowserSessionFailureCode.StorageUnavailable =>
+                "RecoveryBrowser.Session.CleanupFailed",
+            _ => snapshot.State switch
+            {
+                RecoveryBrowserSessionLifecycleState.Cleaning =>
+                    "RecoveryBrowser.Session.Cleaning",
+                RecoveryBrowserSessionLifecycleState.CleanupFailed =>
+                    "RecoveryBrowser.Session.CleanupFailed",
+                RecoveryBrowserSessionLifecycleState.OrphanedDataDetected =>
+                    "RecoveryBrowser.Session.Orphaned",
+                _ => null,
+            },
+        };
+        if (key is null)
+        {
+            SessionStatusText.Text = string.Empty;
+        }
+        else
+        {
+            BindDynamicResource(SessionStatusText, key);
+        }
+
+        CloseButton.Bind(
+            ContentControl.ContentProperty,
+            new DynamicResourceExtension(
+                snapshot.CanRetryCleanup
+                    ? "RecoveryBrowser.Session.RetryCleanup"
+                    : "RecoveryBrowser.Close").ProvideValue(null!));
+    }
+
     private void Back_OnClick(object? sender, RoutedEventArgs args) => _host?.GoBack();
 
     private void Forward_OnClick(object? sender, RoutedEventArgs args) => _host?.GoForward();
@@ -110,5 +256,37 @@ public partial class RecoveryBrowserView : UserControl, IDisposable
 
     private void Stop_OnClick(object? sender, RoutedEventArgs args) => _host?.StopLoading();
 
-    private void Close_OnClick(object? sender, RoutedEventArgs args) => Dispose();
+    private async void Close_OnClick(object? sender, RoutedEventArgs args)
+    {
+        if (_session is null)
+        {
+            Dispose();
+            return;
+        }
+
+        RecoveryBrowserSessionCleanupResult result;
+        if (_sessionLifecycle.Current.OrphanedSessions.Any(
+                orphan => orphan.SessionId == _session.SessionId))
+        {
+            result = await _sessionLifecycle.RetryOrphanCleanupAsync(
+                _session.SessionId,
+                CancellationToken.None);
+        }
+        else
+        {
+            result = await _sessionLifecycle.EndAsync(
+                _session.SessionId,
+                this,
+                CancellationToken.None);
+        }
+
+        if (result.Succeeded)
+        {
+            _session = null;
+            Dispose();
+        }
+    }
+
+    private static RecoveryBrowserSessionLifecycle CreateDefaultSessionLifecycle() => new(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
 }

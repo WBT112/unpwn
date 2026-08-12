@@ -195,14 +195,22 @@ Mitigations:
   tools, permissions, downloads, and TLS exceptions where its native API exposes those controls
 - current origin and denied capabilities are visible in localized application chrome
 - browser events do not call canonical recovery execution services
+- one active opaque profile is bound to one account only in process memory; account switching is
+  blocked until cleanup succeeds
+- clean close clears engine-managed browsing data, waits for native resources to release, and then
+  deletes the entire dedicated profile
+- orphaned or cleanup-failed profiles remain visible and retryable at startup and are never resumed
+  automatically
 
 Residual risk:
 
 Provider content remains untrusted and can contain deceptive UI. Platform engines differ, and WPE
 WebKit does not expose every WebView2 autofill control through the maintained Avalonia surface.
-Dedicated profile storage limits cross-profile reuse; the complete clean-close, crash, stale-data,
-and cross-account lifecycle is intentionally the security work of Issue #93 and must be complete
-before the embedded browser becomes the normal recovery path.
+Dedicated profile storage and conservative cleanup limit cross-profile reuse, but an operating-system
+or engine crash may leave data until the explicit retry succeeds. Filesystem snapshots, backups, and
+storage-device behavior can retain deleted bytes; the UI must not claim forensic erasure. The
+assistant integration in Issue #94 must preserve this lifecycle instead of constructing profiles
+directly.
 
 ### Malicious, incorrect, or incomplete translation
 

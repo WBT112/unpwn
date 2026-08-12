@@ -28,6 +28,8 @@ public partial class App : Avalonia.Application
                 new FileApplicationRunMarkerStore(GetRunMarkerPath()),
                 diagnostics);
             var runState = runStateService.Begin();
+            var browserSessions = new RecoveryBrowserSessionLifecycle(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             var wizard = new RecoveryWizardSessionService();
             var workspaceMutations = new WorkspaceMutationCoordinator();
             var vaultLifecycle = new RecoveryVaultLifecycleService(
@@ -89,7 +91,8 @@ public partial class App : Avalonia.Application
                 localization,
                 guidedWizard,
                 resilientRecordStore,
-                runState);
+                runState,
+                browserSessions);
 
             var crashBoundary = new ApplicationCrashBoundary(vaultLifecycle, diagnostics);
             void domainFailureHandler(object _, UnhandledExceptionEventArgs eventArgs)
@@ -123,6 +126,7 @@ public partial class App : Avalonia.Application
                 recoverySession.Dispose();
                 workspaceMutations.Dispose();
                 vaultLifecycle.Dispose();
+                browserSessions.Dispose();
                 runStateService.Complete();
             };
             desktop.MainWindow = mainWindow;

@@ -18,6 +18,7 @@
               Content="{DynamicResource RecoveryBrowser.Stop}"
               Click="Stop_OnClick" />
       <Button AutomationProperties.AutomationId="recovery-browser-close"
+              x:Name="CloseButton"
               Content="{DynamicResource RecoveryBrowser.Close}"
               Click="Close_OnClick" />
     </WrapPanel>
@@ -36,6 +37,10 @@
                    TextWrapping="Wrap" />
         <TextBlock x:Name="SecurityStatusText"
                    AutomationProperties.AutomationId="recovery-browser-security-status"
+                   AutomationProperties.LiveSetting="Assertive"
+                   TextWrapping="Wrap" />
+        <TextBlock x:Name="SessionStatusText"
+                   AutomationProperties.AutomationId="recovery-browser-session-status"
                    AutomationProperties.LiveSetting="Assertive"
                    TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource RecoveryBrowser.ContextDisclaimer}"

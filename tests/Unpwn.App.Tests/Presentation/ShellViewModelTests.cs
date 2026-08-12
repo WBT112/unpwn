@@ -182,6 +182,44 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public async Task ShellKeepsOrphanedBrowserDataVisibleUntilCleanupSucceeds()
+    {
+        var vault = new TestVaultLifecycleService();
+        var recoverySession = new TestRecoverySessionService();
+        var inventory = new TestAccountInventoryService();
+        var localization = CreateLocalization();
+        var browserSessions = new TestBrowserSessionLifecycle();
+        var factory = new AppScreenFactory(
+            new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            vault,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            recoverySession,
+            inventory,
+            localization);
+        var shell = new ShellViewModel(
+            factory,
+            vault,
+            recoverySession,
+            inventory,
+            localization,
+            browserSessions: browserSessions);
+
+        Assert.True(shell.HasBrowserSessionCleanupWarning);
+        Assert.Contains("will not be resumed automatically", shell.BrowserSessionCleanupText,
+            StringComparison.Ordinal);
+        localization.SetLanguage("de");
+        Assert.Contains("nicht automatisch fortgesetzt", shell.BrowserSessionCleanupText,
+            StringComparison.Ordinal);
+
+        var outcome = await shell.RetryBrowserSessionCleanupCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(1, browserSessions.RetryCalls);
+        Assert.False(shell.HasBrowserSessionCleanupWarning);
+        Assert.False(shell.RetryBrowserSessionCleanupCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task GlobalLockIsAvailableOnlyForUnlockedVaultAndReturnsToVaultEntry()
     {
         var shellContext = new TestVaultLifecycleService();
@@ -809,6 +847,60 @@ public sealed class ShellViewModelTests
                 failureCode,
                 Current.Revision + 1);
             StatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private sealed class TestBrowserSessionLifecycle : IRecoveryBrowserSessionLifecycle
+    {
+        private readonly RecoveryBrowserOrphanedSession _orphan = new(
+            Guid.NewGuid(),
+            "/opaque/browser-session");
+
+        public TestBrowserSessionLifecycle()
+        {
+            Current = new RecoveryBrowserSessionLifecycleSnapshot(
+                RecoveryBrowserSessionLifecycleState.OrphanedDataDetected,
+                ActiveSession: null,
+                [_orphan],
+                RecoveryBrowserSessionFailureCode.None);
+        }
+
+        public event EventHandler<RecoveryBrowserSessionLifecycleSnapshot>? StateChanged;
+
+        public RecoveryBrowserSessionLifecycleSnapshot Current { get; private set; }
+
+        public int RetryCalls { get; private set; }
+
+        public RecoveryBrowserSessionLifecycleSnapshot InspectStartup() => Current;
+
+        public RecoveryBrowserSessionStartResult Start(Guid accountId) => new(
+            null,
+            WasReused: false,
+            RecoveryBrowserSessionFailureCode.OrphanedDataRequiresCleanup);
+
+        public Task<RecoveryBrowserSessionCleanupResult> EndAsync(
+            Guid sessionId,
+            IRecoveryBrowserSessionResources resources,
+            CancellationToken cancellationToken) => Task.FromResult(
+                new RecoveryBrowserSessionCleanupResult(
+                    Succeeded: false,
+                    RecoveryBrowserSessionFailureCode.SessionNotFound));
+
+        public Task<RecoveryBrowserSessionCleanupResult> RetryOrphanCleanupAsync(
+            Guid sessionId,
+            CancellationToken cancellationToken)
+        {
+            Assert.Equal(_orphan.SessionId, sessionId);
+            RetryCalls++;
+            Current = new RecoveryBrowserSessionLifecycleSnapshot(
+                RecoveryBrowserSessionLifecycleState.Idle,
+                ActiveSession: null,
+                [],
+                RecoveryBrowserSessionFailureCode.None);
+            StateChanged?.Invoke(this, Current);
+            return Task.FromResult(new RecoveryBrowserSessionCleanupResult(
+                Succeeded: true,
+                RecoveryBrowserSessionFailureCode.None));
         }
     }
 

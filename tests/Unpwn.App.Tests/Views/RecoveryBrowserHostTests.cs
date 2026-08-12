@@ -78,6 +78,62 @@ public sealed class RecoveryBrowserHostTests
     }
 
     [Fact]
+    public async Task ManagedSurfaceClearsAndReleasesBrowserBeforeDeletingSessionData()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            var root = Path.Combine(
+                Path.GetTempPath(),
+                $"unpwn-managed-browser-{Guid.NewGuid():N}");
+            try
+            {
+                using var lifecycle = new RecoveryBrowserSessionLifecycle(root);
+                lifecycle.InspectStartup();
+                var platform = new TestPlatformAdapter();
+                using var view = new RecoveryBrowserView(lifecycle, _ => platform);
+                var destination = new Uri("http://127.0.0.1:43219/password-change");
+                var origin = destination.GetLeftPart(UriPartial.Authority);
+                var request = new RecoveryBrowserSessionStartRequest(
+                    Guid.NewGuid(),
+                    new RecoveryNavigationHandoff(
+                        destination,
+                        origin,
+                        [origin],
+                        RecoveryLocationResolutionSource.ProviderDefined,
+                        RequiresVisibleConfirmation: true),
+                    RecoveryBrowserContentMode.SyntheticTest);
+
+                Assert.True(await view.StartAsync(request));
+                var window = new Window { Content = view };
+                window.Show();
+                Dispatcher.UIThread.RunJobs();
+                await Task.Delay(50);
+                Dispatcher.UIThread.RunJobs();
+                var session = lifecycle.Current.ActiveSession!;
+                Assert.True(Directory.Exists(session.ProfileDataPath));
+
+                var cleanup = await lifecycle.EndAsync(
+                    session.SessionId,
+                    view,
+                    CancellationToken.None);
+
+                Assert.True(cleanup.Succeeded);
+                Assert.True(platform.BrowsingDataCleared);
+                Assert.False(Directory.Exists(session.ProfileDataPath));
+                Assert.Equal(RecoveryBrowserSessionLifecycleState.Idle, lifecycle.Current.State);
+                window.Close();
+            }
+            finally
+            {
+                if (Directory.Exists(root))
+                {
+                    Directory.Delete(root, recursive: true);
+                }
+            }
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task UnexpectedOriginAndNewWindowFailClosed()
     {
         await AccessibilityHeadlessTests.Session.Dispatch(async () =>
@@ -258,6 +314,8 @@ public sealed class RecoveryBrowserHostTests
 
         public bool EnvironmentConfigured { get; private set; }
 
+        public bool BrowsingDataCleared { get; private set; }
+
         public void ConfigureEnvironment(WebViewEnvironmentRequestedEventArgs args)
         {
             EnvironmentConfigured = true;
@@ -266,6 +324,12 @@ public sealed class RecoveryBrowserHostTests
 
         public void Attach(IPlatformHandle? platformHandle) =>
             IsConfigured = platformHandle is not null;
+
+        public Task ClearBrowsingDataAsync(CancellationToken cancellationToken)
+        {
+            BrowsingDataCleared = true;
+            return Task.CompletedTask;
+        }
 
         public void Publish(RecoveryBrowserSecurityEventCode code) =>
             SecurityEvent?.Invoke(this, code);

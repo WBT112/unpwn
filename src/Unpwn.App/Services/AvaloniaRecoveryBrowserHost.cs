@@ -9,6 +9,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
     private RecoveryBrowserSecurityBoundary? _boundary;
     private IRecoveryBrowserPlatformAdapter? _platformAdapter;
+    private TaskCompletionSource _platformReleased = CompletedRelease();
     private RecoveryBrowserHostSnapshot _snapshot = ClosedSnapshot;
 
     public AvaloniaRecoveryBrowserHost(NativeWebView webView)
@@ -91,6 +92,12 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
 
     public bool StopLoading() => _boundary is not null && _webView.Stop();
 
+    public Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
+        _platformAdapter?.ClearBrowsingDataAsync(cancellationToken) ?? Task.CompletedTask;
+
+    internal Task WaitForPlatformReleaseAsync(CancellationToken cancellationToken) =>
+        _platformReleased.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+
     public void Close()
     {
         _webView.Stop();
@@ -123,6 +130,8 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
 
     private void WebView_OnAdapterCreated(object? sender, WebViewAdapterEventArgs args)
     {
+        _platformReleased = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
         _platformAdapter?.Attach(args.TryGetPlatformHandle());
         if (_platformAdapter is { IsConfigured: false })
         {
@@ -136,8 +145,11 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         }
     }
 
-    private void WebView_OnAdapterDestroyed(object? sender, WebViewAdapterEventArgs args) =>
+    private void WebView_OnAdapterDestroyed(object? sender, WebViewAdapterEventArgs args)
+    {
         _platformAdapter?.Attach(null);
+        _platformReleased.TrySetResult();
+    }
 
     private void WebView_OnNavigationStarted(
         object? sender,
@@ -244,4 +256,12 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         CanGoBack: false,
         CanGoForward: false,
         RecoveryBrowserSecurityEventCode.None);
+
+    private static TaskCompletionSource CompletedRelease()
+    {
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        completion.SetResult();
+        return completion;
+    }
 }

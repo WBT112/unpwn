@@ -2,15 +2,37 @@ namespace Unpwn.App.Services;
 
 public static class RecoveryBrowserProfilePath
 {
-    public static string CreateOwnedProfileRoot(string applicationDataRoot)
+    public static string GetOwnedProfilesRoot(string applicationDataRoot)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(applicationDataRoot);
         return Path.GetFullPath(Path.Combine(
             applicationDataRoot,
             "unpwn",
             "recovery-browser",
-            "profiles",
-            Guid.NewGuid().ToString("N")));
+            "profiles"));
+    }
+
+    public static string GetOwnedProfileRoot(
+        string applicationDataRoot,
+        Guid sessionId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(applicationDataRoot);
+        if (sessionId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "A Recovery Browser session requires a non-empty identifier.",
+                nameof(sessionId));
+        }
+
+        return Path.Combine(
+            GetOwnedProfilesRoot(applicationDataRoot),
+            sessionId.ToString("N"));
+    }
+
+    public static string CreateOwnedProfileRoot(string applicationDataRoot)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(applicationDataRoot);
+        return GetOwnedProfileRoot(applicationDataRoot, Guid.NewGuid());
     }
 
     public static void ValidateOwnedProfileRoot(string path, string applicationDataRoot)
@@ -18,11 +40,7 @@ public static class RecoveryBrowserProfilePath
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         ArgumentException.ThrowIfNullOrWhiteSpace(applicationDataRoot);
 
-        var expectedRoot = Path.GetFullPath(Path.Combine(
-            applicationDataRoot,
-            "unpwn",
-            "recovery-browser",
-            "profiles"));
+        var expectedRoot = GetOwnedProfilesRoot(applicationDataRoot);
         var candidate = Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar);
         var candidateParent = Path.GetDirectoryName(candidate);
         var opaqueId = Path.GetFileName(candidate);
