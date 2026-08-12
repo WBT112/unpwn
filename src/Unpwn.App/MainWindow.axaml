@@ -10,8 +10,6 @@
         d:DesignWidth="1080"
         d:DesignHeight="720"
         Title="{DynamicResource App.WindowTitle}"
-        Width="1080"
-        Height="720"
         MinWidth="760"
         MinHeight="560"
         WindowStartupLocation="CenterScreen">
@@ -33,20 +31,10 @@
                     VerticalAlignment="Center"
                     Orientation="Horizontal"
                     Spacing="10">
-          <TextBlock VerticalAlignment="Center"
-                     Text="{DynamicResource Shell.Language.Label}" />
-          <ComboBox Width="120"
-                    TabIndex="0"
-                    AutomationProperties.AutomationId="shell-language"
-                    AutomationProperties.Name="{DynamicResource Shell.Language.Label}"
-                    ItemsSource="{Binding LanguageOptions}"
-                    SelectedItem="{Binding SelectedLanguage, Mode=TwoWay}">
-            <ComboBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:LanguageOptionViewModel">
-                <TextBlock Text="{Binding DisplayName}" />
-              </DataTemplate>
-            </ComboBox.ItemTemplate>
-          </ComboBox>
+          <Button TabIndex="0"
+                  AutomationProperties.AutomationId="shell-settings"
+                  Click="SettingsButton_OnClick"
+                  Content="{DynamicResource Settings.Open}" />
           <Button TabIndex="1"
                   AutomationProperties.AutomationId="shell-lock-vault"
                   IsVisible="{Binding IsVaultUnlocked}"
