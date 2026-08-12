@@ -134,4 +134,41 @@
   <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>Das Ergebnis konnte nicht gespeichert werden. Die UI behauptet nicht, dass es erfasst wurde.</value></data>
   <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>Der angeforderte Wiederherstellungsübergang ist ungültig.</value></data>
   <data name="Workflow.Command.Error" xml:space="preserve"><value>Der Wiederherstellungsvorgang ist fehlgeschlagen, ohne Anbieter- oder Kontodaten offenzulegen.</value></data>
+  <data name="Workflow.Guided.Path.Title" xml:space="preserve"><value>Wähle, wie du dieses Konto wiederherstellen kannst</value></data>
+  <data name="Workflow.Guided.Warning.Title" xml:space="preserve"><value>Wichtig vor dem Fortfahren</value></data>
+  <data name="Workflow.Guided.Prerequisites.Title" xml:space="preserve"><value>Was zuerst bereit sein muss</value></data>
+  <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Warum dies als Nächstes kommt: {0}</value></data>
+  <data name="Workflow.Guided.Primary.StartAndOpen" xml:space="preserve"><value>Diesen Schritt starten und offizielle Seite öffnen</value></data>
+  <data name="Workflow.Guided.Primary.Start" xml:space="preserve"><value>Diesen Schritt starten</value></data>
+  <data name="Workflow.Guided.Primary.RetryAndOpen" xml:space="preserve"><value>Erneut versuchen und offizielle Seite öffnen</value></data>
+  <data name="Workflow.Guided.Primary.Retry" xml:space="preserve"><value>Diesen Schritt erneut versuchen</value></data>
+  <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Hat dieser Schritt wirklich funktioniert?</value></data>
+  <data name="Workflow.Guided.Done" xml:space="preserve"><value>Erledigt</value></data>
+  <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>Ich kann nicht fortfahren</value></data>
+  <data name="Workflow.Guided.Credential.Generate" xml:space="preserve"><value>Neues Passwort für diesen Schritt erzeugen</value></data>
+  <data name="Workflow.Guided.Problem.Title" xml:space="preserve"><value>Was hält dich auf?</value></data>
+  <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Wähle die Antwort, die dem tatsächlichen Ergebnis am besten entspricht. unpwn hält die daraus entstehende Arbeit oder das Risiko im Recovery-Plan sichtbar.</value></data>
+  <data name="Workflow.Guided.Problem.ReasonPlaceholder" xml:space="preserve"><value>Kurze, nicht geheime Erklärung</value></data>
+  <data name="Workflow.Guided.Problem.ReasonWarning" xml:space="preserve"><value>Trage keine Passwörter, Reset-Links, MFA-Geheimnisse, Recovery-Codes, Token, Cookies oder Identitätsdokumente ein.</value></data>
+  <data name="Workflow.Guided.Problem.Apply" xml:space="preserve"><value>Dieses Ergebnis erfassen</value></data>
+  <data name="Workflow.Guided.Problem.Cancel" xml:space="preserve"><value>An diesem Schritt weiterarbeiten</value></data>
+  <data name="Workflow.Guided.Problem.LostAccess.Label" xml:space="preserve"><value>Ich habe keinen Zugriff mehr auf dieses Konto</value></data>
+  <data name="Workflow.Guided.Problem.LostAccess.Explanation" xml:space="preserve"><value>Erfasst den verlorenen Kontozugriff und kehrt zum neu berechneten Recovery-Plan zurück.</value></data>
+  <data name="Workflow.Guided.Problem.WaitingForProvider.Label" xml:space="preserve"><value>Ich muss auf den Anbieter warten</value></data>
+  <data name="Workflow.Guided.Problem.WaitingForProvider.Explanation" xml:space="preserve"><value>Erfasst, dass eine Anbieterprüfung oder Wartefrist noch läuft.</value></data>
+  <data name="Workflow.Guided.Problem.MissingPrerequisite.Label" xml:space="preserve"><value>Ein anderes Konto oder eine Voraussetzung fehlt</value></data>
+  <data name="Workflow.Guided.Problem.MissingPrerequisite.Explanation" xml:space="preserve"><value>Blockiert diesen Schritt, ohne ihn auszublenden, sodass die fehlende Voraussetzung sichtbar bleibt.</value></data>
+  <data name="Workflow.Guided.Problem.ProviderStepFailed.Label" xml:space="preserve"><value>Der Anbieterschritt ist fehlgeschlagen</value></data>
+  <data name="Workflow.Guided.Problem.ProviderStepFailed.Explanation" xml:space="preserve"><value>Erfasst einen Anbieterfehler. Du kannst den Schritt später aus dem Plan erneut versuchen.</value></data>
+  <data name="Workflow.Guided.Problem.TrulyNotApplicable.Label" xml:space="preserve"><value>Diese Funktion existiert für mein Konto wirklich nicht</value></data>
+  <data name="Workflow.Guided.Problem.TrulyNotApplicable.Explanation" xml:space="preserve"><value>Nur verwenden, wenn die Funktion tatsächlich fehlt, nicht wenn sie nicht verfügbar oder schwierig abzuschließen ist. Eine Bestätigung ist erforderlich.</value></data>
+  <data name="Workflow.Guided.Problem.AcceptUnresolvedRisk.Label" xml:space="preserve"><value>Ich möchte dies ungelöst lassen und das Risiko akzeptieren</value></data>
+  <data name="Workflow.Guided.Problem.AcceptUnresolvedRisk.Explanation" xml:space="preserve"><value>Die erforderliche Arbeit bleibt ungelöst und das Konto wird nicht als vollständig gesichert dargestellt. Eine Bestätigung ist erforderlich.</value></data>
+  <data name="Workflow.Guided.Problem.ReviewAdvancedDetails.Label" xml:space="preserve"><value>Etwas anderes – erweiterte Details prüfen</value></data>
+  <data name="Workflow.Guided.Problem.ReviewAdvancedDetails.Explanation" xml:space="preserve"><value>Öffnet den vollständigen technischen Status und die Ergebnissteuerung, ohne den Recovery-Zustand zu ändern.</value></data>
+  <data name="Workflow.Guided.Progress.Title" xml:space="preserve"><value>Recovery-Fortschritt</value></data>
+  <data name="Workflow.Guided.Advanced.Show" xml:space="preserve"><value>Details / erweiterter Status</value></data>
+  <data name="Workflow.Guided.Advanced.Title" xml:space="preserve"><value>Erweiterter Recovery-Status</value></data>
+  <data name="Workflow.Guided.Advanced.Help" xml:space="preserve"><value>Prüfe den kanonischen Zugriff, Aktionsstatus, Notizen, Begründungen und Recovery-Pfad. Diese Steuerelemente aktualisieren dieselbe verschlüsselte Ausführung wie die geführte Aktion.</value></data>
+  <data name="Workflow.Guided.Advanced.Back" xml:space="preserve"><value>Zurück zur aktuellen geführten Aktion</value></data>
 </root>

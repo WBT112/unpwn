@@ -109,6 +109,28 @@ summaries directly. It:
 - return to the recalculated dashboard/plan after each material transition
 - restore focus and announce state changes according to the accessibility baseline in Issue #38
 
+The normal journey makes only the current recommended action visually dominant. It explains why the
+account and action are next, shows relevant warnings and prerequisites, and displays the reviewed
+destination and expected origin before navigation. Starting or retrying a navigable step may open the
+official page, but opening it, returning to unpwn, elapsed time, and restart never complete the action.
+The **Done** action remains disabled until the repository-controlled completion criteria are visibly
+acknowledged.
+
+If the user cannot continue, the presentation asks one understandable follow-up question and maps the
+answer to the existing canonical transition model:
+
+- lost access uses `SetAccessLost`;
+- provider waiting or review uses `SetWaitingForProviderReview`;
+- a missing account or prerequisite uses `BlockAction`;
+- provider failure uses `FailAction`;
+- a genuinely absent capability uses confirmed `MarkTrulyNotApplicable`;
+- deliberately unfinished required work uses confirmed `AcceptUnresolvedRisk`.
+
+All material answers require a non-secret reason and return to the recalculated plan. Technical access,
+path, action-state, reason, note, and outcome controls remain inspectable behind **Details / advanced
+status**. Guided and advanced controls call the same `IAccountRecoveryExecutionService`; neither owns a
+second execution state.
+
 Each material outcome persists the execution and dashboard projection atomically, clears satisfied
 dependency waits, and returns to the recalculated dashboard recommendation. A visible provider-page
 handoff shows the reviewed destination and expected origins before using the operating-system launcher.

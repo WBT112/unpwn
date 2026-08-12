@@ -106,6 +106,27 @@ public sealed class AccessibilityHeadlessTests
     }
 
     [Fact]
+    public async Task RecoveryExecutionExposesOneGuidedActionAndProgressiveOutcomeControls()
+    {
+        await Session.Dispatch(() =>
+        {
+            var view = new WorkflowExecutionView();
+
+            var currentAction = FindByAutomationId(view, "workflow-current-action");
+            Assert.True(Assert.IsType<Control>(currentAction, exactMatch: false).Focusable);
+            Assert.NotNull(FindByAutomationId(view, "workflow-primary-action"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-criteria-acknowledge"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-done"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-cannot-continue"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-problem-choice"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-problem-apply"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-generate-credential"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-show-advanced"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-show-guided"));
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task MainWindowKeepsDocumentedMinimumSizeAndStableShellSelectors()
     {
         await Session.Dispatch(() =>
