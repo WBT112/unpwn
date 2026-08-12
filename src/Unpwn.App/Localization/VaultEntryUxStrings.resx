@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Vault.Choice.OpenLast" xml:space="preserve"><value>Open last vault</value></data>
+  <data name="Vault.Choice.OpenAnother" xml:space="preserve"><value>Open another vault</value></data>
+  <data name="Vault.Choice.LastUsedHeading" xml:space="preserve"><value>Last used vault</value></data>
+  <data name="Vault.Choice.TrustedAssessment" xml:space="preserve"><value>Back to trusted-device assessment</value></data>
+  <data name="Vault.Unlocked.ReassessTrustedDevice" xml:space="preserve"><value>Back to trusted-device assessment</value></data>
+  <data name="Vault.Create.DefaultPathHint" xml:space="preserve"><value>unpwn selected a local user-specific location. You can choose another location before creating the vault.</value></data>
+</root>
