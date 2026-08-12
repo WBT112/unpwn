@@ -104,7 +104,7 @@ public sealed class RecoveryBrowserActionAutomationContractTests
         var contract = insertion.AsActionAutomationContract();
 
         contract.Validate();
-        Assert.Equal(AutomationSupport.Assisted, contract.AutomationSupport);
+        Assert.Equal(AutomationSupport.Assisted, contract.Support);
         Assert.Equal(RecoveryBrowserAutomationEffect.AssistOnly, contract.Effect);
         Assert.Contains("credential-insertion", contract.AdapterId, StringComparison.Ordinal);
     }
