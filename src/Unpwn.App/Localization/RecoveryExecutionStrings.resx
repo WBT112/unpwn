@@ -134,4 +134,41 @@
   <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>The outcome could not be saved. The UI does not claim that it was recorded.</value></data>
   <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>The requested recovery transition is invalid.</value></data>
   <data name="Workflow.Command.Error" xml:space="preserve"><value>The recovery operation failed without exposing provider or account data.</value></data>
+  <data name="Workflow.Guided.Path.Title" xml:space="preserve"><value>Choose how you can recover this account</value></data>
+  <data name="Workflow.Guided.Warning.Title" xml:space="preserve"><value>Important before you continue</value></data>
+  <data name="Workflow.Guided.Prerequisites.Title" xml:space="preserve"><value>What needs to be ready first</value></data>
+  <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Why this is next: {0}</value></data>
+  <data name="Workflow.Guided.Primary.StartAndOpen" xml:space="preserve"><value>Start this step and open the official page</value></data>
+  <data name="Workflow.Guided.Primary.Start" xml:space="preserve"><value>Start this step</value></data>
+  <data name="Workflow.Guided.Primary.RetryAndOpen" xml:space="preserve"><value>Try again and open the official page</value></data>
+  <data name="Workflow.Guided.Primary.Retry" xml:space="preserve"><value>Try this step again</value></data>
+  <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Did this step really work?</value></data>
+  <data name="Workflow.Guided.Done" xml:space="preserve"><value>Done</value></data>
+  <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>I cannot continue</value></data>
+  <data name="Workflow.Guided.Credential.Generate" xml:space="preserve"><value>Generate a new password for this step</value></data>
+  <data name="Workflow.Guided.Problem.Title" xml:space="preserve"><value>What is stopping you?</value></data>
+  <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Choose the answer that best matches what actually happened. unpwn will keep the resulting work or risk visible in your recovery plan.</value></data>
+  <data name="Workflow.Guided.Problem.ReasonPlaceholder" xml:space="preserve"><value>Brief non-secret explanation</value></data>
+  <data name="Workflow.Guided.Problem.ReasonWarning" xml:space="preserve"><value>Do not enter passwords, reset links, MFA secrets, recovery codes, tokens, cookies, or identity documents.</value></data>
+  <data name="Workflow.Guided.Problem.Apply" xml:space="preserve"><value>Record this outcome</value></data>
+  <data name="Workflow.Guided.Problem.Cancel" xml:space="preserve"><value>Keep working on this step</value></data>
+  <data name="Workflow.Guided.Problem.LostAccess.Label" xml:space="preserve"><value>I no longer have access to this account</value></data>
+  <data name="Workflow.Guided.Problem.LostAccess.Explanation" xml:space="preserve"><value>Records lost account access and returns to the recalculated recovery plan.</value></data>
+  <data name="Workflow.Guided.Problem.WaitingForProvider.Label" xml:space="preserve"><value>I need to wait for the provider</value></data>
+  <data name="Workflow.Guided.Problem.WaitingForProvider.Explanation" xml:space="preserve"><value>Records that provider review or a waiting period is still in progress.</value></data>
+  <data name="Workflow.Guided.Problem.MissingPrerequisite.Label" xml:space="preserve"><value>Another account or prerequisite is missing</value></data>
+  <data name="Workflow.Guided.Problem.MissingPrerequisite.Explanation" xml:space="preserve"><value>Blocks this step without hiding it, so the missing prerequisite remains visible.</value></data>
+  <data name="Workflow.Guided.Problem.ProviderStepFailed.Label" xml:space="preserve"><value>The provider step failed</value></data>
+  <data name="Workflow.Guided.Problem.ProviderStepFailed.Explanation" xml:space="preserve"><value>Records a provider failure. You can retry the step later from the plan.</value></data>
+  <data name="Workflow.Guided.Problem.TrulyNotApplicable.Label" xml:space="preserve"><value>This feature truly does not exist for my account</value></data>
+  <data name="Workflow.Guided.Problem.TrulyNotApplicable.Explanation" xml:space="preserve"><value>Use only when the capability is genuinely absent, not when it is unavailable or difficult to complete. Confirmation is required.</value></data>
+  <data name="Workflow.Guided.Problem.AcceptUnresolvedRisk.Label" xml:space="preserve"><value>I want to leave this unresolved and accept the risk</value></data>
+  <data name="Workflow.Guided.Problem.AcceptUnresolvedRisk.Explanation" xml:space="preserve"><value>The required work remains unresolved and the account will not be shown as fully secured. Confirmation is required.</value></data>
+  <data name="Workflow.Guided.Problem.ReviewAdvancedDetails.Label" xml:space="preserve"><value>Something else — review advanced details</value></data>
+  <data name="Workflow.Guided.Problem.ReviewAdvancedDetails.Explanation" xml:space="preserve"><value>Opens the complete technical status and outcome controls without changing recovery state.</value></data>
+  <data name="Workflow.Guided.Progress.Title" xml:space="preserve"><value>Recovery progress</value></data>
+  <data name="Workflow.Guided.Advanced.Show" xml:space="preserve"><value>Details / advanced status</value></data>
+  <data name="Workflow.Guided.Advanced.Title" xml:space="preserve"><value>Advanced recovery status</value></data>
+  <data name="Workflow.Guided.Advanced.Help" xml:space="preserve"><value>Inspect canonical access, action status, notes, reasons, and recovery-path controls. These controls update the same encrypted execution as the guided action.</value></data>
+  <data name="Workflow.Guided.Advanced.Back" xml:space="preserve"><value>Back to the current guided action</value></data>
 </root>

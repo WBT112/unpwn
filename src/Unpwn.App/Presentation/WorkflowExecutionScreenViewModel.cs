@@ -20,6 +20,22 @@ public sealed record WorkflowActionItemViewModel(
 
 public sealed record WorkflowPlanReturnRequest(string FeedbackResourceKey);
 
+public enum GuidedRecoveryProblem
+{
+    LostAccess,
+    WaitingForProvider,
+    MissingPrerequisite,
+    ProviderStepFailed,
+    TrulyNotApplicable,
+    AcceptUnresolvedRisk,
+    ReviewAdvancedDetails,
+}
+
+public sealed record GuidedRecoveryProblemOption(
+    GuidedRecoveryProblem Value,
+    string Label,
+    string Explanation);
+
 public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 {
     private readonly IAccountInventoryService _inventory;
@@ -45,6 +61,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private string? _validationKey;
     private string? _navigationStatusKey;
     private ExternalNavigationFailureCode _navigationFailureCode;
+    private GuidedRecoveryProblemOption[] _problemOptions = [];
+    private GuidedRecoveryProblemOption? _selectedProblem;
+    private bool _isProblemReviewVisible;
+    private bool _isAdvancedStatusVisible;
+    private long _currentActionFocusRequest;
 
     public WorkflowExecutionScreenViewModel(
         IAccountInventoryService inventory,
@@ -118,9 +139,18 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         SaveNotesCommand = Command(SaveNotesAsync, () => _execution is not null && CurrentActionState is not null);
         OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => CurrentLocation is not null);
         GenerateCredentialCommand = Command(GenerateCredentialAsync, CanGenerateCredential);
+        GuidedPrimaryActionCommand = Command(GuidedPrimaryActionAsync, CanRunGuidedPrimaryAction);
+        ShowProblemReviewCommand = new RelayCommand(
+            () => IsProblemReviewVisible = true,
+            CanReportProblem);
+        CancelProblemReviewCommand = new RelayCommand(() => IsProblemReviewVisible = false);
+        ApplyGuidedProblemCommand = Command(ApplyGuidedProblemAsync, CanApplyGuidedProblem);
+        ShowAdvancedStatusCommand = new RelayCommand(() => IsAdvancedStatusVisible = true);
+        ShowGuidedActionCommand = new RelayCommand(() => IsAdvancedStatusVisible = false);
 
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         _session.SessionChanged += Session_OnSessionChanged;
+        RefreshProblemOptions();
         RefreshProjection();
     }
 
@@ -160,6 +190,18 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand GenerateCredentialCommand { get; }
 
+    public AsyncCommand GuidedPrimaryActionCommand { get; }
+
+    public RelayCommand ShowProblemReviewCommand { get; }
+
+    public RelayCommand CancelProblemReviewCommand { get; }
+
+    public AsyncCommand ApplyGuidedProblemCommand { get; }
+
+    public RelayCommand ShowAdvancedStatusCommand { get; }
+
+    public RelayCommand ShowGuidedActionCommand { get; }
+
     public IReadOnlyList<RecoveryPathOptionViewModel> PathOptions => _pathOptions;
 
     public RecoveryPathOptionViewModel? SelectedPath
@@ -196,6 +238,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             CompletionCriteriaAcknowledged = false;
             _navigationStatusKey = null;
             _navigationFailureCode = ExternalNavigationFailureCode.None;
+            IsProblemReviewVisible = false;
+            CurrentActionFocusRequest++;
             NotifyCurrentActionProperties();
             RaiseCommandStates();
         }
@@ -227,8 +271,52 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             if (SetProperty(ref _completionCriteriaAcknowledged, value))
             {
                 ClearValidation();
+                CompleteActionCommand.RaiseCanExecuteChanged();
             }
         }
+    }
+
+    public IReadOnlyList<GuidedRecoveryProblemOption> ProblemOptions => _problemOptions;
+
+    public GuidedRecoveryProblemOption? SelectedProblem
+    {
+        get => _selectedProblem;
+        set
+        {
+            if (SetProperty(ref _selectedProblem, value))
+            {
+                OnPropertyChanged(nameof(SelectedProblemExplanation));
+                ApplyGuidedProblemCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public string SelectedProblemExplanation => SelectedProblem?.Explanation ?? string.Empty;
+
+    public bool IsProblemReviewVisible
+    {
+        get => _isProblemReviewVisible;
+        private set => SetProperty(ref _isProblemReviewVisible, value);
+    }
+
+    public bool IsAdvancedStatusVisible
+    {
+        get => _isAdvancedStatusVisible;
+        private set
+        {
+            if (SetProperty(ref _isAdvancedStatusVisible, value))
+            {
+                OnPropertyChanged(nameof(IsGuidedActionVisible));
+            }
+        }
+    }
+
+    public bool IsGuidedActionVisible => !IsAdvancedStatusVisible;
+
+    public long CurrentActionFocusRequest
+    {
+        get => _currentActionFocusRequest;
+        private set => SetProperty(ref _currentActionFocusRequest, value);
     }
 
     public bool HasAccount => _account is not null;
@@ -244,6 +332,29 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public bool HasCredentialReference => CurrentActionState?.CredentialReference is not null;
 
     public bool CanGenerateCredentialForCurrentAction => CanGenerateCredential();
+
+    public bool CanRunGuidedPrimary => CanRunGuidedPrimaryAction();
+
+    public bool CanReportCurrentProblem => CanReportProblem();
+
+    public bool IsCurrentActionInProgress =>
+        CurrentActionState?.Status == RecoveryActionStatus.InProgress;
+
+    public bool HasCurrentActionFinished => CurrentActionState?.Status is
+        RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable;
+
+    public string GuidedPrimaryActionText => CurrentActionState?.Status is
+        RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction
+            ? Localization.GetString(HasOfficialLocation
+                ? "Workflow.Guided.Primary.RetryAndOpen"
+                : "Workflow.Guided.Primary.Retry")
+            : Localization.GetString(HasOfficialLocation
+                ? "Workflow.Guided.Primary.StartAndOpen"
+                : "Workflow.Guided.Primary.Start");
+
+    public string CurrentActionWhyText => Localization.Format(
+        "Workflow.Guided.Action.Why",
+        RecommendationReasonText);
 
     public bool HasRecordedReason => CurrentActionState?.ReasonCode != RecoveryActionReasonCode.None;
 
@@ -487,6 +598,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     protected override void RefreshLocalization()
     {
         base.RefreshLocalization();
+        RefreshProblemOptions();
         RefreshPathOptions();
         RefreshActions();
         NotifyAccountProperties();
@@ -711,6 +823,80 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         RaiseCommandStates();
     }
 
+    private async Task GuidedPrimaryActionAsync(CancellationToken cancellationToken)
+    {
+        if (!CanRunGuidedPrimaryAction())
+        {
+            return;
+        }
+
+        await ApplyAsync(
+            AccountRecoveryExecutionTransitionKind.StartAction,
+            cancellationToken,
+            returnToPlan: false);
+        if (CurrentActionState?.Status == RecoveryActionStatus.InProgress && HasOfficialLocation)
+        {
+            await OpenOfficialPageAsync(cancellationToken);
+        }
+    }
+
+    private async Task ApplyGuidedProblemAsync(CancellationToken cancellationToken)
+    {
+        if (SelectedProblem?.Value == GuidedRecoveryProblem.ReviewAdvancedDetails)
+        {
+            IsProblemReviewVisible = false;
+            IsAdvancedStatusVisible = true;
+            return;
+        }
+
+        if (!RequireReason() || SelectedProblem is null)
+        {
+            return;
+        }
+
+        switch (SelectedProblem.Value)
+        {
+            case GuidedRecoveryProblem.LostAccess:
+                await ApplyAsync(
+                    AccountRecoveryExecutionTransitionKind.SetAccessLost,
+                    cancellationToken,
+                    userReason: Reason,
+                    returnToPlan: true);
+                break;
+            case GuidedRecoveryProblem.WaitingForProvider:
+                await ApplyAsync(
+                    AccountRecoveryExecutionTransitionKind.SetWaitingForProviderReview,
+                    cancellationToken,
+                    userReason: Reason,
+                    returnToPlan: true);
+                break;
+            case GuidedRecoveryProblem.MissingPrerequisite:
+                await ApplyAsync(
+                    AccountRecoveryExecutionTransitionKind.BlockAction,
+                    cancellationToken,
+                    userReason: Reason,
+                    returnToPlan: true);
+                break;
+            case GuidedRecoveryProblem.ProviderStepFailed:
+                await ApplyAsync(
+                    AccountRecoveryExecutionTransitionKind.FailAction,
+                    cancellationToken,
+                    userReason: Reason,
+                    returnToPlan: true);
+                break;
+            case GuidedRecoveryProblem.TrulyNotApplicable:
+                await MarkNotApplicableAsync(cancellationToken);
+                break;
+            case GuidedRecoveryProblem.AcceptUnresolvedRisk:
+                await AcceptRiskAsync(cancellationToken);
+                break;
+            case GuidedRecoveryProblem.ReviewAdvancedDetails:
+                break;
+            default:
+                throw new InvalidOperationException("The guided recovery problem is unsupported.");
+        }
+    }
+
     private async Task OpenOfficialPageAsync(CancellationToken cancellationToken)
     {
         if (_workflow is null || CurrentDefinition is null || CurrentLocation is null)
@@ -818,13 +1004,19 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
+        var hadExecution = _execution is not null;
         _execution = result.State;
         _reason = string.Empty;
         _completionCriteriaAcknowledged = false;
         _navigationStatusKey = null;
         _navigationFailureCode = ExternalNavigationFailureCode.None;
+        IsProblemReviewVisible = false;
         ClearValidation();
         RefreshProjection();
+        if (!hadExecution && _execution is not null)
+        {
+            CurrentActionFocusRequest++;
+        }
     }
 
     private AccountRecoveryProjectionContext CreateProjectionContext()
@@ -924,8 +1116,25 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(SelectedPath));
     }
 
+    private void RefreshProblemOptions()
+    {
+        var selected = SelectedProblem?.Value ?? GuidedRecoveryProblem.LostAccess;
+        _problemOptions =
+        [
+            .. Enum.GetValues<GuidedRecoveryProblem>().Select(value => new GuidedRecoveryProblemOption(
+                value,
+                Localization.GetString($"Workflow.Guided.Problem.{value}.Label"),
+                Localization.GetString($"Workflow.Guided.Problem.{value}.Explanation"))),
+        ];
+        _selectedProblem = _problemOptions.Single(option => option.Value == selected);
+        OnPropertyChanged(nameof(ProblemOptions));
+        OnPropertyChanged(nameof(SelectedProblem));
+        OnPropertyChanged(nameof(SelectedProblemExplanation));
+    }
+
     private void RefreshActions()
     {
+        var previousActionId = _selectedAction?.DefinitionId;
         var selectedId = SelectedAction?.DefinitionId ?? _requestedActionId;
         if (_workflow is null || SelectedPath is null)
         {
@@ -954,6 +1163,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(Actions));
         OnPropertyChanged(nameof(SelectedAction));
         OnPropertyChanged(nameof(Notes));
+        if (!string.Equals(previousActionId, _selectedAction?.DefinitionId, StringComparison.Ordinal))
+        {
+            CurrentActionFocusRequest++;
+        }
     }
 
     private WorkflowActionItemViewModel CreateActionItem(
@@ -1025,7 +1238,27 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private bool CanRetryCurrentAction() => CurrentActionState?.Status is
         RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction;
 
-    private bool CanCompleteCurrentAction() => CurrentActionState?.Status == RecoveryActionStatus.InProgress;
+    private bool CanCompleteCurrentAction() =>
+        CurrentActionState?.Status == RecoveryActionStatus.InProgress && CompletionCriteriaAcknowledged;
+
+    private bool CanRunGuidedPrimaryAction() => CurrentActionState?.Status is
+        RecoveryActionStatus.Open or RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or
+        RecoveryActionStatus.NeedsUserAction;
+
+    private bool CanReportProblem() => CurrentActionState?.Status is
+        RecoveryActionStatus.Open or RecoveryActionStatus.InProgress or RecoveryActionStatus.Blocked or
+        RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction;
+
+    private bool CanApplyGuidedProblem() => SelectedProblem?.Value switch
+    {
+        GuidedRecoveryProblem.LostAccess or GuidedRecoveryProblem.WaitingForProvider => _execution is not null,
+        GuidedRecoveryProblem.MissingPrerequisite => CanBlockCurrentAction(),
+        GuidedRecoveryProblem.ProviderStepFailed => CanFailCurrentAction(),
+        GuidedRecoveryProblem.TrulyNotApplicable => CanTransitionCurrentAction(),
+        GuidedRecoveryProblem.AcceptUnresolvedRisk => CanAcceptRisk(),
+        GuidedRecoveryProblem.ReviewAdvancedDetails => true,
+        _ => false,
+    };
 
     private bool CanTransitionCurrentAction() => CurrentActionState?.Status is
         RecoveryActionStatus.Open or RecoveryActionStatus.InProgress or RecoveryActionStatus.Blocked or
@@ -1115,6 +1348,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(HasOfficialLocation));
         OnPropertyChanged(nameof(HasCredentialReference));
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
+        OnPropertyChanged(nameof(CanRunGuidedPrimary));
+        OnPropertyChanged(nameof(CanReportCurrentProblem));
+        OnPropertyChanged(nameof(IsCurrentActionInProgress));
+        OnPropertyChanged(nameof(HasCurrentActionFinished));
+        OnPropertyChanged(nameof(GuidedPrimaryActionText));
+        OnPropertyChanged(nameof(CurrentActionWhyText));
         OnPropertyChanged(nameof(HasRecordedReason));
         OnPropertyChanged(nameof(CurrentActionTitle));
         OnPropertyChanged(nameof(CurrentActionInstruction));
@@ -1146,7 +1385,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                      CompleteActionCommand, RequireUserActionCommand, BlockActionCommand,
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,
                      SaveNotesCommand, OpenOfficialPageCommand,
-                     GenerateCredentialCommand,
+                     GenerateCredentialCommand, GuidedPrimaryActionCommand,
+                     ApplyGuidedProblemCommand,
                  })
         {
             command.RaiseCanExecuteChanged();
@@ -1154,6 +1394,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         OnPropertyChanged(nameof(CanChangeRecoveryPath));
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
+        OnPropertyChanged(nameof(CanRunGuidedPrimary));
+        OnPropertyChanged(nameof(CanReportCurrentProblem));
+        ShowProblemReviewCommand.RaiseCanExecuteChanged();
     }
 
     private bool CanGenerateCredential() =>

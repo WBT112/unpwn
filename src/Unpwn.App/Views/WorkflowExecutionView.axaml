@@ -18,55 +18,18 @@
             AutomationProperties.AutomationId="workflow-validation"
             AutomationProperties.LiveSetting="Assertive"
             AutomationProperties.Name="{Binding ValidationMessage}"
-            Padding="14"
-            CornerRadius="8"
+            Padding="14" CornerRadius="8"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
       <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
     </Border>
 
-    <Border IsVisible="{Binding HasAccount}"
-            Padding="18"
-            CornerRadius="10"
+    <Border IsVisible="{Binding !HasExecution}"
+            Padding="18" CornerRadius="10"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="12">
-        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Account.Title}" />
-        <TextBlock FontSize="22" FontWeight="SemiBold" Text="{Binding AccountName}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding ProviderName}" />
-        <TextBlock Text="{Binding LoginIdentifier}" TextWrapping="Wrap" />
-        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="7">
-          <TextBlock Grid.Row="0" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Priority}" />
-          <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PriorityText}" />
-          <TextBlock Grid.Row="1" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Roles}" />
-          <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RolesText}" TextWrapping="Wrap" />
-          <TextBlock Grid.Row="2" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Dependencies}" />
-          <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DependenciesText}" TextWrapping="Wrap" />
-          <TextBlock Grid.Row="3" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Access}" />
-          <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AccessStateText}" />
-          <TextBlock Grid.Row="4" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Status}" />
-          <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RecoveryStatusText}" />
-        </Grid>
-      </StackPanel>
-    </Border>
-
-    <Border IsVisible="{Binding HasAccount}"
-            Padding="18"
-            CornerRadius="10"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-      <StackPanel Spacing="9">
-        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Recommendation.Title}" />
-        <TextBlock FontWeight="SemiBold" Text="{Binding PlanStatusText}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding RecommendationReasonText}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding DependentsText}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding DependentAccountNamesText}" TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-
-    <Border IsVisible="{Binding HasWorkflow}"
-            Padding="18"
-            CornerRadius="10"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="12">
-        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Path.Title}" />
+        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Path.Title}" />
+        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding AccountName}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CurrentActionWhyText}" TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Workflow.Path.Help}" TextWrapping="Wrap" />
         <ComboBox Classes="initial-focus"
                   AutomationProperties.AutomationId="workflow-recovery-path"
@@ -79,176 +42,281 @@
             </DataTemplate>
           </ComboBox.ItemTemplate>
         </ComboBox>
-        <WrapPanel ItemSpacing="10" LineSpacing="10">
-          <Button IsVisible="{Binding !HasExecution}"
-                  Content="{DynamicResource Workflow.Path.Begin}"
-                  Command="{Binding BeginCommand}" />
-          <Button IsVisible="{Binding HasExecution}"
-                  Content="{DynamicResource Workflow.Path.Change}"
-                  Command="{Binding ChangePathCommand}" />
-        </WrapPanel>
-        <TextBlock IsVisible="{Binding HasExecution}"
-                   Text="{DynamicResource Workflow.Path.ChangeHelp}"
-                   TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-
-    <Border IsVisible="{Binding HasExecution}"
-            Padding="18"
-            CornerRadius="10"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="12">
-        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Access.Title}" />
-        <TextBlock Text="{DynamicResource Workflow.Access.Help}" TextWrapping="Wrap" />
-        <TextBlock IsVisible="{Binding HasAccessReason}"
-                   Text="{Binding AccessReasonText}"
-                   TextWrapping="Wrap" />
-        <TextBox Text="{Binding Reason, Mode=TwoWay}"
-                 MaxLength="1000"
-                 PlaceholderText="{DynamicResource Workflow.Reason.Placeholder}"
-                 TextWrapping="Wrap" />
-        <WrapPanel ItemSpacing="10" LineSpacing="10">
-          <Button Content="{DynamicResource Workflow.Access.Available.Action}"
-                  Command="{Binding SetAccessAvailableCommand}" />
-          <Button Content="{DynamicResource Workflow.Access.WaitingForProviderReview.Action}"
-                  Command="{Binding SetWaitingCommand}" />
-          <Button Content="{DynamicResource Workflow.Access.Lost.Action}"
-                  Command="{Binding SetAccessLostCommand}" />
-        </WrapPanel>
+        <Button HorizontalAlignment="Left"
+                AutomationProperties.AutomationId="workflow-begin"
+                Content="{DynamicResource Workflow.Path.Begin}"
+                Command="{Binding BeginCommand}" />
       </StackPanel>
     </Border>
 
     <StackPanel IsVisible="{Binding HasExecution}" Spacing="18">
-      <Border Padding="12"
-              CornerRadius="10"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <StackPanel Spacing="10">
-          <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Actions.Title}" />
-          <ListBox ItemsSource="{Binding Actions}"
-                   SelectedItem="{Binding SelectedAction, Mode=TwoWay}"
-                   MaxHeight="320">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:WorkflowActionItemViewModel">
-                <Grid Margin="3" ColumnDefinitions="28,*" ColumnSpacing="8">
-                  <TextBlock Grid.Column="0"
-                             HorizontalAlignment="Center"
-                             FontWeight="Bold"
-                             Text="{Binding Symbol}" />
-                  <StackPanel Grid.Column="1" Spacing="2">
-                    <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
-                    <TextBlock FontSize="12" Text="{Binding Status}" TextWrapping="Wrap" />
-                  </StackPanel>
-                </Grid>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </StackPanel>
-      </Border>
-
-      <StackPanel IsVisible="{Binding HasCurrentAction}" Spacing="16">
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="10">
+      <StackPanel IsVisible="{Binding IsGuidedActionVisible}" Spacing="18">
+        <Border x:Name="CurrentActionCard"
+                Focusable="True"
+                AutomationProperties.AutomationId="workflow-current-action"
+                AutomationProperties.LiveSetting="Polite"
+                AutomationProperties.Name="{Binding CurrentActionTitle}"
+                Padding="22" CornerRadius="12"
+                BorderThickness="2"
+                BorderBrush="{DynamicResource SystemControlHighlightAccentBrush}"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="14">
             <TextBlock Text="{Binding CurrentActionProgressText}" FontWeight="SemiBold" />
-            <TextBlock Classes="section-title" Text="{Binding CurrentActionTitle}" TextWrapping="Wrap" />
-            <TextBlock Text="{Binding CurrentActionInstruction}" TextWrapping="Wrap" />
+            <TextBlock FontSize="14" Text="{Binding AccountName}" TextWrapping="Wrap" />
+            <TextBlock FontSize="24" FontWeight="SemiBold" Text="{Binding CurrentActionTitle}" TextWrapping="Wrap" />
+            <TextBlock FontWeight="SemiBold" Text="{Binding CurrentActionWhyText}" TextWrapping="Wrap" />
+            <TextBlock FontSize="16" Text="{Binding CurrentActionInstruction}" TextWrapping="Wrap" />
+
             <Border IsVisible="{Binding HasCurrentActionWarning}"
-                    Padding="12"
-                    CornerRadius="8"
-                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-              <TextBlock Text="{Binding CurrentActionWarning}" TextWrapping="Wrap" />
-            </Border>
-            <TextBlock Text="{Binding CurrentActionImportanceText}" />
-            <TextBlock Text="{Binding CurrentActionAutomationText}" />
-            <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Action.Prerequisites}" />
-            <TextBlock Text="{Binding PrerequisitesText}" TextWrapping="Wrap" />
-            <Border IsVisible="{Binding HasRecordedReason}"
-                    Padding="12"
-                    CornerRadius="8"
-                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                    Padding="12" CornerRadius="8"
+                    BorderThickness="2"
+                    BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}">
               <StackPanel Spacing="4">
-                <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Reason.Recorded}" />
-                <TextBlock Text="{Binding RecordedReasonText}" TextWrapping="Wrap" />
+                <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Guided.Warning.Title}" />
+                <TextBlock Text="{Binding CurrentActionWarning}" TextWrapping="Wrap" />
               </StackPanel>
             </Border>
-          </StackPanel>
-        </Border>
 
-        <Border IsVisible="{Binding HasOfficialLocation}"
-                Padding="18"
-                CornerRadius="10"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <StackPanel Spacing="9">
-            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Navigation.Title}" />
-            <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Navigation.Destination}" />
-            <TextBlock Text="{Binding OfficialLocationText}" TextWrapping="Wrap" />
-            <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Navigation.ExpectedOrigins}" />
-            <TextBlock Text="{Binding ExpectedOriginsText}" TextWrapping="Wrap" />
-            <TextBlock Text="{DynamicResource Workflow.Navigation.Disclaimer}" TextWrapping="Wrap" />
-            <Button HorizontalAlignment="Left"
-                    Content="{DynamicResource Workflow.Navigation.Open}"
-                    Command="{Binding OpenOfficialPageCommand}" />
+            <StackPanel Spacing="4">
+              <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Guided.Prerequisites.Title}" />
+              <TextBlock Text="{Binding PrerequisitesText}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border IsVisible="{Binding HasOfficialLocation}"
+                    Padding="14" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="7">
+                <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Navigation.Title}" />
+                <TextBlock Text="{DynamicResource Workflow.Navigation.Destination}" />
+                <TextBlock Text="{Binding OfficialLocationText}" TextWrapping="Wrap" />
+                <TextBlock Text="{DynamicResource Workflow.Navigation.ExpectedOrigins}" />
+                <TextBlock Text="{Binding ExpectedOriginsText}" TextWrapping="Wrap" />
+                <TextBlock Text="{DynamicResource Workflow.Navigation.Disclaimer}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Button IsVisible="{Binding CanGenerateCredentialForCurrentAction}"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="workflow-generate-credential"
+                    Content="{DynamicResource Workflow.Guided.Credential.Generate}"
+                    Command="{Binding GenerateCredentialCommand}" />
+            <TextBlock IsVisible="{Binding HasCredentialReference}"
+                       Text="{Binding CredentialReferenceText}"
+                       TextWrapping="Wrap" />
+
+            <Button IsVisible="{Binding CanRunGuidedPrimary}"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="workflow-primary-action"
+                    Content="{Binding GuidedPrimaryActionText}"
+                    Command="{Binding GuidedPrimaryActionCommand}" />
+
+            <Border IsVisible="{Binding IsCurrentActionInProgress}"
+                    Padding="14" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Completion.Title}" />
+                <TextBlock Text="{DynamicResource Workflow.Completion.Help}" TextWrapping="Wrap" />
+                <ItemsControl ItemsSource="{Binding CompletionCriteria}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Margin="0,3" Text="{ReflectionBinding}" TextWrapping="Wrap" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <CheckBox AutomationProperties.AutomationId="workflow-criteria-acknowledge"
+                          Content="{DynamicResource Workflow.Completion.Acknowledge}"
+                          IsChecked="{Binding CompletionCriteriaAcknowledged, Mode=TwoWay}" />
+                <Button HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="workflow-done"
+                        Content="{DynamicResource Workflow.Guided.Done}"
+                        Command="{Binding CompleteActionCommand}" />
+              </StackPanel>
+            </Border>
+
             <TextBlock IsVisible="{Binding HasNavigationStatus}"
+                       AutomationProperties.LiveSetting="Polite"
                        Text="{Binding NavigationStatus}"
                        TextWrapping="Wrap" />
+
+            <Button IsVisible="{Binding CanReportCurrentProblem}"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="workflow-cannot-continue"
+                    Content="{DynamicResource Workflow.Guided.CannotContinue}"
+                    Command="{Binding ShowProblemReviewCommand}" />
           </StackPanel>
         </Border>
 
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Completion.Title}" />
-            <TextBlock Text="{DynamicResource Workflow.Completion.Help}" TextWrapping="Wrap" />
-            <ItemsControl ItemsSource="{Binding CompletionCriteria}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <TextBlock Margin="0,3" Text="{ReflectionBinding}" TextWrapping="Wrap" />
+        <Border IsVisible="{Binding IsProblemReviewVisible}"
+                AutomationProperties.AutomationId="workflow-problem-review"
+                Padding="18" CornerRadius="10"
+                BorderThickness="2"
+                BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+          <StackPanel Spacing="12">
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Problem.Title}" />
+            <TextBlock Text="{DynamicResource Workflow.Guided.Problem.Help}" TextWrapping="Wrap" />
+            <ComboBox AutomationProperties.AutomationId="workflow-problem-choice"
+                      ItemsSource="{Binding ProblemOptions}"
+                      SelectedItem="{Binding SelectedProblem, Mode=TwoWay}">
+              <ComboBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:GuidedRecoveryProblemOption">
+                  <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
                 </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <CheckBox Content="{DynamicResource Workflow.Completion.Acknowledge}"
-                      IsChecked="{Binding CompletionCriteriaAcknowledged, Mode=TwoWay}" />
-          </StackPanel>
-        </Border>
-
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Notes.Title}" />
-            <TextBlock Text="{DynamicResource Workflow.Notes.Warning}" TextWrapping="Wrap" />
-            <TextBox Text="{Binding Notes, Mode=TwoWay}"
-                     MaxLength="4000"
-                     MinHeight="80"
-                     AcceptsReturn="True"
-                     TextWrapping="Wrap" />
-            <TextBlock Text="{Binding CredentialReferenceText}" TextWrapping="Wrap" />
-            <TextBlock Text="{DynamicResource Workflow.Credential.GenerationHelp}"
-                       TextWrapping="Wrap" />
-            <Button HorizontalAlignment="Left"
-                    Content="{DynamicResource Workflow.Credential.Generate}"
-                    Command="{Binding GenerateCredentialCommand}" />
-            <Button HorizontalAlignment="Left"
-                    Content="{DynamicResource Workflow.Notes.Save}"
-                    Command="{Binding SaveNotesCommand}" />
-          </StackPanel>
-        </Border>
-
-        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Outcome.Title}" />
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Text="{Binding SelectedProblemExplanation}" TextWrapping="Wrap" />
             <TextBox Text="{Binding Reason, Mode=TwoWay}"
                      MaxLength="1000"
-                     PlaceholderText="{DynamicResource Workflow.Reason.Placeholder}"
+                     PlaceholderText="{DynamicResource Workflow.Guided.Problem.ReasonPlaceholder}"
                      TextWrapping="Wrap" />
-            <WrapPanel ItemSpacing="8" LineSpacing="8">
-              <Button Content="{DynamicResource Workflow.Action.Start}" Command="{Binding StartActionCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.Retry}" Command="{Binding RetryActionCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.Complete}" Command="{Binding CompleteActionCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.NeedsUserAction}" Command="{Binding RequireUserActionCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.Block}" Command="{Binding BlockActionCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.Fail}" Command="{Binding FailActionCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.NotApplicable}" Command="{Binding MarkNotApplicableCommand}" />
-              <Button Content="{DynamicResource Workflow.Action.AcceptRisk}" Command="{Binding AcceptRiskCommand}" />
+            <TextBlock Text="{DynamicResource Workflow.Guided.Problem.ReasonWarning}" TextWrapping="Wrap" />
+            <WrapPanel ItemSpacing="10" LineSpacing="10">
+              <Button AutomationProperties.AutomationId="workflow-problem-apply"
+                      Content="{DynamicResource Workflow.Guided.Problem.Apply}"
+                      Command="{Binding ApplyGuidedProblemCommand}" />
+              <Button Content="{DynamicResource Workflow.Guided.Problem.Cancel}"
+                      Command="{Binding CancelProblemReviewCommand}" />
             </WrapPanel>
           </StackPanel>
         </Border>
+
+        <Border Padding="16" CornerRadius="10"
+                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Progress.Title}" />
+            <ItemsControl ItemsSource="{Binding Actions}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WorkflowActionItemViewModel">
+                  <Grid Margin="3" ColumnDefinitions="28,*" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" HorizontalAlignment="Center" FontWeight="Bold" Text="{Binding Symbol}" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
+                      <TextBlock FontSize="12" Text="{Binding Status}" TextWrapping="Wrap" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="workflow-show-advanced"
+                    Content="{DynamicResource Workflow.Guided.Advanced.Show}"
+                    Command="{Binding ShowAdvancedStatusCommand}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+
+      <StackPanel IsVisible="{Binding IsAdvancedStatusVisible}" Spacing="18">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+          <StackPanel Grid.Column="0" Spacing="4">
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Advanced.Title}" />
+            <TextBlock Text="{DynamicResource Workflow.Guided.Advanced.Help}" TextWrapping="Wrap" />
+          </StackPanel>
+          <Button Grid.Column="1"
+                  AutomationProperties.AutomationId="workflow-show-guided"
+                  Content="{DynamicResource Workflow.Guided.Advanced.Back}"
+                  Command="{Binding ShowGuidedActionCommand}" />
+        </Grid>
+
+        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Account.Title}" />
+            <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding AccountName}" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="7">
+              <TextBlock Grid.Row="0" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Priority}" /><TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PriorityText}" />
+              <TextBlock Grid.Row="1" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Roles}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RolesText}" TextWrapping="Wrap" />
+              <TextBlock Grid.Row="2" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Dependencies}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DependenciesText}" TextWrapping="Wrap" />
+              <TextBlock Grid.Row="3" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Access}" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AccessStateText}" />
+              <TextBlock Grid.Row="4" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Status}" /><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RecoveryStatusText}" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Path.Title}" />
+            <ComboBox ItemsSource="{Binding PathOptions}" SelectedItem="{Binding SelectedPath, Mode=TwoWay}">
+              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:RecoveryPathOptionViewModel"><TextBlock Text="{Binding Label}" TextWrapping="Wrap" /></DataTemplate></ComboBox.ItemTemplate>
+            </ComboBox>
+            <Button HorizontalAlignment="Left" Content="{DynamicResource Workflow.Path.Change}" Command="{Binding ChangePathCommand}" />
+            <TextBlock Text="{DynamicResource Workflow.Path.ChangeHelp}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+          <StackPanel Spacing="10">
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Access.Title}" />
+            <TextBlock Text="{Binding AccessReasonText}" TextWrapping="Wrap" />
+            <TextBox Text="{Binding Reason, Mode=TwoWay}" MaxLength="1000" PlaceholderText="{DynamicResource Workflow.Reason.Placeholder}" TextWrapping="Wrap" />
+            <WrapPanel ItemSpacing="10" LineSpacing="10">
+              <Button Content="{DynamicResource Workflow.Access.Available.Action}" Command="{Binding SetAccessAvailableCommand}" />
+              <Button Content="{DynamicResource Workflow.Access.WaitingForProviderReview.Action}" Command="{Binding SetWaitingCommand}" />
+              <Button Content="{DynamicResource Workflow.Access.Lost.Action}" Command="{Binding SetAccessLostCommand}" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="300,*" ColumnSpacing="18">
+          <Border Grid.Column="0" Padding="12" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+            <StackPanel Spacing="10">
+              <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Actions.Title}" />
+              <ListBox ItemsSource="{Binding Actions}" SelectedItem="{Binding SelectedAction, Mode=TwoWay}" MinHeight="360">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:WorkflowActionItemViewModel">
+                    <Grid Margin="3" ColumnDefinitions="28,*" ColumnSpacing="8">
+                      <TextBlock Grid.Column="0" HorizontalAlignment="Center" FontWeight="Bold" Text="{Binding Symbol}" />
+                      <StackPanel Grid.Column="1" Spacing="2"><TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" /><TextBlock FontSize="12" Text="{Binding Status}" TextWrapping="Wrap" /></StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </StackPanel>
+          </Border>
+
+          <StackPanel Grid.Column="1" Spacing="16">
+            <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+              <StackPanel Spacing="8">
+                <TextBlock Classes="section-title" Text="{Binding CurrentActionTitle}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding CurrentActionInstruction}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding CurrentActionImportanceText}" />
+                <TextBlock Text="{Binding CurrentActionAutomationText}" />
+                <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Action.Prerequisites}" />
+                <TextBlock Text="{Binding PrerequisitesText}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding RecordedReasonText}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Notes.Title}" />
+                <TextBlock Text="{DynamicResource Workflow.Notes.Warning}" TextWrapping="Wrap" />
+                <TextBox Text="{Binding Notes, Mode=TwoWay}" MaxLength="4000" MinHeight="80" AcceptsReturn="True" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding CredentialReferenceText}" TextWrapping="Wrap" />
+                <WrapPanel ItemSpacing="8" LineSpacing="8">
+                  <Button Content="{DynamicResource Workflow.Credential.Generate}" Command="{Binding GenerateCredentialCommand}" />
+                  <Button Content="{DynamicResource Workflow.Notes.Save}" Command="{Binding SaveNotesCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+
+            <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="10">
+                <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Outcome.Title}" />
+                <TextBox Text="{Binding Reason, Mode=TwoWay}" MaxLength="1000" PlaceholderText="{DynamicResource Workflow.Reason.Placeholder}" TextWrapping="Wrap" />
+                <CheckBox Content="{DynamicResource Workflow.Completion.Acknowledge}" IsChecked="{Binding CompletionCriteriaAcknowledged, Mode=TwoWay}" />
+                <WrapPanel ItemSpacing="8" LineSpacing="8">
+                  <Button Content="{DynamicResource Workflow.Action.Start}" Command="{Binding StartActionCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.Retry}" Command="{Binding RetryActionCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.Complete}" Command="{Binding CompleteActionCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.NeedsUserAction}" Command="{Binding RequireUserActionCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.Block}" Command="{Binding BlockActionCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.Fail}" Command="{Binding FailActionCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.NotApplicable}" Command="{Binding MarkNotApplicableCommand}" />
+                  <Button Content="{DynamicResource Workflow.Action.AcceptRisk}" Command="{Binding AcceptRiskCommand}" />
+                </WrapPanel>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
       </StackPanel>
     </StackPanel>
   </StackPanel>
