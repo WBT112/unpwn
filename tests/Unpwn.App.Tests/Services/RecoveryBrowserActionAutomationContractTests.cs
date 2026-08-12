@@ -123,6 +123,6 @@ public sealed class RecoveryBrowserActionAutomationContractTests
         contract.Validate();
         Assert.Equal(AutomationSupport.Assisted, contract.Support);
         Assert.Equal(RecoveryBrowserAutomationEffect.AssistOnly, contract.Effect);
-        Assert.Contains("credential-insertion", contract.AdapterId, StringComparison.Ordinal);
+        Assert.Contains("credential-insertion", contract.AdapterId);
     }
 }
