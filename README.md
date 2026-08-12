@@ -4,7 +4,9 @@
 
 It helps users organize affected accounts, prioritize critical identities and dependencies, work through provider recovery actions step by step, track unresolved risks, and move newly generated credentials into an established password manager.
 
-unpwn is **not** an antivirus, malware scanner, password manager, or autonomous account-recovery bot.
+The desktop recovery flow includes a managed Recovery Browser so the provider website, current recovery guidance, explicit completion checklist, and credential handoff can remain in one workspace. Browser activity is never treated as proof that a recovery action succeeded.
+
+unpwn is **not** an antivirus, malware scanner, password manager, general-purpose web browser, or autonomous account-recovery bot.
 
 > **Status:** active development. There is no supported production release yet.
 
@@ -12,7 +14,7 @@ unpwn is **not** an antivirus, malware scanner, password manager, or autonomous 
 
 - [User Guide](docs/USER_GUIDE.md) — short recovery walkthrough
 - [Documentation Index](docs/README.md) — product, architecture, security, workflow, vault, and engineering docs
-- [Account Recovery Execution](docs/ACCOUNT_RECOVERY_EXECUTION.md) — canonical action states and guided execution rules
+- [Recovery Browser](docs/RECOVERY_BROWSER.md) — embedded browser security and session boundaries
 - [Security Policy](SECURITY.md) — limitations and vulnerability reporting
 - [Roadmap](docs/ROADMAP.md) — current development direction
 - [Contributing](CONTRIBUTING.md) — development and pull-request workflow
