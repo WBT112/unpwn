@@ -8,6 +8,8 @@ namespace Unpwn.App.Views;
 
 public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBrowserSessionResources
 {
+    private static readonly TimeSpan PlatformActivationTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan PlatformActivationPollInterval = TimeSpan.FromMilliseconds(25);
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
     private readonly IRecoveryBrowserSessionLifecycle _sessionLifecycle;
     private readonly bool _ownsSessionLifecycle;
@@ -89,7 +91,9 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
             request.Handoff,
             request.ContentMode,
             _session!.ProfileDataPath);
-        if (Start(hostRequest))
+        var hostAccepted = Start(hostRequest);
+        if (hostAccepted &&
+            (TopLevel.GetTopLevel(this) is null || await WaitForPlatformActivationAsync(cancellationToken)))
         {
             return true;
         }
@@ -194,6 +198,46 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         host.Dispose();
         _host = null;
         UpdateSnapshot(null);
+    }
+
+    private async Task<bool> WaitForPlatformActivationAsync(CancellationToken cancellationToken)
+    {
+        var host = _host;
+        if (host is null || BrowserContent.Content is not NativeWebView webView)
+        {
+            return false;
+        }
+
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(PlatformActivationTimeout);
+        try
+        {
+            while (true)
+            {
+                var snapshot = host.Snapshot;
+                if (snapshot.State == RecoveryBrowserHostState.Unavailable ||
+                    snapshot.LastSecurityEvent == RecoveryBrowserSecurityEventCode.PlatformHardeningUnavailable)
+                {
+                    return false;
+                }
+
+                if (webView.TryGetPlatformHandle() is not null)
+                {
+                    // AdapterCreated and the platform hardening callback run synchronously before
+                    // the handle is usable. Yield once so the snapshot projection can settle.
+                    await Task.Yield();
+                    snapshot = host.Snapshot;
+                    return snapshot.State != RecoveryBrowserHostState.Unavailable &&
+                        snapshot.LastSecurityEvent != RecoveryBrowserSecurityEventCode.PlatformHardeningUnavailable;
+                }
+
+                await Task.Delay(PlatformActivationPollInterval, timeout.Token);
+            }
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
     }
 
     private void Host_OnSnapshotChanged(

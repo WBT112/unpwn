@@ -72,6 +72,10 @@ public partial class WorkflowExecutionView : AccessibleScreen
         _subscribedViewModel.RecoveryBrowserRequested -= ViewModel_OnRecoveryBrowserRequested;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Native browser initialization can fail through platform-specific exceptions. The recovery boundary must fail closed without surfacing exception text or crashing the UI thread.")]
     private async void ViewModel_OnRecoveryBrowserRequested(
         object? sender,
         RecoveryBrowserWorkspaceRequest request)
@@ -92,11 +96,23 @@ public partial class WorkflowExecutionView : AccessibleScreen
             BrowserWorkspaceHost.Content = _browserView;
         }
 
-        var opened = await _browserView.StartAsync(
-            new RecoveryBrowserSessionStartRequest(
-                request.AccountId,
-                request.Handoff,
-                request.ContentMode));
+        bool opened;
+        try
+        {
+            opened = await _browserView.StartAsync(
+                new RecoveryBrowserSessionStartRequest(
+                    request.AccountId,
+                    request.Handoff,
+                    request.ContentMode));
+        }
+        catch (Exception)
+        {
+            // Do not surface native exception text: it can contain provider/runtime details and
+            // an async-void exception here would otherwise terminate the UI path. The prepared
+            // navigation remains available for the explicit external-browser fallback.
+            opened = false;
+        }
+
         viewModel.ReportRecoveryBrowserOpenResult(
             opened,
             _browserView.SessionSnapshot.State != RecoveryBrowserSessionLifecycleState.Idle);
