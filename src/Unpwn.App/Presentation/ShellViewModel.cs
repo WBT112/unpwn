@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
 using Unpwn.Application;
@@ -779,32 +780,38 @@ public sealed class ShellViewModel : ObservableObject
 
     private async void CsvImport_OnContinueRequested(object? sender, EventArgs eventArgs)
     {
-        if (!await AdvanceWorkspaceTaskAsync(NextUserTaskTarget.AccountTriage))
-        {
-            return;
-        }
-
-        NavigateTo(AppRoute.Accounts);
+        await ContinueWorkspaceAsync(NextUserTaskTarget.AccountTriage, AppRoute.Accounts);
     }
 
     private async void Accounts_OnContinueToRecoveryRequested(object? sender, EventArgs eventArgs)
     {
-        if (!await AdvanceWorkspaceTaskAsync(NextUserTaskTarget.RecoveryOverview))
-        {
-            return;
-        }
-
-        NavigateTo(AppRoute.Dashboard);
+        await ContinueWorkspaceAsync(NextUserTaskTarget.RecoveryOverview, AppRoute.Dashboard);
     }
 
     private async void Credentials_OnContinueToCompletionRequested(object? sender, EventArgs eventArgs)
     {
-        if (!await AdvanceWorkspaceTaskAsync(NextUserTaskTarget.CompletionReview))
-        {
-            return;
-        }
+        await ContinueWorkspaceAsync(NextUserTaskTarget.CompletionReview, AppRoute.Completion);
+    }
 
-        NavigateTo(AppRoute.Completion);
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "This is the Avalonia async-event boundary. Recovery-flow and screen-activation failures must remain secret-safe UI state instead of escaping to the platform dispatcher and terminating the desktop process.")]
+    private async Task ContinueWorkspaceAsync(
+        NextUserTaskTarget expectedTarget,
+        AppRoute destination)
+    {
+        try
+        {
+            if (await AdvanceWorkspaceTaskAsync(expectedTarget))
+            {
+                NavigateTo(destination);
+            }
+        }
+        catch (Exception)
+        {
+            ShowRecoveryFlowFailure();
+        }
     }
 
     private async Task<bool> AdvanceWorkspaceTaskAsync(NextUserTaskTarget expectedTarget)
