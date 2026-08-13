@@ -10,5 +10,9 @@ public sealed record VaultRecordWrite(
     {
         ArgumentNullException.ThrowIfNull(Descriptor);
         Descriptor.Validate();
+        if (Plaintext.Length > VaultResourceLimits.MaximumRecordBytes)
+        {
+            throw new ArgumentOutOfRangeException(nameof(Plaintext));
+        }
     }
 }
