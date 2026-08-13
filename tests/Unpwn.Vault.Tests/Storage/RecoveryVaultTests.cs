@@ -247,7 +247,7 @@ public sealed class RecoveryVaultTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        Assert.ThrowsAny<IOException>(() =>
+        Assert.Throws<InvalidDataException>(() =>
             RecoveryVault.Open(path, "UNPWN_TEST_SECRET_vault-password"));
     }
 
@@ -266,7 +266,7 @@ public sealed class RecoveryVaultTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        Assert.ThrowsAny<IOException>(() =>
+        Assert.Throws<VaultFormatException>(() =>
             RecoveryVault.Open(path, "UNPWN_TEST_SECRET_vault-password"));
     }
 
@@ -296,7 +296,7 @@ public sealed class RecoveryVaultTests : IDisposable
         }
 
         using var reopened = RecoveryVault.Open(path, "UNPWN_TEST_SECRET_vault-password");
-        Assert.ThrowsAny<IOException>(() => reopened.ReadRecord("account-state", StateId));
+        Assert.Throws<VaultFormatException>(() => reopened.ReadRecord("account-state", StateId));
     }
 
     public void Dispose()
