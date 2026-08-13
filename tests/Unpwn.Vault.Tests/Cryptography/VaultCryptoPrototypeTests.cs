@@ -181,4 +181,39 @@ public sealed class VaultCryptoPrototypeTests
 
         Argon2idParameters.Interactive.Validate();
     }
+
+    [Fact]
+    public void StoredResourceLimitsRejectEveryOutOfRangeDimension()
+    {
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateStoredRecordLength(-1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordCount(-1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordCount(VaultResourceLimits.MaximumRecordCount + 1L));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(-1, 1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(
+                VaultResourceLimits.MaximumRecordTypeUtf8Bytes + 1L,
+                1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(1, -1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(
+                1,
+                VaultResourceLimits.MaximumRecordIdUtf8Bytes + 1L));
+    }
+
+    [Fact]
+    public void EncryptedRecordRejectsInvalidNonceLengthBeforeDecrypt()
+    {
+        var record = new EncryptedVaultRecord(
+            new VaultRecordDescriptor("account-state", RecordId, 1),
+            [],
+            [],
+            new byte[VaultCryptoPrototype.TagSizeBytes]);
+
+        Assert.Throws<ArgumentException>(() => record.Validate());
+    }
 }
