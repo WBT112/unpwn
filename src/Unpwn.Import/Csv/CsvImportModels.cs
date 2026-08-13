@@ -23,16 +23,42 @@ public sealed record CsvColumnMapping(
     public static CsvColumnMapping Empty { get; } = new(null, null, null, null, []);
 }
 
+public enum CsvMappingQuality
+{
+    Complete,
+    NeedsReview,
+    Incomplete,
+}
+
+public enum CsvMappingIssue
+{
+    MissingServiceIdentity,
+    MissingAccountIdentity,
+    AmbiguousServiceName,
+    AmbiguousAccountName,
+    AmbiguousLoginIdentifier,
+    AmbiguousAccountUrl,
+    MissingMappedColumn,
+    RepeatedMappedColumn,
+    PasswordColumnMapped,
+    PasswordColumnNotExcluded,
+}
+
+public sealed record CsvMappingAssessment(
+    CsvMappingQuality Quality,
+    IReadOnlyList<CsvMappingIssue> Issues)
+{
+    public bool IsComplete => Quality == CsvMappingQuality.Complete;
+}
+
 public sealed record CsvImportAnalysis(
     char Delimiter,
     IReadOnlyList<string> Headers,
     CsvColumnMapping SuggestedMapping,
     IReadOnlyList<string> DetectedPasswordColumns,
+    CsvMappingAssessment MappingAssessment,
     IReadOnlyList<CsvImportDiagnostic> Diagnostics)
 {
-    public const string PasswordWarning =
-        "The source contains password columns. Old passwords are excluded and will not be imported.";
-
     public bool ContainsPasswordColumns => DetectedPasswordColumns.Count > 0;
 }
 

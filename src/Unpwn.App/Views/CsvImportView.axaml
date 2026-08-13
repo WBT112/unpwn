@@ -39,64 +39,68 @@
                 BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
                 BorderThickness="5,1,1,1"
                 CornerRadius="6">
-          <StackPanel Spacing="10">
-            <TextBlock x:Name="PasswordWarningText"
-                       FontWeight="SemiBold"
-                       TextWrapping="Wrap" />
-            <CheckBox x:Name="ExcludePasswordsCheckBox"
-                      AutomationProperties.AutomationId="import-exclude-passwords"
-                      TabIndex="5"
-                      Content="{DynamicResource Import.Password.Exclude}"
-                      IsCheckedChanged="ExcludePasswordsCheckBox_OnIsCheckedChanged" />
-          </StackPanel>
+          <TextBlock x:Name="PasswordWarningText"
+                     FontWeight="SemiBold"
+                     TextWrapping="Wrap" />
         </Border>
       </StackPanel>
     </Border>
 
-    <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+    <Border x:Name="MappingPanel"
+            AutomationProperties.AutomationId="import-mapping-panel"
+            IsVisible="False"
+            Padding="18"
+            CornerRadius="8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="14">
         <TextBlock Classes="section-title" Text="{DynamicResource Import.Step.Mapping}" />
+        <TextBlock x:Name="MappingIssuesText"
+                   Focusable="True"
+                   AutomationProperties.AutomationId="import-mapping-issues"
+                   AutomationProperties.LiveSetting="Assertive"
+                   TextWrapping="Wrap" />
         <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="12">
-          <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
+          <StackPanel x:Name="ServiceNameMappingField"
+                      AutomationProperties.AutomationId="import-service-mapping-field"
+                      Grid.Row="0" Grid.Column="0" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Service}" />
             <ComboBox x:Name="ServiceNameColumnCombo"
                       AutomationProperties.AutomationId="import-service-column"
                       AutomationProperties.Name="{DynamicResource Import.Mapping.Service}"
-                      TabIndex="6"
+                      TabIndex="5"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
-          <StackPanel Grid.Row="0" Grid.Column="1" Spacing="5">
+          <StackPanel x:Name="AccountNameMappingField"
+                      AutomationProperties.AutomationId="import-account-mapping-field"
+                      Grid.Row="0" Grid.Column="1" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Account}" />
             <ComboBox x:Name="AccountNameColumnCombo"
                       AutomationProperties.AutomationId="import-account-column"
                       AutomationProperties.Name="{DynamicResource Import.Mapping.Account}"
-                      TabIndex="7"
+                      TabIndex="6"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
-          <StackPanel Grid.Row="1" Grid.Column="0" Spacing="5">
+          <StackPanel x:Name="LoginIdentifierMappingField"
+                      AutomationProperties.AutomationId="import-login-mapping-field"
+                      Grid.Row="1" Grid.Column="0" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Login}" />
             <ComboBox x:Name="LoginIdentifierColumnCombo"
                       AutomationProperties.AutomationId="import-login-column"
                       AutomationProperties.Name="{DynamicResource Import.Mapping.Login}"
-                      TabIndex="8"
+                      TabIndex="7"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
-          <StackPanel Grid.Row="1" Grid.Column="1" Spacing="5">
+          <StackPanel x:Name="AccountUrlMappingField"
+                      AutomationProperties.AutomationId="import-url-mapping-field"
+                      Grid.Row="1" Grid.Column="1" Spacing="5">
             <TextBlock Text="{DynamicResource Import.Mapping.Url}" />
             <ComboBox x:Name="AccountUrlColumnCombo"
                       AutomationProperties.AutomationId="import-url-column"
                       AutomationProperties.Name="{DynamicResource Import.Mapping.Url}"
-                      TabIndex="9"
+                      TabIndex="8"
                       SelectionChanged="MappingCombo_OnSelectionChanged" />
           </StackPanel>
         </Grid>
-        <Button x:Name="CreatePreviewButton"
-                AutomationProperties.AutomationId="import-create-preview"
-                TabIndex="10"
-                HorizontalAlignment="Left"
-                IsEnabled="False"
-                Click="CreatePreviewButton_OnClick"
-                Content="{DynamicResource Import.Preview.Create}" />
       </StackPanel>
     </Border>
 

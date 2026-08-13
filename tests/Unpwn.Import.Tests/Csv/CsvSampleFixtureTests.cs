@@ -42,6 +42,14 @@ public sealed partial class CsvSampleFixtureTests
         }
 
         Assert.Equal(["login_password"], analysis.DetectedPasswordColumns);
+        Assert.Equal(BitwardenMapping.ServiceNameColumn, analysis.SuggestedMapping.ServiceNameColumn);
+        Assert.Equal(BitwardenMapping.AccountNameColumn, analysis.SuggestedMapping.AccountNameColumn);
+        Assert.Equal(BitwardenMapping.LoginIdentifierColumn, analysis.SuggestedMapping.LoginIdentifierColumn);
+        Assert.Equal(BitwardenMapping.AccountUrlColumn, analysis.SuggestedMapping.AccountUrlColumn);
+        Assert.Equal(
+            BitwardenMapping.ExcludedPasswordColumns,
+            analysis.SuggestedMapping.ExcludedPasswordColumns);
+        Assert.True(analysis.MappingAssessment.IsComplete);
 
         CsvImportPreview preview = Preview("bitwarden-recovery-sample.csv", BitwardenMapping);
         string serialized = JsonSerializer.Serialize(preview);

@@ -55,9 +55,13 @@ or credential was compromised. unpwn does not collect a free-form incident narra
 
 ### 4. Add your accounts
 
-Add accounts manually or import reviewed account data from CSV.
+Add accounts manually or select a CSV file. unpwn detects a safe column mapping and creates the
+preview automatically. Mapping choices appear only when a required value is missing or ambiguous, and
+the preview updates after that choice without a separate button.
 
-Old-password columns are excluded from import. Duplicate candidates are reviewed conservatively; the normal safe path avoids silently creating duplicate recovery accounts.
+Old-password columns are excluded automatically and cannot be selected as account fields. Review the
+preview and explicitly confirm the final import. Duplicate candidates remain conservative: the normal
+safe path keeps the first CSV occurrence and lets the existing inventory win.
 
 ### 5. Confirm important roles and dependencies
 

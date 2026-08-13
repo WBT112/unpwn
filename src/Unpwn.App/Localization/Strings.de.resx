@@ -111,8 +111,7 @@
   <data name="Import.Diagnostic.MissingServiceMapping" xml:space="preserve"><value>Ordne entweder einen Dienstnamen oder eine Konto-URL zu.</value></data>
   <data name="Import.Diagnostic.MissingServiceValue" xml:space="preserve"><value>Die Zeile enthält weder einen Dienstnamen noch eine Konto-URL.</value></data>
   <data name="Import.Diagnostic.PasswordColumnMapped" xml:space="preserve"><value>Eine erkannte Passwortspalte kann keinem Kontofeld zugeordnet werden.</value></data>
-  <data name="Import.Diagnostic.PasswordColumnNotExcluded" xml:space="preserve"><value>Jede erkannte Passwortspalte muss vor der Vorschau ausdrücklich ausgeschlossen werden.</value></data>
-  <data name="Import.Diagnostic.PasswordColumnsDetected" xml:space="preserve"><value>Die Quelle enthält Passwortspalten. Alte Passwörter werden ausgeschlossen und nicht importiert.</value></data>
+  <data name="Import.Diagnostic.PasswordColumnNotExcluded" xml:space="preserve"><value>Jede erkannte Passwortspalte muss vor der Vorschau ausgeschlossen werden.</value></data>
   <data name="Import.Diagnostic.RepeatedMappedColumn" xml:space="preserve"><value>Eine Quellspalte kann nicht mehreren Kontofeldern zugeordnet werden.</value></data>
   <data name="Import.Diagnostic.WithRow" xml:space="preserve"><value>{0}: Zeile {1}: {2}</value></data>
   <data name="Import.Diagnostic.WithoutRow" xml:space="preserve"><value>{0}: {1}</value></data>
@@ -122,16 +121,24 @@
   <data name="Import.FilePicker.Title" xml:space="preserve"><value>CSV-Datei mit Konten auswählen</value></data>
   <data name="Import.FilePicker.Type" xml:space="preserve"><value>CSV-Dateien</value></data>
   <data name="Import.Mapping.Account" xml:space="preserve"><value>Kontoname</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousAccountName" xml:space="preserve"><value>Wähle die zu verwendende mögliche Kontonamenspalte aus.</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousAccountUrl" xml:space="preserve"><value>Wähle die zu verwendende mögliche Konto-URL-Spalte aus.</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousLoginIdentifier" xml:space="preserve"><value>Wähle die zu verwendende mögliche Benutzernamen- oder E-Mail-Spalte aus.</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousServiceName" xml:space="preserve"><value>Wähle die zu verwendende mögliche Dienstnamenspalte aus.</value></data>
+  <data name="Import.Mapping.Issue.MissingAccountIdentity" xml:space="preserve"><value>Wähle eine Spalte für Benutzername, E-Mail oder Kontoname aus.</value></data>
+  <data name="Import.Mapping.Issue.MissingMappedColumn" xml:space="preserve"><value>Eine ausgewählte Spalte ist in dieser Datei nicht mehr vorhanden.</value></data>
+  <data name="Import.Mapping.Issue.MissingServiceIdentity" xml:space="preserve"><value>Wähle eine Spalte für Dienstname oder Konto-URL aus.</value></data>
+  <data name="Import.Mapping.Issue.PasswordColumnMapped" xml:space="preserve"><value>Wähle für Kontodaten eine Spalte aus, die keine Passwörter enthält.</value></data>
+  <data name="Import.Mapping.Issue.PasswordColumnNotExcluded" xml:space="preserve"><value>Erkannte Passwortspalten müssen ausgeschlossen bleiben.</value></data>
+  <data name="Import.Mapping.Issue.RepeatedMappedColumn" xml:space="preserve"><value>Wähle für jedes Kontofeld eine andere Quellspalte aus.</value></data>
   <data name="Import.Mapping.Login" xml:space="preserve"><value>Benutzername oder E-Mail</value></data>
   <data name="Import.Mapping.None" xml:space="preserve"><value>(nicht zugeordnet)</value></data>
   <data name="Import.Mapping.Service" xml:space="preserve"><value>Dienstname</value></data>
   <data name="Import.Mapping.Url" xml:space="preserve"><value>Konto-URL</value></data>
   <data name="Import.NoFile" xml:space="preserve"><value>Keine Datei ausgewählt</value></data>
-  <data name="Import.Password.Exclude" xml:space="preserve"><value>Alle erkannten Passwortspalten von diesem Import ausschließen</value></data>
-  <data name="Import.Password.Warning" xml:space="preserve"><value>Die Quelle enthält Passwortspalten. Alte Passwörter werden ausgeschlossen und nicht importiert. Erkannt: {0}</value></data>
-  <data name="Import.Preview.Create" xml:space="preserve"><value>Importvorschau erstellen</value></data>
-  <data name="Import.Preview.Initial" xml:space="preserve"><value>Wähle eine CSV-Datei aus und erstelle eine Vorschau.</value></data>
-  <data name="Import.Preview.MappingReview" xml:space="preserve"><value>Prüfe die Zuordnung und erstelle anschließend die Importvorschau.</value></data>
+  <data name="Import.Password.Warning" xml:space="preserve"><value>Alte Passwörter werden automatisch ignoriert. Ausgeschlossene Spalten: {0}</value></data>
+  <data name="Import.Preview.Initial" xml:space="preserve"><value>Wähle eine CSV-Datei aus. unpwn erkennt die Spalten und erstellt die Vorschau automatisch.</value></data>
+  <data name="Import.Preview.MappingReview" xml:space="preserve"><value>Löse die oben gezeigten Spaltenzuordnungen. Sobald die Zuordnung vollständig ist, wird die Vorschau automatisch aktualisiert.</value></data>
   <data name="Import.Preview.NotReady" xml:space="preserve"><value>Die Vorschau ist noch nicht importbereit. Prüfe Diagnosemeldungen und Zuordnung.</value></data>
   <data name="Import.Preview.ValidAccounts.One" xml:space="preserve"><value>{0} gültiges Konto; {1} mögliche Duplikate. Alte Passwörter werden nicht importiert.</value></data>
   <data name="Import.Preview.ValidAccounts.Other" xml:space="preserve"><value>{0} gültige Konten; {1} mögliche Duplikate. Alte Passwörter werden nicht importiert.</value></data>
@@ -141,9 +148,9 @@
   <data name="Import.Severity.Error" xml:space="preserve"><value>Fehler</value></data>
   <data name="Import.Severity.Information" xml:space="preserve"><value>Information</value></data>
   <data name="Import.Severity.Warning" xml:space="preserve"><value>Warnung</value></data>
-  <data name="Import.Step.Mapping" xml:space="preserve"><value>2. Spalten zuordnen</value></data>
-  <data name="Import.Step.Review" xml:space="preserve"><value>3. Vorschau prüfen</value></data>
-  <data name="Import.Step.Source" xml:space="preserve"><value>1. Quelle auswählen</value></data>
+  <data name="Import.Step.Mapping" xml:space="preserve"><value>Spaltenzuordnung klären</value></data>
+  <data name="Import.Step.Review" xml:space="preserve"><value>Import prüfen und bestätigen</value></data>
+  <data name="Import.Step.Source" xml:space="preserve"><value>Quelle auswählen</value></data>
   <data name="Import.UnknownAccount" xml:space="preserve"><value>(unbekanntes Konto)</value></data>
   <data name="Import.UnknownService" xml:space="preserve"><value>(unbekannter Dienst)</value></data>
   <data name="Language.English" xml:space="preserve"><value>English</value></data>
@@ -165,9 +172,9 @@
   <data name="Screen.Dashboard.StatusMessage" xml:space="preserve"><value>Entsperre einen Wiederherstellungstresor, um den Sitzungsfortschritt zu laden.</value></data>
   <data name="Screen.Dashboard.StatusTitle" xml:space="preserve"><value>Platzhalter für die Übersicht</value></data>
   <data name="Screen.Dashboard.Title" xml:space="preserve"><value>Wiederherstellungsübersicht</value></data>
-  <data name="Screen.Import.Description" xml:space="preserve"><value>Ordne Kontenfelder aus einer CSV-Datei zu, ohne alte Passwörter zu importieren.</value></data>
-  <data name="Screen.Import.StatusMessage" xml:space="preserve"><value>Vor der Vorschau muss jede erkannte Passwortspalte ausdrücklich ausgeschlossen werden.</value></data>
-  <data name="Screen.Import.StatusTitle" xml:space="preserve"><value>Passwortspalten werden ausgeschlossen</value></data>
+  <data name="Screen.Import.Description" xml:space="preserve"><value>Wähle eine CSV-Datei aus, prüfe die automatische Vorschau und bestätige den Kontenimport.</value></data>
+  <data name="Screen.Import.StatusMessage" xml:space="preserve"><value>Erkannte Passwortspalten werden automatisch ignoriert und gelangen nie in die Kontenvorschau.</value></data>
+  <data name="Screen.Import.StatusTitle" xml:space="preserve"><value>Alte Passwörter bleiben außerhalb des Tresors</value></data>
   <data name="Screen.Import.Title" xml:space="preserve"><value>Kontenbestand importieren</value></data>
   <data name="Screen.Vault.Description" xml:space="preserve"><value>Erstelle oder entsperre einen lokalen Wiederherstellungstresor. Solange er gesperrt ist, werden keine Wiederherstellungsdaten geladen.</value></data>
   <data name="Screen.Vault.StatusMessage" xml:space="preserve"><value>unpwn kann Schadsoftware weder erkennen noch entfernen. Beginne die Wiederherstellung erst auf einem Gerät, dem du vertraust.</value></data>

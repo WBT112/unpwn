@@ -60,7 +60,8 @@ Shell.Navigation.Accounts
 Vault.Unlock.Title
 Recovery.Status.Blocked
 Recovery.Progress.CriticalAccounts
-Import.PasswordColumn.Warning
+Import.Password.Warning
+Import.Mapping.Issue.MissingAccountIdentity
 Export.Plaintext.Warning
 ```
 
