@@ -161,10 +161,59 @@ public sealed class VaultCryptoPrototypeTests
     }
 
     [Fact]
-    public void Argon2idParametersRejectUnsafePrototypeSettings()
+    public void Argon2idParametersRejectUnsupportedSettings()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(1024, 2, 1).Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(19 * 1024, 1, 1).Validate());
         Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(19 * 1024, 2, 0).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(
+            VaultResourceLimits.MaximumArgon2MemorySizeKiB + 1,
+            3,
+            2).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(
+            64 * 1024,
+            VaultResourceLimits.MaximumArgon2Iterations + 1,
+            2).Validate());
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Argon2idParameters(
+            64 * 1024,
+            3,
+            VaultResourceLimits.MaximumArgon2DegreeOfParallelism + 1).Validate());
+
+        Argon2idParameters.Interactive.Validate();
+    }
+
+    [Fact]
+    public void StoredResourceLimitsRejectEveryOutOfRangeDimension()
+    {
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateStoredRecordLength(-1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordCount(-1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordCount(VaultResourceLimits.MaximumRecordCount + 1L));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(-1, 1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(
+                VaultResourceLimits.MaximumRecordTypeUtf8Bytes + 1L,
+                1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(1, -1));
+        Assert.Throws<VaultFormatException>(() =>
+            VaultResourceLimits.ValidateRecordMetadataLength(
+                1,
+                VaultResourceLimits.MaximumRecordIdUtf8Bytes + 1L));
+    }
+
+    [Fact]
+    public void EncryptedRecordRejectsInvalidNonceLengthBeforeDecrypt()
+    {
+        var record = new EncryptedVaultRecord(
+            new VaultRecordDescriptor("account-state", RecordId, 1),
+            [],
+            [],
+            new byte[VaultCryptoPrototype.TagSizeBytes]);
+
+        Assert.Throws<ArgumentException>(() => record.Validate());
     }
 }

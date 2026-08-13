@@ -12,6 +12,7 @@ public sealed record EncryptedVaultRecord(
         Descriptor.Validate();
         ValidateLength(Nonce, VaultCryptoPrototype.NonceSizeBytes, nameof(Nonce));
         ArgumentNullException.ThrowIfNull(Ciphertext);
+        VaultResourceLimits.ValidateStoredRecordLength(Ciphertext.LongLength);
         ValidateLength(Tag, VaultCryptoPrototype.TagSizeBytes, nameof(Tag));
     }
 
