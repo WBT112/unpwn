@@ -59,8 +59,7 @@ public sealed class AtomicWorkspacePersistenceTests
                 "example.test",
                 "Example",
                 "user@example.test",
-                "https://example.test/account",
-                AccountInventoryPriority.High),
+                "https://example.test/account"),
             CancellationToken.None);
 
         Assert.False(result.Succeeded);

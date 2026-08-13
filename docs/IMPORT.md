@@ -37,7 +37,7 @@ The safe default is:
 
 The user may explicitly override the default and import duplicate CSV candidates as separate accounts.
 
-Automatic merging is intentionally not part of the generic importer because existing roles, dependencies, and recovery state require account-specific review.
+Automatic merging is intentionally not part of the generic importer because similarly named accounts can still represent different provider identities. The user reviews duplicate candidates explicitly.
 
 Duplicate matching uses normalized service/provider identity together with the available login identifier or account name.
 

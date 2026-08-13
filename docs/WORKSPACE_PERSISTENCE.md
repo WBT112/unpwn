@@ -50,7 +50,7 @@ The following operations are committed as one encrypted batch:
 - recovery-session pause, resume, and archive together with the matching wizard lifecycle transition
 - account-inventory mutation together with the derived recovery-dashboard account projection
 
-Dashboard counters and recommendations are projections. The account inventory remains the canonical source for account metadata, confirmed roles, priorities, and dependencies.
+Dashboard counters and recommendations are projections. The account inventory remains the canonical source for account metadata, the versioned local category suggestion, and the user's explicit category decision and confirmation revision.
 
 ## Concurrency and revisions
 

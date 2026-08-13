@@ -15,15 +15,10 @@ public sealed class AccountInventoryScreenViewModelTests
     {
         var service = new TestAccountInventoryService([]);
         var viewModel = CreateViewModel(service);
-        var imported = CreateAccount(
-            "Imported Mail",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Suggested);
+        var imported = CreateAccount("Imported Mail");
         service.ReplaceWithoutNotification([imported]);
 
         Assert.Empty(viewModel.Accounts);
-
         viewModel.Activate();
 
         Assert.Equal(imported.Id, Assert.Single(viewModel.Accounts).Id);
@@ -32,23 +27,16 @@ public sealed class AccountInventoryScreenViewModelTests
     [Fact]
     public void NewAccountEnablesEditorBeforePersistedAccountOnlyFeatures()
     {
-        var service = new TestAccountInventoryService([]);
-        var viewModel = CreateViewModel(service);
+        var viewModel = CreateViewModel(new TestAccountInventoryService([]));
 
-        Assert.False(viewModel.IsEditingAccount);
-        Assert.False(viewModel.HasPersistedAccount);
         viewModel.NewAccountCommand.Execute(null);
 
         Assert.True(viewModel.IsEditingAccount);
         Assert.False(viewModel.HasPersistedAccount);
-        Assert.False(viewModel.SaveAccountCommand.CanExecute(null));
-        Assert.False(viewModel.AddRoleCommand.CanExecute(null));
-
+        Assert.False(viewModel.SaveCategoryCommand.CanExecute(null));
         viewModel.ProviderId = "Mail";
         viewModel.AccountName = "Primary mailbox";
-
         Assert.True(viewModel.SaveAccountCommand.CanExecute(null));
-        Assert.False(viewModel.AddRoleCommand.CanExecute(null));
     }
 
     [Fact]
@@ -64,252 +52,75 @@ public sealed class AccountInventoryScreenViewModelTests
     }
 
     [Fact]
-    public void FiltersSearchesAndSortsPersistedInventoryWithoutUsingDisplayTextForSemantics()
+    public void CategoryFiltersUseCanonicalValuesInsteadOfDisplayText()
     {
-        var critical = CreateAccount(
-            "Primary Mail",
-            AccountInventoryPriority.Critical,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed);
-        var normal = CreateAccount(
-            "Forum",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.IdentityProvider,
-            AccountRoleDecision.Suggested);
-        var service = new TestAccountInventoryService([normal, critical]);
-        var viewModel = CreateViewModel(service);
-
-        Assert.Equal(2, viewModel.Accounts.Count);
-        viewModel.SelectedFilter = viewModel.Filters.Single(option =>
-            option.Value == AccountInventoryFilter.RecoveryChannels);
-        Assert.Single(viewModel.Accounts);
-        Assert.Equal(critical.Id, viewModel.Accounts[0].Id);
+        var email = CreateAccount("Gmail", confirmed: AccountRecoveryCategory.Email);
+        var unknown = CreateAccount("Synthetic");
+        var viewModel = CreateViewModel(new TestAccountInventoryService([unknown, email]));
 
         viewModel.SelectedFilter = viewModel.Filters.Single(option =>
-            option.Value == AccountInventoryFilter.All);
-        viewModel.SearchText = "forum";
-        Assert.Single(viewModel.Accounts);
-        Assert.Equal(normal.Id, viewModel.Accounts[0].Id);
+            option.Value == AccountInventoryFilter.Email);
+
+        Assert.Equal(email.Id, Assert.Single(viewModel.Accounts).Id);
+        viewModel.SelectedFilter = viewModel.Filters.Single(option =>
+            option.Value == AccountInventoryFilter.Unreviewed);
+        Assert.Equal(unknown.Id, Assert.Single(viewModel.Accounts).Id);
     }
 
     [Fact]
-    public void RuntimeLanguageChangeRelocalizesLabelsWithoutChangingInventoryState()
+    public void RuntimeLanguageChangeRelocalizesLabelsWithoutChangingCanonicalState()
     {
-        var account = CreateAccount(
-            "Primary Mail",
-            AccountInventoryPriority.Critical,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed);
+        var account = CreateAccount("Banking", confirmed: AccountRecoveryCategory.Critical);
         var service = new TestAccountInventoryService([account]);
         var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
         var viewModel = CreateViewModel(service, localization);
-        var accountId = viewModel.Accounts.Single().Id;
 
         localization.SetLanguage("de");
 
-        Assert.Equal(accountId, viewModel.Accounts.Single().Id);
-        Assert.Equal("Kritisch", viewModel.Accounts.Single().PriorityText);
-        Assert.Contains("E-Mail-Postfach", viewModel.Accounts.Single().RoleText, StringComparison.Ordinal);
-        Assert.Equal("Konten", viewModel.Title);
+        Assert.Equal(account.Id, Assert.Single(viewModel.Accounts).Id);
+        Assert.Equal("Kritisch", Assert.Single(viewModel.Accounts).CategoryText);
+        Assert.Equal(AccountRecoveryCategory.Critical, Assert.Single(service.CurrentInventory!.Accounts).ConfirmedCategory);
     }
 
     [Fact]
-    public async Task ExplicitRoleDecisionIsForwardedAsStableEnum()
+    public async Task SavingCategoryPersistsStableEnumAndSelectsNextUnreviewedAccount()
     {
-        var account = CreateAccount(
-            "Google Mail",
-            AccountInventoryPriority.High,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Suggested);
-        var service = new TestAccountInventoryService([account]);
+        var first = CreateAccount("Gmail");
+        var second = CreateAccount("Banking");
+        var service = new TestAccountInventoryService([first, second]);
         var viewModel = CreateViewModel(service);
-        viewModel.SelectedAccount = viewModel.Accounts.Single();
-        viewModel.SelectedSuggestedRole = viewModel.SuggestedRoles.Single(option =>
-            option.Value == AccountInventoryRole.EmailMailbox);
+        viewModel.SelectedAccount = viewModel.Accounts.Single(item => item.Id == first.Id);
+        viewModel.SelectedCategory = viewModel.Categories.Single(option =>
+            option.Value == AccountRecoveryCategory.Email);
 
-        var outcome = await viewModel.AcceptSuggestedRoleCommand.ExecuteAsync();
+        var outcome = await viewModel.SaveCategoryCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Equal(
-            (account.Id, AccountInventoryRole.EmailMailbox, AccountRoleDecision.Confirmed),
-            service.LastRoleDecision);
+        Assert.Equal((first.Id, AccountRecoveryCategory.Email), service.LastCategoryDecision);
+        Assert.Equal(second.Id, viewModel.SelectedAccount?.Id);
+        Assert.True(viewModel.CanContinueRecovery);
+        Assert.Equal(1, viewModel.RemainingCategoryCount);
     }
 
     [Fact]
-    public void ImportedAccountsOpenInGuidedReviewWithTheFirstAccountSelected()
+    public void ResumeShowsRemainingReviewAndAllowsCompletionWithoutAnEmailAccount()
     {
-        var imported = CreateAccount(
-            "Imported Mail",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Suggested);
-        var viewModel = CreateViewModel(new TestAccountInventoryService([imported]));
-
-        Assert.True(viewModel.IsGuidedReviewVisible);
-        Assert.False(viewModel.IsAdvancedEditorVisible);
-        Assert.Equal(imported.Id, viewModel.SelectedAccount?.Id);
-        Assert.Contains("really", viewModel.SuggestedRoleQuestion, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task GuidedRoleSuggestionCanBeExplicitlyRejected()
-    {
-        var account = CreateAccount(
-            "Imported Mail",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Suggested);
-        var service = new TestAccountInventoryService([account]);
+        var reviewed = CreateAccount("Banking", confirmed: AccountRecoveryCategory.Critical);
+        var remaining = CreateAccount("Unknown service");
+        var service = new TestAccountInventoryService([reviewed, remaining]);
         var viewModel = CreateViewModel(service);
 
-        var outcome = await viewModel.RejectSuggestedRoleCommand.ExecuteAsync();
+        Assert.False(viewModel.CanContinueRecovery);
+        Assert.Equal(1, viewModel.RemainingCategoryCount);
+        Assert.Contains("1", viewModel.TriageProgress, StringComparison.Ordinal);
 
-        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Equal(
-            (account.Id, AccountInventoryRole.EmailMailbox, AccountRoleDecision.Rejected),
-            service.LastRoleDecision);
-        Assert.False(viewModel.HasSuggestedRoles);
-    }
+        service.ReplaceWithoutNotification(
+            [reviewed, remaining with { ConfirmedCategory = AccountRecoveryCategory.Unknown, CategoryConfirmedRevision = 2 }]);
+        viewModel.Activate();
 
-    [Fact]
-    public async Task GuidedDependencyQuestionPersistsTheSelectedCanonicalRelationship()
-    {
-        var mailbox = CreateAccount(
-            "Primary Mail",
-            AccountInventoryPriority.High,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed);
-        var shop = CreateAccount(
-            "Shop",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.IdentityProvider,
-            AccountRoleDecision.Rejected);
-        var service = new TestAccountInventoryService([shop, mailbox]);
-        var viewModel = CreateViewModel(service);
-        viewModel.SelectedAccount = viewModel.Accounts.Single(item => item.Id == shop.Id);
-        viewModel.SelectedDependencyTarget = viewModel.DependencyTargets.Single(option =>
-            option.Value == mailbox.Id);
-        viewModel.SelectedDependencyKind = viewModel.DependencyKinds.Single(option =>
-            option.Value == AccountDependencyKind.PasswordReset);
-
-        Assert.Contains("recovered using", viewModel.DependencyQuestion, StringComparison.OrdinalIgnoreCase);
-        viewModel.OverrideReason = "Must not leak from advanced mode";
-        var outcome = await viewModel.AddGuidedDependencyCommand.ExecuteAsync();
-
-        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Equal(
-            new AccountDependencyRequest(
-                shop.Id,
-                mailbox.Id,
-                AccountDependencyKind.PasswordReset,
-                string.Empty),
-            service.LastDependencyRequest);
-        Assert.Equal(mailbox.Id, Assert.Single(viewModel.Dependencies).DependsOnAccountId);
-    }
-
-    [Fact]
-    public void GuidedReviewExplainsDuplicatesMissingDependenciesAndOverrides()
-    {
-        var missingId = Guid.NewGuid();
-        var duplicateA = CreateAccount(
-            "Mail",
-            AccountInventoryPriority.High,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed);
-        var duplicateB = duplicateA with
-        {
-            Id = Guid.NewGuid(),
-            Dependencies =
-            [
-                new AccountInventoryDependency(
-                    missingId,
-                    AccountDependencyKind.PasswordReset,
-                    IsOverride: false,
-                    OverrideReason: null),
-                new AccountInventoryDependency(
-                    duplicateA.Id,
-                    AccountDependencyKind.RecoveryContact,
-                    IsOverride: true,
-                    OverrideReason: "Synthetic documented risk"),
-            ],
-        };
-        var viewModel = CreateViewModel(new TestAccountInventoryService([duplicateA, duplicateB]));
-
-        Assert.Contains(viewModel.GuidedIssues, issue => issue.Kind is null &&
-            issue.Message.Contains("same account", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(viewModel.GuidedIssues, issue =>
-            issue.Kind == AccountInventoryIssueKind.MissingDependency &&
-            issue.Message.Contains("no longer", StringComparison.OrdinalIgnoreCase));
-        Assert.Contains(viewModel.GuidedIssues, issue =>
-            issue.Kind == AccountInventoryIssueKind.DependencyOverride &&
-            issue.Message.Contains("unresolved", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public void GuidedReviewExplainsCircularRecoveryPathsWithoutHidingThem()
-    {
-        var first = CreateAccount(
-            "First Account",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed);
-        var second = CreateAccount(
-            "Second Account",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.IdentityProvider,
-            AccountRoleDecision.Confirmed);
-        first = first with
-        {
-            Dependencies =
-            [new AccountInventoryDependency(
-                second.Id,
-                AccountDependencyKind.PasswordReset,
-                IsOverride: false,
-                OverrideReason: null)],
-        };
-        second = second with
-        {
-            Dependencies =
-            [new AccountInventoryDependency(
-                first.Id,
-                AccountDependencyKind.IdentityProvider,
-                IsOverride: false,
-                OverrideReason: null)],
-        };
-
-        var viewModel = CreateViewModel(new TestAccountInventoryService([first, second]));
-
-        Assert.Equal(
-            2,
-            viewModel.GuidedIssues.Count(issue =>
-                issue.Kind == AccountInventoryIssueKind.DependencyCycle));
-        Assert.All(
-            viewModel.GuidedIssues.Where(issue =>
-                issue.Kind == AccountInventoryIssueKind.DependencyCycle),
-            issue => Assert.Contains("circular", issue.Message, StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Fact]
-    public async Task AdvancedEditorRoundTripsThroughTheSameInventoryService()
-    {
-        var account = CreateAccount(
-            "Primary Mail",
-            AccountInventoryPriority.Normal,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed);
-        var service = new TestAccountInventoryService([account]);
-        var viewModel = CreateViewModel(service);
-
-        viewModel.ShowAdvancedEditorCommand.Execute(null);
-        viewModel.SelectedPriority = viewModel.Priorities.Single(option =>
-            option.Value == AccountInventoryPriority.Critical);
-        var outcome = await viewModel.SaveAccountCommand.ExecuteAsync();
-        viewModel.ShowGuidedReviewCommand.Execute(null);
-
-        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Equal(AccountInventoryPriority.Critical, service.LastUpsertRequest?.Priority);
-        Assert.Equal(AccountInventoryPriority.Critical, viewModel.SelectedAccount?.Account.Priority);
-        Assert.True(viewModel.IsGuidedReviewVisible);
+        Assert.True(viewModel.CanContinueRecovery);
+        Assert.False(viewModel.HasConfirmedEmailCategory);
+        Assert.Contains("without an email", viewModel.ContinuationGuidance, StringComparison.OrdinalIgnoreCase);
     }
 
     private static AccountInventoryScreenViewModel CreateViewModel(
@@ -322,18 +133,17 @@ public sealed class AccountInventoryScreenViewModelTests
 
     private static AccountInventoryEntry CreateAccount(
         string provider,
-        AccountInventoryPriority priority,
-        AccountInventoryRole role,
-        AccountRoleDecision decision) =>
+        AccountRecoveryCategory? confirmed = null) =>
         new(
             Guid.NewGuid(),
             provider,
             provider,
             $"{provider.Replace(" ", string.Empty, StringComparison.Ordinal).ToLowerInvariant()}@example.invalid",
             null,
-            priority,
-            [new AccountRoleState(role, decision)],
-            [],
+            AccountRecoveryCategory.Unknown,
+            RepositoryAccountClassificationCatalog.CurrentVersion,
+            confirmed,
+            confirmed.HasValue ? 1 : null,
             DateTimeOffset.UnixEpoch);
 
     private sealed class TestConfirmationDialogService : IConfirmationDialogService
@@ -358,13 +168,9 @@ public sealed class AccountInventoryScreenViewModelTests
             AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
                 .ReplaceAccounts(accounts, DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan(IncidentIndicator.None);
+        public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan();
 
-        public (Guid AccountId, AccountInventoryRole Role, AccountRoleDecision Decision)? LastRoleDecision { get; private set; }
-
-        public AccountInventoryUpsertRequest? LastUpsertRequest { get; private set; }
-
-        public AccountDependencyRequest? LastDependencyRequest { get; private set; }
+        public (Guid AccountId, AccountRecoveryCategory Category)? LastCategoryDecision { get; private set; }
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -372,121 +178,73 @@ public sealed class AccountInventoryScreenViewModelTests
             AccountInventoryUpsertRequest request,
             CancellationToken cancellationToken)
         {
-            LastUpsertRequest = request;
-            var accounts = CurrentInventory!.Accounts.ToList();
-            var accountId = request.AccountId ?? Guid.NewGuid();
-            var index = accounts.FindIndex(account => account.Id == accountId);
+            cancellationToken.ThrowIfCancellationRequested();
+            var entries = CurrentInventory!.Accounts.ToList();
+            var id = request.AccountId ?? Guid.NewGuid();
+            var existing = entries.SingleOrDefault(account => account.Id == id);
             var replacement = new AccountInventoryEntry(
-                accountId,
+                id,
                 request.ProviderId,
                 request.AccountName,
                 request.LoginIdentifier,
                 request.AccountUrl,
-                request.Priority,
-                index < 0 ? [] : accounts[index].Roles,
-                index < 0 ? [] : accounts[index].Dependencies,
-                CurrentInventory.UpdatedAt.AddSeconds(1));
-            if (index < 0)
-            {
-                accounts.Add(replacement);
-            }
-            else
-            {
-                accounts[index] = replacement;
-            }
-
-            ReplaceAndNotify([.. accounts]);
+                existing?.SuggestedCategory ?? AccountRecoveryCategory.Unknown,
+                existing?.ClassificationCatalogVersion ?? RepositoryAccountClassificationCatalog.CurrentVersion,
+                existing?.ConfirmedCategory,
+                existing?.CategoryConfirmedRevision,
+                DateTimeOffset.UnixEpoch.AddSeconds(CurrentInventory.Revision + 1));
+            entries.RemoveAll(account => account.Id == id);
+            entries.Add(replacement);
+            Replace(entries);
             return Task.FromResult(AccountInventoryOperationResult.Success());
         }
 
-        public Task<AccountInventoryOperationResult> DecideRoleAsync(
+        public Task<AccountInventoryOperationResult> CategorizeAsync(
             Guid accountId,
-            AccountInventoryRole role,
-            AccountRoleDecision decision,
+            AccountRecoveryCategory category,
             CancellationToken cancellationToken)
         {
-            LastRoleDecision = (accountId, role, decision);
-            AccountInventoryEntry[] currentAccounts = [.. CurrentInventory!.Accounts];
-            var index = Array.FindIndex(currentAccounts, account => account.Id == accountId);
-            var account = currentAccounts[index];
-            currentAccounts[index] = account with
-            {
-                Roles =
-                [
-                    .. account.Roles.Where(candidate => candidate.Role != role),
-                    new AccountRoleState(role, decision),
-                ],
-            };
-            CurrentInventory = CurrentInventory.ReplaceAccounts(
-                currentAccounts,
-                CurrentInventory.UpdatedAt.AddSeconds(1));
-            InventoryChanged?.Invoke(this, EventArgs.Empty);
+            cancellationToken.ThrowIfCancellationRequested();
+            LastCategoryDecision = (accountId, category);
+            Replace(CurrentInventory!.Accounts.Select(account => account.Id == accountId
+                ? account with
+                {
+                    ConfirmedCategory = category,
+                    CategoryConfirmedRevision = CurrentInventory.Revision + 1,
+                }
+                : account));
             return Task.FromResult(AccountInventoryOperationResult.Success());
         }
-
-        public Task<AccountInventoryOperationResult> AddDependencyAsync(
-            AccountDependencyRequest request,
-            CancellationToken cancellationToken)
-        {
-            LastDependencyRequest = request;
-            AccountInventoryEntry[] accounts = [.. CurrentInventory!.Accounts];
-            var index = Array.FindIndex(accounts, account => account.Id == request.AccountId);
-            accounts[index] = accounts[index] with
-            {
-                Dependencies =
-                [
-                    .. accounts[index].Dependencies,
-                    new AccountInventoryDependency(
-                        request.DependsOnAccountId,
-                        request.Kind,
-                        IsOverride: false,
-                        OverrideReason: null),
-                ],
-            };
-            ReplaceAndNotify(accounts);
-            return Task.FromResult(AccountInventoryOperationResult.Success());
-        }
-
-        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-            Guid accountId,
-            Guid dependsOnAccountId,
-            AccountDependencyKind kind,
-            CancellationToken cancellationToken) => Failure();
 
         public Task<AccountInventoryOperationResult> RemoveAccountAsync(
             Guid accountId,
-            bool dependencyImpactAcknowledged,
-            CancellationToken cancellationToken) => Failure();
+            CancellationToken cancellationToken) =>
+            Task.FromResult(AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.NotFound));
 
         public Task<AccountInventoryOperationResult> ImportAsync(
             IReadOnlyCollection<ImportAccountCandidate> candidates,
             ImportDuplicateResolution? duplicateResolution,
-            CancellationToken cancellationToken) => Failure();
+            CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];
-
-        public void ReplaceWithoutNotification(AccountInventoryEntry[] replacement)
-        {
-            CurrentInventory = AccountInventoryState.Empty(
-                    CurrentInventory!.SessionId,
-                    CurrentInventory.UpdatedAt.AddSeconds(1))
-                .ReplaceAccounts(replacement, CurrentInventory.UpdatedAt.AddSeconds(2));
-        }
-
-        private void ReplaceAndNotify(AccountInventoryEntry[] replacement)
-        {
-            CurrentInventory = CurrentInventory!.ReplaceAccounts(
-                replacement,
-                CurrentInventory.UpdatedAt.AddSeconds(1));
-            InventoryChanged?.Invoke(this, EventArgs.Empty);
-        }
 
         public void ClearForLock()
         {
         }
 
-        private static Task<AccountInventoryOperationResult> Failure() =>
-            Task.FromResult(AccountInventoryOperationResult.Failure(
-                AccountInventoryFailureCode.Conflict));
+        public void ReplaceWithoutNotification(AccountInventoryEntry[] replacements)
+        {
+            CurrentInventory = CurrentInventory!.ReplaceAccounts(
+                replacements,
+                CurrentInventory.UpdatedAt.AddSeconds(1));
+        }
+
+        private void Replace(IEnumerable<AccountInventoryEntry> replacements)
+        {
+            CurrentInventory = CurrentInventory!.ReplaceAccounts(
+                replacements,
+                CurrentInventory.UpdatedAt.AddSeconds(1));
+            InventoryChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 }

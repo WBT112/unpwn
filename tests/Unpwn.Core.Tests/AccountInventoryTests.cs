@@ -8,7 +8,7 @@ public sealed class AccountInventoryTests
     [Fact]
     public void AccountUrlWithEmbeddedCredentialsIsRejected()
     {
-        var account = CreateAccount("Mail", AccountInventoryPriority.Normal) with
+        var account = CreateAccount("Mail") with
         {
             AccountUrl = "https://user:old-password@example.test/account",
         };
@@ -16,174 +16,136 @@ public sealed class AccountInventoryTests
         Assert.Throws<InvalidOperationException>(account.Validate);
     }
 
-    [Fact]
-    public void InferredRolesRemainSuggestedUntilExplicitlyConfirmed()
+    [Theory]
+    [InlineData("Gmail", null)]
+    [InlineData("gmail.com", null)]
+    [InlineData("manual", "https://accounts.googlemail.com/security")]
+    [InlineData("manual", "https://mail.proton.me/u/0/inbox")]
+    [InlineData("manual", "https://login.yahoo.co.jp/account")]
+    public void KnownEmailAliasesAreSuggestedAsEmail(string providerId, string? url)
     {
-        var account = CreateAccount(
-            "Google Mail",
-            AccountInventoryPriority.High,
-            login: "person@example.invalid")
-            .NormalizeAndInfer(DateTimeOffset.UnixEpoch);
+        var suggestion = RepositoryAccountClassificationCatalog.Classify(providerId, url);
 
-        Assert.Contains(
-            account.Roles,
-            role => role.Role == AccountInventoryRole.EmailMailbox &&
-                    role.Decision == AccountRoleDecision.Suggested);
-        Assert.Contains(
-            account.Roles,
-            role => role.Role == AccountInventoryRole.IdentityProvider &&
-                    role.Decision == AccountRoleDecision.Suggested);
-        Assert.False(account.HasConfirmedRecoveryRole);
-
-        var confirmed = account with
-        {
-            Roles =
-            [
-                .. account.Roles.Select(role =>
-                    role.Role == AccountInventoryRole.EmailMailbox
-                        ? role with { Decision = AccountRoleDecision.Confirmed }
-                        : role),
-            ],
-        };
-
-        Assert.True(confirmed.HasConfirmedRecoveryRole);
+        Assert.Equal(AccountRecoveryCategory.Email, suggestion.Category);
+        Assert.Equal(RepositoryAccountClassificationCatalog.CurrentVersion, suggestion.CatalogVersion);
     }
 
     [Fact]
-    public void RecoveryChannelAndDependencyRootAreOrderedBeforeDependentCriticalAccount()
+    public void CatalogContainsAtLeastOneHundredEmailAliases()
     {
-        var mailbox = CreateAccount(
-            "Primary mailbox",
-            AccountInventoryPriority.High,
-            roles:
-            [
-                new AccountRoleState(
-                    AccountInventoryRole.EmailMailbox,
-                    AccountRoleDecision.Confirmed),
-            ]);
-        var critical = CreateAccount(
-            "Banking",
-            AccountInventoryPriority.Critical,
-            dependencies:
-            [
-                new AccountInventoryDependency(
-                    mailbox.Id,
-                    AccountDependencyKind.PasswordReset,
-                    IsOverride: false,
-                    OverrideReason: null),
-            ]);
-        var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
-            .ReplaceAccounts([critical, mailbox], DateTimeOffset.UnixEpoch.AddSeconds(1));
+        Assert.True(RepositoryAccountClassificationCatalog.EmailAliasCount >= 100);
+    }
 
-        var plan = state.CreatePlan(IncidentIndicator.CompromisedRecoveryChannel);
-
-        Assert.Equal(mailbox.Id, plan.Recommended?.AccountId);
+    [Theory]
+    [InlineData("Banking", null, AccountRecoveryCategory.Critical)]
+    [InlineData("manual", "https://vault.bitwarden.com", AccountRecoveryCategory.Critical)]
+    [InlineData("manual", "https://www.reddit.com/settings", AccountRecoveryCategory.Critical)]
+    [InlineData("Streaming", null, AccountRecoveryCategory.NonCritical)]
+    [InlineData("synthetic-provider", "https://provider.example.test", AccountRecoveryCategory.Unknown)]
+    public void CatalogClassifiesKnownAndUnknownProviders(
+        string providerId,
+        string? url,
+        AccountRecoveryCategory expected)
+    {
         Assert.Equal(
-            AccountInventoryPlanReasonCode.RecoveryChannelFirst,
-            plan.Recommended?.ReasonCode);
-        Assert.Equal(
-            AccountInventoryPlanStatus.PlannedLater,
-            plan.Items.Single(item => item.AccountId == critical.Id).Status);
-        Assert.Equal(
-            [mailbox.Id],
-            plan.Items.Single(item => item.AccountId == critical.Id).WaitingForAccountIds);
+            expected,
+            RepositoryAccountClassificationCatalog.Classify(providerId, url).Category);
     }
 
     [Fact]
-    public void MissingDependenciesAndCyclesRemainBlockingIssues()
+    public void ExplicitCategoryOverridesSuggestion()
     {
-        var first = CreateAccount("First", AccountInventoryPriority.Critical);
-        var second = CreateAccount("Second", AccountInventoryPriority.High);
-        var missingId = Guid.NewGuid();
-        first = first with
-        {
-            Dependencies =
-            [
-                new AccountInventoryDependency(
-                    second.Id,
-                    AccountDependencyKind.IdentityProvider,
-                    IsOverride: false,
-                    OverrideReason: null),
-            ],
-        };
-        second = second with
-        {
-            Dependencies =
-            [
-                new AccountInventoryDependency(
-                    first.Id,
-                    AccountDependencyKind.RecoveryContact,
-                    IsOverride: false,
-                    OverrideReason: null),
-                new AccountInventoryDependency(
-                    missingId,
-                    AccountDependencyKind.Mfa,
-                    IsOverride: false,
-                    OverrideReason: null),
-            ],
-        };
-        var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
-            .ReplaceAccounts([first, second], DateTimeOffset.UnixEpoch.AddSeconds(1));
+        var account = CreateAccount("Gmail", confirmed: AccountRecoveryCategory.NonCritical)
+            .NormalizeAndClassify(DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        var plan = state.CreatePlan(IncidentIndicator.None);
-
-        Assert.Contains(plan.Issues, issue =>
-            issue.Kind == AccountInventoryIssueKind.MissingDependency &&
-            issue.AccountId == second.Id &&
-            issue.RelatedAccountId == missingId);
-        Assert.Contains(plan.Issues, issue =>
-            issue.Kind == AccountInventoryIssueKind.DependencyCycle &&
-            issue.AccountId == first.Id);
-        Assert.Contains(plan.Items, item =>
-            item.AccountId == first.Id &&
-            item.Status == AccountInventoryPlanStatus.BlockedCycle);
-        Assert.Contains(plan.Items, item =>
-            item.AccountId == second.Id &&
-            item.Status == AccountInventoryPlanStatus.BlockedMissingDependency);
+        Assert.Equal(AccountRecoveryCategory.Email, account.SuggestedCategory);
+        Assert.Equal(AccountRecoveryCategory.NonCritical, account.EffectiveCategory);
+        Assert.True(account.IsCategorized);
     }
 
     [Fact]
-    public void OverrideRemovesSchedulingConstraintButKeepsRiskVisible()
+    public void PlanUsesCategoryOrderAndExplicitOverrides()
     {
-        var root = CreateAccount("Root", AccountInventoryPriority.High);
-        var dependent = CreateAccount(
-            "Dependent",
-            AccountInventoryPriority.Critical,
-            dependencies:
-            [
-                new AccountInventoryDependency(
-                    root.Id,
-                    AccountDependencyKind.PasswordReset,
-                    IsOverride: true,
-                    OverrideReason: "The provider recovery channel is unavailable."),
-            ]);
+        var nonCritical = CreateAccount("Streaming", AccountRecoveryCategory.NonCritical);
+        var unknown = CreateAccount("Unknown", AccountRecoveryCategory.Unknown);
+        var critical = CreateAccount("Banking", AccountRecoveryCategory.Critical);
+        var email = CreateAccount("Gmail", AccountRecoveryCategory.Email);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
-            .ReplaceAccounts([dependent, root], DateTimeOffset.UnixEpoch.AddSeconds(1));
+            .ReplaceAccounts([nonCritical, unknown, critical, email], DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        var plan = state.CreatePlan(IncidentIndicator.None);
-        var item = plan.Items.Single(candidate => candidate.AccountId == dependent.Id);
+        var plan = state.CreatePlan(IncidentIndicator.LostAccess);
 
-        Assert.True(item.HasDependencyOverride);
-        Assert.Equal(AccountInventoryPlanReasonCode.UserOverridePresent, item.ReasonCode);
-        Assert.Contains(plan.Issues, issue =>
-            issue.Kind == AccountInventoryIssueKind.DependencyOverride &&
-            issue.AccountId == dependent.Id);
+        Assert.Equal(
+            [email.Id, critical.Id, unknown.Id, nonCritical.Id],
+            plan.Items.Select(item => item.AccountId));
+        Assert.Equal(AccountInventoryPlanReasonCode.EmailCategory, plan.Recommended?.ReasonCode);
+    }
+
+    [Fact]
+    public void IncidentInputStillMateriallyChangesCategoryOrderBeforeAutomaticQueueIssue()
+    {
+        var critical = CreateAccount("Banking", AccountRecoveryCategory.Critical);
+        var email = CreateAccount("Gmail", AccountRecoveryCategory.Email);
+        var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts([email, critical], DateTimeOffset.UnixEpoch.AddSeconds(1));
+
+        Assert.Equal(critical.Id, state.CreatePlan().Recommended?.AccountId);
+        Assert.Equal(
+            email.Id,
+            state.CreatePlan(IncidentIndicator.CompromisedRecoveryChannel).Recommended?.AccountId);
+    }
+
+    [Fact]
+    public void ExplicitCategoryRequiresConfirmationRevision()
+    {
+        var account = CreateAccount("Gmail") with
+        {
+            ConfirmedCategory = AccountRecoveryCategory.Email,
+            CategoryConfirmedRevision = null,
+        };
+
+        Assert.Throws<InvalidOperationException>(account.Validate);
+    }
+
+    [Fact]
+    public void CategoryConfirmationCannotReferenceFutureInventoryRevision()
+    {
+        var account = CreateAccount("Gmail", AccountRecoveryCategory.Email) with
+        {
+            CategoryConfirmedRevision = 2,
+        };
+        var state = new AccountInventoryState(
+            Guid.NewGuid(),
+            1,
+            DateTimeOffset.UnixEpoch,
+            [account]);
+
+        Assert.Throws<InvalidOperationException>(state.Validate);
+    }
+
+    [Fact]
+    public void UnknownSerializedCategoryIsRejected()
+    {
+        var account = CreateAccount("Gmail") with
+        {
+            SuggestedCategory = (AccountRecoveryCategory)99,
+        };
+
+        Assert.Throws<InvalidOperationException>(account.Validate);
     }
 
     private static AccountInventoryEntry CreateAccount(
         string provider,
-        AccountInventoryPriority priority,
-        string? login = null,
-        AccountRoleState[]? roles = null,
-        AccountInventoryDependency[]? dependencies = null) =>
+        AccountRecoveryCategory? confirmed = null) =>
         new(
             Guid.NewGuid(),
             provider,
             provider,
-            login ?? $"{provider.Replace(" ", string.Empty, StringComparison.Ordinal).ToLowerInvariant()}@example.invalid",
+            $"{provider.ToLowerInvariant()}@example.invalid",
             null,
-            priority,
-            roles ?? [],
-            dependencies ?? [],
+            AccountRecoveryCategory.Unknown,
+            RepositoryAccountClassificationCatalog.CurrentVersion,
+            confirmed,
+            confirmed.HasValue ? 1 : null,
             DateTimeOffset.UnixEpoch);
 }

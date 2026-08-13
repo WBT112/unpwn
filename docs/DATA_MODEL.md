@@ -7,7 +7,7 @@ The data model must support:
 - recovery sessions that last days or weeks
 - many accounts per session
 - service-specific workflows
-- dependencies between accounts and actions
+- simple account categories and service-specific recovery actions
 - encrypted generated credentials
 - reliable progress reporting
 - an audit history without storing secrets in audit events
@@ -71,17 +71,20 @@ Suggested fields:
 - `DisplayName`
 - `LoginIdentifier`
 - `AccountUrl`
-- `Priority`
+- `SuggestedCategory`
+- `ClassificationCatalogVersion`
+- `ConfirmedCategory`
+- `CategoryConfirmedRevision`
 - `Status`
 - `CreatedAt`
 - `UpdatedAt`
 
-Account priority values:
+Account recovery category values:
 
+- `EMAIL`
 - `CRITICAL`
-- `HIGH`
-- `NORMAL`
-- `LOW`
+- `NON_CRITICAL`
+- `UNKNOWN`
 
 Account status values:
 
@@ -92,40 +95,15 @@ Account status values:
 - `REVIEWED_WITH_UNRESOLVED_RISK`
 - `ACCESS_LOST`
 
-Provider IDs, priorities, and statuses are language-neutral. Display names and login identifiers are user data and are never treated as translation keys.
+Provider IDs, category values, catalog versions, confirmation revisions, and statuses are language-neutral. Display names and login identifiers are user data and are never treated as translation keys. The explicit category wins over the persisted local suggestion; explicit `UNKNOWN` is distinct from an unreviewed account.
 
-### AccountDependency
+### Account classification catalog
 
-Represents a recovery dependency between accounts or channels. A dependency means the source account should wait for the target account or recovery channel to be secured first, for example when password-reset links for a shopping account are sent to a primary email account.
+The repository-controlled classification catalog proposes an account category from stable provider identifiers and safe URL host names. It is versioned, deterministic, local-only, and separate from provider workflow definitions. Unknown services stay `UNKNOWN`, and catalog observations never become recovery truth.
 
-Suggested fields:
+The removed priority, role, and account-dependency graph is not retained as compatibility state in current development vaults. Such obsolete serialized members fail closed at the inventory persistence boundary.
 
-- `Id`
-- `SourceAccountId`
-- `TargetAccountId`
-- `DependencyType`
-- `Reason`
-- `Description`
-
-Recovery-order planning treats dependency roots as earlier work, keeps critical accounts ahead of lower-priority accounts when dependencies permit it, and surfaces imported dependencies that reference unknown accounts. Dependency cycles are blocking issues because the user must decide which account or channel can be recovered manually before the dependent chain can continue.
-
-Topological order and current readiness are separate. A dependent account may appear later in the recommended plan but remains `WAITING_FOR_DEPENDENCIES` until every target account is fully reviewed. `READY` means the account can be worked on now.
-
-Examples:
-
-- password reset depends on primary email
-- MFA depends on mobile phone access
-- organization account depends on an identity provider
-
-Dependency type values may include:
-
-- `PASSWORD_RESET_CHANNEL`
-- `MFA_CHANNEL`
-- `IDENTITY_PROVIDER`
-- `RECOVERY_CONTACT`
-- `OTHER`
-
-Dependency type and readiness codes remain language-neutral. A user-entered reason is stored as encrypted user content and displayed unchanged.
+Category planning and provider workflow selection are separate: category answers **when**, workflow answers **how**. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
 
 ### RecoveryWorkflowDefinition
 
@@ -254,7 +232,7 @@ Implemented structured fields:
 Examples:
 
 - account imported
-- priority changed
+- account category confirmed or changed
 - action started
 - action completed
 - unresolved risk accepted
@@ -333,7 +311,6 @@ Before completion, unpwn summarizes:
 - unresolved risks
 - credentials not exported or deliberately deleted
 - plaintext export files that may still require cleanup
-- suggested account roles and dependency issues that have not been resolved
 - exported credentials whose password-manager import has not been confirmed
 
 The user may complete a session with unresolved risks, but the final report must preserve those risks and must not describe the session as fully secured.

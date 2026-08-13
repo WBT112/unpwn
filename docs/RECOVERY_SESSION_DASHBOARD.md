@@ -39,10 +39,10 @@ The only optional structured guidance inputs are:
 - lost account access;
 - possible third-party control of a primary email or recovery channel.
 
-Both inputs have a direct canonical consumer. Lost access moves confirmed recovery-channel accounts
+Both inputs have a direct canonical consumer. Lost access moves explicitly categorized email accounts
 earlier in the account-inventory plan. Possible control of a primary recovery channel produces the
-immediate `SecureRecoveryChannel` dashboard recommendation and also prioritizes confirmed recovery
-channels in the plan. Both choices are optional; skipping them uses the normal recovery order.
+immediate `SecureRecoveryChannel` dashboard recommendation and also prioritizes email-category
+accounts in the plan. Both choices are optional; skipping them uses the normal recovery order.
 
 Free-form incident narrative and structured choices without a recovery consumer are not collected.
 The interface explains the effect before creation and requires acknowledgement that the answers guide
@@ -50,7 +50,7 @@ prioritization but do not prove compromise.
 
 ## Advisory emergency priority
 
-A reported possibly controlled recovery channel creates a high-impact advisory recommendation. The dashboard directs the user to review the primary recovery channel before dependent accounts.
+A reported possibly controlled recovery channel creates a high-impact advisory recommendation. The dashboard directs the user to review the primary recovery channel before the remaining accounts.
 
 This recommendation is derived only from user-provided structured observations. The application does not claim that the channel, account, or device was automatically detected as compromised.
 
@@ -115,7 +115,7 @@ Completion remains a separate review flow. Opening completion review from the da
 
 Completion reloads the encrypted session and inventory projections and the generated-credential metadata before it builds the preflight. The preflight is revision-bound; if persisted state changes before confirmation, the user must review the refreshed result. Reviewing or cancelling does not mutate the session.
 
-A clean explicit completion stores `Completed`. Open required work, lost access, unresolved roles or dependencies, incomplete credential handoff, and cleanup risk require a separate acknowledgement and store `FollowUpRequired`. A credential that has completed export, password-manager confirmation, and plaintext cleanup but remains encrypted in the vault is shown as a non-blocking retention warning; the terminal confirmation still states that it will not be deleted automatically. Archiving from the same review stores `Archived`. The session record and wizard terminal state are written atomically, after which account, workflow, import, and credential-mutation navigation is read-only.
+A clean explicit completion stores `Completed`. Open required work, lost access, unresolved risks, incomplete credential handoff, and cleanup risk require a separate acknowledgement and store `FollowUpRequired`. A credential that has completed export, password-manager confirmation, and plaintext cleanup but remains encrypted in the vault is shown as a non-blocking retention warning; the terminal confirmation still states that it will not be deleted automatically. Archiving from the same review stores `Archived`. The session record and wizard terminal state are written atomically, after which account, workflow, import, and credential-mutation navigation is read-only.
 
 The encrypted completion record retains a structured report. Its machine-readable JSON export contains only opaque session/account identifiers, provider identifiers, canonical issue codes, timestamps, and aggregate counters. Account labels, login identifiers, URLs, user notes, credential identifiers, and credential secrets are excluded. Export uses an explicit destination, writes through a same-directory temporary file, atomically publishes the completed report, cleans up cancellation remnants, and never overwrites an existing file. Ending or archiving never deletes the vault, credentials, or plaintext export files automatically and never claims forensic erasure.
 

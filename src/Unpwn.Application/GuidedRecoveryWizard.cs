@@ -6,15 +6,22 @@ public enum GuidedRecoveryBlockCode
 {
     None,
     AccountsRequired,
-    RoleConfirmationRequired,
     Paused,
     Terminal,
     UnsupportedStep,
 }
 
+public enum GuidedRecoveryAdvisoryCode
+{
+    None,
+    RemainingCategoryReviewOptional,
+    ContinueWithoutEmailCategory,
+}
+
 public sealed record GuidedRecoveryContext(
     int AccountCount,
-    int SuggestedRoleCount,
+    int UncategorizedAccountCount,
+    bool HasConfirmedEmailCategory,
     bool HasOutstandingAccountWork,
     bool HasPendingCredentialHandoff,
     Guid? RecommendedAccountId = null,
@@ -25,7 +32,8 @@ public sealed record GuidedRecoveryDecision(
     RecoveryWizardStepId? TargetStep,
     GuidedRecoveryBlockCode BlockCode,
     Guid? AccountId = null,
-    string? ActionId = null)
+    string? ActionId = null,
+    GuidedRecoveryAdvisoryCode AdvisoryCode = GuidedRecoveryAdvisoryCode.None)
 {
     public bool CanMove => TargetStep is not null && BlockCode == GuidedRecoveryBlockCode.None;
 }
@@ -58,10 +66,18 @@ public static class GuidedRecoveryWizard
         {
             "account-inventory" when context.AccountCount == 0 =>
                 Blocked(state, GuidedRecoveryBlockCode.AccountsRequired),
-            "account-inventory" => Move(state, RecoveryWizardStepId.IdentityReview),
-            "identity-review" when context.SuggestedRoleCount > 0 =>
-                Blocked(state, GuidedRecoveryBlockCode.RoleConfirmationRequired),
-            "identity-review" => Move(state, RecoveryWizardStepId.RecoveryPlan),
+            "account-inventory" => Move(state, RecoveryWizardStepId.AccountTriage),
+            "account-triage" when context.HasConfirmedEmailCategory && context.UncategorizedAccountCount > 0 =>
+                Move(
+                    state,
+                    RecoveryWizardStepId.RecoveryPlan,
+                    advisoryCode: GuidedRecoveryAdvisoryCode.RemainingCategoryReviewOptional),
+            "account-triage" when !context.HasConfirmedEmailCategory && context.UncategorizedAccountCount > 0 =>
+                Move(
+                    state,
+                    RecoveryWizardStepId.RecoveryPlan,
+                    advisoryCode: GuidedRecoveryAdvisoryCode.ContinueWithoutEmailCategory),
+            "account-triage" => Move(state, RecoveryWizardStepId.RecoveryPlan),
             "recovery-plan" when context.HasOutstandingAccountWork =>
                 Move(
                     state,
@@ -93,8 +109,8 @@ public static class GuidedRecoveryWizard
 
         var previous = state.CurrentStep.Value switch
         {
-            "identity-review" => RecoveryWizardStepId.AccountInventory,
-            "recovery-plan" => RecoveryWizardStepId.IdentityReview,
+            "account-triage" => RecoveryWizardStepId.AccountInventory,
+            "recovery-plan" => RecoveryWizardStepId.AccountTriage,
             "account-recovery" => RecoveryWizardStepId.RecoveryPlan,
             "credential-export" => RecoveryWizardStepId.RecoveryPlan,
             "completion-preflight" => RecoveryWizardStepId.RecoveryPlan,
@@ -110,8 +126,9 @@ public static class GuidedRecoveryWizard
         RecoveryWizardState state,
         RecoveryWizardStepId target,
         Guid? accountId = null,
-        string? actionId = null) =>
-        new(state.CurrentStep, target, GuidedRecoveryBlockCode.None, accountId, actionId);
+        string? actionId = null,
+        GuidedRecoveryAdvisoryCode advisoryCode = GuidedRecoveryAdvisoryCode.None) =>
+        new(state.CurrentStep, target, GuidedRecoveryBlockCode.None, accountId, actionId, advisoryCode);
 
     private static GuidedRecoveryDecision Blocked(
         RecoveryWizardState state,
@@ -121,6 +138,10 @@ public static class GuidedRecoveryWizard
     private static void Validate(GuidedRecoveryContext context)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(context.AccountCount);
-        ArgumentOutOfRangeException.ThrowIfNegative(context.SuggestedRoleCount);
+        ArgumentOutOfRangeException.ThrowIfNegative(context.UncategorizedAccountCount);
+        if (context.UncategorizedAccountCount > context.AccountCount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(context), "Uncategorized accounts cannot exceed all accounts.");
+        }
     }
 }

@@ -49,7 +49,7 @@ from imported account or email data.
 
 Two optional choices can change the recovery order: whether you cannot access one or more accounts,
 and whether a primary email or recovery channel may be under someone else's control. Lost access
-moves confirmed recovery-channel accounts earlier. A possibly controlled recovery channel also shows
+moves explicitly categorized email accounts earlier. A possibly controlled recovery channel also shows
 an immediate advisory. These answers guide prioritization and do not prove that an account, device,
 or credential was compromised. unpwn does not collect a free-form incident narrative.
 
@@ -63,13 +63,13 @@ Old-password columns are excluded automatically and cannot be selected as accoun
 preview and explicitly confirm the final import. Duplicate candidates remain conservative: the normal
 safe path keeps the first CSV occurrence and lets the existing inventory win.
 
-### 5. Confirm important roles and dependencies
+### 5. Categorize accounts
 
-unpwn can suggest that an account is an email mailbox, password manager, identity provider, recovery channel, or another important identity root. Suggestions influence planning only after you confirm them.
+unpwn suggests one simple local category for every account: **Email**, **Critical**, **Not critical**, or **Unknown**. The versioned catalog works offline and recognizes common email services and important account types. A suggestion is never your decision: choose a category explicitly and select **Save and review next**.
 
-Dependencies matter. For example, an online shop may depend on your email account for password reset. unpwn uses confirmed relationships and priorities to recommend a recovery order.
+After you confirm at least one email account, you can continue recovery immediately or review the remaining accounts to improve ordering. If you genuinely have no email account, review the accounts as such and deliberately continue. On resume, unpwn shows how many accounts remain.
 
-The guided assistant shows the current canonical step and what comes next. Opening a detail/workspace view does not mark a required step complete.
+Categories decide when an account is considered; the reviewed provider workflow independently decides how it is recovered. The normal product does not ask you to maintain roles, dependency graphs, cycles, or scheduling overrides. Opening a view or leaving triage does not record an implicit category.
 
 ### 6. Follow the recommended recovery order
 

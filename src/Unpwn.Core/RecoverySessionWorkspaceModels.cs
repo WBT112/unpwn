@@ -77,9 +77,7 @@ public sealed record RecoveryAccountDashboardEntry(
     bool AccessLost,
     int CredentialsAwaitingExport,
     int CredentialsAwaitingDeletion,
-    string? RecommendedActionId,
-    int DependencyDepth,
-    Guid[] WaitingForAccountIds)
+    string? RecommendedActionId)
 {
     public int RequiredActionsOpen { get; init; }
 
@@ -90,10 +88,6 @@ public sealed record RecoveryAccountDashboardEntry(
     public int RequiredActionsNotApplicable { get; init; }
 
     public int AcceptedRiskActions { get; init; }
-
-    public int InventoryBlockedIssues { get; init; }
-
-    public int InventoryUnresolvedRisks { get; init; }
 
     public bool IsFullyReviewed => RecoveryStatus == AccountRecoveryStatus.FullyReviewed;
 
@@ -113,7 +107,6 @@ public sealed record RecoveryAccountDashboardEntry(
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(ProviderId);
-        ArgumentNullException.ThrowIfNull(WaitingForAccountIds);
         ValidateNonNegative(RequiredActionsCompleted, nameof(RequiredActionsCompleted));
         ValidateNonNegative(RequiredActionsTotal, nameof(RequiredActionsTotal));
         ValidateNonNegative(CompletedRequiredWeight, nameof(CompletedRequiredWeight));
@@ -123,9 +116,6 @@ public sealed record RecoveryAccountDashboardEntry(
         ValidateNonNegative(UnresolvedRisks, nameof(UnresolvedRisks));
         ValidateNonNegative(CredentialsAwaitingExport, nameof(CredentialsAwaitingExport));
         ValidateNonNegative(CredentialsAwaitingDeletion, nameof(CredentialsAwaitingDeletion));
-        ValidateNonNegative(DependencyDepth, nameof(DependencyDepth));
-        ValidateNonNegative(InventoryBlockedIssues, nameof(InventoryBlockedIssues));
-        ValidateNonNegative(InventoryUnresolvedRisks, nameof(InventoryUnresolvedRisks));
         ValidateNonNegative(RequiredActionsOpen, nameof(RequiredActionsOpen));
         ValidateNonNegative(RequiredActionsInProgress, nameof(RequiredActionsInProgress));
         ValidateNonNegative(RequiredActionsAwaitingUser, nameof(RequiredActionsAwaitingUser));
@@ -142,12 +132,6 @@ public sealed record RecoveryAccountDashboardEntry(
             throw new ArgumentException("Completed required weight cannot exceed the required total weight.");
         }
 
-        if (InventoryBlockedIssues > BlockedRequiredActions ||
-            InventoryUnresolvedRisks > UnresolvedRisks)
-        {
-            throw new ArgumentException(
-                "Inventory issue counters cannot exceed the combined dashboard counters.");
-        }
     }
 
     private static void ValidateNonNegative(int value, string parameterName)
@@ -425,12 +409,10 @@ public sealed record RecoverySessionWorkspace(
 
         var candidates = Accounts
             .Where(account => !account.IsFullyReviewed || account.AccessLost || account.UnresolvedRisks > 0)
-            .OrderBy(account => account.WaitingForAccountIds.Length > 0)
-            .ThenByDescending(account => account.Criticality)
+            .OrderByDescending(account => account.Criticality)
             .ThenByDescending(account => account.AccessLost)
             .ThenByDescending(account => account.BlockedRequiredActions + account.FailedRequiredActions)
             .ThenByDescending(account => account.UnresolvedRisks)
-            .ThenBy(account => account.DependencyDepth)
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
             .ToArray();
         var next = candidates.FirstOrDefault();

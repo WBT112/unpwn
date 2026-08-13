@@ -605,16 +605,8 @@ public sealed record AccountRecoveryExecutionState(
         }, occurredAt);
     }
 
-    public RecoveryAccountDashboardEntry CreateDashboardProjection(
-        AccountCriticality criticality,
-        int dependencyDepth,
-        Guid[] waitingForAccountIds,
-        int inventoryBlockedIssues = 0,
-        int inventoryUnresolvedRisks = 0)
+    public RecoveryAccountDashboardEntry CreateDashboardProjection(AccountCriticality criticality)
     {
-        ArgumentNullException.ThrowIfNull(waitingForAccountIds);
-        ArgumentOutOfRangeException.ThrowIfNegative(inventoryBlockedIssues);
-        ArgumentOutOfRangeException.ThrowIfNegative(inventoryUnresolvedRisks);
         var allRequired = Actions.Where(action => action.IsRequired).ToArray();
         var required = allRequired
             .Where(action => action.Status != RecoveryActionStatus.NotApplicable ||
@@ -650,19 +642,15 @@ public sealed record AccountRecoveryExecutionState(
             requiredTotal,
             completedWeight,
             totalWeight,
-            blocked + inventoryBlockedIssues,
+            blocked,
             failed,
-            unresolved + inventoryUnresolvedRisks,
+            unresolved,
             AccessState == RecoveryAccessState.Lost,
             CredentialsAwaitingExport: Actions.Count(action =>
                 action.CredentialReference is not null && action.Status == RecoveryActionStatus.Completed),
             CredentialsAwaitingDeletion: 0,
-            recommended,
-            dependencyDepth,
-            waitingForAccountIds)
+            recommended)
         {
-            InventoryBlockedIssues = inventoryBlockedIssues,
-            InventoryUnresolvedRisks = inventoryUnresolvedRisks,
             RequiredActionsOpen = allRequired.Count(action => action.Status == RecoveryActionStatus.Open),
             RequiredActionsInProgress = allRequired.Count(action => action.Status == RecoveryActionStatus.InProgress),
             RequiredActionsAwaitingUser = allRequired.Count(action => action.Status == RecoveryActionStatus.NeedsUserAction),

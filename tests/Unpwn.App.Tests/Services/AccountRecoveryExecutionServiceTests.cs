@@ -252,12 +252,12 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CompletingADependencyRecalculatesWaitingAccountsInTheAtomicProjection()
+    public async Task CompletingAnAccountPreservesOtherDashboardEntriesInAtomicProjection()
     {
         var dependencyId = Guid.NewGuid();
         var dependentId = Guid.NewGuid();
         var initial = CreateSession().ReplaceAccounts(
-            [DashboardEntry(dependentId, [dependencyId])],
+            [DashboardEntry(dependentId)],
             StartedAt.AddMinutes(1));
         var store = new InMemoryAtomicRecordStore();
         var session = new ProjectionSessionService(initial);
@@ -305,7 +305,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
         }
 
         var dependent = session.CurrentSession!.Accounts.Single(account => account.AccountId == dependentId);
-        Assert.Empty(dependent.WaitingForAccountIds);
+        Assert.Equal(AccountRecoveryStatus.Open, dependent.RecoveryStatus);
         Assert.Equal(AccountRecoveryStatus.FullyReviewed, state.RecoveryStatus);
     }
 
@@ -343,7 +343,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             ProjectionContext());
 
     private static AccountRecoveryProjectionContext ProjectionContext() =>
-        new(AccountCriticality.Critical, DependencyDepth: 0, WaitingForAccountIds: []);
+        new(AccountCriticality.Critical);
 
     private static RecoverySessionWorkspace CreateSession() =>
         RecoverySessionWorkspace.Create(
@@ -352,7 +352,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             RecoveryIncidentIntake.Empty,
             StartedAt);
 
-    private static RecoveryAccountDashboardEntry DashboardEntry(Guid accountId, Guid[] waitingFor) =>
+    private static RecoveryAccountDashboardEntry DashboardEntry(Guid accountId) =>
         new(
             accountId,
             "dependent.example",
@@ -368,9 +368,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             AccessLost: false,
             CredentialsAwaitingExport: 0,
             CredentialsAwaitingDeletion: 0,
-            RecommendedActionId: null,
-            DependencyDepth: 1,
-            WaitingForAccountIds: waitingFor);
+            RecommendedActionId: null);
 
     private static RecoveryWorkflowDefinition CreateWorkflow()
     {

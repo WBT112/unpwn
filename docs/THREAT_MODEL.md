@@ -8,7 +8,7 @@ unpwn does **not** prove that the current device is clean, remove malware, guara
 
 ## Protected assets
 
-- account inventory, identifiers, roles, and recovery dependencies;
+- account inventory, identifiers, suggested categories, and explicit category choices;
 - incident context, recovery progress, notes, and history;
 - generated new credentials and vault encryption keys;
 - export data and credential lifecycle state;

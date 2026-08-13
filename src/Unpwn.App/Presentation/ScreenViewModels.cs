@@ -219,7 +219,6 @@ public sealed class CsvImportScreenViewModel(
             AccountInventoryFailureCode.NotFound => "Accounts.Error.NotFound",
             AccountInventoryFailureCode.Conflict => "Accounts.Error.Conflict",
             AccountInventoryFailureCode.RequiresConfirmation => "Accounts.Error.RequiresConfirmation",
-            AccountInventoryFailureCode.RequiresOverrideReason => "Accounts.Error.RequiresOverrideReason",
             AccountInventoryFailureCode.Corrupted => "Accounts.Error.Corrupted",
             AccountInventoryFailureCode.IoFailure => "Accounts.Error.IoFailure",
             _ => "Import.Result.Failure",

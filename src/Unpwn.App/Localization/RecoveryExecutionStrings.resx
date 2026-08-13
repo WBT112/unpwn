@@ -5,23 +5,16 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Workflow.Account.Title" xml:space="preserve"><value>Account context</value></data>
-  <data name="Workflow.Account.Priority" xml:space="preserve"><value>Priority</value></data>
-  <data name="Workflow.Account.Roles" xml:space="preserve"><value>Confirmed roles</value></data>
-  <data name="Workflow.Account.Dependencies" xml:space="preserve"><value>Dependencies</value></data>
+  <data name="Workflow.Account.Category" xml:space="preserve"><value>Category</value></data>
+  <data name="Workflow.Account.CategoryDecision" xml:space="preserve"><value>Category source</value></data>
+  <data name="Workflow.Account.Workflow" xml:space="preserve"><value>Recovery workflow</value></data>
   <data name="Workflow.Account.Access" xml:space="preserve"><value>Access</value></data>
   <data name="Workflow.Account.Status" xml:space="preserve"><value>Recovery status</value></data>
   <data name="Workflow.Account.Unavailable" xml:space="preserve"><value>No account selected</value></data>
   <data name="Workflow.Account.LoginUnavailable" xml:space="preserve"><value>No login identifier recorded</value></data>
-  <data name="Workflow.Account.NoConfirmedRoles" xml:space="preserve"><value>No confirmed identity or recovery role</value></data>
-  <data name="Workflow.Account.NoDependencies" xml:space="preserve"><value>No account dependency recorded</value></data>
-  <data name="Workflow.Account.MissingDependency" xml:space="preserve"><value>Missing inventory account</value></data>
-  <data name="Workflow.Account.Dependents.Zero" xml:space="preserve"><value>No other account currently depends on this account.</value></data>
-  <data name="Workflow.Account.Dependents.One" xml:space="preserve"><value>{0} other account currently depends on this account.</value></data>
-  <data name="Workflow.Account.Dependents.Other" xml:space="preserve"><value>{0} other accounts currently depend on this account.</value></data>
-  <data name="Workflow.Account.DependentNames" xml:space="preserve"><value>Dependent accounts: {0}</value></data>
+  <data name="Workflow.Account.CategoryIndependentWorkflow" xml:space="preserve"><value>The category decides when this account is handled; the provider workflow independently decides how.</value></data>
   <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Why this account now?</value></data>
   <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>No current plan reason is available.</value></data>
-  <data name="Workflow.Recommendation.DependenciesSatisfied" xml:space="preserve"><value>The accounts required by this recovery have been fully reviewed, so this account is ready now.</value></data>
   <data name="Workflow.Path.Title" xml:space="preserve"><value>Recovery path</value></data>
   <data name="Workflow.Path.Help" xml:space="preserve"><value>Choose the path that matches your actual access. Authenticated change, password reset, and manual recovery have different requirements.</value></data>
   <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Change the password in an authenticated account session</value></data>
@@ -131,9 +124,6 @@
   <data name="Workflow.Plan.Unchanged" xml:space="preserve"><value>The plan was recalculated. The current recommendation remains the same and unresolved work is still visible.</value></data>
   <data name="Workflow.Plan.Status.Unavailable" xml:space="preserve"><value>Plan status unavailable</value></data>
   <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Ready now</value></data>
-  <data name="Workflow.Plan.Status.PlannedLater" xml:space="preserve"><value>Planned after dependencies</value></data>
-  <data name="Workflow.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Blocked by a missing dependency</value></data>
-  <data name="Workflow.Plan.Status.BlockedCycle" xml:space="preserve"><value>Blocked by a dependency cycle</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Unlock a vault and load an account inventory before starting account recovery.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>The selected account is no longer available in the encrypted inventory.</value></data>
   <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Select a recovery path before starting.</value></data>

@@ -5,23 +5,16 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Workflow.Account.Title" xml:space="preserve"><value>Kontokontext</value></data>
-  <data name="Workflow.Account.Priority" xml:space="preserve"><value>Priorität</value></data>
-  <data name="Workflow.Account.Roles" xml:space="preserve"><value>Bestätigte Rollen</value></data>
-  <data name="Workflow.Account.Dependencies" xml:space="preserve"><value>Abhängigkeiten</value></data>
+  <data name="Workflow.Account.Category" xml:space="preserve"><value>Kategorie</value></data>
+  <data name="Workflow.Account.CategoryDecision" xml:space="preserve"><value>Quelle der Kategorie</value></data>
+  <data name="Workflow.Account.Workflow" xml:space="preserve"><value>Recovery-Workflow</value></data>
   <data name="Workflow.Account.Access" xml:space="preserve"><value>Zugriff</value></data>
   <data name="Workflow.Account.Status" xml:space="preserve"><value>Wiederherstellungsstatus</value></data>
   <data name="Workflow.Account.Unavailable" xml:space="preserve"><value>Kein Konto ausgewählt</value></data>
   <data name="Workflow.Account.LoginUnavailable" xml:space="preserve"><value>Keine Anmeldekennung erfasst</value></data>
-  <data name="Workflow.Account.NoConfirmedRoles" xml:space="preserve"><value>Keine bestätigte Identitäts- oder Wiederherstellungsrolle</value></data>
-  <data name="Workflow.Account.NoDependencies" xml:space="preserve"><value>Keine Kontoabhängigkeit erfasst</value></data>
-  <data name="Workflow.Account.MissingDependency" xml:space="preserve"><value>Fehlendes Inventarkonto</value></data>
-  <data name="Workflow.Account.Dependents.Zero" xml:space="preserve"><value>Derzeit hängt kein anderes Konto von diesem Konto ab.</value></data>
-  <data name="Workflow.Account.Dependents.One" xml:space="preserve"><value>Derzeit hängt {0} anderes Konto von diesem Konto ab.</value></data>
-  <data name="Workflow.Account.Dependents.Other" xml:space="preserve"><value>Derzeit hängen {0} andere Konten von diesem Konto ab.</value></data>
-  <data name="Workflow.Account.DependentNames" xml:space="preserve"><value>Abhängige Konten: {0}</value></data>
+  <data name="Workflow.Account.CategoryIndependentWorkflow" xml:space="preserve"><value>Die Kategorie bestimmt, wann dieses Konto bearbeitet wird; der Provider-Workflow bestimmt unabhängig davon, wie.</value></data>
   <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Warum dieses Konto jetzt?</value></data>
   <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>Derzeit ist keine Planbegründung verfügbar.</value></data>
-  <data name="Workflow.Recommendation.DependenciesSatisfied" xml:space="preserve"><value>Die für diese Wiederherstellung erforderlichen Konten wurden vollständig geprüft; dieses Konto ist daher jetzt bereit.</value></data>
   <data name="Workflow.Path.Title" xml:space="preserve"><value>Wiederherstellungspfad</value></data>
   <data name="Workflow.Path.Help" xml:space="preserve"><value>Wähle den Pfad, der deinem tatsächlichen Zugriff entspricht. Authentifizierte Änderung, Passwortzurücksetzung und manuelle Wiederherstellung haben unterschiedliche Voraussetzungen.</value></data>
   <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Passwort in einer authentifizierten Kontositzung ändern</value></data>
@@ -131,9 +124,6 @@
   <data name="Workflow.Plan.Unchanged" xml:space="preserve"><value>Der Plan wurde neu berechnet. Die aktuelle Empfehlung bleibt gleich und ungelöste Arbeit bleibt sichtbar.</value></data>
   <data name="Workflow.Plan.Status.Unavailable" xml:space="preserve"><value>Planstatus nicht verfügbar</value></data>
   <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Jetzt bereit</value></data>
-  <data name="Workflow.Plan.Status.PlannedLater" xml:space="preserve"><value>Nach Abhängigkeiten geplant</value></data>
-  <data name="Workflow.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Durch eine fehlende Abhängigkeit blockiert</value></data>
-  <data name="Workflow.Plan.Status.BlockedCycle" xml:space="preserve"><value>Durch einen Abhängigkeitszyklus blockiert</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Entsperre einen Vault und lade ein Kontoinventar, bevor du die Kontowiederherstellung beginnst.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>Das ausgewählte Konto ist im verschlüsselten Inventar nicht mehr verfügbar.</value></data>
   <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Wähle vor dem Start einen Wiederherstellungspfad.</value></data>

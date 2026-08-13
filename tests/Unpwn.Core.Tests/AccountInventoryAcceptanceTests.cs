@@ -5,96 +5,64 @@ namespace Unpwn.Core.Tests;
 
 public sealed class AccountInventoryAcceptanceTests
 {
-    [Theory]
-    [InlineData(IncidentIndicator.LostAccess)]
-    [InlineData(IncidentIndicator.CompromisedRecoveryChannel)]
-    public void RetainedIntakeChoicesPrioritizeConfirmedRecoveryChannels(
-        IncidentIndicator indicator)
+    [Fact]
+    public void SuggestionsRemainUnconfirmedUntilUserCategorizesAccount()
     {
-        var recoveryChannel = CreateAccount(
-            "Primary mailbox",
-            AccountInventoryPriority.Normal,
-            roles:
-            [
-                new AccountRoleState(
-                    AccountInventoryRole.EmailMailbox,
-                    AccountRoleDecision.Confirmed),
-            ]);
-        var critical = CreateAccount("Banking", AccountInventoryPriority.Critical);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
-            .ReplaceAccounts([critical, recoveryChannel], DateTimeOffset.UnixEpoch.AddSeconds(1));
+            .ReplaceAccounts([CreateAccount("Gmail")], DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        Assert.Equal(critical.Id, state.CreatePlan(IncidentIndicator.None).Recommended?.AccountId);
-
-        var plan = state.CreatePlan(indicator);
-
-        Assert.Equal(recoveryChannel.Id, plan.Recommended?.AccountId);
-        Assert.Equal(AccountInventoryPlanReasonCode.RecoveryChannelFirst, plan.Recommended?.ReasonCode);
+        var account = Assert.Single(state.Accounts);
+        Assert.Equal(AccountRecoveryCategory.Email, account.SuggestedCategory);
+        Assert.Equal(AccountRecoveryCategory.Email, account.EffectiveCategory);
+        Assert.False(account.IsCategorized);
+        Assert.Null(account.CategoryConfirmedRevision);
     }
 
     [Fact]
-    public void RejectedInferenceRemainsRejectedAndNeverAffectsRecoveryPriority()
+    public void ReplacingAccountsRefreshesSuggestionButPreservesExplicitDecision()
     {
-        var account = CreateAccount(
-            "Google Mail",
-            AccountInventoryPriority.High,
-            roles:
-            [
-                new AccountRoleState(
-                    AccountInventoryRole.EmailMailbox,
-                    AccountRoleDecision.Rejected),
-            ]).NormalizeAndInfer(DateTimeOffset.UnixEpoch);
-        var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
+        var account = CreateAccount("Gmail") with
+        {
+            ConfirmedCategory = AccountRecoveryCategory.Critical,
+            CategoryConfirmedRevision = 1,
+        };
+        var initial = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([account], DateTimeOffset.UnixEpoch.AddSeconds(1));
+        var updated = initial.ReplaceAccounts(
+            [initial.Accounts[0] with { ProviderId = "Streaming" }],
+            DateTimeOffset.UnixEpoch.AddSeconds(2));
 
-        var plan = state.CreatePlan(IncidentIndicator.CompromisedRecoveryChannel);
-        var persistedRole = state.Accounts.Single().Roles.Single(role =>
-            role.Role == AccountInventoryRole.EmailMailbox);
-
-        Assert.Equal(AccountRoleDecision.Rejected, persistedRole.Decision);
-        Assert.False(state.Accounts.Single().HasConfirmedRecoveryRole);
-        Assert.NotEqual(
-            AccountInventoryPlanReasonCode.RecoveryChannelFirst,
-            plan.Recommended?.ReasonCode);
+        var persisted = Assert.Single(updated.Accounts);
+        Assert.Equal(AccountRecoveryCategory.NonCritical, persisted.SuggestedCategory);
+        Assert.Equal(AccountRecoveryCategory.Critical, persisted.EffectiveCategory);
+        Assert.Equal(1, persisted.CategoryConfirmedRevision);
     }
 
     [Fact]
-    public void PriorityChangeImmediatelyRecalculatesDeterministicRecoveryOrder()
+    public void UnknownSuggestionRemainsExplicitAndDeterministic()
     {
-        var first = CreateAccount("First", AccountInventoryPriority.Normal);
-        var second = CreateAccount("Second", AccountInventoryPriority.High);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
-            .ReplaceAccounts([first, second], DateTimeOffset.UnixEpoch.AddSeconds(1));
-        var initialPlan = state.CreatePlan(IncidentIndicator.None);
+            .ReplaceAccounts(
+                [CreateAccount("unknown-b"), CreateAccount("unknown-a")],
+                DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        var updatedFirst = first with { Priority = AccountInventoryPriority.Critical };
-        var updatedState = state.ReplaceAccounts(
-            [updatedFirst, second],
-            DateTimeOffset.UnixEpoch.AddSeconds(2));
-        var updatedPlan = updatedState.CreatePlan(IncidentIndicator.None);
-
-        Assert.Equal(second.Id, initialPlan.Recommended?.AccountId);
-        Assert.Equal(first.Id, updatedPlan.Recommended?.AccountId);
+        Assert.All(state.Accounts, account =>
+            Assert.Equal(AccountRecoveryCategory.Unknown, account.SuggestedCategory));
         Assert.Equal(
-            AccountInventoryPlanReasonCode.CriticalPriority,
-            updatedPlan.Recommended?.ReasonCode);
-        Assert.Equal(
-            updatedPlan.Items.Select(item => item.AccountId),
-            updatedState.CreatePlan(IncidentIndicator.None).Items.Select(item => item.AccountId));
+            ["unknown-a", "unknown-b"],
+            state.CreatePlan().Items.Select(item => item.ProviderId));
     }
 
-    private static AccountInventoryEntry CreateAccount(
-        string provider,
-        AccountInventoryPriority priority,
-        AccountRoleState[]? roles = null) =>
+    private static AccountInventoryEntry CreateAccount(string provider) =>
         new(
             Guid.NewGuid(),
             provider,
             provider,
-            $"{provider.ToLowerInvariant()}@example.invalid",
+            $"{provider}@example.invalid",
             null,
-            priority,
-            roles ?? [],
-            [],
+            AccountRecoveryCategory.Unknown,
+            RepositoryAccountClassificationCatalog.CurrentVersion,
+            ConfirmedCategory: null,
+            CategoryConfirmedRevision: null,
             DateTimeOffset.UnixEpoch);
 }

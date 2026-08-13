@@ -41,22 +41,11 @@ public enum AccountRecoveryExecutionTransitionKind
     AttachCredentialReference,
 }
 
-public sealed record AccountRecoveryProjectionContext(
-    AccountCriticality Criticality,
-    int DependencyDepth,
-    Guid[] WaitingForAccountIds)
+public sealed record AccountRecoveryProjectionContext(AccountCriticality Criticality)
 {
-    public int InventoryBlockedIssues { get; init; }
-
-    public int InventoryUnresolvedRisks { get; init; }
-
     public void Validate()
     {
-        ArgumentNullException.ThrowIfNull(WaitingForAccountIds);
-        ArgumentOutOfRangeException.ThrowIfNegative(DependencyDepth);
-        ArgumentOutOfRangeException.ThrowIfNegative(InventoryBlockedIssues);
-        ArgumentOutOfRangeException.ThrowIfNegative(InventoryUnresolvedRisks);
-        if (!Enum.IsDefined(Criticality) || WaitingForAccountIds.Any(id => id == Guid.Empty))
+        if (!Enum.IsDefined(Criticality))
         {
             throw new InvalidOperationException("The account execution projection context is invalid.");
         }

@@ -64,14 +64,13 @@ public sealed class GuidedRecoveryWizardServiceTests
                 "synthetic-provider",
                 "Synthetic account",
                 null,
-                null,
-                AccountInventoryPriority.Normal),
+                null),
             CancellationToken.None)).Succeeded);
         time = time.AddMinutes(1);
         var advanced = await guided.AdvanceAsync(CancellationToken.None);
 
         Assert.True(advanced.Succeeded);
-        Assert.Equal(RecoveryWizardStepId.IdentityReview, wizard.Current.CurrentStep);
+        Assert.Equal(RecoveryWizardStepId.AccountTriage, wizard.Current.CurrentStep);
 
         time = time.AddMinutes(1);
         await vault.LockAsync(CancellationToken.None);
@@ -80,7 +79,7 @@ public sealed class GuidedRecoveryWizardServiceTests
             TestPassword,
             CancellationToken.None)).Succeeded);
 
-        Assert.Equal(RecoveryWizardStepId.IdentityReview, wizard.Current.CurrentStep);
+        Assert.Equal(RecoveryWizardStepId.AccountTriage, wizard.Current.CurrentStep);
         Assert.Equal(RecoveryWizardLifecycleStatus.Active, wizard.Current.Status);
     }
 

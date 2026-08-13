@@ -1,107 +1,23 @@
 namespace Unpwn.Core;
 
-public enum AccountInventoryPriority
+/// <summary>
+/// Describes when an account should be recovered. Provider workflows remain the
+/// independent source of truth for how the recovery is performed.
+/// </summary>
+public enum AccountRecoveryCategory
 {
-    Low = 0,
-    Normal = 1,
-    High = 2,
-    Critical = 3,
-}
-
-[Flags]
-public enum AccountInventoryRole
-{
-    None = 0,
-    EmailMailbox = 1 << 0,
-    PasswordManager = 1 << 1,
-    IdentityProvider = 1 << 2,
-    RecoveryEmail = 1 << 3,
-    TelephoneRecovery = 1 << 4,
-    OrganizationManagedSignIn = 1 << 5,
-}
-
-public enum AccountRoleDecision
-{
-    Suggested,
-    Confirmed,
-    Rejected,
-}
-
-public enum AccountDependencyKind
-{
-    PasswordReset,
-    Mfa,
-    IdentityProvider,
-    RecoveryContact,
-    PasswordManager,
-    OrganizationManagedSignIn,
-}
-
-public enum AccountInventoryPlanStatus
-{
-    ReadyNow,
-    PlannedLater,
-    BlockedMissingDependency,
-    BlockedCycle,
+    Email = 0,
+    Critical = 1,
+    NonCritical = 2,
+    Unknown = 3,
 }
 
 public enum AccountInventoryPlanReasonCode
 {
-    RecoveryChannelFirst,
-    CriticalPriority,
-    DependencyRoot,
-    WaitingForDependency,
-    MissingDependency,
-    DependencyCycle,
-    UserOverridePresent,
-}
-
-public enum AccountInventoryIssueKind
-{
-    MissingDependency,
-    DependencyCycle,
-    DependencyOverride,
-}
-
-public sealed record AccountRoleState(
-    AccountInventoryRole Role,
-    AccountRoleDecision Decision)
-{
-    public void Validate()
-    {
-        if (Role is AccountInventoryRole.None || !IsSingleRole(Role))
-        {
-            throw new InvalidOperationException("An account role state must contain exactly one role.");
-        }
-    }
-
-    private static bool IsSingleRole(AccountInventoryRole role) =>
-        ((int)role & ((int)role - 1)) == 0;
-}
-
-public sealed record AccountInventoryDependency(
-    Guid DependsOnAccountId,
-    AccountDependencyKind Kind,
-    bool IsOverride,
-    string? OverrideReason)
-{
-    public void Validate(Guid accountId)
-    {
-        if (DependsOnAccountId == Guid.Empty || DependsOnAccountId == accountId)
-        {
-            throw new InvalidOperationException("An account dependency must reference another account.");
-        }
-
-        if (IsOverride && string.IsNullOrWhiteSpace(OverrideReason))
-        {
-            throw new InvalidOperationException("An overridden dependency requires a reason.");
-        }
-
-        if (!IsOverride && OverrideReason is not null)
-        {
-            throw new InvalidOperationException("A normal dependency cannot contain an override reason.");
-        }
-    }
+    EmailCategory,
+    CriticalCategory,
+    UnknownCategory,
+    NonCriticalCategory,
 }
 
 public sealed record AccountInventoryEntry(
@@ -110,28 +26,23 @@ public sealed record AccountInventoryEntry(
     string? AccountName,
     string? LoginIdentifier,
     string? AccountUrl,
-    AccountInventoryPriority Priority,
-    AccountRoleState[] Roles,
-    AccountInventoryDependency[] Dependencies,
+    AccountRecoveryCategory SuggestedCategory,
+    string ClassificationCatalogVersion,
+    AccountRecoveryCategory? ConfirmedCategory,
+    long? CategoryConfirmedRevision,
     DateTimeOffset UpdatedAt)
 {
-    public AccountCriticality DashboardCriticality => Priority switch
+    public AccountRecoveryCategory EffectiveCategory => ConfirmedCategory ?? SuggestedCategory;
+
+    public bool IsCategorized => ConfirmedCategory.HasValue;
+
+    public AccountCriticality DashboardCriticality => EffectiveCategory switch
     {
-        AccountInventoryPriority.Critical => AccountCriticality.Critical,
-        AccountInventoryPriority.High => AccountCriticality.Important,
-        AccountInventoryPriority.Normal or AccountInventoryPriority.Low => AccountCriticality.Routine,
-        _ => throw new ArgumentOutOfRangeException(nameof(Priority)),
+        AccountRecoveryCategory.Critical => AccountCriticality.Critical,
+        AccountRecoveryCategory.Email => AccountCriticality.Important,
+        AccountRecoveryCategory.Unknown or AccountRecoveryCategory.NonCritical => AccountCriticality.Routine,
+        _ => throw new ArgumentOutOfRangeException(nameof(EffectiveCategory)),
     };
-
-    public bool HasConfirmedRole(AccountInventoryRole role) => Roles.Any(candidate =>
-        candidate.Role == role && candidate.Decision == AccountRoleDecision.Confirmed);
-
-    public bool HasConfirmedRecoveryRole =>
-        HasConfirmedRole(AccountInventoryRole.EmailMailbox) ||
-        HasConfirmedRole(AccountInventoryRole.PasswordManager) ||
-        HasConfirmedRole(AccountInventoryRole.IdentityProvider) ||
-        HasConfirmedRole(AccountInventoryRole.RecoveryEmail) ||
-        HasConfirmedRole(AccountInventoryRole.TelephoneRecovery);
 
     public void Validate()
     {
@@ -141,10 +52,10 @@ public sealed record AccountInventoryEntry(
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(ProviderId);
-        ArgumentNullException.ThrowIfNull(Roles);
-        ArgumentNullException.ThrowIfNull(Dependencies);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ClassificationCatalogVersion);
         if (ProviderId.Trim().Length > 160 || AccountName?.Trim().Length > 200 ||
-            LoginIdentifier?.Trim().Length > 320 || AccountUrl?.Trim().Length > 2048)
+            LoginIdentifier?.Trim().Length > 320 || AccountUrl?.Trim().Length > 2048 ||
+            ClassificationCatalogVersion.Trim().Length > 80)
         {
             throw new InvalidOperationException("An inventory account contains an overlong field.");
         }
@@ -152,6 +63,12 @@ public sealed record AccountInventoryEntry(
         if (string.IsNullOrWhiteSpace(AccountName) && string.IsNullOrWhiteSpace(LoginIdentifier))
         {
             throw new InvalidOperationException("An inventory account requires a name or login identifier.");
+        }
+
+        if (!Enum.IsDefined(SuggestedCategory) ||
+            (ConfirmedCategory.HasValue && !Enum.IsDefined(ConfirmedCategory.Value)))
+        {
+            throw new InvalidOperationException("An inventory account contains an unknown recovery category.");
         }
 
         if (!string.IsNullOrWhiteSpace(AccountUrl) &&
@@ -164,39 +81,27 @@ public sealed record AccountInventoryEntry(
                 "An account URL must be an absolute HTTP or HTTPS URL without embedded credentials.");
         }
 
-        foreach (var role in Roles)
+        if (ConfirmedCategory.HasValue != CategoryConfirmedRevision.HasValue ||
+            CategoryConfirmedRevision is < 1)
         {
-            role.Validate();
-        }
-
-        if (Roles.Select(role => role.Role).Distinct().Count() != Roles.Length)
-        {
-            throw new InvalidOperationException("An account cannot contain duplicate role decisions.");
-        }
-
-        foreach (var dependency in Dependencies)
-        {
-            dependency.Validate(Id);
-        }
-
-        if (Dependencies
-            .Select(dependency => (dependency.DependsOnAccountId, dependency.Kind))
-            .Distinct()
-            .Count() != Dependencies.Length)
-        {
-            throw new InvalidOperationException("An account cannot contain duplicate dependencies.");
+            throw new InvalidOperationException(
+                "An explicit account category requires the inventory revision at which it was confirmed.");
         }
     }
 
-    public AccountInventoryEntry NormalizeAndInfer(DateTimeOffset occurredAt)
+    public AccountInventoryEntry NormalizeAndClassify(DateTimeOffset occurredAt)
     {
+        var providerId = ProviderId.Trim();
+        var accountUrl = Normalize(AccountUrl);
+        var classification = RepositoryAccountClassificationCatalog.Classify(providerId, accountUrl);
         var normalized = this with
         {
-            ProviderId = ProviderId.Trim(),
+            ProviderId = providerId,
             AccountName = Normalize(AccountName),
             LoginIdentifier = Normalize(LoginIdentifier),
-            AccountUrl = Normalize(AccountUrl),
-            Roles = AccountRoleInference.MergeSuggestions(this),
+            AccountUrl = accountUrl,
+            SuggestedCategory = classification.Category,
+            ClassificationCatalogVersion = classification.CatalogVersion,
             UpdatedAt = occurredAt,
         };
         normalized.Validate();
@@ -207,30 +112,16 @@ public sealed record AccountInventoryEntry(
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
-public sealed record AccountInventoryIssue(
-    AccountInventoryIssueKind Kind,
-    Guid AccountId,
-    Guid? RelatedAccountId,
-    string StableCode);
-
 public sealed record AccountInventoryPlanItem(
     Guid AccountId,
     string ProviderId,
-    AccountInventoryPlanStatus Status,
+    AccountRecoveryCategory Category,
     AccountInventoryPlanReasonCode ReasonCode,
-    int Order,
-    int DependencyDepth,
-    Guid[] WaitingForAccountIds,
-    bool HasDependencyOverride);
+    int Order);
 
-public sealed record AccountInventoryPlan(
-    AccountInventoryPlanItem[] Items,
-    AccountInventoryIssue[] Issues)
+public sealed record AccountInventoryPlan(AccountInventoryPlanItem[] Items)
 {
-    public AccountInventoryPlanItem? Recommended => Items
-        .Where(item => item.Status == AccountInventoryPlanStatus.ReadyNow)
-        .OrderBy(item => item.Order)
-        .FirstOrDefault();
+    public AccountInventoryPlanItem? Recommended => Items.OrderBy(item => item.Order).FirstOrDefault();
 }
 
 public sealed record AccountInventoryState(
@@ -258,7 +149,7 @@ public sealed record AccountInventoryState(
 
         AccountInventoryEntry[] materialized =
         [
-            .. accounts.Select(account => account.NormalizeAndInfer(occurredAt)),
+            .. accounts.Select(account => account.NormalizeAndClassify(occurredAt)),
         ];
         if (materialized.Select(account => account.Id).Distinct().Count() != materialized.Length)
         {
@@ -273,7 +164,7 @@ public sealed record AccountInventoryState(
         };
     }
 
-    public AccountInventoryPlan CreatePlan(IncidentIndicator incidentIndicators)
+    public AccountInventoryPlan CreatePlan(IncidentIndicator incidentIndicators = IncidentIndicator.None)
     {
         Validate();
         return AccountInventoryPlanner.Create(Accounts, incidentIndicators);
@@ -290,50 +181,17 @@ public sealed record AccountInventoryState(
         foreach (var account in Accounts)
         {
             account.Validate();
+            if (account.CategoryConfirmedRevision > Revision)
+            {
+                throw new InvalidOperationException(
+                    "An explicit account category cannot reference a future inventory revision.");
+            }
         }
 
         if (Accounts.Select(account => account.Id).Distinct().Count() != Accounts.Length)
         {
             throw new InvalidOperationException("The persisted account inventory contains duplicate accounts.");
         }
-    }
-}
-
-public static class AccountRoleInference
-{
-    private static readonly (AccountInventoryRole Role, string[] Terms)[] Rules =
-    [
-        (AccountInventoryRole.PasswordManager,
-            ["1password", "bitwarden", "dashlane", "keepass", "lastpass", "proton pass", "password manager"]),
-        (AccountInventoryRole.EmailMailbox,
-            ["gmail", "google mail", "outlook", "hotmail", "mail", "protonmail", "proton mail", "yahoo", "icloud"]),
-        (AccountInventoryRole.IdentityProvider,
-            ["google", "microsoft", "apple", "github", "okta", "onelogin", "auth0", "entra"]),
-        (AccountInventoryRole.TelephoneRecovery,
-            ["telephone", "phone", "mobile", "sms"]),
-        (AccountInventoryRole.OrganizationManagedSignIn,
-            ["okta", "onelogin", "entra", "workspace", "school", "university", "company sso", "corporate sso"]),
-    ];
-
-    public static AccountRoleState[] MergeSuggestions(AccountInventoryEntry account)
-    {
-        ArgumentNullException.ThrowIfNull(account);
-        var existing = account.Roles.ToDictionary(role => role.Role);
-        var searchable = string.Join(
-            ' ',
-            new[] { account.ProviderId, account.AccountName, account.LoginIdentifier, account.AccountUrl }
-                .Where(value => !string.IsNullOrWhiteSpace(value)))
-            .ToLowerInvariant();
-
-        foreach (var (role, terms) in Rules)
-        {
-            if (!existing.ContainsKey(role) && terms.Any(searchable.Contains))
-            {
-                existing.Add(role, new AccountRoleState(role, AccountRoleDecision.Suggested));
-            }
-        }
-
-        return [.. existing.Values.OrderBy(role => role.Role)];
     }
 }
 
@@ -344,228 +202,44 @@ public static class AccountInventoryPlanner
         IncidentIndicator incidentIndicators)
     {
         ArgumentNullException.ThrowIfNull(accounts);
-        var byId = accounts.ToDictionary(account => account.Id);
-        var issues = new List<AccountInventoryIssue>();
-        var effectiveDependencies = new Dictionary<Guid, List<Guid>>();
-
-        foreach (var account in accounts)
-        {
-            var dependencies = new List<Guid>();
-            foreach (var dependency in account.Dependencies)
-            {
-                if (!byId.ContainsKey(dependency.DependsOnAccountId))
-                {
-                    issues.Add(new AccountInventoryIssue(
-                        AccountInventoryIssueKind.MissingDependency,
-                        account.Id,
-                        dependency.DependsOnAccountId,
-                        "inventory.dependency.missing"));
-                    continue;
-                }
-
-                if (dependency.IsOverride)
-                {
-                    issues.Add(new AccountInventoryIssue(
-                        AccountInventoryIssueKind.DependencyOverride,
-                        account.Id,
-                        dependency.DependsOnAccountId,
-                        "inventory.dependency.override"));
-                    continue;
-                }
-
-                dependencies.Add(dependency.DependsOnAccountId);
-            }
-
-            effectiveDependencies[account.Id] = dependencies;
-        }
-
-        var cycleAccounts = FindCycleAccounts(accounts.Select(account => account.Id), effectiveDependencies);
-        foreach (var accountId in cycleAccounts.Order())
-        {
-            issues.Add(new AccountInventoryIssue(
-                AccountInventoryIssueKind.DependencyCycle,
-                accountId,
-                null,
-                "inventory.dependency.cycle"));
-        }
-
-        var missingAccounts = issues
-            .Where(issue => issue.Kind == AccountInventoryIssueKind.MissingDependency)
-            .Select(issue => issue.AccountId)
-            .ToHashSet();
-        var ordered = TopologicalOrder(
-            accounts.Where(account => !missingAccounts.Contains(account.Id) && !cycleAccounts.Contains(account.Id)),
-            effectiveDependencies,
-            incidentIndicators);
-        var orderLookup = ordered
-            .Select((account, index) => (account.Id, Order: index + 1))
-            .ToDictionary(item => item.Id, item => item.Order);
-        var depthLookup = CalculateDepths(ordered, effectiveDependencies);
-        var items = new List<AccountInventoryPlanItem>();
-
-        foreach (var account in ordered)
-        {
-            Guid[] waitingFor = [.. effectiveDependencies[account.Id]];
-            var hasOverride = account.Dependencies.Any(dependency => dependency.IsOverride);
-            var reason = hasOverride
-                ? AccountInventoryPlanReasonCode.UserOverridePresent
-                : waitingFor.Length > 0
-                    ? AccountInventoryPlanReasonCode.WaitingForDependency
-                    : IsRecoveryChannelPriority(account, incidentIndicators)
-                        ? AccountInventoryPlanReasonCode.RecoveryChannelFirst
-                        : account.Priority == AccountInventoryPriority.Critical
-                            ? AccountInventoryPlanReasonCode.CriticalPriority
-                            : AccountInventoryPlanReasonCode.DependencyRoot;
-            items.Add(new AccountInventoryPlanItem(
+        var items = accounts
+            .OrderBy(account => SortOrder(account.EffectiveCategory, incidentIndicators))
+            .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
+            .ThenBy(account => account.Id)
+            .Select((account, index) => new AccountInventoryPlanItem(
                 account.Id,
                 account.ProviderId,
-                waitingFor.Length == 0
-                    ? AccountInventoryPlanStatus.ReadyNow
-                    : AccountInventoryPlanStatus.PlannedLater,
-                reason,
-                orderLookup[account.Id],
-                depthLookup.GetValueOrDefault(account.Id),
-                waitingFor,
-                hasOverride));
-        }
-
-        foreach (var account in accounts
-                     .Where(account => missingAccounts.Contains(account.Id) || cycleAccounts.Contains(account.Id))
-                     .OrderByDescending(account => account.Priority)
-                     .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
-                     .ThenBy(account => account.Id))
-        {
-            var isMissing = missingAccounts.Contains(account.Id);
-            items.Add(new AccountInventoryPlanItem(
-                account.Id,
-                account.ProviderId,
-                isMissing
-                    ? AccountInventoryPlanStatus.BlockedMissingDependency
-                    : AccountInventoryPlanStatus.BlockedCycle,
-                isMissing
-                    ? AccountInventoryPlanReasonCode.MissingDependency
-                    : AccountInventoryPlanReasonCode.DependencyCycle,
-                items.Count + 1,
-                0,
-                effectiveDependencies.TryGetValue(account.Id, out var dependencies)
-                    ? [.. dependencies]
-                    : [],
-                account.Dependencies.Any(dependency => dependency.IsOverride)));
-        }
-
-        return new AccountInventoryPlan([.. items], [.. issues]);
+                account.EffectiveCategory,
+                Reason(account.EffectiveCategory),
+                index + 1))
+            .ToArray();
+        return new AccountInventoryPlan(items);
     }
 
-    private static List<AccountInventoryEntry> TopologicalOrder(
-        IEnumerable<AccountInventoryEntry> accounts,
-        Dictionary<Guid, List<Guid>> dependencies,
+    private static int SortOrder(
+        AccountRecoveryCategory category,
         IncidentIndicator incidentIndicators)
     {
-        var remaining = accounts.ToDictionary(account => account.Id);
-        var completed = new HashSet<Guid>();
-        var result = new List<AccountInventoryEntry>();
-        while (remaining.Count > 0)
+        var recoveryChannelNeedsAttention =
+            incidentIndicators.HasFlag(IncidentIndicator.LostAccess) ||
+            incidentIndicators.HasFlag(IncidentIndicator.CompromisedRecoveryChannel);
+        return category switch
         {
-            var ready = remaining.Values
-                .Where(account => dependencies[account.Id].All(completed.Contains))
-                .OrderByDescending(account => IsRecoveryChannelPriority(account, incidentIndicators))
-                .ThenByDescending(account => account.Priority)
-                .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
-                .ThenBy(account => account.Id)
-                .FirstOrDefault();
-            if (ready is null)
-            {
-                break;
-            }
-
-            result.Add(ready);
-            completed.Add(ready.Id);
-            remaining.Remove(ready.Id);
-        }
-
-        return result;
+            AccountRecoveryCategory.Email when recoveryChannelNeedsAttention => 0,
+            AccountRecoveryCategory.Critical => recoveryChannelNeedsAttention ? 1 : 0,
+            AccountRecoveryCategory.Email => 1,
+            AccountRecoveryCategory.Unknown => 2,
+            AccountRecoveryCategory.NonCritical => 3,
+            _ => throw new ArgumentOutOfRangeException(nameof(category)),
+        };
     }
 
-    private static Dictionary<Guid, int> CalculateDepths(
-        IReadOnlyList<AccountInventoryEntry> ordered,
-        Dictionary<Guid, List<Guid>> dependencies)
+    private static AccountInventoryPlanReasonCode Reason(AccountRecoveryCategory category) => category switch
     {
-        var depths = new Dictionary<Guid, int>();
-        foreach (var account in ordered)
-        {
-            depths[account.Id] = dependencies[account.Id].Count == 0
-                ? 0
-                : dependencies[account.Id]
-                    .Where(depths.ContainsKey)
-                    .Select(dependency => depths[dependency] + 1)
-                    .DefaultIfEmpty(0)
-                    .Max();
-        }
-
-        return depths;
-    }
-
-    private static HashSet<Guid> FindCycleAccounts(
-        IEnumerable<Guid> accountIds,
-        Dictionary<Guid, List<Guid>> dependencies)
-    {
-        var cycleAccounts = new HashSet<Guid>();
-        var visiting = new HashSet<Guid>();
-        var visited = new HashSet<Guid>();
-        var stack = new List<Guid>();
-
-        foreach (var accountId in accountIds)
-        {
-            Visit(accountId, dependencies, visiting, visited, stack, cycleAccounts);
-        }
-
-        return cycleAccounts;
-    }
-
-    private static void Visit(
-        Guid accountId,
-        Dictionary<Guid, List<Guid>> dependencies,
-        HashSet<Guid> visiting,
-        HashSet<Guid> visited,
-        List<Guid> stack,
-        HashSet<Guid> cycleAccounts)
-    {
-        if (visited.Contains(accountId))
-        {
-            return;
-        }
-
-        if (visiting.Contains(accountId))
-        {
-            var start = stack.IndexOf(accountId);
-            foreach (var cycleAccount in stack.Skip(start))
-            {
-                cycleAccounts.Add(cycleAccount);
-            }
-
-            return;
-        }
-
-        visiting.Add(accountId);
-        stack.Add(accountId);
-        if (dependencies.TryGetValue(accountId, out var accountDependencies))
-        {
-            foreach (var dependency in accountDependencies)
-            {
-                Visit(dependency, dependencies, visiting, visited, stack, cycleAccounts);
-            }
-        }
-
-        stack.RemoveAt(stack.Count - 1);
-        visiting.Remove(accountId);
-        visited.Add(accountId);
-    }
-
-    private static bool IsRecoveryChannelPriority(
-        AccountInventoryEntry account,
-        IncidentIndicator incidentIndicators) =>
-        account.HasConfirmedRecoveryRole &&
-        (incidentIndicators.HasFlag(IncidentIndicator.CompromisedRecoveryChannel) ||
-         incidentIndicators.HasFlag(IncidentIndicator.LostAccess) ||
-         account.Priority >= AccountInventoryPriority.High);
+        AccountRecoveryCategory.Email => AccountInventoryPlanReasonCode.EmailCategory,
+        AccountRecoveryCategory.Critical => AccountInventoryPlanReasonCode.CriticalCategory,
+        AccountRecoveryCategory.Unknown => AccountInventoryPlanReasonCode.UnknownCategory,
+        AccountRecoveryCategory.NonCritical => AccountInventoryPlanReasonCode.NonCriticalCategory,
+        _ => throw new ArgumentOutOfRangeException(nameof(category)),
+    };
 }

@@ -24,25 +24,13 @@ internal sealed class UnavailableAccountInventoryService : IAccountInventoryServ
         AccountInventoryUpsertRequest request,
         CancellationToken cancellationToken) => Failure(cancellationToken);
 
-    public Task<AccountInventoryOperationResult> DecideRoleAsync(
+    public Task<AccountInventoryOperationResult> CategorizeAsync(
         Guid accountId,
-        AccountInventoryRole role,
-        AccountRoleDecision decision,
-        CancellationToken cancellationToken) => Failure(cancellationToken);
-
-    public Task<AccountInventoryOperationResult> AddDependencyAsync(
-        AccountDependencyRequest request,
-        CancellationToken cancellationToken) => Failure(cancellationToken);
-
-    public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-        Guid accountId,
-        Guid dependsOnAccountId,
-        AccountDependencyKind kind,
+        AccountRecoveryCategory category,
         CancellationToken cancellationToken) => Failure(cancellationToken);
 
     public Task<AccountInventoryOperationResult> RemoveAccountAsync(
         Guid accountId,
-        bool dependencyImpactAcknowledged,
         CancellationToken cancellationToken) => Failure(cancellationToken);
 
     public Task<AccountInventoryOperationResult> ImportAsync(

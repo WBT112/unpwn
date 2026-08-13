@@ -27,7 +27,7 @@ Unpwn.Application
   Application services and use cases
 
 Unpwn.Core
-  Recovery domain, state machines, priorities, dependencies, progress
+  Recovery domain, state machines, account categories, execution state, progress
 
 Unpwn.Infrastructure
   General infrastructure and OS integration boundary
@@ -70,13 +70,13 @@ Unpwn.App
 
 ### Recovery domain
 
-Canonical accounts, dependencies, actions, statuses, progress, and audit semantics live in the platform-neutral domain. Presentation code must not create a parallel recovery state machine.
+Canonical accounts, account categories, actions, statuses, progress, and audit semantics live in the platform-neutral domain. Presentation code must not create a parallel recovery state machine. The repository-controlled account-classification catalog is platform-neutral and offline-only.
 
 See [Data Model](DATA_MODEL.md) and [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
 
 ### Recovery workflows
 
-Providers describe what must be done for a service. Generic orchestration owns execution state, ordering, dependencies, and progress. Provider code does not own vault cryptography, localization, browser-session state, or generic browser automation.
+Providers describe what must be done for a service. Generic orchestration owns execution state, category-based ordering, and progress. Account category determines when work is recommended; provider workflow determines how it is performed. Provider code does not own category classification, vault cryptography, localization, browser-session state, or generic browser automation.
 
 See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
 

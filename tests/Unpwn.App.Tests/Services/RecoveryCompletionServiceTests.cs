@@ -23,7 +23,7 @@ public sealed class RecoveryCompletionServiceTests
         var sessionService = new TestSessionService(session);
         var service = new RecoveryCompletionService(
             sessionService,
-            new TestInventoryService(Inventory(session.Id, accountId, []), new AccountInventoryPlan([], [])),
+            new TestInventoryService(Inventory(session.Id, accountId), new AccountInventoryPlan([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
 
@@ -44,7 +44,7 @@ public sealed class RecoveryCompletionServiceTests
     }
 
     [Fact]
-    public async Task PreflightDistinguishesIncompleteBlockedLostInferencesAndCredentialStates()
+    public async Task PreflightDistinguishesIncompleteBlockedLostAndCredentialStates()
     {
         var accountId = Guid.NewGuid();
         var session = Session(Account(
@@ -57,17 +57,8 @@ public sealed class RecoveryCompletionServiceTests
             failed: 1,
             risks: 2,
             accessLost: true));
-        var suggestedRole = new AccountRoleState(
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Suggested);
-        var inventory = Inventory(session.Id, accountId, [suggestedRole]);
-        var plan = new AccountInventoryPlan(
-            [],
-            [new AccountInventoryIssue(
-                AccountInventoryIssueKind.MissingDependency,
-                accountId,
-                null,
-                "missing-dependency")]);
+        var inventory = Inventory(session.Id, accountId);
+        var plan = new AccountInventoryPlan([]);
         var notExported = GeneratedCredentialMetadata.Create(
             Guid.NewGuid(), accountId, Guid.NewGuid(), StartedAt);
         var exported = GeneratedCredentialMetadata.Create(
@@ -93,8 +84,6 @@ public sealed class RecoveryCompletionServiceTests
             RecoveryCompletionIssueKind.RequiredActionFailed,
             RecoveryCompletionIssueKind.LostAccountAccess,
             RecoveryCompletionIssueKind.UnresolvedRisk,
-            RecoveryCompletionIssueKind.UnconfirmedRoleInference,
-            RecoveryCompletionIssueKind.DependencyIssue,
             RecoveryCompletionIssueKind.CredentialNotExported,
             RecoveryCompletionIssueKind.PasswordManagerImportUnconfirmed,
             RecoveryCompletionIssueKind.CredentialRetainedInVault,
@@ -122,7 +111,7 @@ public sealed class RecoveryCompletionServiceTests
         var sessionService = new TestSessionService(session);
         var service = new RecoveryCompletionService(
             sessionService,
-            new TestInventoryService(Inventory(session.Id, accountId, []), new AccountInventoryPlan([], [])),
+            new TestInventoryService(Inventory(session.Id, accountId), new AccountInventoryPlan([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
         var review = await service.ReviewAsync(CancellationToken.None);
@@ -160,7 +149,7 @@ public sealed class RecoveryCompletionServiceTests
             .ConfirmPlaintextExportCleanup(Guid.NewGuid(), StartedAt.AddMinutes(3));
         var service = new RecoveryCompletionService(
             new TestSessionService(session),
-            new TestInventoryService(Inventory(session.Id, accountId, []), new AccountInventoryPlan([], [])),
+            new TestInventoryService(Inventory(session.Id, accountId), new AccountInventoryPlan([])),
             new TestCredentialRepository([credential]),
             () => StartedAt.AddMinutes(5));
 
@@ -190,7 +179,7 @@ public sealed class RecoveryCompletionServiceTests
         var sessionService = new TestSessionService(original);
         var service = new RecoveryCompletionService(
             sessionService,
-            new TestInventoryService(Inventory(original.Id, accountId, []), new AccountInventoryPlan([], [])),
+            new TestInventoryService(Inventory(original.Id, accountId), new AccountInventoryPlan([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
         var review = await service.ReviewAsync(CancellationToken.None);
@@ -226,7 +215,7 @@ public sealed class RecoveryCompletionServiceTests
         var completed = active.Complete(record, StartedAt);
         var service = new RecoveryCompletionService(
             new TestSessionService(completed),
-            new TestInventoryService(Inventory(active.Id, accountId, []), new AccountInventoryPlan([], [])),
+            new TestInventoryService(Inventory(active.Id, accountId), new AccountInventoryPlan([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
 
@@ -343,14 +332,11 @@ public sealed class RecoveryCompletionServiceTests
             accessLost,
             0,
             0,
-            "review-action",
-            0,
-            []);
+            "review-action");
 
     private static AccountInventoryState Inventory(
         Guid sessionId,
-        Guid accountId,
-        AccountRoleState[] roles) =>
+        Guid accountId) =>
         new(
             sessionId,
             1,
@@ -362,9 +348,10 @@ public sealed class RecoveryCompletionServiceTests
                     "Synthetic account",
                     null,
                     null,
-                    AccountInventoryPriority.Normal,
-                    roles,
-                    [],
+                    AccountRecoveryCategory.Unknown,
+                    RepositoryAccountClassificationCatalog.CurrentVersion,
+                    ConfirmedCategory: null,
+                    CategoryConfirmedRevision: null,
                     StartedAt),
             ]);
 
@@ -431,13 +418,9 @@ public sealed class RecoveryCompletionServiceTests
 
         public Task<AccountInventoryOperationResult> UpsertAsync(AccountInventoryUpsertRequest request, CancellationToken cancellationToken) => Unsupported();
 
-        public Task<AccountInventoryOperationResult> DecideRoleAsync(Guid accountId, AccountInventoryRole role, AccountRoleDecision decision, CancellationToken cancellationToken) => Unsupported();
+        public Task<AccountInventoryOperationResult> CategorizeAsync(Guid accountId, AccountRecoveryCategory category, CancellationToken cancellationToken) => Unsupported();
 
-        public Task<AccountInventoryOperationResult> AddDependencyAsync(AccountDependencyRequest request, CancellationToken cancellationToken) => Unsupported();
-
-        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(Guid accountId, Guid dependsOnAccountId, AccountDependencyKind kind, CancellationToken cancellationToken) => Unsupported();
-
-        public Task<AccountInventoryOperationResult> RemoveAccountAsync(Guid accountId, bool dependencyImpactAcknowledged, CancellationToken cancellationToken) => Unsupported();
+        public Task<AccountInventoryOperationResult> RemoveAccountAsync(Guid accountId, CancellationToken cancellationToken) => Unsupported();
 
         public Task<AccountInventoryOperationResult> ImportAsync(IReadOnlyCollection<ImportAccountCandidate> candidates, ImportDuplicateResolution? duplicateResolution, CancellationToken cancellationToken) => Unsupported();
 

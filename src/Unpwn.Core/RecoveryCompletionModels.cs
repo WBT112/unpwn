@@ -8,8 +8,6 @@ public enum RecoveryCompletionIssueKind
     RequiredActionFailed,
     LostAccountAccess,
     UnresolvedRisk,
-    UnconfirmedRoleInference,
-    DependencyIssue,
     CredentialNotExported,
     PasswordManagerImportUnconfirmed,
     CredentialRetainedInVault,
@@ -129,8 +127,6 @@ public sealed record RecoveryCompletionReport(
 
     public int AcceptedRiskActions { get; init; }
 
-    public int AccountsWaitingForDependencies { get; init; }
-
     public void Validate()
     {
         if (SessionId == Guid.Empty)
@@ -166,7 +162,6 @@ public sealed record RecoveryCompletionReport(
             RequiredActionsAwaitingUser,
             RequiredActionsNotApplicable,
             AcceptedRiskActions,
-            AccountsWaitingForDependencies,
         ];
         if (counters.Any(counter => counter < 0) || AccountsReviewed > AccountsTotal ||
             CriticalAccountsReady > CriticalAccountsTotal)

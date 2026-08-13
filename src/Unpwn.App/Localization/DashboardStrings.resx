@@ -14,7 +14,7 @@
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Session name</value></data>
   <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Local recovery session name</value></data>
   <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Should unpwn prioritize your recovery channels?</value></data>
-  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Lost access moves confirmed recovery-channel accounts earlier. Possible control of a primary email or recovery channel also shows an immediate advisory. These answers guide ordering; they do not prove a compromise.</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Lost access moves explicitly categorized email accounts earlier. Possible control of a primary email or recovery channel also shows an immediate advisory. These answers guide ordering; they do not prove a compromise.</value></data>
   <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>I cannot access one or more accounts</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>A primary email or recovery channel may be under someone else's control</value></data>
   <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>The selected guidance inputs are stored in the encrypted vault. They change recommendations only.</value></data>
@@ -58,9 +58,9 @@
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>No recommendation is available.</value></data>
   <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Recommended account or service: {0}</value></data>
   <data name="Dashboard.Recommendation.Action" xml:space="preserve"><value>Current action: {0}</value></data>
-  <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Import or add the account inventory so dependencies and critical identities can be reviewed.</value></data>
-  <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Review and secure the primary email or recovery channel before dependent accounts.</value></data>
-  <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Restore access to the critical account before continuing with dependent accounts.</value></data>
+  <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Import or add accounts so unpwn can suggest simple recovery categories.</value></data>
+  <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Review and secure the primary email or recovery channel before the remaining accounts.</value></data>
+  <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Restore access to the critical account before continuing with the remaining accounts.</value></data>
   <data name="Dashboard.Recommendation.ResolveCriticalBlocker" xml:space="preserve"><value>Resolve the recorded blocker or failure on the critical account.</value></data>
   <data name="Dashboard.Recommendation.AddressUnresolvedRisk" xml:space="preserve"><value>Review the unresolved risk and record the next safe action.</value></data>
   <data name="Dashboard.Recommendation.ExportGeneratedCredentials" xml:space="preserve"><value>Export generated credentials to an established password manager and confirm cleanup.</value></data>
@@ -108,7 +108,7 @@
   <data name="Dashboard.WizardStep.VaultEntry" xml:space="preserve"><value>Vault entry</value></data>
   <data name="Dashboard.WizardStep.IncidentIntake" xml:space="preserve"><value>Incident intake</value></data>
   <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Import accounts</value></data>
-  <data name="Dashboard.WizardStep.IdentityReview" xml:space="preserve"><value>Identity and recovery review</value></data>
+  <data name="Dashboard.WizardStep.AccountTriage" xml:space="preserve"><value>Account categories</value></data>
   <data name="Dashboard.WizardStep.RecoveryPlan" xml:space="preserve"><value>Recovery plan</value></data>
   <data name="Dashboard.WizardStep.AccountRecovery" xml:space="preserve"><value>Account recovery</value></data>
   <data name="Dashboard.WizardStep.CredentialExport" xml:space="preserve"><value>Credential export</value></data>

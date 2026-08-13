@@ -186,8 +186,9 @@ public sealed class GuidedRecoveryWizardService : IGuidedRecoveryWizardService, 
     {
         var accounts = _inventory.CurrentInventory?.Accounts ?? [];
         var dashboard = _session.Dashboard;
-        var suggestedRoles = accounts.Sum(account => account.Roles.Count(role =>
-            role.Decision == AccountRoleDecision.Suggested));
+        var uncategorizedAccounts = accounts.Count(account => !account.IsCategorized);
+        var hasConfirmedEmail = accounts.Any(account =>
+            account.ConfirmedCategory == AccountRecoveryCategory.Email);
         var hasOutstandingWork = dashboard is not null &&
             (dashboard.AccountsFullyReviewed < dashboard.AccountsTotal ||
              dashboard.BlockedRequiredActions > 0 ||
@@ -200,7 +201,8 @@ public sealed class GuidedRecoveryWizardService : IGuidedRecoveryWizardService, 
 
         return new GuidedRecoveryContext(
             accounts.Length,
-            suggestedRoles,
+            uncategorizedAccounts,
+            hasConfirmedEmail,
             hasOutstandingWork,
             hasPendingCredentials,
             dashboard?.Recommendation.AccountId ?? _inventory.CurrentPlan?.Recommended?.AccountId,

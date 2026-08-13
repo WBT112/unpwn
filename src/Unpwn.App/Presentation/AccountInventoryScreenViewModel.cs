@@ -7,16 +7,15 @@ namespace Unpwn.App.Presentation;
 public enum AccountInventoryFilter
 {
     All,
+    Unreviewed,
+    Email,
     Critical,
-    RecoveryChannels,
-    NeedsRoleConfirmation,
-    Blocked,
+    Unknown,
 }
 
 public enum AccountInventorySort
 {
     RecoveryOrder,
-    Priority,
     Provider,
     Updated,
 }
@@ -27,71 +26,28 @@ public sealed record AccountInventoryListItem(
     Guid Id,
     string DisplayName,
     string ProviderId,
-    string PriorityText,
-    string RoleText,
-    string PlanText,
+    string CategoryText,
+    string ReviewText,
     AccountInventoryEntry Account);
-
-public sealed record AccountInventoryDependencyItem(
-    Guid DependsOnAccountId,
-    AccountDependencyKind Kind,
-    string DisplayText,
-    bool IsOverride,
-    string? OverrideReason);
-
-public sealed record AccountInventoryPlanDisplayItem(
-    int Order,
-    Guid AccountId,
-    string DisplayText,
-    AccountInventoryPlanStatus Status);
-
-public sealed record AccountInventoryGuidedIssue(
-    AccountInventoryIssueKind? Kind,
-    string Message);
 
 public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 {
-    private static readonly AccountInventoryRole[] IndividualRoles =
-    [
-        AccountInventoryRole.EmailMailbox,
-        AccountInventoryRole.PasswordManager,
-        AccountInventoryRole.IdentityProvider,
-        AccountInventoryRole.RecoveryEmail,
-        AccountInventoryRole.TelephoneRecovery,
-        AccountInventoryRole.OrganizationManagedSignIn,
-    ];
-
     private readonly IAccountInventoryService _inventory;
     private readonly IConfirmationDialogService _confirmationDialog;
     private IReadOnlyList<AccountInventoryListItem> _accounts = [];
-    private IReadOnlyList<AccountInventoryDependencyItem> _dependencies = [];
-    private IReadOnlyList<AccountInventoryPlanDisplayItem> _planItems = [];
-    private IReadOnlyList<AccountInventoryGuidedIssue> _guidedIssues = [];
-    private IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> _suggestedRoles = [];
-    private IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> _confirmedRoles = [];
-    private IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> _availableRoles = [];
-    private IReadOnlyList<AccountInventoryOption<Guid>> _dependencyTargets = [];
-    private string _searchText = string.Empty;
     private AccountInventoryListItem? _selectedAccount;
-    private AccountInventoryOption<AccountInventoryPriority>? _selectedPriority;
+    private AccountInventoryOption<AccountRecoveryCategory>? _selectedCategory;
     private AccountInventoryOption<AccountInventoryFilter>? _selectedFilter;
     private AccountInventoryOption<AccountInventorySort>? _selectedSort;
-    private AccountInventoryOption<AccountInventoryRole>? _selectedSuggestedRole;
-    private AccountInventoryOption<AccountInventoryRole>? _selectedConfirmedRole;
-    private AccountInventoryOption<AccountInventoryRole>? _selectedRoleToAdd;
-    private AccountInventoryOption<Guid>? _selectedDependencyTarget;
-    private AccountInventoryOption<AccountDependencyKind>? _selectedDependencyKind;
-    private AccountInventoryDependencyItem? _selectedDependency;
     private Guid? _editingAccountId;
     private string _providerId = string.Empty;
     private string _accountName = string.Empty;
     private string _loginIdentifier = string.Empty;
     private string _accountUrl = string.Empty;
-    private string _overrideReason = string.Empty;
     private string? _validationMessage;
     private string _inventorySummary = string.Empty;
-    private string _planSummary = string.Empty;
-    private bool _isAdvancedEditorVisible;
+    private string _triageProgress = string.Empty;
+    private string _continuationGuidance = string.Empty;
 
     public AccountInventoryScreenViewModel(
         IAccountInventoryService inventory,
@@ -113,42 +69,14 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             SaveAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
             CanSaveAccount);
+        SaveCategoryCommand = new AsyncCommand(
+            SaveCategoryAsync,
+            () => Localization.GetString("Accounts.Error.Command"),
+            () => HasPersistedAccount && SelectedCategory is not null);
         DeleteAccountCommand = new AsyncCommand(
             DeleteAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
             () => CanMutate && SelectedAccount is not null);
-        AcceptSuggestedRoleCommand = new AsyncCommand(
-            cancellationToken => DecideSelectedRoleAsync(AccountRoleDecision.Confirmed, cancellationToken),
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount && SelectedSuggestedRole is not null);
-        RejectSuggestedRoleCommand = new AsyncCommand(
-            cancellationToken => DecideSelectedRoleAsync(AccountRoleDecision.Rejected, cancellationToken),
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount && SelectedSuggestedRole is not null);
-        AddRoleCommand = new AsyncCommand(
-            cancellationToken => DecideAddedRoleAsync(AccountRoleDecision.Confirmed, cancellationToken),
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount && SelectedRoleToAdd is not null);
-        RemoveRoleCommand = new AsyncCommand(
-            cancellationToken => DecideConfirmedRoleAsync(AccountRoleDecision.Rejected, cancellationToken),
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount && SelectedConfirmedRole is not null);
-        AddDependencyCommand = new AsyncCommand(
-            cancellationToken => AddDependencyAsync(includeOverride: true, cancellationToken),
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount &&
-                  SelectedDependencyTarget is not null && SelectedDependencyKind is not null);
-        AddGuidedDependencyCommand = new AsyncCommand(
-            cancellationToken => AddDependencyAsync(includeOverride: false, cancellationToken),
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount &&
-                  SelectedDependencyTarget is not null && SelectedDependencyKind is not null);
-        RemoveDependencyCommand = new AsyncCommand(
-            RemoveDependencyAsync,
-            () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount && SelectedDependency is not null);
-        ShowAdvancedEditorCommand = new RelayCommand(() => IsAdvancedEditorVisible = true);
-        ShowGuidedReviewCommand = new RelayCommand(() => IsAdvancedEditorVisible = false);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         BuildStaticOptions();
         RefreshFromService();
@@ -158,25 +86,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand SaveAccountCommand { get; }
 
+    public AsyncCommand SaveCategoryCommand { get; }
+
     public AsyncCommand DeleteAccountCommand { get; }
-
-    public AsyncCommand AcceptSuggestedRoleCommand { get; }
-
-    public AsyncCommand RejectSuggestedRoleCommand { get; }
-
-    public AsyncCommand AddRoleCommand { get; }
-
-    public AsyncCommand RemoveRoleCommand { get; }
-
-    public AsyncCommand AddDependencyCommand { get; }
-
-    public AsyncCommand AddGuidedDependencyCommand { get; }
-
-    public AsyncCommand RemoveDependencyCommand { get; }
-
-    public RelayCommand ShowAdvancedEditorCommand { get; }
-
-    public RelayCommand ShowGuidedReviewCommand { get; }
 
     public IReadOnlyList<AccountInventoryListItem> Accounts
     {
@@ -184,87 +96,11 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         private set => SetProperty(ref _accounts, value);
     }
 
-    public IReadOnlyList<AccountInventoryDependencyItem> Dependencies
-    {
-        get => _dependencies;
-        private set => SetProperty(ref _dependencies, value);
-    }
-
-    public IReadOnlyList<AccountInventoryPlanDisplayItem> PlanItems
-    {
-        get => _planItems;
-        private set => SetProperty(ref _planItems, value);
-    }
-
-    public IReadOnlyList<AccountInventoryGuidedIssue> GuidedIssues
-    {
-        get => _guidedIssues;
-        private set
-        {
-            if (SetProperty(ref _guidedIssues, value))
-            {
-                OnPropertyChanged(nameof(HasGuidedIssues));
-            }
-        }
-    }
-
-    public IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> SuggestedRoles
-    {
-        get => _suggestedRoles;
-        private set
-        {
-            if (SetProperty(ref _suggestedRoles, value))
-            {
-                OnPropertyChanged(nameof(HasSuggestedRoles));
-                OnPropertyChanged(nameof(SuggestedRoleQuestion));
-            }
-        }
-    }
-
-    public IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> ConfirmedRoles
-    {
-        get => _confirmedRoles;
-        private set => SetProperty(ref _confirmedRoles, value);
-    }
-
-    public IReadOnlyList<AccountInventoryOption<AccountInventoryRole>> AvailableRoles
-    {
-        get => _availableRoles;
-        private set => SetProperty(ref _availableRoles, value);
-    }
-
-    public IReadOnlyList<AccountInventoryOption<Guid>> DependencyTargets
-    {
-        get => _dependencyTargets;
-        private set
-        {
-            if (SetProperty(ref _dependencyTargets, value))
-            {
-                OnPropertyChanged(nameof(HasDependencyTargets));
-                OnPropertyChanged(nameof(DependencyQuestion));
-            }
-        }
-    }
-
-    public IReadOnlyList<AccountInventoryOption<AccountInventoryPriority>> Priorities { get; private set; } = [];
+    public IReadOnlyList<AccountInventoryOption<AccountRecoveryCategory>> Categories { get; private set; } = [];
 
     public IReadOnlyList<AccountInventoryOption<AccountInventoryFilter>> Filters { get; private set; } = [];
 
     public IReadOnlyList<AccountInventoryOption<AccountInventorySort>> Sorts { get; private set; } = [];
-
-    public IReadOnlyList<AccountInventoryOption<AccountDependencyKind>> DependencyKinds { get; private set; } = [];
-
-    public string SearchText
-    {
-        get => _searchText;
-        set
-        {
-            if (SetProperty(ref _searchText, value))
-            {
-                RefreshAccountList();
-            }
-        }
-    }
 
     public AccountInventoryListItem? SelectedAccount
     {
@@ -274,22 +110,19 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             if (SetProperty(ref _selectedAccount, value))
             {
                 LoadSelectedAccount();
-                OnPropertyChanged(nameof(SuggestedRoleQuestion));
-                OnPropertyChanged(nameof(AdditionalRoleQuestion));
-                OnPropertyChanged(nameof(DependencyQuestion));
                 RaiseCommandStates();
             }
         }
     }
 
-    public AccountInventoryOption<AccountInventoryPriority>? SelectedPriority
+    public AccountInventoryOption<AccountRecoveryCategory>? SelectedCategory
     {
-        get => _selectedPriority;
+        get => _selectedCategory;
         set
         {
-            if (SetProperty(ref _selectedPriority, value))
+            if (SetProperty(ref _selectedCategory, value))
             {
-                SaveAccountCommand.RaiseCanExecuteChanged();
+                SaveCategoryCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -318,82 +151,6 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public AccountInventoryOption<AccountInventoryRole>? SelectedSuggestedRole
-    {
-        get => _selectedSuggestedRole;
-        set
-        {
-            if (SetProperty(ref _selectedSuggestedRole, value))
-            {
-                OnPropertyChanged(nameof(SuggestedRoleQuestion));
-                RaiseCommandStates();
-            }
-        }
-    }
-
-    public AccountInventoryOption<AccountInventoryRole>? SelectedConfirmedRole
-    {
-        get => _selectedConfirmedRole;
-        set
-        {
-            if (SetProperty(ref _selectedConfirmedRole, value))
-            {
-                RaiseCommandStates();
-            }
-        }
-    }
-
-    public AccountInventoryOption<AccountInventoryRole>? SelectedRoleToAdd
-    {
-        get => _selectedRoleToAdd;
-        set
-        {
-            if (SetProperty(ref _selectedRoleToAdd, value))
-            {
-                OnPropertyChanged(nameof(AdditionalRoleQuestion));
-                RaiseCommandStates();
-            }
-        }
-    }
-
-    public AccountInventoryOption<Guid>? SelectedDependencyTarget
-    {
-        get => _selectedDependencyTarget;
-        set
-        {
-            if (SetProperty(ref _selectedDependencyTarget, value))
-            {
-                OnPropertyChanged(nameof(DependencyQuestion));
-                RaiseCommandStates();
-            }
-        }
-    }
-
-    public AccountInventoryOption<AccountDependencyKind>? SelectedDependencyKind
-    {
-        get => _selectedDependencyKind;
-        set
-        {
-            if (SetProperty(ref _selectedDependencyKind, value))
-            {
-                OnPropertyChanged(nameof(DependencyQuestion));
-                RaiseCommandStates();
-            }
-        }
-    }
-
-    public AccountInventoryDependencyItem? SelectedDependency
-    {
-        get => _selectedDependency;
-        set
-        {
-            if (SetProperty(ref _selectedDependency, value))
-            {
-                RaiseCommandStates();
-            }
-        }
-    }
-
     public string ProviderId
     {
         get => _providerId;
@@ -418,12 +175,6 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         set => SetEditorValue(ref _accountUrl, value, nameof(AccountUrl));
     }
 
-    public string OverrideReason
-    {
-        get => _overrideReason;
-        set => SetProperty(ref _overrideReason, value);
-    }
-
     public string? ValidationMessage
     {
         get => _validationMessage;
@@ -436,61 +187,25 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public bool HasValidationMessage => ValidationMessage is not null;
-
-    public bool IsAdvancedEditorVisible
-    {
-        get => _isAdvancedEditorVisible;
-        set
-        {
-            if (SetProperty(ref _isAdvancedEditorVisible, value))
-            {
-                OnPropertyChanged(nameof(IsGuidedReviewVisible));
-            }
-        }
-    }
-
-    public bool IsGuidedReviewVisible => !IsAdvancedEditorVisible;
-
-    public bool HasGuidedIssues => GuidedIssues.Count > 0;
-
-    public bool HasSuggestedRoles => SuggestedRoles.Count > 0;
-
-    public bool HasDependencyTargets => DependencyTargets.Count > 0;
-
-    public string SuggestedRoleQuestion => SelectedSuggestedRole is null
-        ? Localization.GetString("Accounts.Guided.Roles.NoSuggestions")
-        : Localization.Format(
-            "Accounts.Guided.Roles.SuggestionQuestion",
-            SelectedSuggestedRole.Label,
-            SelectedAccount?.DisplayName ?? ProviderId);
-
-    public string AdditionalRoleQuestion => SelectedRoleToAdd is null
-        ? Localization.GetString("Accounts.Guided.Roles.AllReviewed")
-        : Localization.Format(
-            "Accounts.Guided.Roles.AddQuestion",
-            SelectedAccount?.DisplayName ?? ProviderId,
-            SelectedRoleToAdd.Label);
-
-    public string DependencyQuestion => SelectedDependencyTarget is null || SelectedDependencyKind is null
-        ? Localization.GetString("Accounts.Guided.Dependency.NoTarget")
-        : Localization.Format(
-            "Accounts.Guided.Dependency.Question",
-            SelectedAccount?.DisplayName ?? ProviderId,
-            SelectedDependencyTarget.Label,
-            Localization.GetString($"Accounts.Guided.Dependency.Kind.{SelectedDependencyKind.Value}"));
-
     public string InventorySummary
     {
         get => _inventorySummary;
         private set => SetProperty(ref _inventorySummary, value);
     }
 
-    public string PlanSummary
+    public string TriageProgress
     {
-        get => _planSummary;
-        private set => SetProperty(ref _planSummary, value);
+        get => _triageProgress;
+        private set => SetProperty(ref _triageProgress, value);
     }
+
+    public string ContinuationGuidance
+    {
+        get => _continuationGuidance;
+        private set => SetProperty(ref _continuationGuidance, value);
+    }
+
+    public bool HasValidationMessage => ValidationMessage is not null;
 
     public bool IsLocked => _inventory.LoadState == AccountInventoryLoadState.Locked;
 
@@ -504,68 +219,66 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         _editingAccountId is { } accountId &&
         _inventory.CurrentInventory?.Accounts.Any(account => account.Id == accountId) == true;
 
-    public bool HasSelectedAccount => SelectedAccount is not null;
+    public bool HasConfirmedEmailCategory =>
+        _inventory.CurrentInventory?.Accounts.Any(account =>
+            account.ConfirmedCategory == AccountRecoveryCategory.Email) == true;
+
+    public int RemainingCategoryCount =>
+        _inventory.CurrentInventory?.Accounts.Count(account => !account.IsCategorized) ?? 0;
+
+    public bool CanContinueRecovery => HasConfirmedEmailCategory ||
+        (_inventory.CurrentInventory?.Accounts.Length > 0 && RemainingCategoryCount == 0);
 
     public override void Activate() => RefreshFromService();
 
     protected override void RefreshLocalization()
     {
-        var priority = SelectedPriority?.Value ?? AccountInventoryPriority.Normal;
+        var category = SelectedCategory?.Value;
         var filter = SelectedFilter?.Value ?? AccountInventoryFilter.All;
         var sort = SelectedSort?.Value ?? AccountInventorySort.RecoveryOrder;
-        var dependencyKind = SelectedDependencyKind?.Value ?? AccountDependencyKind.PasswordReset;
         base.RefreshLocalization();
         BuildStaticOptions();
-        SelectedPriority = Priorities.Single(option => option.Value == priority);
+        SelectedCategory = category is null
+            ? null
+            : Categories.Single(option => option.Value == category);
         SelectedFilter = Filters.Single(option => option.Value == filter);
         SelectedSort = Sorts.Single(option => option.Value == sort);
-        SelectedDependencyKind = DependencyKinds.Single(option => option.Value == dependencyKind);
         RefreshFromService();
     }
 
     private void BuildStaticOptions()
     {
-        Priorities =
+        Categories =
         [
-            .. Enum.GetValues<AccountInventoryPriority>()
-                .OrderByDescending(value => value)
-                .Select(value => new AccountInventoryOption<AccountInventoryPriority>(
+            .. Enum.GetValues<AccountRecoveryCategory>().Select(value =>
+                new AccountInventoryOption<AccountRecoveryCategory>(
                     value,
-                    Localization.GetString($"Accounts.Priority.{value}"))),
+                    Localization.GetString($"Accounts.Category.{value}"))),
         ];
         Filters =
         [
-            .. Enum.GetValues<AccountInventoryFilter>()
-                .Select(value => new AccountInventoryOption<AccountInventoryFilter>(
+            .. Enum.GetValues<AccountInventoryFilter>().Select(value =>
+                new AccountInventoryOption<AccountInventoryFilter>(
                     value,
                     Localization.GetString($"Accounts.Filter.{value}"))),
         ];
         Sorts =
         [
-            .. Enum.GetValues<AccountInventorySort>()
-                .Select(value => new AccountInventoryOption<AccountInventorySort>(
+            .. Enum.GetValues<AccountInventorySort>().Select(value =>
+                new AccountInventoryOption<AccountInventorySort>(
                     value,
                     Localization.GetString($"Accounts.Sort.{value}"))),
         ];
-        DependencyKinds =
-        [
-            .. Enum.GetValues<AccountDependencyKind>()
-                .Select(value => new AccountInventoryOption<AccountDependencyKind>(
-                    value,
-                    Localization.GetString($"Accounts.Dependency.Kind.{value}"))),
-        ];
-        OnPropertyChanged(nameof(Priorities));
+        OnPropertyChanged(nameof(Categories));
         OnPropertyChanged(nameof(Filters));
         OnPropertyChanged(nameof(Sorts));
-        OnPropertyChanged(nameof(DependencyKinds));
-        SelectedPriority ??= Priorities.Single(option => option.Value == AccountInventoryPriority.Normal);
-        SelectedFilter ??= Filters.Single(option => option.Value == AccountInventoryFilter.All);
-        SelectedSort ??= Sorts.Single(option => option.Value == AccountInventorySort.RecoveryOrder);
-        SelectedDependencyKind ??= DependencyKinds[0];
+        SelectedFilter ??= Filters[0];
+        SelectedSort ??= Sorts[0];
     }
 
     private void RefreshFromService()
     {
+        var selectedId = _editingAccountId;
         OnPropertyChanged(nameof(IsLocked));
         OnPropertyChanged(nameof(IsCorrupted));
         OnPropertyChanged(nameof(CanMutate));
@@ -578,172 +291,65 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                 AccountInventoryLoadState.Corrupted => "Accounts.State.Corrupted",
                 _ => "Accounts.State.Empty",
             })
-            : Localization.FormatPlural(
-                "Accounts.Summary.Count",
-                inventory.Accounts.Length,
-                inventory.Accounts.Length);
-        var issueCount = _inventory.CurrentPlan?.Issues.Length ?? 0;
-        PlanSummary = Localization.FormatPlural("Accounts.Plan.Issues", issueCount, issueCount);
+            : Localization.FormatPlural("Accounts.Summary.Count", inventory.Accounts.Length, inventory.Accounts.Length);
+        var remaining = RemainingCategoryCount;
+        var total = inventory?.Accounts.Length ?? 0;
+        TriageProgress = Localization.Format("Accounts.Triage.Progress", remaining, total);
+        ContinuationGuidance = Localization.GetString(HasConfirmedEmailCategory
+            ? "Accounts.Triage.EmailReady"
+            : remaining == 0 && total > 0
+                ? "Accounts.Triage.NoEmailReviewed"
+                : "Accounts.Triage.EmailRecommended");
         SetLocalizedStatus(
-            issueCount > 0 ? AppVisualState.Blocked : AppVisualState.Normal,
-            issueCount > 0 ? "Accounts.Status.Blocked.Title" : "Screen.Accounts.StatusTitle",
-            issueCount > 0 ? "Accounts.Status.Blocked.Message" : "Screen.Accounts.StatusMessage");
+            CanContinueRecovery ? AppVisualState.Normal : AppVisualState.Warning,
+            CanContinueRecovery ? "Screen.Accounts.StatusTitle" : "Accounts.Triage.Status.Title",
+            CanContinueRecovery ? "Screen.Accounts.StatusMessage" : "Accounts.Triage.Status.Message");
         RefreshAccountList();
-        RefreshPlan();
-        RefreshGuidedIssues();
-        if (_editingAccountId is { } editingId)
-        {
-            SelectedAccount = Accounts.FirstOrDefault(account => account.Id == editingId);
-        }
-        else if (Accounts.Count > 0)
-        {
-            SelectedAccount = Accounts[0];
-        }
-
-        NotifyEditingState();
+        var first = Accounts.Count == 0 ? null : Accounts[0];
+        SelectedAccount = selectedId is null
+            ? Accounts.FirstOrDefault(item => !item.Account.IsCategorized) ?? first
+            : Accounts.FirstOrDefault(item => item.Id == selectedId) ?? first;
+        NotifyState();
         RaiseCommandStates();
     }
 
     private void RefreshAccountList()
     {
-        var inventory = _inventory.CurrentInventory;
-        var plan = _inventory.CurrentPlan;
-        Dictionary<Guid, AccountInventoryPlanItem> planByAccount =
-            plan?.Items.ToDictionary(item => item.AccountId) ?? [];
-        IEnumerable<AccountInventoryEntry> accounts = inventory?.Accounts ?? [];
-        if (!string.IsNullOrWhiteSpace(SearchText))
-        {
-            var search = SearchText.Trim();
-            accounts = accounts.Where(account =>
-                Contains(account.ProviderId, search) ||
-                Contains(account.AccountName, search) ||
-                Contains(account.LoginIdentifier, search) ||
-                Contains(account.AccountUrl, search));
-        }
-
+        IEnumerable<AccountInventoryEntry> accounts = _inventory.CurrentInventory?.Accounts ?? [];
         accounts = (SelectedFilter?.Value ?? AccountInventoryFilter.All) switch
         {
-            AccountInventoryFilter.Critical => accounts.Where(account =>
-                account.Priority == AccountInventoryPriority.Critical),
-            AccountInventoryFilter.RecoveryChannels => accounts.Where(account =>
-                account.HasConfirmedRecoveryRole),
-            AccountInventoryFilter.NeedsRoleConfirmation => accounts.Where(account =>
-                account.Roles.Any(role => role.Decision == AccountRoleDecision.Suggested)),
-            AccountInventoryFilter.Blocked => accounts.Where(account =>
-                planByAccount.TryGetValue(account.Id, out var item) &&
-                item.Status is AccountInventoryPlanStatus.BlockedCycle or
-                    AccountInventoryPlanStatus.BlockedMissingDependency),
+            AccountInventoryFilter.Unreviewed => accounts.Where(account => !account.IsCategorized),
+            AccountInventoryFilter.Email => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Email),
+            AccountInventoryFilter.Critical => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Critical),
+            AccountInventoryFilter.Unknown => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Unknown),
             _ => accounts,
         };
+        var order = _inventory.CurrentPlan?.Items.ToDictionary(item => item.AccountId, item => item.Order) ?? [];
         accounts = (SelectedSort?.Value ?? AccountInventorySort.RecoveryOrder) switch
         {
-            AccountInventorySort.RecoveryOrder => accounts
-                .OrderBy(account => planByAccount.GetValueOrDefault(account.Id)?.Order ?? int.MaxValue),
-            AccountInventorySort.Priority => accounts
-                .OrderByDescending(account => account.Priority)
-                .ThenBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase),
-            AccountInventorySort.Provider => accounts
-                .OrderBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase),
+            AccountInventorySort.RecoveryOrder => accounts.OrderBy(account => order.GetValueOrDefault(account.Id, int.MaxValue)),
+            AccountInventorySort.Provider => accounts.OrderBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase),
             AccountInventorySort.Updated => accounts.OrderByDescending(account => account.UpdatedAt),
             _ => accounts,
         };
-        Accounts = [.. accounts.Select(account => CreateListItem(account, planByAccount))];
-        OnPropertyChanged(nameof(HasSelectedAccount));
-    }
-
-    private AccountInventoryListItem CreateListItem(
-        AccountInventoryEntry account,
-        Dictionary<Guid, AccountInventoryPlanItem> planByAccount)
-    {
-        string[] roles =
+        Accounts =
         [
-            .. account.Roles
-                .Where(role => role.Decision == AccountRoleDecision.Confirmed)
-                .Select(role => Localization.GetString($"Accounts.Role.{role.Role}")),
+            .. accounts.Select(account => new AccountInventoryListItem(
+                account.Id,
+                account.AccountName ?? account.LoginIdentifier ?? account.ProviderId,
+                account.ProviderId,
+                Localization.GetString($"Accounts.Category.{account.EffectiveCategory}"),
+                Localization.GetString(account.IsCategorized
+                    ? "Accounts.Triage.Explicit"
+                    : "Accounts.Triage.Suggested"),
+                account)),
         ];
-        var planText = planByAccount.TryGetValue(account.Id, out var planItem)
-            ? Localization.GetString($"Accounts.Plan.Status.{planItem.Status}")
-            : Localization.GetString("Accounts.Plan.Status.PlannedLater");
-        return new AccountInventoryListItem(
-            account.Id,
-            account.AccountName ?? account.LoginIdentifier ?? account.ProviderId,
-            account.ProviderId,
-            Localization.GetString($"Accounts.Priority.{account.Priority}"),
-            roles.Length == 0
-                ? Localization.GetString("Accounts.Role.NoneConfirmed")
-                : string.Join(", ", roles),
-            planText,
-            account);
-    }
-
-    private void RefreshPlan()
-    {
-        var inventory = _inventory.CurrentInventory;
-        Dictionary<Guid, AccountInventoryEntry> byId =
-            inventory?.Accounts.ToDictionary(account => account.Id) ?? [];
-        PlanItems = _inventory.CurrentPlan is { } plan
-            ?
-            [
-                .. plan.Items
-                    .OrderBy(item => item.Order)
-                    .Select(item => new AccountInventoryPlanDisplayItem(
-                        item.Order,
-                        item.AccountId,
-                        Localization.Format(
-                            "Accounts.Plan.Item",
-                            item.Order,
-                            byId.GetValueOrDefault(item.AccountId)?.ProviderId ?? item.ProviderId,
-                            Localization.GetString($"Accounts.Plan.Status.{item.Status}"),
-                            Localization.GetString($"Accounts.Plan.Reason.{item.ReasonCode}")),
-                        item.Status)),
-            ]
-            : [];
-    }
-
-    private void RefreshGuidedIssues()
-    {
-        var inventory = _inventory.CurrentInventory;
-        Dictionary<Guid, AccountInventoryEntry> accountsById =
-            inventory?.Accounts.ToDictionary(account => account.Id) ?? [];
-        var issues = new List<AccountInventoryGuidedIssue>();
-
-        foreach (var issue in _inventory.CurrentPlan?.Issues ?? [])
-        {
-            var accountName = AccountDisplayName(accountsById.GetValueOrDefault(issue.AccountId));
-            var relatedName = AccountDisplayName(
-                issue.RelatedAccountId is { } relatedId
-                    ? accountsById.GetValueOrDefault(relatedId)
-                    : null);
-            issues.Add(new AccountInventoryGuidedIssue(
-                issue.Kind,
-                Localization.Format(
-                    $"Accounts.Guided.Issue.{issue.Kind}",
-                    accountName,
-                    relatedName)));
-        }
-
-        if (inventory is not null)
-        {
-            foreach (var duplicateGroup in inventory.Accounts
-                         .GroupBy(DuplicateKey, StringComparer.OrdinalIgnoreCase)
-                         .Where(group => group.Key is not null && group.Count() > 1))
-            {
-                issues.Add(new AccountInventoryGuidedIssue(
-                    null,
-                    Localization.Format(
-                        "Accounts.Guided.Issue.PossibleDuplicate",
-                        string.Join(", ", duplicateGroup.Select(AccountDisplayName)))));
-            }
-        }
-
-        GuidedIssues = issues;
     }
 
     private void LoadSelectedAccount()
     {
         if (SelectedAccount is null)
         {
-            OnPropertyChanged(nameof(HasSelectedAccount));
             return;
         }
 
@@ -753,101 +359,29 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         AccountName = account.AccountName ?? string.Empty;
         LoginIdentifier = account.LoginIdentifier ?? string.Empty;
         AccountUrl = account.AccountUrl ?? string.Empty;
-        SelectedPriority = Priorities.Single(option => option.Value == account.Priority);
-        RefreshAccountDetails(account);
+        SelectedCategory = Categories.Single(option => option.Value == account.EffectiveCategory);
         ValidationMessage = null;
-        OnPropertyChanged(nameof(HasSelectedAccount));
-        NotifyEditingState();
-    }
-
-    private void RefreshAccountDetails(AccountInventoryEntry account)
-    {
-        SuggestedRoles =
-        [
-            .. account.Roles
-                .Where(role => role.Decision == AccountRoleDecision.Suggested)
-                .Select(role => RoleOption(role.Role)),
-        ];
-        ConfirmedRoles =
-        [
-            .. account.Roles
-                .Where(role => role.Decision == AccountRoleDecision.Confirmed)
-                .Select(role => RoleOption(role.Role)),
-        ];
-        AvailableRoles =
-        [
-            .. IndividualRoles
-                .Where(role => account.Roles.All(existing =>
-                    existing.Role != role || existing.Decision != AccountRoleDecision.Confirmed))
-                .Select(RoleOption),
-        ];
-        Dictionary<Guid, AccountInventoryEntry> accountsById =
-            _inventory.CurrentInventory?.Accounts.ToDictionary(candidate => candidate.Id) ?? [];
-        Dependencies =
-        [
-            .. account.Dependencies.Select(dependency => new AccountInventoryDependencyItem(
-                dependency.DependsOnAccountId,
-                dependency.Kind,
-                Localization.Format(
-                    "Accounts.Dependency.Item",
-                    accountsById.GetValueOrDefault(dependency.DependsOnAccountId)?.ProviderId ??
-                        Localization.GetString("Accounts.Dependency.Missing"),
-                    Localization.GetString($"Accounts.Dependency.Kind.{dependency.Kind}"),
-                    dependency.IsOverride
-                        ? Localization.GetString("Accounts.Dependency.OverrideMarker")
-                        : string.Empty),
-                dependency.IsOverride,
-                dependency.OverrideReason)),
-        ];
-        DependencyTargets =
-        [
-            .. (_inventory.CurrentInventory?.Accounts ?? [])
-                .Where(candidate => candidate.Id != account.Id)
-                .OrderBy(candidate => candidate.ProviderId, StringComparer.OrdinalIgnoreCase)
-                .Select(candidate => new AccountInventoryOption<Guid>(
-                    candidate.Id,
-                    candidate.AccountName ?? candidate.LoginIdentifier ?? candidate.ProviderId)),
-        ];
-        SelectedSuggestedRole = SuggestedRoles.Count == 0 ? null : SuggestedRoles[0];
-        SelectedConfirmedRole = ConfirmedRoles.Count == 0 ? null : ConfirmedRoles[0];
-        SelectedRoleToAdd = AvailableRoles.Count == 0 ? null : AvailableRoles[0];
-        SelectedDependencyTarget = DependencyTargets.Count == 0 ? null : DependencyTargets[0];
-        SelectedDependency = Dependencies.Count == 0 ? null : Dependencies[0];
+        NotifyState();
     }
 
     private void BeginNewAccount()
     {
         _editingAccountId = Guid.NewGuid();
-        SelectedAccount = null;
+        _selectedAccount = null;
+        OnPropertyChanged(nameof(SelectedAccount));
         ProviderId = string.Empty;
         AccountName = string.Empty;
         LoginIdentifier = string.Empty;
         AccountUrl = string.Empty;
-        OverrideReason = string.Empty;
-        SelectedPriority = Priorities.Single(option => option.Value == AccountInventoryPriority.Normal);
-        SuggestedRoles = [];
-        ConfirmedRoles = [];
-        AvailableRoles = [.. IndividualRoles.Select(RoleOption)];
-        Dependencies = [];
-        DependencyTargets =
-        [
-            .. (_inventory.CurrentInventory?.Accounts ?? [])
-                .OrderBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase)
-                .Select(account => new AccountInventoryOption<Guid>(
-                    account.Id,
-                    account.AccountName ?? account.LoginIdentifier ?? account.ProviderId)),
-        ];
-        SelectedRoleToAdd = AvailableRoles.Count == 0 ? null : AvailableRoles[0];
-        SelectedDependencyTarget = DependencyTargets.Count == 0 ? null : DependencyTargets[0];
+        SelectedCategory = Categories.Single(option => option.Value == AccountRecoveryCategory.Unknown);
         ValidationMessage = null;
-        OnPropertyChanged(nameof(HasSelectedAccount));
-        NotifyEditingState();
+        NotifyState();
         RaiseCommandStates();
     }
 
     private async Task SaveAccountAsync(CancellationToken cancellationToken)
     {
-        if (_editingAccountId is null || SelectedPriority is null)
+        if (_editingAccountId is null)
         {
             return;
         }
@@ -858,10 +392,33 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                 ProviderId,
                 AccountName,
                 LoginIdentifier,
-                AccountUrl,
-                SelectedPriority.Value),
+                AccountUrl),
             cancellationToken);
         ApplyResult(result);
+    }
+
+    private async Task SaveCategoryAsync(CancellationToken cancellationToken)
+    {
+        if (_editingAccountId is null || SelectedCategory is null)
+        {
+            return;
+        }
+
+        var categorizedId = _editingAccountId.Value;
+        var result = await _inventory.CategorizeAsync(
+            categorizedId,
+            SelectedCategory.Value,
+            cancellationToken);
+        ApplyResult(result);
+        if (result.Succeeded)
+        {
+            var next = Accounts.FirstOrDefault(item =>
+                item.Id != categorizedId && !item.Account.IsCategorized);
+            if (next is not null)
+            {
+                SelectedAccount = next;
+            }
+        }
     }
 
     private async Task DeleteAccountAsync(CancellationToken cancellationToken)
@@ -871,13 +428,11 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var dependentCount = _inventory.CurrentInventory?.Accounts.Count(account =>
-            account.Dependencies.Any(dependency => dependency.DependsOnAccountId == SelectedAccount.Id)) ?? 0;
         var confirmed = await _confirmationDialog.ConfirmAsync(
             new SensitiveConfirmationRequest(
                 Localization.GetString("Accounts.Delete.Action"),
                 SelectedAccount.DisplayName,
-                Localization.Format("Accounts.Delete.Consequence", dependentCount),
+                Localization.GetString("Accounts.Triage.DeleteConsequence"),
                 Localization.GetString("Accounts.Delete.Confirm"),
                 Localization.GetString("Confirmation.Risk.Destructive"),
                 isDestructive: true),
@@ -887,121 +442,29 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var result = await _inventory.RemoveAccountAsync(
-            SelectedAccount.Id,
-            dependencyImpactAcknowledged: true,
-            cancellationToken);
+        var result = await _inventory.RemoveAccountAsync(SelectedAccount.Id, cancellationToken);
         if (result.Succeeded)
         {
             _editingAccountId = null;
-            SelectedAccount = null;
-            NotifyEditingState();
         }
 
-        ApplyResult(result);
-    }
-
-    private Task DecideSelectedRoleAsync(
-        AccountRoleDecision decision,
-        CancellationToken cancellationToken) =>
-        DecideRoleAsync(SelectedSuggestedRole?.Value, decision, cancellationToken);
-
-    private Task DecideAddedRoleAsync(
-        AccountRoleDecision decision,
-        CancellationToken cancellationToken) =>
-        DecideRoleAsync(SelectedRoleToAdd?.Value, decision, cancellationToken);
-
-    private Task DecideConfirmedRoleAsync(
-        AccountRoleDecision decision,
-        CancellationToken cancellationToken) =>
-        DecideRoleAsync(SelectedConfirmedRole?.Value, decision, cancellationToken);
-
-    private async Task DecideRoleAsync(
-        AccountInventoryRole? role,
-        AccountRoleDecision decision,
-        CancellationToken cancellationToken)
-    {
-        if (_editingAccountId is null || role is null)
-        {
-            return;
-        }
-
-        var result = await _inventory.DecideRoleAsync(
-            _editingAccountId.Value,
-            role.Value,
-            decision,
-            cancellationToken);
-        ApplyResult(result);
-    }
-
-    private async Task AddDependencyAsync(bool includeOverride, CancellationToken cancellationToken)
-    {
-        if (_editingAccountId is null || SelectedDependencyTarget is null || SelectedDependencyKind is null)
-        {
-            return;
-        }
-
-        var result = await _inventory.AddDependencyAsync(
-            new AccountDependencyRequest(
-                _editingAccountId.Value,
-                SelectedDependencyTarget.Value,
-                SelectedDependencyKind.Value,
-                includeOverride ? OverrideReason : string.Empty),
-            cancellationToken);
-        ApplyResult(result);
-        if (result.Succeeded)
-        {
-            OverrideReason = string.Empty;
-        }
-    }
-
-    private async Task RemoveDependencyAsync(CancellationToken cancellationToken)
-    {
-        if (_editingAccountId is null || SelectedDependency is null)
-        {
-            return;
-        }
-
-        var result = await _inventory.RemoveDependencyAsync(
-            _editingAccountId.Value,
-            SelectedDependency.DependsOnAccountId,
-            SelectedDependency.Kind,
-            cancellationToken);
         ApplyResult(result);
     }
 
     private void ApplyResult(AccountInventoryOperationResult result)
     {
-        ValidationMessage = result.Succeeded
-            ? Localization.GetString("Accounts.Operation.Saved")
-            : Localization.GetString($"Accounts.Error.{result.FailureCode}");
+        ValidationMessage = Localization.GetString(result.Succeeded
+            ? "Accounts.Operation.Saved"
+            : $"Accounts.Error.{result.FailureCode}");
         if (result.Succeeded)
         {
             RefreshFromService();
         }
     }
 
-    private AccountInventoryOption<AccountInventoryRole> RoleOption(AccountInventoryRole role) =>
-        new(role, Localization.GetString($"Accounts.Role.{role}"));
-
-    private static string AccountDisplayName(AccountInventoryEntry? account) =>
-        account?.AccountName ?? account?.LoginIdentifier ?? account?.ProviderId ?? "?";
-
-    private static string? DuplicateKey(AccountInventoryEntry account)
-    {
-        var identity = account.LoginIdentifier ?? account.AccountName;
-        return string.IsNullOrWhiteSpace(identity)
-            ? null
-            : $"{account.ProviderId.Trim()}\u001f{identity.Trim()}";
-    }
-
-    private static bool Contains(string? value, string search) =>
-        value?.Contains(search, StringComparison.OrdinalIgnoreCase) == true;
-
     private bool CanSaveAccount()
     {
-        if (!CanMutate || _editingAccountId is null || SelectedPriority is null ||
-            string.IsNullOrWhiteSpace(ProviderId) ||
+        if (!CanMutate || _editingAccountId is null || string.IsNullOrWhiteSpace(ProviderId) ||
             (string.IsNullOrWhiteSpace(AccountName) && string.IsNullOrWhiteSpace(LoginIdentifier)))
         {
             return false;
@@ -1018,21 +481,17 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         if (SetProperty(ref field, value ?? string.Empty, propertyName))
         {
-            if (propertyName is nameof(ProviderId) or nameof(AccountName))
-            {
-                OnPropertyChanged(nameof(SuggestedRoleQuestion));
-                OnPropertyChanged(nameof(AdditionalRoleQuestion));
-                OnPropertyChanged(nameof(DependencyQuestion));
-            }
-
             SaveAccountCommand.RaiseCanExecuteChanged();
         }
     }
 
-    private void NotifyEditingState()
+    private void NotifyState()
     {
         OnPropertyChanged(nameof(IsEditingAccount));
         OnPropertyChanged(nameof(HasPersistedAccount));
+        OnPropertyChanged(nameof(HasConfirmedEmailCategory));
+        OnPropertyChanged(nameof(RemainingCategoryCount));
+        OnPropertyChanged(nameof(CanContinueRecovery));
     }
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs) => RefreshFromService();
@@ -1041,13 +500,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         NewAccountCommand.RaiseCanExecuteChanged();
         SaveAccountCommand.RaiseCanExecuteChanged();
+        SaveCategoryCommand.RaiseCanExecuteChanged();
         DeleteAccountCommand.RaiseCanExecuteChanged();
-        AcceptSuggestedRoleCommand.RaiseCanExecuteChanged();
-        RejectSuggestedRoleCommand.RaiseCanExecuteChanged();
-        AddRoleCommand.RaiseCanExecuteChanged();
-        RemoveRoleCommand.RaiseCanExecuteChanged();
-        AddDependencyCommand.RaiseCanExecuteChanged();
-        AddGuidedDependencyCommand.RaiseCanExecuteChanged();
-        RemoveDependencyCommand.RaiseCanExecuteChanged();
     }
 }

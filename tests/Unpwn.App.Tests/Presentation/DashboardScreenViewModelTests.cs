@@ -156,9 +156,7 @@ public sealed class DashboardScreenViewModelTests
                     AccessLost: false,
                     CredentialsAwaitingExport: 0,
                     CredentialsAwaitingDeletion: 0,
-                    RecommendedActionId: "change-password",
-                    DependencyDepth: 0,
-                    WaitingForAccountIds: []),
+                    RecommendedActionId: "change-password"),
             ],
             DateTimeOffset.UnixEpoch.AddMinutes(1));
         var localization = CreateLocalization();
@@ -205,9 +203,7 @@ public sealed class DashboardScreenViewModelTests
                     AccessLost: false,
                     CredentialsAwaitingExport: 0,
                     CredentialsAwaitingDeletion: 0,
-                    RecommendedActionId: "reset-password",
-                    DependencyDepth: 0,
-                    WaitingForAccountIds: []),
+                    RecommendedActionId: "reset-password"),
             ],
             DateTimeOffset.UnixEpoch.AddMinutes(1));
         var viewModel = CreateViewModel(new TestRecoverySessionService(session));

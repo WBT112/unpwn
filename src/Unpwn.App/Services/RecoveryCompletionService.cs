@@ -103,7 +103,7 @@ public sealed class RecoveryCompletionService(
 
             await _inventoryService.InitializeAsync(cancellationToken);
             var credentials = await _credentialRepository.ListAsync(cancellationToken);
-            return BuildReview(session, _inventoryService.CurrentInventory, _inventoryService.CurrentPlan, credentials);
+            return BuildReview(session, _inventoryService.CurrentInventory, credentials);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -169,7 +169,6 @@ public sealed class RecoveryCompletionService(
     private RecoveryCompletionReviewResult BuildReview(
         RecoverySessionWorkspace session,
         AccountInventoryState? inventory,
-        AccountInventoryPlan? plan,
         IReadOnlyList<GeneratedCredentialMetadata> credentials)
     {
         if (session.Completion is { } existing)
@@ -211,30 +210,6 @@ public sealed class RecoveryCompletionService(
                 RecoveryCompletionIssueSeverity.UnresolvedRisk, account, account.AccessLost ? 1 : 0);
             AddAccountIssue(issues, RecoveryCompletionIssueKind.UnresolvedRisk,
                 RecoveryCompletionIssueSeverity.UnresolvedRisk, account, account.UnresolvedRisks);
-        }
-
-        if (inventory is not null)
-        {
-            foreach (var account in inventory.Accounts.OrderBy(account => account.Id))
-            {
-                AddIssue(
-                    issues,
-                    RecoveryCompletionIssueKind.UnconfirmedRoleInference,
-                    RecoveryCompletionIssueSeverity.UnresolvedRisk,
-                    account.Id,
-                    account.ProviderId,
-                    actionId: null,
-                    account.Roles.Count(role => role.Decision == AccountRoleDecision.Suggested));
-            }
-        }
-
-        foreach (var group in (plan?.Issues ?? [])
-                     .GroupBy(issue => issue.AccountId)
-                     .OrderBy(group => group.Key))
-        {
-            var providerId = inventory?.Accounts.SingleOrDefault(account => account.Id == group.Key)?.ProviderId;
-            AddIssue(issues, RecoveryCompletionIssueKind.DependencyIssue,
-                RecoveryCompletionIssueSeverity.UnresolvedRisk, group.Key, providerId, null, group.Count());
         }
 
         foreach (var group in credentials.Where(credential => !credential.IsDeleted)
@@ -298,7 +273,6 @@ public sealed class RecoveryCompletionService(
             RequiredActionsAwaitingUser = session.Accounts.Sum(account => account.RequiredActionsAwaitingUser),
             RequiredActionsNotApplicable = session.Accounts.Sum(account => account.RequiredActionsNotApplicable),
             AcceptedRiskActions = session.Accounts.Sum(account => account.AcceptedRiskActions),
-            AccountsWaitingForDependencies = session.Accounts.Count(account => account.WaitingForAccountIds.Length > 0),
         };
         preflight.Validate();
         report.Validate();

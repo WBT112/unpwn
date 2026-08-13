@@ -25,19 +25,16 @@ public sealed class AccountInventoryServiceTests
                 "Google Mail",
                 "Primary mailbox",
                 "person@example.invalid",
-                "https://accounts.example.invalid",
-                AccountInventoryPriority.Critical),
+                "https://accounts.google.com"),
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
         Assert.NotNull(store.StoredRecord);
         Assert.Single(service.CurrentInventory?.Accounts ?? []);
-        Assert.Contains(
-            service.CurrentInventory!.Accounts[0].Roles,
-            role => role.Role == AccountInventoryRole.EmailMailbox &&
-                    role.Decision == AccountRoleDecision.Suggested);
+        Assert.Equal(AccountRecoveryCategory.Email, service.CurrentInventory!.Accounts[0].SuggestedCategory);
+        Assert.False(service.CurrentInventory.Accounts[0].IsCategorized);
         Assert.Single(session.LastSummaries);
-        Assert.Equal(AccountCriticality.Critical, session.LastSummaries[0].Criticality);
+        Assert.Equal(AccountCriticality.Important, session.LastSummaries[0].Criticality);
 
         using var reloaded = new AccountInventoryService(store, session, () => time);
         await reloaded.InitializeAsync(CancellationToken.None);
@@ -128,7 +125,7 @@ public sealed class AccountInventoryServiceTests
     }
 
     [Fact]
-    public async Task SuggestedRoleOnlyAffectsPlanAfterConfirmation()
+    public async Task ExplicitCategoryOverridesSuggestionAndPersistsRevision()
     {
         var store = new TestEncryptedRecordStore();
         var session = new TestRecoverySessionService(
@@ -141,26 +138,27 @@ public sealed class AccountInventoryServiceTests
                 "Google Mail",
                 "Mailbox",
                 "person@example.invalid",
-                null,
-                AccountInventoryPriority.High),
+                null),
             CancellationToken.None)).Succeeded);
         var account = service.CurrentInventory!.Accounts.Single();
 
-        Assert.False(account.HasConfirmedRecoveryRole);
-        Assert.True((await service.DecideRoleAsync(
+        Assert.False(account.IsCategorized);
+        Assert.True((await service.CategorizeAsync(
             account.Id,
-            AccountInventoryRole.EmailMailbox,
-            AccountRoleDecision.Confirmed,
+            AccountRecoveryCategory.NonCritical,
             CancellationToken.None)).Succeeded);
 
-        Assert.True(service.CurrentInventory!.Accounts.Single().HasConfirmedRecoveryRole);
+        var categorized = service.CurrentInventory!.Accounts.Single();
+        Assert.Equal(AccountRecoveryCategory.Email, categorized.SuggestedCategory);
+        Assert.Equal(AccountRecoveryCategory.NonCritical, categorized.EffectiveCategory);
+        Assert.Equal(service.CurrentInventory.Revision, categorized.CategoryConfirmedRevision);
         Assert.Equal(
-            AccountInventoryPlanReasonCode.RecoveryChannelFirst,
+            AccountInventoryPlanReasonCode.NonCriticalCategory,
             service.CurrentPlan?.Recommended?.ReasonCode);
     }
 
     [Fact]
-    public async Task DependencyCycleRequiresReasonAndRemainsVisibleAsRisk()
+    public async Task CategoryPlanningDoesNotCreateDependencyBlockersOrRisks()
     {
         var time = DateTimeOffset.UnixEpoch;
         var store = new TestEncryptedRecordStore();
@@ -173,39 +171,22 @@ public sealed class AccountInventoryServiceTests
         var first = service.CurrentInventory!.Accounts.Single(account => account.ProviderId == "First");
         var second = service.CurrentInventory.Accounts.Single(account => account.ProviderId == "Second");
         time = time.AddSeconds(1);
-        Assert.True((await service.AddDependencyAsync(
-            new AccountDependencyRequest(
-                second.Id,
-                first.Id,
-                AccountDependencyKind.PasswordReset,
-                null),
+        Assert.True((await service.CategorizeAsync(
+            first.Id,
+            AccountRecoveryCategory.NonCritical,
+            CancellationToken.None)).Succeeded);
+        time = time.AddSeconds(1);
+        Assert.True((await service.CategorizeAsync(
+            second.Id,
+            AccountRecoveryCategory.Critical,
             CancellationToken.None)).Succeeded);
 
-        time = time.AddSeconds(1);
-        var withoutReason = await service.AddDependencyAsync(
-            new AccountDependencyRequest(
-                first.Id,
-                second.Id,
-                AccountDependencyKind.IdentityProvider,
-                null),
-            CancellationToken.None);
-        time = time.AddSeconds(1);
-        var withReason = await service.AddDependencyAsync(
-            new AccountDependencyRequest(
-                first.Id,
-                second.Id,
-                AccountDependencyKind.IdentityProvider,
-                "The normal recovery channel is unavailable."),
-            CancellationToken.None);
-
-        Assert.False(withoutReason.Succeeded);
-        Assert.Equal(AccountInventoryFailureCode.RequiresOverrideReason, withoutReason.FailureCode);
-        Assert.True(withReason.Succeeded);
-        Assert.Contains(service.CurrentPlan!.Issues, issue =>
-            issue.Kind == AccountInventoryIssueKind.DependencyOverride &&
-            issue.AccountId == first.Id);
-        Assert.Contains(session.LastSummaries, summary =>
-            summary.AccountId == first.Id && summary.UnresolvedRisks == 1);
+        Assert.Equal(second.Id, service.CurrentPlan?.Recommended?.AccountId);
+        Assert.All(session.LastSummaries, summary =>
+        {
+            Assert.Equal(0, summary.BlockedRequiredActions);
+            Assert.Equal(0, summary.UnresolvedRisks);
+        });
     }
 
     [Fact]
@@ -233,22 +214,15 @@ public sealed class AccountInventoryServiceTests
             AccessLost: true,
             CredentialsAwaitingExport: 1,
             CredentialsAwaitingDeletion: 1,
-            RecommendedActionId: "review-mfa",
-            DependencyDepth: 0,
-            WaitingForAccountIds: []);
+            RecommendedActionId: "review-mfa");
         Assert.True((await session.ReplaceAccountSummariesAsync(
             [executionSummary],
             CancellationToken.None)).Succeeded);
 
         time = time.AddMinutes(1);
-        var result = await service.UpsertAsync(
-            new AccountInventoryUpsertRequest(
-                account.Id,
-                account.ProviderId,
-                account.AccountName,
-                account.LoginIdentifier,
-                account.AccountUrl,
-                AccountInventoryPriority.Critical),
+        var result = await service.CategorizeAsync(
+            account.Id,
+            AccountRecoveryCategory.Critical,
             CancellationToken.None);
 
         Assert.True(result.Succeeded);
@@ -304,20 +278,37 @@ public sealed class AccountInventoryServiceTests
         Assert.Equal(revisionAfterMutation, session.CurrentSession!.Revision);
     }
 
+    [Fact]
+    public async Task ObsoleteRoleAndDependencyPayloadFailsClosed()
+    {
+        var store = new TestEncryptedRecordStore();
+        var session = new TestRecoverySessionService();
+        store.Seed(Encoding.UTF8.GetBytes($$"""
+            {"sessionId":"{{session.CurrentSession!.Id}}","revision":1,"updatedAt":"1970-01-01T00:00:00+00:00","accounts":[{"id":"{{Guid.NewGuid()}}","providerId":"old","accountName":"Old","loginIdentifier":null,"accountUrl":null,"priority":1,"roles":[],"dependencies":[],"updatedAt":"1970-01-01T00:00:00+00:00"}]}
+            """));
+        using var service = new AccountInventoryService(store, session, () => DateTimeOffset.UnixEpoch);
+
+        await service.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(AccountInventoryLoadState.Corrupted, service.LoadState);
+        Assert.Null(service.CurrentInventory);
+    }
+
     private static AccountInventoryUpsertRequest CreateRequest(string provider) =>
         new(
             null,
             provider,
             provider,
             $"{provider.ToLowerInvariant()}@example.invalid",
-            null,
-            AccountInventoryPriority.Normal);
+            null);
 
     private sealed class TestEncryptedRecordStore : IEncryptedVaultRecordStore
     {
         public bool IsVaultUnlocked { get; set; } = true;
 
         public byte[]? StoredRecord { get; private set; }
+
+        public void Seed(byte[] record) => StoredRecord = record;
 
         public Task<byte[]?> ReadEncryptedRecordAsync(
             VaultRecordDescriptor descriptor,

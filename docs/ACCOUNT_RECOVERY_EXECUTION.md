@@ -6,9 +6,10 @@ The guided workflow screen needs one persisted source of truth for an account's 
 
 `AccountRecoveryExecutionState` is that canonical execution aggregate. It is stored as an authenticated
 encrypted `account-execution` record with the opaque inventory account ID as its record identifier.
-Account inventory remains the source for account identity metadata, confirmed roles, priorities, and
-dependencies. Dashboard entries and recovery-plan summaries are projections; they are not independent
-workflow state.
+Account inventory remains the source for account identity metadata, the local catalog suggestion, and
+the user's explicit recovery category. Category determines when an account is recommended; this
+execution aggregate and its provider workflow determine how the account is recovered. Dashboard
+entries and recovery-plan summaries are projections; they are not independent workflow state.
 
 ## Identity and versioning
 
@@ -140,7 +141,7 @@ path, action-state, reason, note, and outcome controls remain inspectable behind
 status**. Guided and advanced controls call the same `IAccountRecoveryExecutionService`; neither owns a
 second execution state.
 
-Each material outcome persists the execution and dashboard projection atomically, clears satisfied
-dependency waits, and returns to the recalculated dashboard recommendation. A visible provider-page
+Each material outcome persists the execution and dashboard projection atomically and returns to the
+recalculated dashboard recommendation. A visible provider-page
 handoff shows the reviewed destination and expected origins before using the operating-system launcher.
 Opening the page changes only transient presentation status and never changes an action state.

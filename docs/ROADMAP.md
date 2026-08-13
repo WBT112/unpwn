@@ -8,7 +8,7 @@ The repository now contains the main end-to-end foundations for the desktop MVP:
 
 - trusted-device gate and encrypted local Recovery Vault;
 - incident intake, recovery session, risk-first dashboard, pause/lock/resume, and final completion review;
-- account inventory, CSV import, identity/recovery roles, dependencies, and deterministic planning;
+- account inventory, CSV import, simple account categories, and deterministic planning;
 - reviewed provider workflows plus a clearly distinguished generic manual fallback;
 - canonical per-account/action recovery execution with explicit completion criteria and unresolved-risk handling;
 - generated-credential lifecycle, password-manager handoff, secure export, and cleanup tracking;
@@ -37,10 +37,10 @@ Possible later work includes:
 - macOS packaging and broader Linux packaging validation;
 - more reviewed provider workflows and password-manager formats;
 - more reviewed GUI languages and RTL support;
-- improved dependency suggestions and recommendation explanations;
+- improved local category suggestions and recommendation explanations;
 - carefully reviewed provider-specific credential insertion where it is stable enough to maintain;
 - a separately researched bootable recovery environment for cases where the normal host cannot reasonably be trusted.
 
-Automation remains secondary to clear guidance, dependency-aware ordering, explicit human confirmation, and honest reporting of unresolved risk.
+Automation remains secondary to clear guidance, category-aware ordering, explicit human confirmation, and honest reporting of unresolved risk.
 
 For product scope see [Vision](VISION.md), for security boundaries see [Threat Model](THREAT_MODEL.md), and for the current browser architecture see [Recovery Browser Security Boundary](RECOVERY_BROWSER.md).
