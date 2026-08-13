@@ -11,65 +11,202 @@ public sealed class CsvAccountImportService
         ["username", "user", "login", "loginusername", "email", "emailaddress"];
     private static readonly string[] AccountUrlAliases = ["url", "uri", "loginuri", "website", "origin", "hostname"];
 
-    public static CsvImportAnalysis Analyze(TextReader source, char? delimiter = null)
+    public static CsvImportAnalysis Analyze(TextReader source, char? delimiter = null) =>
+        Analyze(source, delimiter, CsvImportLimits.Default, CancellationToken.None);
+
+    public static CsvImportAnalysis Analyze(
+        TextReader source,
+        char? delimiter,
+        CsvImportLimits limits,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(limits);
+        limits.Validate();
 
-        var headerLine = source.ReadLine();
-        return AnalyzeHeader(headerLine, delimiter);
+        try
+        {
+            var budget = new CsvCharacterReadBudget(
+                limits.MaximumInputCharacters,
+                cancellationToken);
+            var headerLine = CsvImportResourceGuard.ReadHeaderLine(source, limits, budget);
+            return AnalyzeHeader(headerLine, delimiter, limits, cancellationToken);
+        }
+        catch (CsvImportLimitException exception)
+        {
+            return CreateLimitAnalysis(delimiter ?? ',', exception.Code);
+        }
+    }
+
+    public static CsvImportAnalysis Analyze(
+        Stream source,
+        char? delimiter = null,
+        CsvImportLimits? limits = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        limits ??= CsvImportLimits.Default;
+        limits.Validate();
+
+        using var boundedStream = new CsvBoundedReadStream(
+            source,
+            limits.MaximumInputBytes,
+            cancellationToken);
+        using var reader = new StreamReader(
+            boundedStream,
+            Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true,
+            bufferSize: 4096,
+            leaveOpen: false);
+        return Analyze((TextReader)reader, delimiter, limits, cancellationToken);
+    }
+
+    public static CsvImportAnalysis Analyze(StreamReader source, char? delimiter = null)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source.BaseStream.CanSeek && source.BaseStream.Position == 0
+            ? Analyze(source.BaseStream, delimiter)
+            : Analyze((TextReader)source, delimiter);
     }
 
     public static CsvImportPreview CreatePreview(
         TextReader source,
         CsvColumnMapping mapping,
         IEnumerable<ExistingAccountReference>? existingAccounts = null,
-        char? delimiter = null)
+        char? delimiter = null) =>
+        CreatePreview(
+            source,
+            mapping,
+            existingAccounts,
+            delimiter,
+            CsvImportLimits.Default,
+            CancellationToken.None);
+
+    public static CsvImportPreview CreatePreview(
+        TextReader source,
+        CsvColumnMapping mapping,
+        IEnumerable<ExistingAccountReference>? existingAccounts,
+        char? delimiter,
+        CsvImportLimits limits,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(limits);
+        limits.Validate();
 
-        var headerLine = source.ReadLine();
-        var analysis = AnalyzeHeader(headerLine, delimiter);
-        var diagnostics = new List<CsvImportDiagnostic>(analysis.Diagnostics);
-
-        if (headerLine is null || HasDocumentErrors(diagnostics))
+        var effectiveDelimiter = delimiter ?? ',';
+        try
         {
-            return new CsvImportPreview(analysis, mapping, [], diagnostics);
-        }
+            var budget = new CsvCharacterReadBudget(
+                limits.MaximumInputCharacters,
+                cancellationToken);
+            var headerLine = CsvImportResourceGuard.ReadHeaderLine(source, limits, budget);
+            var analysis = AnalyzeHeader(headerLine, delimiter, limits, cancellationToken);
+            effectiveDelimiter = analysis.Delimiter;
+            var diagnostics = new CsvDiagnosticCollector(limits, analysis.Diagnostics);
 
-        var headerIndexes = CreateHeaderIndexes(analysis.Headers);
-        ValidateMapping(mapping, analysis, headerIndexes, diagnostics);
-        if (HasDocumentErrors(diagnostics))
-        {
-            return new CsvImportPreview(analysis, mapping, [], diagnostics);
-        }
-
-        var excludedIndexes = mapping.ExcludedPasswordColumns
-            .Select(column => headerIndexes[column])
-            .ToHashSet();
-        var candidates = new List<ImportAccountCandidate>();
-
-        foreach (var record in CsvStreamParser.Parse(source, analysis.Delimiter, excludedIndexes, 2))
-        {
-            if (record.IsMalformed || record.Fields.Count != analysis.Headers.Count)
+            if (headerLine is null || HasDocumentErrors(diagnostics))
             {
-                diagnostics.Add(new CsvImportDiagnostic(
-                    CsvImportDiagnosticSeverity.Error,
-                    "MalformedRow",
-                    "The row is malformed or has an unexpected number of columns.",
-                    record.RowNumber));
-                continue;
+                return new CsvImportPreview(analysis, mapping, [], diagnostics.Snapshot);
             }
 
-            var candidate = CreateCandidate(record, mapping, headerIndexes, diagnostics);
-            if (candidate is not null)
+            var headerIndexes = CreateHeaderIndexes(analysis.Headers);
+            ValidateMapping(mapping, analysis, headerIndexes, diagnostics);
+            if (HasDocumentErrors(diagnostics))
             {
-                candidates.Add(candidate);
+                return new CsvImportPreview(analysis, mapping, [], diagnostics.Snapshot);
             }
-        }
 
-        MarkDuplicates(candidates, existingAccounts ?? []);
-        return new CsvImportPreview(analysis, mapping, candidates, diagnostics);
+            var excludedIndexes = mapping.ExcludedPasswordColumns
+                .Select(column => headerIndexes[column])
+                .ToHashSet();
+            var candidates = new List<ImportAccountCandidate>();
+
+            foreach (var record in CsvStreamParser.Parse(
+                         source,
+                         analysis.Delimiter,
+                         excludedIndexes,
+                         2,
+                         limits,
+                         cancellationToken,
+                         budget))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (record.IsMalformed || record.Fields.Count != analysis.Headers.Count)
+                {
+                    diagnostics.Add(new CsvImportDiagnostic(
+                        CsvImportDiagnosticSeverity.Error,
+                        "MalformedRow",
+                        "The row is malformed or has an unexpected number of columns.",
+                        record.RowNumber));
+                    continue;
+                }
+
+                var candidate = CreateCandidate(record, mapping, headerIndexes, diagnostics);
+                if (candidate is not null)
+                {
+                    if (candidates.Count >= limits.MaximumPreviewCandidates)
+                    {
+                        throw new CsvImportLimitException(CsvImportFailureCodes.InputTooComplex);
+                    }
+
+                    candidates.Add(candidate);
+                }
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            MarkDuplicates(candidates, existingAccounts ?? []);
+            return new CsvImportPreview(analysis, mapping, candidates, diagnostics.Snapshot);
+        }
+        catch (CsvImportLimitException exception)
+        {
+            return CreateLimitPreview(mapping, effectiveDelimiter, exception.Code);
+        }
+    }
+
+    public static CsvImportPreview CreatePreview(
+        Stream source,
+        CsvColumnMapping mapping,
+        IEnumerable<ExistingAccountReference>? existingAccounts = null,
+        char? delimiter = null,
+        CsvImportLimits? limits = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(mapping);
+        limits ??= CsvImportLimits.Default;
+        limits.Validate();
+
+        using var boundedStream = new CsvBoundedReadStream(
+            source,
+            limits.MaximumInputBytes,
+            cancellationToken);
+        using var reader = new StreamReader(
+            boundedStream,
+            Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true,
+            bufferSize: 4096,
+            leaveOpen: false);
+        return CreatePreview(
+            (TextReader)reader,
+            mapping,
+            existingAccounts,
+            delimiter,
+            limits,
+            cancellationToken);
+    }
+
+    public static CsvImportPreview CreatePreview(
+        StreamReader source,
+        CsvColumnMapping mapping,
+        IEnumerable<ExistingAccountReference>? existingAccounts = null,
+        char? delimiter = null)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return source.BaseStream.CanSeek && source.BaseStream.Position == 0
+            ? CreatePreview(source.BaseStream, mapping, existingAccounts, delimiter)
+            : CreatePreview((TextReader)source, mapping, existingAccounts, delimiter);
     }
 
     public static CsvMappingAssessment AssessMapping(
@@ -84,9 +221,13 @@ public sealed class CsvAccountImportService
             mapping);
     }
 
-    private static CsvImportAnalysis AnalyzeHeader(string? headerLine, char? requestedDelimiter)
+    private static CsvImportAnalysis AnalyzeHeader(
+        string? headerLine,
+        char? requestedDelimiter,
+        CsvImportLimits limits,
+        CancellationToken cancellationToken)
     {
-        var diagnostics = new List<CsvImportDiagnostic>();
+        var diagnostics = new CsvDiagnosticCollector(limits);
         if (headerLine is null)
         {
             diagnostics.Add(new CsvImportDiagnostic(
@@ -104,11 +245,16 @@ public sealed class CsvAccountImportService
                         CsvMappingIssue.MissingServiceIdentity,
                         CsvMappingIssue.MissingAccountIdentity,
                     ]),
-                diagnostics);
+                diagnostics.Snapshot);
         }
 
         var delimiter = requestedDelimiter ?? DetectDelimiter(headerLine);
-        var headerRecord = CsvStreamParser.Parse(new StringReader(headerLine), delimiter).Single();
+        var headerRecord = CsvStreamParser.Parse(
+                new StringReader(headerLine),
+                delimiter,
+                limits: limits,
+                cancellationToken: cancellationToken)
+            .Single();
         var headers = headerRecord.Fields.Select(header => header.Trim()).ToArray();
 
         if (headerRecord.IsMalformed || headers.Any(string.IsNullOrWhiteSpace))
@@ -143,7 +289,7 @@ public sealed class CsvAccountImportService
             mapping,
             passwordColumns,
             assessment,
-            diagnostics);
+            diagnostics.Snapshot);
     }
 
     private static CsvMappingAssessment AssessMapping(
@@ -248,7 +394,7 @@ public sealed class CsvAccountImportService
         CsvColumnMapping mapping,
         CsvImportAnalysis analysis,
         Dictionary<string, int> headerIndexes,
-        List<CsvImportDiagnostic> diagnostics)
+        CsvDiagnosticCollector diagnostics)
     {
         var mappedColumns = new[]
         {
@@ -314,7 +460,7 @@ public sealed class CsvAccountImportService
         CsvRecord record,
         CsvColumnMapping mapping,
         Dictionary<string, int> headerIndexes,
-        List<CsvImportDiagnostic> diagnostics)
+        CsvDiagnosticCollector diagnostics)
     {
         var serviceName = ReadMappedValue(record, mapping.ServiceNameColumn, headerIndexes);
         var accountName = ReadMappedValue(record, mapping.AccountNameColumn, headerIndexes);
@@ -520,6 +666,45 @@ public sealed class CsvAccountImportService
             .OrderByDescending(delimiter => counts[delimiter])
             .First();
     }
+
+    private static CsvImportAnalysis CreateLimitAnalysis(char delimiter, string code)
+    {
+        var diagnostic = CreateLimitDiagnostic(code);
+        return new CsvImportAnalysis(
+            delimiter,
+            [],
+            CsvColumnMapping.Empty,
+            [],
+            new CsvMappingAssessment(
+                CsvMappingQuality.Incomplete,
+                [
+                    CsvMappingIssue.MissingServiceIdentity,
+                    CsvMappingIssue.MissingAccountIdentity,
+                ]),
+            [diagnostic]);
+    }
+
+    private static CsvImportPreview CreateLimitPreview(
+        CsvColumnMapping mapping,
+        char delimiter,
+        string code)
+    {
+        var analysis = CreateLimitAnalysis(delimiter, code);
+        return new CsvImportPreview(analysis, mapping, [], analysis.Diagnostics);
+    }
+
+    private static CsvImportDiagnostic CreateLimitDiagnostic(string code) => code switch
+    {
+        CsvImportFailureCodes.InputTooLarge => new CsvImportDiagnostic(
+            CsvImportDiagnosticSeverity.Error,
+            CsvImportFailureCodes.InputTooLarge,
+            "The CSV input exceeds the supported size limit."),
+        CsvImportFailureCodes.InputTooComplex => new CsvImportDiagnostic(
+            CsvImportDiagnosticSeverity.Error,
+            CsvImportFailureCodes.InputTooComplex,
+            "The CSV input exceeds the supported structural complexity limit."),
+        _ => throw new ArgumentOutOfRangeException(nameof(code)),
+    };
 
     private static bool HasDocumentErrors(IEnumerable<CsvImportDiagnostic> diagnostics) => diagnostics.Any(
         diagnostic => diagnostic.Severity == CsvImportDiagnosticSeverity.Error && diagnostic.RowNumber is null);
