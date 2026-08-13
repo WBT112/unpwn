@@ -106,6 +106,85 @@ public sealed class AccessibilityHeadlessTests
         }, CancellationToken.None);
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public async Task AccountsNavigationRendersEmptySingleAndMultiAccountPostImportStates(
+        int accountCount)
+    {
+        await Session.Dispatch(() =>
+        {
+            var sessionId = Guid.NewGuid();
+            var vault = new ShellViewModelTests.TestVaultLifecycleService();
+            vault.Unlock("Synthetic vault", "Synthetic recovery");
+            var session = new ShellViewModelTests.TestRecoverySessionService();
+            session.SetSession(RecoverySessionWorkspace.Create(
+                sessionId,
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch));
+            var inventory = new ShellViewModelTests.TestAccountInventoryService();
+            inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch));
+            var flow = new ShellViewModelTests.TestRecoveryFlowService(
+                ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
+                new NextUserTask(
+                    RecoveryWizardStepId.AccountInventory,
+                    NextUserTaskState.ActionAvailable,
+                    NextUserTaskCode.ImportAccounts,
+                    NextUserTaskTarget.CsvImport));
+            var shell = ShellViewModelTests.CreateFlowShell(vault, session, inventory, flow);
+            var window = new global::Unpwn.App.MainWindow { DataContext = shell };
+
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
+            var importedAccounts = Enumerable.Range(1, accountCount)
+                .Select(index => new AccountInventoryEntry(
+                    Guid.NewGuid(),
+                    index == 1 ? "google.com" : $"service-{index}.example.test",
+                    $"Synthetic imported account {index}",
+                    $"person-{index}@example.invalid",
+                    $"https://service-{index}.example.test/account",
+                    AccountRecoveryCategory.Unknown,
+                    RepositoryAccountClassificationCatalog.CurrentVersion,
+                    ConfirmedCategory: null,
+                    CategoryConfirmedRevision: null,
+                    DateTimeOffset.UnixEpoch))
+                .ToArray();
+            inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
+                .ReplaceAccounts(importedAccounts, DateTimeOffset.UnixEpoch.AddSeconds(1)));
+            if (accountCount > 0)
+            {
+                flow.SetTask(
+                    ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
+                    new NextUserTask(
+                        RecoveryWizardStepId.AccountInventory,
+                        NextUserTaskState.ActionAvailable,
+                        NextUserTaskCode.ReviewAccountCategories,
+                        NextUserTaskTarget.AccountTriage,
+                        RecoveryWizardStepId.AccountTriage));
+            }
+
+            shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts);
+            Dispatcher.UIThread.RunJobs();
+
+            var accountsView = new AccountsView { DataContext = shell.CurrentScreen };
+            var workspaceWindow = new Window { Content = accountsView };
+            workspaceWindow.Show();
+            Dispatcher.UIThread.RunJobs();
+            var list = Assert.IsType<ListBox>(
+                FindByAutomationId(accountsView, "accounts-triage-list"),
+                exactMatch: false);
+            var viewModel = Assert.IsType<AccountInventoryScreenViewModel>(shell.CurrentScreen);
+            Assert.True(list.Items.Count == accountCount);
+            Assert.True(viewModel.Accounts.Count == accountCount);
+            Assert.Equal(importedAccounts.Select(account => account.Id), viewModel.Accounts.Select(account => account.Id));
+            workspaceWindow.Close();
+            window.Close();
+        }, CancellationToken.None);
+    }
+
     [Fact]
     public async Task ImportAndCredentialWorkspacesExposeTheirContinuationActions()
     {

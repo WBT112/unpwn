@@ -296,6 +296,23 @@ public sealed class AccountInventoryServiceTests
         Assert.Null(service.CurrentInventory);
     }
 
+    [Fact]
+    public async Task NullAccountInCurrentSchemaFailsClosed()
+    {
+        var store = new TestEncryptedRecordStore();
+        var session = new TestRecoverySessionService();
+        store.Seed(Encoding.UTF8.GetBytes($$"""
+            {"sessionId":"{{session.CurrentSession!.Id}}","revision":1,"updatedAt":"1970-01-01T00:00:00+00:00","accounts":[null]}
+            """));
+        using var service = new AccountInventoryService(store, session, () => DateTimeOffset.UnixEpoch);
+
+        await service.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(AccountInventoryLoadState.Corrupted, service.LoadState);
+        Assert.Null(service.CurrentInventory);
+        Assert.NotNull(store.StoredRecord);
+    }
+
     private static AccountInventoryUpsertRequest CreateRequest(string provider) =>
         new(
             null,

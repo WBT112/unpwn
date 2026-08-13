@@ -178,6 +178,12 @@ public sealed record AccountInventoryState(
         }
 
         ArgumentNullException.ThrowIfNull(Accounts);
+        if (Accounts.Any(account => account is null))
+        {
+            throw new InvalidOperationException(
+                "The persisted account inventory contains a null account.");
+        }
+
         foreach (var account in Accounts)
         {
             account.Validate();
