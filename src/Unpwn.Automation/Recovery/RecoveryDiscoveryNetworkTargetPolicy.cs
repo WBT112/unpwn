@@ -54,7 +54,7 @@ public sealed class PublicRecoveryNetworkTargetPolicy(IRecoveryDnsResolver resol
     {
         ArgumentNullException.ThrowIfNull(destination);
         if (!destination.IsAbsoluteUri ||
-            !string.Equals(destination.Scheme, Uri.UriSchemeHhtps, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(destination.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
             string.IsNullOrWhiteSpace(destination.Host))
         {
             return false;
