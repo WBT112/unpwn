@@ -231,6 +231,74 @@ public sealed class RecoveryVaultTests : IDisposable
         Assert.ThrowsAny<CryptographicException>(() => reopened.ReadRecord("account-state", TamperedId));
     }
 
+    [Fact]
+    public void VaultOpenRejectsArgonCostAboveCurrentFormatBeforeKeyDerivation()
+    {
+        var path = VaultPath();
+        using (RecoveryVault.Create(path, "UNPWN_TEST_SECRET_vault-password", TestParameters))
+        {
+        }
+
+        using (var connection = OpenConnection(path))
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE vault_key_envelope SET argon2_memory_kib = $memory WHERE id = 1;";
+            command.Parameters.AddWithValue("$memory", int.MaxValue);
+            command.ExecuteNonQuery();
+        }
+
+        Assert.ThrowsAny<InvalidOperationException>(() =>
+            RecoveryVault.Open(path, "UNPWN_TEST_SECRET_vault-password"));
+    }
+
+    [Fact]
+    public void VaultOpenRejectsUnexpectedEnvelopeBlobLengthBeforeMaterializingIt()
+    {
+        var path = VaultPath();
+        using (RecoveryVault.Create(path, "UNPWN_TEST_SECRET_vault-password", TestParameters))
+        {
+        }
+
+        using (var connection = OpenConnection(path))
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = "UPDATE vault_key_envelope SET salt = zeroblob(1024) WHERE id = 1;";
+            command.ExecuteNonQuery();
+        }
+
+        Assert.ThrowsAny<InvalidOperationException>(() =>
+            RecoveryVault.Open(path, "UNPWN_TEST_SECRET_vault-password"));
+    }
+
+    [Fact]
+    public void RecordReadRejectsCiphertextAboveCurrentFormatBeforePlaintextAllocation()
+    {
+        var path = VaultPath();
+        using (var vault = RecoveryVault.Create(path, "UNPWN_TEST_SECRET_vault-password", TestParameters))
+        {
+            vault.UpsertRecord(
+                new VaultRecordDescriptor("account-state", StateId, 1),
+                Encoding.UTF8.GetBytes("UNPWN_TEST_SECRET_state"));
+        }
+
+        using (var connection = OpenConnection(path))
+        using (var command = connection.CreateCommand())
+        {
+            command.CommandText = """
+                UPDATE vault_records
+                SET ciphertext = zeroblob($length)
+                WHERE record_type = $record_type AND record_id = $record_id;
+                """;
+            command.Parameters.AddWithValue("$length", VaultResourceLimits.MaximumRecordBytes + 1);
+            command.Parameters.AddWithValue("$record_type", "account-state");
+            command.Parameters.AddWithValue("$record_id", StateId);
+            command.ExecuteNonQuery();
+        }
+
+        using var reopened = RecoveryVault.Open(path, "UNPWN_TEST_SECRET_vault-password");
+        Assert.ThrowsAny<InvalidOperationException>(() => reopened.ReadRecord("account-state", StateId));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_directory))
