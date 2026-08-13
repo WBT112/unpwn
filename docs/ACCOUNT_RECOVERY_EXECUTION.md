@@ -130,6 +130,12 @@ explicit acknowledgements survive browser close and conservative restart, but do
 action. The **Done** action remains disabled until every repository-controlled criterion is visibly
 acknowledged and still requires its separate explicit confirmation.
 
+The account-level overview owns **Start recovery** and **Skip account for now**. Start recovery is a
+single presentation/application transaction over this canonical aggregate; it does not introduce a
+second browser state machine. Skip is persisted as language-neutral session queue metadata, not as an
+action transition, `NotApplicable`, completion, or risk acceptance. Deferring keeps the execution and
+all required work unchanged and moves the account behind non-deferred work for the current pass.
+
 If the user cannot continue, the presentation asks one understandable follow-up question and maps the
 answer to the existing canonical transition model:
 

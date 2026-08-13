@@ -102,6 +102,13 @@ public interface IRecoverySessionService
 
     Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken);
 
+    Task<RecoverySessionOperationResult> DeferAccountAsync(
+        Guid accountId,
+        long expectedSessionRevision,
+        CancellationToken cancellationToken) =>
+        Task.FromResult(RecoverySessionOperationResult.Failure(
+            RecoverySessionOperationFailureCode.Conflict));
+
     Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken);
 
     Task<RecoverySessionOperationResult> CompleteAsync(

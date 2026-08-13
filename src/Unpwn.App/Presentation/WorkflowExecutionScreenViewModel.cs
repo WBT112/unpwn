@@ -144,6 +144,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         RefreshCommand = Command(LoadAsync, () => _inventory.CurrentInventory is not null);
         BeginCommand = Command(BeginAsync, () =>
             _account is not null && _workflow is not null && _execution is null && SelectedPath is not null);
+        StartRecoveryCommand = Command(
+            StartRecoveryTransactionAsync,
+            () => _account is not null && _workflow is not null && HasSafeRecoveryPath);
         SetAccessAvailableCommand = TransitionCommand(
             AccountRecoveryExecutionTransitionKind.SetAccessAvailable,
             requiresReason: false,
@@ -212,6 +215,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand RefreshCommand { get; }
 
     public AsyncCommand BeginCommand { get; }
+
+    public AsyncCommand StartRecoveryCommand { get; }
 
     public AsyncCommand SetAccessAvailableCommand { get; }
 
@@ -399,6 +404,17 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         : "Workflow.Navigation.Title");
 
     public bool HasCredentialReference => CurrentActionState?.CredentialReference is not null;
+
+    public bool IsPasswordCredentialAction => CurrentDefinition?.Type is
+        RecoveryActionType.ChangePassword or RecoveryActionType.ResetPassword;
+
+    public string AuthenticationGuidanceText => Localization.GetString(
+        "Workflow.Guided.AuthenticationGuidance");
+
+    public string ReplacementCredentialGuidanceText => Localization.GetString(
+        HasCredentialReference
+            ? "Workflow.Guided.Credential.ReplacementPending"
+            : "Workflow.Guided.Credential.PreChangeLogin");
 
     public bool CanGenerateCredentialForCurrentAction => CanGenerateCredential();
 
@@ -613,11 +629,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public void Activate(Guid? accountId, string? actionId)
+    public void Activate(Guid? accountId, string? actionId, bool startRecovery = false)
     {
         _requestedAccountId = accountId;
         _requestedActionId = actionId;
-        _ = RefreshCommand.ExecuteAsync();
+        _ = ActivateAsync(startRecovery);
     }
 
     public void ReportRecoveryBrowserOpenResult(bool succeeded, bool workspaceVisible = false)
@@ -678,6 +694,17 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         Command(
             token => ApplyFromInputAsync(transition, requiresReason, returnToPlan, token),
             canExecute ?? (() => _execution is not null));
+
+    private async Task ActivateAsync(bool startRecovery)
+    {
+        await RefreshCommand.ExecuteAsync();
+        if (!startRecovery || _account is null)
+        {
+            return;
+        }
+
+        await StartRecoveryCommand.ExecuteAsync();
+    }
 
     private async Task LoadAsync(CancellationToken cancellationToken)
     {
@@ -762,6 +789,19 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                 AppVisualState.Normal,
                 "Workflow.Status.Started.Title",
                 "Workflow.Status.Started.Message");
+        }
+    }
+
+    private async Task StartRecoveryTransactionAsync(CancellationToken cancellationToken)
+    {
+        if (_execution is null)
+        {
+            await BeginAsync(cancellationToken);
+        }
+
+        if (_execution is not null)
+        {
+            await ContinueCurrentActionAsync(cancellationToken);
         }
     }
 
@@ -894,13 +934,32 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        await ApplyAsync(
-            AccountRecoveryExecutionTransitionKind.StartAction,
-            cancellationToken,
-            returnToPlan: false);
+        await ContinueCurrentActionAsync(cancellationToken);
+    }
+
+    private async Task ContinueCurrentActionAsync(CancellationToken cancellationToken)
+    {
+        if (CurrentActionState?.Status is
+            RecoveryActionStatus.Open or RecoveryActionStatus.Blocked or
+            RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction)
+        {
+            await ApplyAsync(
+                AccountRecoveryExecutionTransitionKind.StartAction,
+                cancellationToken,
+                returnToPlan: false);
+        }
+
         if (CurrentActionState?.Status == RecoveryActionStatus.InProgress && HasNavigationOpportunity)
         {
             await OpenRecoveryBrowserAsync(cancellationToken);
+            return;
+        }
+
+        if (CurrentActionState?.Status == RecoveryActionStatus.InProgress)
+        {
+            _navigationStatusKey = "Workflow.Browser.ManualGuidance";
+            NotifyNavigationStatus();
+            CurrentActionFocusRequest++;
         }
     }
 
@@ -948,12 +1007,17 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         _navigationStatusKey = "Workflow.Browser.Opening";
         NotifyNavigationStatus();
-        RecoveryBrowserRequested?.Invoke(
-            this,
-            new RecoveryBrowserWorkspaceRequest(
-                _account.Id,
-                handoff,
-                RecoveryBrowserContentMode.Recovery));
+        var request = new RecoveryBrowserWorkspaceRequest(
+            _account.Id,
+            handoff,
+            RecoveryBrowserContentMode.Recovery);
+        if (RecoveryBrowserRequested is null)
+        {
+            ReportRecoveryBrowserOpenResult(false);
+            return;
+        }
+
+        RecoveryBrowserRequested.Invoke(this, request);
     }
 
     private async Task ApplyGuidedProblemAsync(CancellationToken cancellationToken)
@@ -1494,6 +1558,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(HasPreparedNavigation));
         OnPropertyChanged(nameof(NavigationLocationTitle));
         OnPropertyChanged(nameof(HasCredentialReference));
+        OnPropertyChanged(nameof(IsPasswordCredentialAction));
+        OnPropertyChanged(nameof(AuthenticationGuidanceText));
+        OnPropertyChanged(nameof(ReplacementCredentialGuidanceText));
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(CanRunGuidedPrimary));
         OnPropertyChanged(nameof(CanReportCurrentProblem));
@@ -1527,7 +1594,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     {
         foreach (var command in new[]
                  {
-                     RefreshCommand, BeginCommand, SetAccessAvailableCommand,
+                     RefreshCommand, BeginCommand, StartRecoveryCommand, SetAccessAvailableCommand,
                      SetAccessLostCommand, SetWaitingCommand, StartActionCommand, RetryActionCommand,
                      CompleteActionCommand, RequireUserActionCommand, BlockActionCommand,
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,

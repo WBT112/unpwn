@@ -105,4 +105,8 @@
   <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>The encrypted session and incident indicators were saved. Use the recommended next step below.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Session operation failed</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>No source exception or secret value was shown. Review the safe validation message.</value></data>
+  <data name="Dashboard.Recommendation.Action.Skip" xml:space="preserve"><value>Skip account for now</value></data>
+  <data name="Dashboard.Status.Deferred.Title" xml:space="preserve"><value>Account deferred</value></data>
+  <data name="Dashboard.Status.Deferred.Message" xml:space="preserve"><value>The account remains unresolved and was moved behind the other outstanding accounts for this pass.</value></data>
+  <data name="Dashboard.Recommendation.Approach" xml:space="preserve"><value>Recovery approach: {0}</value></data>
 </root>

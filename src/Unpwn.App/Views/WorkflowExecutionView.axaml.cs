@@ -123,7 +123,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
         await AttachCredentialHandoffAsync(viewModel, request);
         Dispatcher.UIThread.Post(
-            () => BrowserWorkspacePanel.Focus(NavigationMethod.Tab),
+            () => CurrentActionCard.Focus(NavigationMethod.Tab),
             DispatcherPriority.Loaded);
     }
 

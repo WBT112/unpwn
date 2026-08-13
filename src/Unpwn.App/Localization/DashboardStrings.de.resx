@@ -105,4 +105,8 @@
   <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Nutze den unten empfohlenen nächsten Schritt.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Sitzungsaktion fehlgeschlagen</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>Es wurden weder eine Quellfehlermeldung noch geheime Werte angezeigt. Prüfe die sichere Validierungsmeldung.</value></data>
+  <data name="Dashboard.Recommendation.Action.Skip" xml:space="preserve"><value>Konto vorerst überspringen</value></data>
+  <data name="Dashboard.Status.Deferred.Title" xml:space="preserve"><value>Konto zurückgestellt</value></data>
+  <data name="Dashboard.Status.Deferred.Message" xml:space="preserve"><value>Das Konto bleibt ungelöst und wurde für diesen Durchlauf hinter die anderen offenen Konten verschoben.</value></data>
+  <data name="Dashboard.Recommendation.Approach" xml:space="preserve"><value>Wiederherstellungsweg: {0}</value></data>
 </root>

@@ -88,8 +88,15 @@ explains which account is recommended next. Stable account identifiers resolve t
 restart do not change the queue. A recommendation is guidance, not proof that an account is
 compromised.
 
-The recovery overview owns **Start recovery** for the current recommendation. Opening a detail tab
-does not advance the flow or complete work.
+The recovery overview shows the current account, its category, why it is next, and the automatically
+selected approach. **Start recovery** creates or resumes its canonical execution, starts the current
+action, and opens the reviewed destination in the isolated Recovery Browser as one operation. If the
+embedded host cannot start safely, unpwn keeps an explicit error and deliberately labelled external
+fallback visible. Opening a detail tab does not advance the flow or complete work.
+
+Use **Skip account for now** to move the account behind the other outstanding work for this pass. This
+does not complete, secure, or mark the account not applicable. The account remains unresolved, can be
+resumed later, and is shown as open work during completion review even after repeated skips.
 
 For each account, unpwn also chooses the safest supported recovery approach. Confirmed usable access
 uses an authenticated password change where supported; otherwise unpwn prefers password reset and
@@ -104,6 +111,11 @@ For providers without a reviewed workflow, unpwn clearly labels the guidance as 
 ### 7. Work through each action in the Recovery Browser
 
 For reviewed navigable actions, unpwn normally opens the provider page inside the managed **Recovery Browser** beside the current instructions and checklist. The external operating-system browser remains an explicit fallback when the embedded host is unavailable or unsuitable.
+
+The assistant also explains that a provider may require the current password/session, MFA, a passkey
+or security key, a recovery code, CAPTCHA, an email link, or identity verification. Complete those
+provider checks yourself. A newly generated replacement password is not the credential for a login
+that must happen before the change is accepted.
 
 Opening a page, reaching a URL, navigating, returning, closing the browser, or restarting unpwn does **not** mark a recovery action complete.
 

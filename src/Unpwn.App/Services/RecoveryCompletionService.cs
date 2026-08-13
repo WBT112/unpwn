@@ -192,6 +192,12 @@ public sealed class RecoveryCompletionService(
         {
             AddAccountIssue(
                 issues,
+                RecoveryCompletionIssueKind.DeferredAccount,
+                RecoveryCompletionIssueSeverity.Blocking,
+                account,
+                account.DeferralCount > 0 && !account.IsFullyReviewed ? 1 : 0);
+            AddAccountIssue(
+                issues,
                 RecoveryCompletionIssueKind.CriticalAccountNotFullyReviewed,
                 RecoveryCompletionIssueSeverity.Blocking,
                 account,

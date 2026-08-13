@@ -18,6 +18,13 @@ Navigation, redirects, popups, downloads, permissions, TLS events, browser close
 
 For a reviewed navigable action, the normal guided path presents the provider page and assistant panel together. The assistant remains the place where the user confirms completion criteria, chooses **Done**, or records that work cannot continue.
 
+The recovery overview exposes one primary **Start recovery** transaction for the recommended account.
+That application action loads or creates the canonical execution, starts the current canonical action,
+validates its reviewed navigation handoff, and requests the isolated account-bound browser workspace.
+It must either make that workspace visible or leave an explicit safe error and external-browser
+fallback; navigation alone is not represented as a successful start. Actions without a reviewed
+destination remain explicit manual guidance and never cause unpwn to guess a provider page.
+
 The external operating-system browser is an explicitly labelled fallback. Embedded-host failure must never silently downgrade to the external browser.
 
 Each checklist checkmark is persisted through the canonical encrypted account-execution state before the UI reports it as recorded. No provider DOM, screenshot, page text, response body, cookie, or URL is stored as proof. Browser close/restart therefore preserves only explicit unpwn state, not inferred provider success.
@@ -111,6 +118,9 @@ Avalonia hosts the installed WebView2 runtime using the dedicated unpwn data dir
 Avalonia hosts WPE WebKit with dedicated data/cache locations. The adapter disables persistent credential storage/developer tools where exposed and denies permissions, downloads, and TLS exceptions. WPE WebKit does not expose every WebView2 control through the maintained host; the dedicated profile boundary and conservative lifecycle remain mandatory instead of claiming identical platform hardening.
 
 No platform may silently fall back to an unhardened profile or host.
+
+The assistant initially receives focus when the combined workspace opens. Later action refreshes do
+not steal focus while the user is interacting with provider content.
 
 ## Testing
 

@@ -50,6 +50,8 @@ Coverage includes:
 - no automatic resume of stale authenticated browser state;
 - explicit checklist persistence without browser-driven completion;
 - explicit external-browser fallback when the embedded host is unavailable;
+- one-command reviewed-provider start with a visible embedded workspace or explicit safe fallback;
+- canonical account deferral, restart/resume ordering, and unresolved completion-preflight visibility;
 - synthetic provider-reviewed credential insertion with late vault retrieval;
 - wrong-origin, changed-page, MFA, CAPTCHA, and email-link stop conditions;
 - no form submission or canonical completion caused by credential insertion;

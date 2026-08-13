@@ -84,6 +84,17 @@ public sealed class RecoverySessionService :
             RecoverySessionWizardTransition.Resume,
             cancellationToken);
 
+    public Task<RecoverySessionOperationResult> DeferAccountAsync(
+        Guid accountId,
+        long expectedSessionRevision,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        return _mutationCoordinator.ExecuteAsync(
+            token => DeferAccountCoreAsync(accountId, expectedSessionRevision, token),
+            cancellationToken);
+    }
+
     public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) =>
         TransitionAsync(
             session => session.Archive(_clock()),
@@ -459,6 +470,49 @@ public sealed class RecoverySessionService :
             }
 
             return result;
+        }
+    }
+
+    private async Task<RecoverySessionOperationResult> DeferAccountCoreAsync(
+        Guid accountId,
+        long expectedSessionRevision,
+        CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (!_recordStore.IsVaultUnlocked)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Locked);
+            }
+
+            if (CurrentSession is null || CurrentSession.Revision != expectedSessionRevision)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
+            }
+
+            RecoverySessionWorkspace updated;
+            try
+            {
+                updated = CurrentSession.DeferAccount(accountId, _clock());
+            }
+            catch (Exception exception) when (exception is ArgumentException or InvalidOperationException or OverflowException)
+            {
+                return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.InvalidInput);
+            }
+
+            using var update = PrepareState(updated, CurrentSession.Revision);
+            var result = await PersistBatchAsync([update.ToWrite()], cancellationToken);
+            if (result.Succeeded)
+            {
+                SetState(RecoverySessionLoadState.Loaded, updated);
+            }
+
+            return result;
+        }
+        finally
+        {
+            _gate.Release();
         }
     }
 

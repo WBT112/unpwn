@@ -8,7 +8,8 @@ namespace Unpwn.App.Presentation;
 public sealed record DashboardNavigationRequest(
     AppRoute Route,
     Guid? AccountId,
-    string? ActionId);
+    string? ActionId,
+    bool StartRecovery = false);
 
 public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 {
@@ -81,6 +82,10 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             () => NavigateToAlert(RecoveryDashboardAlertKind.CredentialDeletion),
             () => HasCredentialDeletions);
         OpenRecommendationCommand = new RelayCommand(OpenRecommendation, () => Dashboard is not null);
+        SkipRecommendationCommand = new AsyncCommand(
+            SkipRecommendationAsync,
+            () => Localization.GetString("Dashboard.Command.Error"),
+            () => CanSkipRecommendation);
 
         _sessionService.SessionChanged += SessionService_OnSessionChanged;
         _vaultLifecycle.ContextChanged += VaultLifecycle_OnContextChanged;
@@ -150,6 +155,9 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     public bool HasCredentialExports => Dashboard?.CredentialsAwaitingExport > 0;
 
     public bool HasCredentialDeletions => Dashboard?.CredentialsAwaitingDeletion > 0;
+
+    public bool CanSkipRecommendation =>
+        IsActiveSession && Dashboard?.Recommendation.AccountId is not null;
 
     public string? ValidationMessage => _validationKey is null
         ? null
@@ -271,6 +279,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     public bool HasRecommendationAction =>
         ResolveRecommendedAction() is not null;
 
+    public bool HasRecommendationApproach => ResolveRecommendedPath() is not null;
+
     public string RecommendationActionText
     {
         get
@@ -283,6 +293,12 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
                     Localization.GetString(action.Guidance.TitleKey));
         }
     }
+
+    public string RecommendationApproachText => ResolveRecommendedPath() is { } path
+        ? Localization.Format(
+            "Dashboard.Recommendation.Approach",
+            Localization.GetString($"Workflow.Path.{path}"))
+        : string.Empty;
 
     public AsyncCommand RefreshCommand { get; }
 
@@ -317,6 +333,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     public RelayCommand OpenCredentialDeletionCommand { get; }
 
     public RelayCommand OpenRecommendationCommand { get; }
+
+    public AsyncCommand SkipRecommendationCommand { get; }
 
     public override void Activate() => _ = RefreshCommand.ExecuteAsync();
 
@@ -448,13 +466,42 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         var route = recommendation.Code switch
         {
             RecoveryDashboardRecommendationCode.ImportAccounts => AppRoute.CsvImport,
-            RecoveryDashboardRecommendationCode.SecureRecoveryChannel or
-            RecoveryDashboardRecommendationCode.RestoreCriticalAccess => AppRoute.Accounts,
+            RecoveryDashboardRecommendationCode.SecureRecoveryChannel => AppRoute.Accounts,
             RecoveryDashboardRecommendationCode.ExportGeneratedCredentials => AppRoute.CredentialsExport,
             RecoveryDashboardRecommendationCode.ArchivedSession => AppRoute.Completion,
             _ => AppRoute.Workflow,
         };
-        RequestNavigation(route, recommendation.AccountId, recommendation.ActionId);
+        RequestNavigation(
+            route,
+            recommendation.AccountId,
+            recommendation.ActionId,
+            startRecovery: route == AppRoute.Workflow);
+    }
+
+    private async Task SkipRecommendationAsync(CancellationToken cancellationToken)
+    {
+        var session = Session;
+        var accountId = Dashboard?.Recommendation.AccountId;
+        if (session is null || accountId is null)
+        {
+            return;
+        }
+
+        var result = await _sessionService.DeferAccountAsync(
+            accountId.Value,
+            session.Revision,
+            cancellationToken);
+        if (!result.Succeeded)
+        {
+            ShowOperationFailure(result.FailureCode);
+            return;
+        }
+
+        SetLocalizedStatus(
+            AppVisualState.Warning,
+            "Dashboard.Status.Deferred.Title",
+            "Dashboard.Status.Deferred.Message",
+            StatusPresentation.TransientResult);
     }
 
     private void NavigateToAlert(RecoveryDashboardAlertKind kind)
@@ -470,8 +517,14 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         RequestNavigation(route, alert?.AccountId, alert?.ActionId);
     }
 
-    private void RequestNavigation(AppRoute route, Guid? accountId, string? actionId) =>
-        NavigationRequested?.Invoke(this, new DashboardNavigationRequest(route, accountId, actionId));
+    private void RequestNavigation(
+        AppRoute route,
+        Guid? accountId,
+        string? actionId,
+        bool startRecovery = false) =>
+        NavigationRequested?.Invoke(
+            this,
+            new DashboardNavigationRequest(route, accountId, actionId, startRecovery));
 
     private IncidentIndicator BuildIndicators()
     {
@@ -499,6 +552,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(HasLostAccess));
         OnPropertyChanged(nameof(HasCredentialExports));
         OnPropertyChanged(nameof(HasCredentialDeletions));
+        OnPropertyChanged(nameof(CanSkipRecommendation));
         NotifyLocalizedProperties();
         RaiseCommandStates();
         RefreshVisualStatus();
@@ -527,6 +581,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(RecommendationCategoryText));
         OnPropertyChanged(nameof(HasRecommendationAction));
         OnPropertyChanged(nameof(RecommendationActionText));
+        OnPropertyChanged(nameof(HasRecommendationApproach));
+        OnPropertyChanged(nameof(RecommendationApproachText));
         OnPropertyChanged(nameof(ValidationMessage));
     }
 
@@ -601,6 +657,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OpenCredentialExportCommand.RaiseCanExecuteChanged();
         OpenCredentialDeletionCommand.RaiseCanExecuteChanged();
         OpenRecommendationCommand.RaiseCanExecuteChanged();
+        SkipRecommendationCommand.RaiseCanExecuteChanged();
     }
 
     private void ClearIntakeInputs()
@@ -648,6 +705,24 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
         return ResolveRecommendedWorkflow(recommendation.ProviderId)?.Actions.SingleOrDefault(action =>
             string.Equals(action.Id, recommendation.ActionId, StringComparison.Ordinal));
+    }
+
+    private RecoveryPath? ResolveRecommendedPath()
+    {
+        var recommendation = Dashboard?.Recommendation;
+        if (string.IsNullOrWhiteSpace(recommendation?.ProviderId))
+        {
+            return null;
+        }
+
+        var action = ResolveRecommendedAction();
+        if (action?.RecoveryPaths.Count == 1)
+        {
+            return action.RecoveryPaths[0];
+        }
+
+        var workflow = ResolveRecommendedWorkflow(recommendation.ProviderId);
+        return workflow is null ? null : RecoveryPathSelector.Select(workflow).Path;
     }
 
     private void SessionService_OnSessionChanged(object? sender, EventArgs eventArgs) => RefreshState();

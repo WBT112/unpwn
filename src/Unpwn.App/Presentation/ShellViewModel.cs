@@ -25,6 +25,7 @@ public sealed class ShellViewModel : ObservableObject
     private VisualStatusViewModel _currentStatus;
     private Guid? _navigationAccountId;
     private string? _navigationActionId;
+    private bool _navigationStartsRecovery;
     private bool _hasStartupRecoveryWarning;
     private bool _isWorkspaceNavigationExpanded;
     private bool _hadRecoverySession;
@@ -316,7 +317,9 @@ public sealed class ShellViewModel : ObservableObject
         CurrentScreen = screen;
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
-            workflow.Activate(NavigationAccountId, NavigationActionId);
+            var startRecovery = _navigationStartsRecovery;
+            _navigationStartsRecovery = false;
+            workflow.Activate(NavigationAccountId, NavigationActionId, startRecovery);
         }
         else
         {
@@ -568,6 +571,7 @@ public sealed class ShellViewModel : ObservableObject
 
         NavigationAccountId = eventArgs.AccountId;
         NavigationActionId = eventArgs.ActionId;
+        _navigationStartsRecovery = eventArgs.StartRecovery;
         NavigateTo(eventArgs.Route);
     }
 

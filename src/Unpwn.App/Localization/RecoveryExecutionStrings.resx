@@ -80,6 +80,7 @@
   <data name="Workflow.Browser.Opening" xml:space="preserve"><value>The reviewed destination is being opened in the isolated Recovery Browser.</value></data>
   <data name="Workflow.Browser.Opened" xml:space="preserve"><value>Recovery Browser and guidance are visible together. Provider-page activity does not change recovery progress.</value></data>
   <data name="Workflow.Browser.Unavailable" xml:space="preserve"><value>The isolated Recovery Browser is unavailable. You may deliberately use the external-browser fallback; no security controls were silently downgraded.</value></data>
+  <data name="Workflow.Browser.ManualGuidance" xml:space="preserve"><value>This provider action has no reviewed browser destination. Continue manually with the guidance shown here; unpwn will not guess a website or form.</value></data>
   <data name="Workflow.Browser.ClosedConfirmed" xml:space="preserve"><value>The browser session was closed and cleaned. Your explicit checklist confirmations remain stored; the action is still open until you choose Done.</value></data>
   <data name="Workflow.Browser.ClosedIncomplete" xml:space="preserve"><value>The browser session was closed and cleaned. Unconfirmed completion criteria remain open and the action was not completed.</value></data>
   <data name="Workflow.Browser.CriteriaPersistedHelp" xml:space="preserve"><value>Each checkmark is stored in the encrypted workspace before it appears selected. Browser navigation or closing cannot select it.</value></data>
@@ -161,6 +162,10 @@
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Done</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>I cannot continue</value></data>
   <data name="Workflow.Guided.Credential.Generate" xml:space="preserve"><value>Generate a new password for this step</value></data>
+  <data name="Workflow.Guided.Authentication.Title" xml:space="preserve"><value>Provider sign-in and verification</value></data>
+  <data name="Workflow.Guided.AuthenticationGuidance" xml:space="preserve"><value>The provider may require your current sign-in, MFA, passkey, security key, recovery code, CAPTCHA, email link, or identity verification. Complete those checks yourself. unpwn does not store or bypass them and does not infer success from the page.</value></data>
+  <data name="Workflow.Guided.Credential.PreChangeLogin" xml:space="preserve"><value>If you must sign in before changing the password, use your current provider credential or existing provider session. Generate the replacement password only for the change/reset step.</value></data>
+  <data name="Workflow.Guided.Credential.ReplacementPending" xml:space="preserve"><value>The generated replacement is not yet an active provider password. Do not use it for the pre-change sign-in; use it only when the provider asks for the new password, then explicitly confirm the completion criteria.</value></data>
   <data name="Workflow.Guided.Problem.Title" xml:space="preserve"><value>What is stopping you?</value></data>
   <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Choose the answer that best matches what actually happened. unpwn will keep the resulting work or risk visible in your recovery plan.</value></data>
   <data name="Workflow.Guided.Problem.ReasonPlaceholder" xml:space="preserve"><value>Brief non-secret explanation</value></data>
