@@ -10,8 +10,8 @@ internal static class CsvStreamParser
         ISet<int>? excludedColumns = null,
         int firstRowNumber = 1,
         CsvImportLimits? limits = null,
-        CancellationToken cancellationToken = default,
-        CsvCharacterReadBudget? readBudget = null)
+        CsvCharacterReadBudget? readBudget = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(reader);
         limits ??= CsvImportLimits.Default;
