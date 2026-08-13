@@ -26,7 +26,6 @@ public sealed class AtomicWorkspacePersistenceTests
         var result = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Incident",
-                IncidentDescription: null,
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None);
@@ -84,7 +83,6 @@ public sealed class AtomicWorkspacePersistenceTests
         var created = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Incident",
-                IncidentDescription: null,
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None);

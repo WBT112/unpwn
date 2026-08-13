@@ -5,11 +5,7 @@ public enum IncidentIndicator
 {
     None = 0,
     LostAccess = 1 << 0,
-    UnexpectedPasswordChange = 1 << 1,
-    UnexpectedMfaChange = 1 << 2,
-    UnknownActiveSessions = 1 << 3,
-    CompromisedRecoveryChannel = 1 << 4,
-    PotentiallyUntrustedDevice = 1 << 5,
+    CompromisedRecoveryChannel = 1 << 1,
 }
 
 public enum RecoveryWorkspaceLifecycleStatus
@@ -45,17 +41,25 @@ public enum RecoveryDashboardAlertKind
     CredentialDeletion,
 }
 
-public sealed record RecoveryIncidentIntake(
-    IncidentIndicator Indicators,
-    string? Description)
+public sealed record RecoveryIncidentIntake(IncidentIndicator Indicators)
 {
+    private const IncidentIndicator SupportedIndicators =
+        IncidentIndicator.LostAccess | IncidentIndicator.CompromisedRecoveryChannel;
+
     public bool Has(IncidentIndicator indicator) => (Indicators & indicator) == indicator;
 
     public bool RequiresEmergencyAttention =>
-        Has(IncidentIndicator.CompromisedRecoveryChannel) ||
-        (Has(IncidentIndicator.LostAccess) && Has(IncidentIndicator.UnexpectedMfaChange));
+        Has(IncidentIndicator.CompromisedRecoveryChannel);
 
-    public static RecoveryIncidentIntake Empty { get; } = new(IncidentIndicator.None, null);
+    public void Validate()
+    {
+        if ((Indicators & ~SupportedIndicators) != IncidentIndicator.None)
+        {
+            throw new InvalidOperationException("The incident intake contains unsupported indicators.");
+        }
+    }
+
+    public static RecoveryIncidentIntake Empty { get; } = new(IncidentIndicator.None);
 }
 
 public sealed record RecoveryAccountDashboardEntry(
@@ -219,12 +223,12 @@ public sealed record RecoverySessionWorkspace(
 
         ValidateName(name);
         ArgumentNullException.ThrowIfNull(incident);
-        IncidentDescriptionSafety.Validate(incident.Description);
+        incident.Validate();
 
         return new RecoverySessionWorkspace(
             id,
             name.Trim(),
-            incident with { Description = NormalizeDescription(incident.Description) },
+            incident,
             RecoveryWorkspaceLifecycleStatus.Active,
             createdAt,
             createdAt,
@@ -336,7 +340,7 @@ public sealed record RecoverySessionWorkspace(
         ValidateName(Name);
         ArgumentNullException.ThrowIfNull(Incident);
         ArgumentNullException.ThrowIfNull(Accounts);
-        IncidentDescriptionSafety.Validate(Incident.Description);
+        Incident.Validate();
         if (UpdatedAt < CreatedAt)
         {
             throw new InvalidOperationException("The recovery session update time predates its creation time.");
@@ -534,68 +538,4 @@ public sealed record RecoverySessionWorkspace(
         }
     }
 
-    private static string? NormalizeDescription(string? description) =>
-        string.IsNullOrWhiteSpace(description) ? null : description.Trim();
-}
-
-public static class IncidentDescriptionSafety
-{
-    private static readonly string[] ForbiddenFragments =
-    [
-        "password:",
-        "passwort:",
-        "passwd:",
-        "pwd:",
-        "token:",
-        "cookie:",
-        "recovery code:",
-        "recovery-code:",
-        "wiederherstellungscode:",
-        "mfa secret:",
-        "2fa secret:",
-        "reset link:",
-        "reset-link:",
-        "http://",
-        "https://",
-    ];
-
-    public static void Validate(string? description)
-    {
-        if (string.IsNullOrWhiteSpace(description))
-        {
-            return;
-        }
-
-        if (description.Length > 500)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(description),
-                "Incident descriptions are limited to 500 characters.");
-        }
-
-        var normalized = description.ToLowerInvariant();
-        if (ForbiddenFragments.Any(normalized.Contains) || ContainsLongSecretLikeToken(description))
-        {
-            throw new ArgumentException(
-                "Incident descriptions must not contain credentials, tokens, recovery codes, cookies, or links.",
-                nameof(description));
-        }
-    }
-
-    private static bool ContainsLongSecretLikeToken(string value)
-    {
-        foreach (var token in value.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-        {
-            var trimmed = token.Trim('"', '\'', ',', '.', ';', '(', ')', '[', ']', '{', '}');
-            if (trimmed.Length >= 32 && trimmed.All(IsSecretLikeCharacter))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsSecretLikeCharacter(char character) =>
-        char.IsLetterOrDigit(character) || character is '-' or '_' or '+' or '/' or '=';
 }

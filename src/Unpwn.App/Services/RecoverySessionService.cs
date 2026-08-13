@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
 using Unpwn.Vault.Storage;
@@ -17,7 +18,10 @@ public sealed class RecoverySessionService :
         "recovery-session",
         SessionRecordId,
         1);
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General);
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    };
 
     private readonly IEncryptedVaultRecordStore _recordStore;
     private readonly IRecoveryWizardVaultCoordinator _wizardCoordinator;
@@ -246,7 +250,7 @@ public sealed class RecoverySessionService :
             session = RecoverySessionWorkspace.Create(
                 Guid.NewGuid(),
                 request.Name,
-                new RecoveryIncidentIntake(request.Indicators, request.IncidentDescription),
+                new RecoveryIncidentIntake(request.Indicators),
                 _clock());
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)

@@ -5,6 +5,33 @@ namespace Unpwn.Core.Tests;
 
 public sealed class AccountInventoryAcceptanceTests
 {
+    [Theory]
+    [InlineData(IncidentIndicator.LostAccess)]
+    [InlineData(IncidentIndicator.CompromisedRecoveryChannel)]
+    public void RetainedIntakeChoicesPrioritizeConfirmedRecoveryChannels(
+        IncidentIndicator indicator)
+    {
+        var recoveryChannel = CreateAccount(
+            "Primary mailbox",
+            AccountInventoryPriority.Normal,
+            roles:
+            [
+                new AccountRoleState(
+                    AccountInventoryRole.EmailMailbox,
+                    AccountRoleDecision.Confirmed),
+            ]);
+        var critical = CreateAccount("Banking", AccountInventoryPriority.Critical);
+        var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts([critical, recoveryChannel], DateTimeOffset.UnixEpoch.AddSeconds(1));
+
+        Assert.Equal(critical.Id, state.CreatePlan(IncidentIndicator.None).Recommended?.AccountId);
+
+        var plan = state.CreatePlan(indicator);
+
+        Assert.Equal(recoveryChannel.Id, plan.Recommended?.AccountId);
+        Assert.Equal(AccountInventoryPlanReasonCode.RecoveryChannelFirst, plan.Recommended?.ReasonCode);
+    }
+
     [Fact]
     public void RejectedInferenceRemainsRejectedAndNeverAffectsRecoveryPriority()
     {

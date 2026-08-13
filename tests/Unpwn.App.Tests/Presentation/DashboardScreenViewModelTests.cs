@@ -27,9 +27,7 @@ public sealed class DashboardScreenViewModelTests
         var viewModel = CreateViewModel(new TestRecoverySessionService());
 
         Assert.False(viewModel.CreateSessionCommand.CanExecute(null));
-
-        viewModel.SessionName = "Recovery";
-        Assert.False(viewModel.CreateSessionCommand.CanExecute(null));
+        Assert.Equal("SyntheticUser-Recovery", viewModel.SessionName);
 
         viewModel.SecurityWarningAcknowledged = true;
         Assert.True(viewModel.CreateSessionCommand.CanExecute(null));
@@ -39,7 +37,39 @@ public sealed class DashboardScreenViewModelTests
     }
 
     [Fact]
-    public async Task OptionalIncidentDetailsCanBeSkippedWhenCreatingSession()
+    public void SessionNameSuggestionIsSanitizedAndRemainsEditable()
+    {
+        var viewModel = CreateViewModel(
+            new TestRecoverySessionService(),
+            localUserName: () => "  DOMAIN\\Tobi  ");
+
+        Assert.Equal("DOMAIN-Tobi-Recovery", viewModel.SessionName);
+
+        viewModel.SessionName = "Edited recovery";
+
+        Assert.Equal("Edited recovery", viewModel.SessionName);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" /\\:*? ")]
+    public void MissingOrInvalidLocalUserNameUsesNeutralFallback(string? localUserName)
+    {
+        Assert.Equal("Recovery", RecoverySessionNameSuggestion.Create(localUserName));
+    }
+
+    [Fact]
+    public void SessionNameSuggestionStaysWithinCanonicalLengthLimit()
+    {
+        var suggestion = RecoverySessionNameSuggestion.Create(new string('a', 200));
+
+        Assert.Equal(120, suggestion.Length);
+        Assert.EndsWith("-Recovery", suggestion, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OptionalIncidentChoicesCanBeSkippedWhenCreatingSession()
     {
         var sessionService = new TestRecoverySessionService();
         var viewModel = CreateViewModel(sessionService);
@@ -50,7 +80,6 @@ public sealed class DashboardScreenViewModelTests
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
         Assert.NotNull(sessionService.LastCreateRequest);
-        Assert.Null(sessionService.LastCreateRequest.IncidentDescription);
         Assert.Equal(IncidentIndicator.None, sessionService.LastCreateRequest.Indicators);
         Assert.True(viewModel.IsDashboardState);
         Assert.False(viewModel.HasValidationMessage);
@@ -58,23 +87,23 @@ public sealed class DashboardScreenViewModelTests
     }
 
     [Fact]
-    public async Task SecretLikeIncidentDescriptionIsRejectedBeforeServiceCall()
+    public async Task RetainedIncidentChoicesReachCanonicalSessionState()
     {
-        const string secret = "UNPWN_TEST_SECRET_dashboard-input";
         var sessionService = new TestRecoverySessionService();
         var viewModel = CreateViewModel(sessionService);
-        viewModel.SessionName = "Unsafe intake";
-        viewModel.IncidentDescription = $"token: {secret}";
+        viewModel.LostAccess = true;
+        viewModel.CompromisedRecoveryChannel = true;
         viewModel.SecurityWarningAcknowledged = true;
 
         var outcome = await viewModel.CreateSessionCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Null(sessionService.LastCreateRequest);
         Assert.Equal(
-            "Remove credentials, links, tokens, recovery codes, cookies, or secret-like values from the incident description.",
-            viewModel.ValidationMessage);
-        Assert.DoesNotContain(secret, viewModel.ValidationMessage, StringComparison.Ordinal);
+            IncidentIndicator.LostAccess | IncidentIndicator.CompromisedRecoveryChannel,
+            sessionService.CurrentSession?.Incident.Indicators);
+        Assert.Equal(
+            RecoveryDashboardRecommendationCode.SecureRecoveryChannel,
+            sessionService.Dashboard?.Recommendation.Code);
     }
 
     [Fact]
@@ -84,9 +113,7 @@ public sealed class DashboardScreenViewModelTests
         var session = RecoverySessionWorkspace.Create(
             Guid.NewGuid(),
             "Recovery channel review",
-            new RecoveryIncidentIntake(
-                IncidentIndicator.CompromisedRecoveryChannel,
-                null),
+            new RecoveryIncidentIntake(IncidentIndicator.CompromisedRecoveryChannel),
             DateTimeOffset.UnixEpoch);
         var sessionService = new TestRecoverySessionService(session);
         var viewModel = CreateViewModel(sessionService, localization);
@@ -221,7 +248,8 @@ public sealed class DashboardScreenViewModelTests
 
     private static DashboardScreenViewModel CreateViewModel(
         TestRecoverySessionService sessionService,
-        ResourceLocalizationService? localization = null)
+        ResourceLocalizationService? localization = null,
+        Func<string?>? localUserName = null)
     {
         localization ??= CreateLocalization();
         return new DashboardScreenViewModel(
@@ -229,7 +257,8 @@ public sealed class DashboardScreenViewModelTests
             new TestVaultLifecycleService(),
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
             new TestConfirmationDialogService(),
-            localization);
+            localization,
+            localUserName ?? (() => "SyntheticUser"));
     }
 
     private sealed class TestConfirmationDialogService : IConfirmationDialogService
@@ -275,16 +304,11 @@ public sealed class DashboardScreenViewModelTests
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            LastCreateRequest = request with
-            {
-                IncidentDescription = string.IsNullOrWhiteSpace(request.IncidentDescription)
-                    ? null
-                    : request.IncidentDescription,
-            };
+            LastCreateRequest = request;
             CurrentSession = RecoverySessionWorkspace.Create(
                 Guid.NewGuid(),
                 request.Name,
-                new RecoveryIncidentIntake(request.Indicators, request.IncidentDescription),
+                new RecoveryIncidentIntake(request.Indicators),
                 DateTimeOffset.UnixEpoch);
             LoadState = RecoverySessionLoadState.Loaded;
             SessionChanged?.Invoke(this, EventArgs.Empty);

@@ -58,19 +58,6 @@
                    PlaceholderText="{DynamicResource Dashboard.Intake.NameWatermark}"
                    MaxLength="120" />
 
-          <TextBlock Text="{DynamicResource Dashboard.Intake.DescriptionLabel}"
-                     FontWeight="SemiBold" />
-          <TextBox Text="{Binding IncidentDescription, Mode=TwoWay}"
-                   PlaceholderText="{DynamicResource Dashboard.Intake.DescriptionWatermark}"
-                   MaxLength="500"
-                   MinHeight="100"
-                   AcceptsReturn="True"
-                   TextWrapping="Wrap" />
-          <TextBlock Text="{DynamicResource Dashboard.Intake.DescriptionHelp}"
-                     TextWrapping="Wrap" />
-          <TextBlock Text="{Binding IncidentDescriptionCounter}"
-                     HorizontalAlignment="Right" />
-
           <Border Padding="16"
                   CornerRadius="8"
                   Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
@@ -81,16 +68,8 @@
                          TextWrapping="Wrap" />
               <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.LostAccess}"
                         IsChecked="{Binding LostAccess, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.UnexpectedPassword}"
-                        IsChecked="{Binding UnexpectedPasswordChange, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.UnexpectedMfa}"
-                        IsChecked="{Binding UnexpectedMfaChange, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.UnknownSessions}"
-                        IsChecked="{Binding UnknownActiveSessions, Mode=TwoWay}" />
               <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.CompromisedRecovery}"
                         IsChecked="{Binding CompromisedRecoveryChannel, Mode=TwoWay}" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.UntrustedDevice}"
-                        IsChecked="{Binding PotentiallyUntrustedDevice, Mode=TwoWay}" />
               <TextBlock Text="{DynamicResource Dashboard.Intake.SkipHint}"
                          TextWrapping="Wrap" />
             </StackPanel>

@@ -11,9 +11,7 @@ public sealed class RecoverySessionWorkspaceTests
         var session = RecoverySessionWorkspace.Create(
             Guid.NewGuid(),
             "Incident review",
-            new RecoveryIncidentIntake(
-                IncidentIndicator.CompromisedRecoveryChannel,
-                "Unexpected recovery email changes were observed."),
+            new RecoveryIncidentIntake(IncidentIndicator.CompromisedRecoveryChannel),
             DateTimeOffset.UnixEpoch);
 
         var dashboard = session.CreateDashboardSnapshot();
@@ -98,16 +96,15 @@ public sealed class RecoverySessionWorkspaceTests
                      alert.AccountId == importantAccountId);
     }
 
-    [Theory]
-    [InlineData("password: synthetic-secret-value")]
-    [InlineData("Reset link: https://example.invalid/reset")]
-    [InlineData("token: abcdefghijklmnopqrstuvwxyz0123456789")]
-    public void IncidentDescriptionRejectsSecretOrLinkMaterial(string description)
+    [Fact]
+    public void RemovedIncidentIndicatorsFailClosed()
     {
-        Assert.Throws<ArgumentException>(() => RecoverySessionWorkspace.Create(
+        var removedIndicator = (IncidentIndicator)(1 << 5);
+
+        Assert.Throws<InvalidOperationException>(() => RecoverySessionWorkspace.Create(
             Guid.NewGuid(),
-            "Unsafe intake",
-            new RecoveryIncidentIntake(IncidentIndicator.None, description),
+            "Unsupported intake",
+            new RecoveryIncidentIntake(removedIndicator),
             DateTimeOffset.UnixEpoch));
     }
 
@@ -283,17 +280,15 @@ public sealed class RecoverySessionWorkspaceTests
     }
 
     [Fact]
-    public void IncidentIntakeDetectsCombinedEmergencyAndNormalizesEmptyDescription()
+    public void RetainedIncidentIndicatorsHaveIndependentSemantics()
     {
-        var intake = new RecoveryIncidentIntake(
-            IncidentIndicator.LostAccess | IncidentIndicator.UnexpectedMfaChange,
-            "   ");
-        var session = RecoverySessionWorkspace.Create(
-            Guid.NewGuid(), "Incident", intake, DateTimeOffset.UnixEpoch);
+        var lostAccess = new RecoveryIncidentIntake(IncidentIndicator.LostAccess);
+        var compromisedChannel = new RecoveryIncidentIntake(
+            IncidentIndicator.CompromisedRecoveryChannel);
 
-        Assert.True(intake.Has(IncidentIndicator.LostAccess));
-        Assert.True(intake.RequiresEmergencyAttention);
-        Assert.Null(session.Incident.Description);
+        Assert.True(lostAccess.Has(IncidentIndicator.LostAccess));
+        Assert.False(lostAccess.RequiresEmergencyAttention);
+        Assert.True(compromisedChannel.RequiresEmergencyAttention);
     }
 
     private static RecoveryAccountDashboardEntry CreateAccount(

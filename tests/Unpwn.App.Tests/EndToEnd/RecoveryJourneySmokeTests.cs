@@ -518,8 +518,7 @@ public sealed class RecoveryJourneySmokeTests
             var result = await Session.CreateAsync(
                 new RecoverySessionCreateRequest(
                     "Synthetic end-to-end recovery",
-                    "Unexpected account changes were observed.",
-                    IncidentIndicator.UnexpectedPasswordChange,
+                    IncidentIndicator.None,
                     SecurityWarningAcknowledged: true),
                 CancellationToken.None);
             Assert.True(result.Succeeded);

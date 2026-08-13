@@ -41,7 +41,6 @@ public sealed class GuidedRecoveryWizardServiceTests
         Assert.True((await session.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Synthetic recovery",
-                null,
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None)).Succeeded);

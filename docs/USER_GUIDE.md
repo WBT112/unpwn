@@ -40,11 +40,18 @@ Use a strong, unique vault password. The vault is a temporary recovery workspace
 
 After a vault is successfully created, opened, or unlocked, password fields are cleared and unpwn continues directly to the recovery overview. The Vault screen remains available afterwards for vault management such as changing the vault password or repeating the trusted-device assessment.
 
-### 3. Record what happened
+### 3. Create the recovery session
 
-Record observable indicators such as lost access, unexpected password or MFA changes, unknown sessions, or a possibly compromised recovery channel.
+unpwn suggests a local session name such as **Tobi-Recovery** from the operating-system user name. You
+can edit it before creation. If no usable local user name is available, the suggestion is
+**Recovery**. The suggestion is created locally; unpwn does not query a directory service or derive it
+from imported account or email data.
 
-Do **not** put passwords, reset links, MFA secrets, recovery codes, cookies, or tokens into notes.
+Two optional choices can change the recovery order: whether you cannot access one or more accounts,
+and whether a primary email or recovery channel may be under someone else's control. Lost access
+moves confirmed recovery-channel accounts earlier. A possibly controlled recovery channel also shows
+an immediate advisory. These answers guide prioritization and do not prove that an account, device,
+or credential was compromised. unpwn does not collect a free-form incident narrative.
 
 ### 4. Add your accounts
 

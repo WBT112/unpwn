@@ -17,13 +17,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private readonly RecoveryWizardSessionService _wizard;
     private readonly IConfirmationDialogService _confirmationDialog;
     private string _sessionName = string.Empty;
-    private string _incidentDescription = string.Empty;
     private bool _lostAccess;
-    private bool _unexpectedPasswordChange;
-    private bool _unexpectedMfaChange;
-    private bool _unknownActiveSessions;
     private bool _compromisedRecoveryChannel;
-    private bool _potentiallyUntrustedDevice;
     private bool _securityWarningAcknowledged;
     private string? _validationKey;
 
@@ -32,7 +27,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         IVaultLifecycleService vaultLifecycle,
         RecoveryWizardSessionService wizard,
         IConfirmationDialogService confirmationDialog,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        Func<string?>? localUserName = null)
         : base(
             AppRoute.Dashboard,
             localization,
@@ -46,6 +42,9 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         _vaultLifecycle = vaultLifecycle ?? throw new ArgumentNullException(nameof(vaultLifecycle));
         _wizard = wizard ?? throw new ArgumentNullException(nameof(wizard));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
+        _sessionName = localUserName is null
+            ? RecoverySessionNameSuggestion.CreateForCurrentUser()
+            : RecoverySessionNameSuggestion.Create(localUserName());
 
         RefreshCommand = new AsyncCommand(
             RefreshAsync,
@@ -111,53 +110,16 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public string IncidentDescription
-    {
-        get => _incidentDescription;
-        set
-        {
-            if (SetProperty(ref _incidentDescription, value ?? string.Empty))
-            {
-                ClearValidation();
-                OnPropertyChanged(nameof(IncidentDescriptionCounter));
-            }
-        }
-    }
-
     public bool LostAccess
     {
         get => _lostAccess;
         set => SetProperty(ref _lostAccess, value);
     }
 
-    public bool UnexpectedPasswordChange
-    {
-        get => _unexpectedPasswordChange;
-        set => SetProperty(ref _unexpectedPasswordChange, value);
-    }
-
-    public bool UnexpectedMfaChange
-    {
-        get => _unexpectedMfaChange;
-        set => SetProperty(ref _unexpectedMfaChange, value);
-    }
-
-    public bool UnknownActiveSessions
-    {
-        get => _unknownActiveSessions;
-        set => SetProperty(ref _unknownActiveSessions, value);
-    }
-
     public bool CompromisedRecoveryChannel
     {
         get => _compromisedRecoveryChannel;
         set => SetProperty(ref _compromisedRecoveryChannel, value);
-    }
-
-    public bool PotentiallyUntrustedDevice
-    {
-        get => _potentiallyUntrustedDevice;
-        set => SetProperty(ref _potentiallyUntrustedDevice, value);
     }
 
     public bool SecurityWarningAcknowledged
@@ -208,11 +170,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         : Localization.GetString(_validationKey);
 
     public bool HasValidationMessage => _validationKey is not null;
-
-    public string IncidentDescriptionCounter => Localization.Format(
-        "Dashboard.Intake.DescriptionCounter",
-        IncidentDescription.Length,
-        500);
 
     public string CurrentSessionName => Session?.Name ?? string.Empty;
 
@@ -394,20 +351,9 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        try
-        {
-            IncidentDescriptionSafety.Validate(IncidentDescription);
-        }
-        catch (ArgumentException)
-        {
-            SetValidation("Dashboard.Validation.DescriptionUnsafe");
-            return;
-        }
-
         var result = await _sessionService.CreateAsync(
             new RecoverySessionCreateRequest(
                 SessionName,
-                IncidentDescription,
                 BuildIndicators(),
                 SecurityWarningAcknowledged),
             cancellationToken);
@@ -516,16 +462,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     {
         var indicators = IncidentIndicator.None;
         indicators = LostAccess ? indicators | IncidentIndicator.LostAccess : indicators;
-        indicators = UnexpectedPasswordChange
-            ? indicators | IncidentIndicator.UnexpectedPasswordChange
-            : indicators;
-        indicators = UnexpectedMfaChange ? indicators | IncidentIndicator.UnexpectedMfaChange : indicators;
-        indicators = UnknownActiveSessions ? indicators | IncidentIndicator.UnknownActiveSessions : indicators;
         indicators = CompromisedRecoveryChannel
             ? indicators | IncidentIndicator.CompromisedRecoveryChannel
-            : indicators;
-        indicators = PotentiallyUntrustedDevice
-            ? indicators | IncidentIndicator.PotentiallyUntrustedDevice
             : indicators;
         return indicators;
     }
@@ -554,7 +492,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     private void NotifyLocalizedProperties()
     {
-        OnPropertyChanged(nameof(IncidentDescriptionCounter));
         OnPropertyChanged(nameof(CurrentSessionName));
         OnPropertyChanged(nameof(SessionStatusText));
         OnPropertyChanged(nameof(LastSavedText));
@@ -654,13 +591,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private void ClearIntakeInputs()
     {
         SessionName = string.Empty;
-        IncidentDescription = string.Empty;
         LostAccess = false;
-        UnexpectedPasswordChange = false;
-        UnexpectedMfaChange = false;
-        UnknownActiveSessions = false;
         CompromisedRecoveryChannel = false;
-        PotentiallyUntrustedDevice = false;
         SecurityWarningAcknowledged = false;
         ClearValidation();
     }
