@@ -69,7 +69,7 @@ Security meaning must not depend on color alone, and pseudo-localization/minimum
 
 ### 5. End-to-end smoke journeys
 
-The blocking suite includes an `EndToEndSmoke` category that composes real application services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session creation, canonical CSV import, account-category triage, category-aware planning, repository-controlled provider workflows, explicit action completion, generated-credential handoff and cleanup, completion review, locking, reopening, and persisted-state validation after an application-style restart.
+The blocking suite includes an `EndToEndSmoke` category that composes real application services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session creation, canonical CSV import, account-category triage, the category-aware recovery queue, repository-controlled provider workflows, explicit action completion, generated-credential handoff and cleanup, completion review, locking, reopening, and persisted-state validation after an application-style restart.
 
 Negative smoke coverage verifies that an untrusted or uncertain device decision cannot create a sensitive recovery workspace. All paths use synthetic identities and local files.
 
@@ -108,7 +108,7 @@ The implementation lives in `Unpwn.Automation` with `tools/Unpwn.ProviderSmokeCh
 Before a supported release:
 
 - run the complete deterministic CI suite;
-- validate every shipped workflow definition and compatibility with persisted sessions;
+- validate every shipped workflow definition and fail closed for incompatible persisted execution state;
 - manually review changed provider workflows and only update verification metadata after real review;
 - review unresolved provider uncertainty;
 - verify localization completeness, placeholder parity, pseudo-localization, and minimum-window behavior;

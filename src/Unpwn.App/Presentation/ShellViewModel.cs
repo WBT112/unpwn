@@ -575,16 +575,16 @@ public sealed class ShellViewModel : ObservableObject
         NavigateTo(eventArgs.Route);
     }
 
-    private void Workflow_OnPlanReturnRequested(
+    private void Workflow_OnOverviewReturnRequested(
         object? sender,
-        WorkflowPlanReturnRequest eventArgs)
+        WorkflowOverviewReturnRequest eventArgs)
     {
         NavigationAccountId = null;
         NavigationActionId = null;
         NavigateTo(AppRoute.Dashboard);
         if (CurrentScreen is DashboardScreenViewModel dashboard)
         {
-            dashboard.ShowPlanFeedback(eventArgs.FeedbackResourceKey);
+            dashboard.ShowRecoveryQueueFeedback(eventArgs.FeedbackResourceKey);
         }
     }
 
@@ -617,7 +617,7 @@ public sealed class ShellViewModel : ObservableObject
 
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
-            workflow.PlanReturnRequested += Workflow_OnPlanReturnRequested;
+            workflow.OverviewReturnRequested += Workflow_OnOverviewReturnRequested;
         }
 
 
@@ -657,7 +657,7 @@ public sealed class ShellViewModel : ObservableObject
 
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
-            workflow.PlanReturnRequested -= Workflow_OnPlanReturnRequested;
+            workflow.OverviewReturnRequested -= Workflow_OnOverviewReturnRequested;
         }
 
 

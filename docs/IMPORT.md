@@ -66,8 +66,8 @@ state. Final import remains an explicit user action after reviewing candidates a
 
 ## Application boundary
 
-The desktop application supplies non-secret existing-account references for duplicate detection, assigns opaque account IDs, persists reviewed accounts, and recalculates the recovery plan and dashboard projection.
+The desktop application supplies non-secret existing-account references for duplicate detection, assigns opaque account IDs, persists reviewed accounts, and recalculates the recovery queue and overview projection.
 
-For the resulting account model and planning rules, see [Account Inventory and Recovery Planning](ACCOUNT_INVENTORY.md). Localization requirements are defined in [Localization](LOCALIZATION.md).
+For the resulting account model and queue rules, see [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md). Localization requirements are defined in [Localization](LOCALIZATION.md).
 
 Repository-controlled developer fixtures and their expected mapping, diagnostics, provider paths, and post-import setup live in [`samples/import`](../samples/import/SCENARIOS.md). They contain synthetic data only and are the canonical manual import smoke-test input described by the [Testing Strategy](TESTING.md).

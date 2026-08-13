@@ -11,7 +11,6 @@ namespace Unpwn.App.Services;
 public sealed class RecoveryVaultLifecycleService :
     IVaultLifecycleService,
     IEncryptedVaultRecordStore,
-    IRecoveryWizardVaultCoordinator,
     IRecoveryWizardPersistenceCoordinator,
     IGeneratedCredentialRepository,
     ISafeCrashLock
@@ -123,16 +122,6 @@ public sealed class RecoveryVaultLifecycleService :
             cancellationToken.ThrowIfCancellationRequested();
             vault.UpsertRecords(writes);
         }, cancellationToken);
-    }
-
-    public async Task ApplyWizardTransitionAsync(
-        RecoverySessionWizardTransition transition,
-        CancellationToken cancellationToken)
-    {
-        ThrowIfDisposed();
-        using var prepared = PrepareTransition(transition, _clock());
-        await WriteEncryptedRecordsAtomicallyAsync([prepared.ToWrite()], cancellationToken);
-        CommitPreparedTransition(prepared);
     }
 
     public PreparedRecoveryWizardUpdate PrepareTransition(

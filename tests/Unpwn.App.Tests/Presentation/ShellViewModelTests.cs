@@ -661,12 +661,6 @@ public sealed class ShellViewModelTests
             Task.FromResult(RecoverySessionOperationResult.Failure(
                 RecoverySessionOperationFailureCode.Locked));
 
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-            CancellationToken cancellationToken) =>
-            Task.FromResult(RecoverySessionOperationResult.Failure(
-                RecoverySessionOperationFailureCode.Locked));
-
         public void ClearForLock()
         {
             LoadState = RecoverySessionLoadState.Locked;
@@ -690,7 +684,7 @@ public sealed class ShellViewModelTests
 
         public AccountInventoryState? CurrentInventory { get; private set; }
 
-        public AccountInventoryPlan? CurrentPlan => null;
+        public AccountRecoveryOrder? CurrentRecoveryOrder => null;
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 

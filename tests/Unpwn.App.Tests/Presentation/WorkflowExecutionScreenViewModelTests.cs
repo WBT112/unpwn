@@ -131,8 +131,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
         await viewModel.StartActionCommand.ExecuteAsync();
-        var returned = new List<WorkflowPlanReturnRequest>();
-        viewModel.PlanReturnRequested += (_, request) => returned.Add(request);
+        var returned = new List<WorkflowOverviewReturnRequest>();
+        viewModel.OverviewReturnRequested += (_, request) => returned.Add(request);
 
         Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
         Assert.Equal(RecoveryActionStatus.InProgress, fixture.Execution.State!.GetAction("identify-account-reset").Status);
@@ -270,7 +270,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.BeginCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "reset-password");
         var returned = false;
-        viewModel.PlanReturnRequested += (_, _) => returned = true;
+        viewModel.OverviewReturnRequested += (_, _) => returned = true;
 
         await viewModel.StartActionCommand.ExecuteAsync();
 
@@ -365,7 +365,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await lost.RefreshCommand.ExecuteAsync();
         await lost.BeginCommand.ExecuteAsync();
         var lostReturns = 0;
-        lost.PlanReturnRequested += (_, _) => lostReturns++;
+        lost.OverviewReturnRequested += (_, _) => lostReturns++;
         lost.ShowProblemReviewCommand.Execute(null);
         lost.SelectedProblem = lost.ProblemOptions.Single(option =>
             option.Value == GuidedRecoveryProblem.LostAccess);
@@ -615,7 +615,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
-    public async Task ExistingGenericHistoryIsPreservedWhenReviewedWorkflowBecomesAvailable()
+    public async Task WorkflowMismatchFailsClosedWhenReviewedWorkflowBecomesAvailable()
     {
         var fixture = new Fixture();
         var generic = RepositoryWorkflowCatalog.CreateGenericManualWorkflow("github.com");
@@ -635,11 +635,11 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         await viewModel.RefreshCommand.ExecuteAsync();
 
-        Assert.True(viewModel.IsGeneralManualWorkflow);
-        Assert.True(viewModel.HasExecution);
-        Assert.Contains("keeps that history", viewModel.WorkflowTrustMessage, StringComparison.Ordinal);
+        Assert.True(viewModel.IsReviewedProviderWorkflow);
+        Assert.False(viewModel.HasExecution);
+        Assert.True(viewModel.HasValidationMessage);
         Assert.Equal(state.Revision, fixture.Execution.State?.Revision);
-        Assert.Equal("identify-account-manual", viewModel.SelectedAction?.DefinitionId);
+        Assert.Equal("identify-account-reset", viewModel.SelectedAction?.DefinitionId);
     }
 
     [Fact]
@@ -1101,7 +1101,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         public AccountInventoryState? CurrentInventory { get; private set; } = inventory;
 
-        public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan();
+        public AccountRecoveryOrder? CurrentRecoveryOrder => CurrentInventory?.CreateRecoveryOrder();
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -1144,8 +1144,6 @@ public sealed class WorkflowExecutionScreenViewModelTests
         public Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken) => Unsupported();
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) => Unsupported();
-
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts, CancellationToken cancellationToken) => Unsupported();
 
         public void ClearForLock() => SessionChanged?.Invoke(this, EventArgs.Empty);
 

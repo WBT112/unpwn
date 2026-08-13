@@ -69,7 +69,7 @@ The post-intake gates are deterministic:
 - returning from material account work recalculates the next task from the latest persisted projections without a separate account-recovery wizard phase;
 - a successful completion preflight advances to final-report review, while the terminal outcome still requires explicit confirmation.
 
-Blocked and failed actions, lost access, and unresolved risks are not hidden by wizard navigation. They remain visible in recovery execution and completion review. The removed account-dependency graph has no wizard gate or parallel planning authority.
+Blocked and failed actions, lost access, and unresolved risks are not hidden by assistant navigation. They remain visible in recovery execution and completion review. The removed account-dependency graph has no assistant gate or parallel queue authority.
 
 ## Safe resume
 
@@ -87,7 +87,7 @@ Account-specific ordering is derived from the persisted queue and execution stat
 Unknown or obsolete serialized step identifiers fail closed; development states from the removed
 `recovery-plan` and `account-recovery` phases are intentionally not migrated.
 
-See [Account Inventory and Recovery Planning](ACCOUNT_INVENTORY.md) and [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
+See [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md) and [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
 
 ## Terminal outcomes
 

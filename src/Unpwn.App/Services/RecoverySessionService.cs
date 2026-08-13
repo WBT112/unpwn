@@ -9,8 +9,7 @@ using Unpwn.Vault.Storage;
 namespace Unpwn.App.Services;
 
 public sealed class RecoverySessionService :
-    IRecoverySessionService,
-    IRecoverySessionProjectionCoordinator,
+    IRecoverySessionWorkspaceCoordinator,
     IDisposable
 {
     private const string SessionRecordId = "8cf13bd9-2ccc-4b71-958a-439fefc90ac6";
@@ -24,7 +23,7 @@ public sealed class RecoverySessionService :
     };
 
     private readonly IEncryptedVaultRecordStore _recordStore;
-    private readonly IRecoveryWizardVaultCoordinator _wizardCoordinator;
+    private readonly IRecoveryWizardPersistenceCoordinator _wizardCoordinator;
     private readonly Func<DateTimeOffset> _clock;
     private readonly WorkspaceMutationCoordinator _mutationCoordinator;
     private readonly bool _ownsMutationCoordinator;
@@ -33,7 +32,7 @@ public sealed class RecoverySessionService :
 
     public RecoverySessionService(
         IEncryptedVaultRecordStore recordStore,
-        IRecoveryWizardVaultCoordinator wizardCoordinator,
+        IRecoveryWizardPersistenceCoordinator wizardCoordinator,
         Func<DateTimeOffset>? clock = null,
         WorkspaceMutationCoordinator? mutationCoordinator = null)
     {
@@ -110,17 +109,6 @@ public sealed class RecoverySessionService :
         ArgumentNullException.ThrowIfNull(completion);
         return _mutationCoordinator.ExecuteAsync(
             token => CompleteCoreAsync(completion, expectedSessionRevision, token),
-            cancellationToken);
-    }
-
-    public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-        IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-        CancellationToken cancellationToken)
-    {
-        ThrowIfDisposed();
-        ArgumentNullException.ThrowIfNull(accounts);
-        return _mutationCoordinator.ExecuteAsync(
-            token => ReplaceAccountSummariesCoreAsync(accounts, token),
             cancellationToken);
     }
 
@@ -287,13 +275,8 @@ public sealed class RecoverySessionService :
                 return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
             }
 
-            if (_wizardCoordinator is not IRecoveryWizardPersistenceCoordinator wizardPersistence)
-            {
-                return await PersistLegacyCreateAsync(session, cancellationToken);
-            }
-
             using var sessionUpdate = PrepareState(session, expectedRevision: -1);
-            using var wizardUpdate = wizardPersistence.PrepareTransition(
+            using var wizardUpdate = _wizardCoordinator.PrepareTransition(
                 RecoverySessionWizardTransition.CompleteIncidentIntake,
                 _clock());
             var persisted = await PersistBatchAsync(
@@ -304,7 +287,7 @@ public sealed class RecoverySessionService :
                 return persisted;
             }
 
-            wizardPersistence.CommitPreparedTransition(wizardUpdate);
+            _wizardCoordinator.CommitPreparedTransition(wizardUpdate);
             SetState(RecoverySessionLoadState.Loaded, session);
             return RecoverySessionOperationResult.Success;
         }
@@ -339,8 +322,7 @@ public sealed class RecoverySessionService :
                 return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Locked);
             }
 
-            if (CurrentSession is null || CurrentSession.Revision != expectedSessionRevision ||
-                _wizardCoordinator is not IRecoveryWizardPersistenceCoordinator wizardPersistence)
+            if (CurrentSession is null || CurrentSession.Revision != expectedSessionRevision)
             {
                 return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
             }
@@ -367,7 +349,7 @@ public sealed class RecoverySessionService :
             try
             {
                 using var sessionUpdate = PrepareState(updated, CurrentSession.Revision);
-                using var wizardUpdate = wizardPersistence.PrepareTransition(transition, _clock());
+                using var wizardUpdate = _wizardCoordinator.PrepareTransition(transition, _clock());
                 var persisted = await PersistBatchAsync(
                     [sessionUpdate.ToWrite(), wizardUpdate.ToWrite()],
                     cancellationToken);
@@ -376,7 +358,7 @@ public sealed class RecoverySessionService :
                     return persisted;
                 }
 
-                wizardPersistence.CommitPreparedTransition(wizardUpdate);
+                _wizardCoordinator.CommitPreparedTransition(wizardUpdate);
                 SetState(RecoverySessionLoadState.Loaded, updated);
                 return RecoverySessionOperationResult.Success;
             }
@@ -419,13 +401,8 @@ public sealed class RecoverySessionService :
                 return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Conflict);
             }
 
-            if (_wizardCoordinator is not IRecoveryWizardPersistenceCoordinator wizardPersistence)
-            {
-                return await PersistLegacyTransitionAsync(updated, wizardTransition, cancellationToken);
-            }
-
             using var sessionUpdate = PrepareState(updated, CurrentSession.Revision);
-            using var wizardUpdate = wizardPersistence.PrepareTransition(wizardTransition, _clock());
+            using var wizardUpdate = _wizardCoordinator.PrepareTransition(wizardTransition, _clock());
             var persisted = await PersistBatchAsync(
                 [sessionUpdate.ToWrite(), wizardUpdate.ToWrite()],
                 cancellationToken);
@@ -434,42 +411,13 @@ public sealed class RecoverySessionService :
                 return persisted;
             }
 
-            wizardPersistence.CommitPreparedTransition(wizardUpdate);
+            _wizardCoordinator.CommitPreparedTransition(wizardUpdate);
             SetState(RecoverySessionLoadState.Loaded, updated);
             return RecoverySessionOperationResult.Success;
         }
         finally
         {
             _gate.Release();
-        }
-    }
-
-    private async Task<RecoverySessionOperationResult> ReplaceAccountSummariesCoreAsync(
-        IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-        CancellationToken cancellationToken)
-    {
-        PreparedRecoverySessionUpdate update;
-        try
-        {
-            update = await PrepareAccountSummaryUpdateAsync(accounts, cancellationToken);
-        }
-        catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
-        {
-            return RecoverySessionOperationResult.Failure(
-                _recordStore.IsVaultUnlocked
-                    ? RecoverySessionOperationFailureCode.InvalidInput
-                    : RecoverySessionOperationFailureCode.Locked);
-        }
-
-        using (update)
-        {
-            var result = await PersistBatchAsync([update.ToWrite()], cancellationToken);
-            if (result.Succeeded)
-            {
-                CommitPreparedUpdate(update);
-            }
-
-            return result;
         }
     }
 
@@ -516,55 +464,6 @@ public sealed class RecoverySessionService :
         }
     }
 
-    private async Task<RecoverySessionOperationResult> PersistLegacyCreateAsync(
-        RecoverySessionWorkspace session,
-        CancellationToken cancellationToken)
-    {
-        var persisted = await PersistSingleAsync(session, cancellationToken);
-        if (!persisted.Succeeded)
-        {
-            return persisted;
-        }
-
-        try
-        {
-            await _wizardCoordinator.ApplyWizardTransitionAsync(
-                RecoverySessionWizardTransition.CompleteIncidentIntake,
-                cancellationToken);
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException)
-        {
-            return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.IoFailure);
-        }
-
-        SetState(RecoverySessionLoadState.Loaded, session);
-        return RecoverySessionOperationResult.Success;
-    }
-
-    private async Task<RecoverySessionOperationResult> PersistLegacyTransitionAsync(
-        RecoverySessionWorkspace updated,
-        RecoverySessionWizardTransition wizardTransition,
-        CancellationToken cancellationToken)
-    {
-        var persisted = await PersistSingleAsync(updated, cancellationToken);
-        if (!persisted.Succeeded)
-        {
-            return persisted;
-        }
-
-        try
-        {
-            await _wizardCoordinator.ApplyWizardTransitionAsync(wizardTransition, cancellationToken);
-        }
-        catch (Exception exception) when (exception is InvalidOperationException or IOException)
-        {
-            return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.IoFailure);
-        }
-
-        SetState(RecoverySessionLoadState.Loaded, updated);
-        return RecoverySessionOperationResult.Success;
-    }
-
     private static PreparedRecoverySessionUpdate PrepareState(
         RecoverySessionWorkspace state,
         long expectedRevision)
@@ -597,37 +496,6 @@ public sealed class RecoverySessionService :
         catch (Exception)
         {
             return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.IoFailure);
-        }
-    }
-
-    [SuppressMessage(
-        "Design",
-        "CA1031:Do not catch general exception types",
-        Justification = "This is the encrypted persistence boundary; source exception details must not reach presentation code.")]
-    private async Task<RecoverySessionOperationResult> PersistSingleAsync(
-        RecoverySessionWorkspace session,
-        CancellationToken cancellationToken)
-    {
-        var plaintext = JsonSerializer.SerializeToUtf8Bytes(session, SerializerOptions);
-        try
-        {
-            await _recordStore.WriteEncryptedRecordAsync(
-                SessionDescriptor,
-                plaintext,
-                cancellationToken);
-            return RecoverySessionOperationResult.Success;
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.IoFailure);
-        }
-        finally
-        {
-            CryptographicOperations.ZeroMemory(plaintext);
         }
     }
 

@@ -33,7 +33,7 @@ Once at least one account is explicitly categorized as `Email`, the user can ret
 
 Account removal still requires the normal destructive confirmation, but there is no dependency-impact acknowledgement because account dependency editing no longer exists.
 
-## Planning boundary
+## Recovery queue boundary
 
 The normal recovery queue is derived automatically from effective categories in exactly this order:
 
@@ -47,7 +47,7 @@ are deterministic tie-breakers. UI culture, display text, incident warnings, bro
 incomplete category review never change this order. An unreviewed account keeps its conservative
 catalog suggestion, including `Unknown`, until the user explicitly overrides it.
 
-There are no dependency graph, cycle, missing-target, or override planning states. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
+There are no dependency graph, cycle, missing-target, or override queue states. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
 
 ## Persistence and testing
 

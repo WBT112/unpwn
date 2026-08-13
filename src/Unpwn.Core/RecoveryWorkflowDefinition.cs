@@ -96,33 +96,6 @@ public sealed record RecoveryActionDefinition(
 {
     public string? RecoveryLocationId { get; init; }
 
-    public RecoveryActionDefinition(
-        string id,
-        RecoveryActionType type,
-        IReadOnlyList<RecoveryPath> recoveryPaths,
-        RecoveryActionRequirement requirement,
-        RecoveryActionImportance importance,
-        AutomationSupport automationSupport,
-        IReadOnlyList<string> prerequisites,
-        IReadOnlyList<string> completionCriteria)
-        : this(
-            id,
-            type,
-            recoveryPaths,
-            requirement,
-            importance,
-            automationSupport,
-            prerequisites,
-            completionCriteria,
-            new RecoveryActionGuidanceKeys(
-                $"Workflow.Legacy.{id}.Title",
-                $"Workflow.Legacy.{id}.Instruction",
-                null,
-                $"Workflow.Legacy.{id}.Completion",
-                completionCriteria))
-    {
-    }
-
     public bool IsRequired => Requirement == RecoveryActionRequirement.Required;
 
     public bool SupportsPath(RecoveryPath path) => RecoveryPaths.Contains(path);

@@ -12,7 +12,7 @@ public enum AccountRecoveryCategory
     Unknown = 3,
 }
 
-public enum AccountInventoryPlanReasonCode
+public enum AccountRecoveryOrderReasonCode
 {
     EmailCategory,
     CriticalCategory,
@@ -112,16 +112,16 @@ public sealed record AccountInventoryEntry(
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
 
-public sealed record AccountInventoryPlanItem(
+public sealed record AccountRecoveryOrderItem(
     Guid AccountId,
     string ProviderId,
     AccountRecoveryCategory Category,
-    AccountInventoryPlanReasonCode ReasonCode,
+    AccountRecoveryOrderReasonCode ReasonCode,
     int Order);
 
-public sealed record AccountInventoryPlan(AccountInventoryPlanItem[] Items)
+public sealed record AccountRecoveryOrder(AccountRecoveryOrderItem[] Items)
 {
-    public AccountInventoryPlanItem? Recommended => Items.OrderBy(item => item.Order).FirstOrDefault();
+    public AccountRecoveryOrderItem? Recommended => Items.OrderBy(item => item.Order).FirstOrDefault();
 }
 
 public sealed record AccountInventoryState(
@@ -164,10 +164,10 @@ public sealed record AccountInventoryState(
         };
     }
 
-    public AccountInventoryPlan CreatePlan()
+    public AccountRecoveryOrder CreateRecoveryOrder()
     {
         Validate();
-        return AccountInventoryPlanner.Create(Accounts);
+        return AccountRecoveryOrderBuilder.Create(Accounts);
     }
 
     public void Validate()
@@ -195,9 +195,9 @@ public sealed record AccountInventoryState(
     }
 }
 
-public static class AccountInventoryPlanner
+public static class AccountRecoveryOrderBuilder
 {
-    public static AccountInventoryPlan Create(
+    public static AccountRecoveryOrder Create(
         IReadOnlyCollection<AccountInventoryEntry> accounts)
     {
         ArgumentNullException.ThrowIfNull(accounts);
@@ -205,14 +205,14 @@ public static class AccountInventoryPlanner
             .OrderBy(account => SortOrder(account.EffectiveCategory))
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
             .ThenBy(account => account.Id)
-            .Select((account, index) => new AccountInventoryPlanItem(
+            .Select((account, index) => new AccountRecoveryOrderItem(
                 account.Id,
                 account.ProviderId,
                 account.EffectiveCategory,
                 Reason(account.EffectiveCategory),
                 index + 1))
             .ToArray();
-        return new AccountInventoryPlan(items);
+        return new AccountRecoveryOrder(items);
     }
 
     private static int SortOrder(AccountRecoveryCategory category) => category switch
@@ -224,12 +224,12 @@ public static class AccountInventoryPlanner
         _ => throw new ArgumentOutOfRangeException(nameof(category)),
     };
 
-    private static AccountInventoryPlanReasonCode Reason(AccountRecoveryCategory category) => category switch
+    private static AccountRecoveryOrderReasonCode Reason(AccountRecoveryCategory category) => category switch
     {
-        AccountRecoveryCategory.Email => AccountInventoryPlanReasonCode.EmailCategory,
-        AccountRecoveryCategory.Critical => AccountInventoryPlanReasonCode.CriticalCategory,
-        AccountRecoveryCategory.Unknown => AccountInventoryPlanReasonCode.UnknownCategory,
-        AccountRecoveryCategory.NonCritical => AccountInventoryPlanReasonCode.NonCriticalCategory,
+        AccountRecoveryCategory.Email => AccountRecoveryOrderReasonCode.EmailCategory,
+        AccountRecoveryCategory.Critical => AccountRecoveryOrderReasonCode.CriticalCategory,
+        AccountRecoveryCategory.Unknown => AccountRecoveryOrderReasonCode.UnknownCategory,
+        AccountRecoveryCategory.NonCritical => AccountRecoveryOrderReasonCode.NonCriticalCategory,
         _ => throw new ArgumentOutOfRangeException(nameof(category)),
     };
 }

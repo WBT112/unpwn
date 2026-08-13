@@ -310,12 +310,12 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand ArchiveCommand { get; }
 
-    public void ShowPlanFeedback(string feedbackResourceKey)
+    public void ShowRecoveryQueueFeedback(string feedbackResourceKey)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(feedbackResourceKey);
         SetLocalizedStatus(
             AppVisualState.Normal,
-            "Workflow.Plan.Recalculated.Title",
+            "Workflow.Queue.Recalculated.Title",
             feedbackResourceKey,
             StatusPresentation.TransientResult);
     }

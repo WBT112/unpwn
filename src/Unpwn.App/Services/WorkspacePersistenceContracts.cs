@@ -115,7 +115,7 @@ public sealed class PreparedRecoveryWizardUpdate : IDisposable
     }
 }
 
-public interface IRecoverySessionProjectionCoordinator
+public interface IRecoverySessionWorkspaceCoordinator : IRecoverySessionService
 {
     Task<PreparedRecoverySessionUpdate> PrepareAccountSummaryUpdateAsync(
         IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
@@ -126,9 +126,13 @@ public interface IRecoverySessionProjectionCoordinator
 
 public interface IRecoveryWizardPersistenceCoordinator
 {
+    RecoveryWizardState CurrentWizard { get; }
+
     PreparedRecoveryWizardUpdate PrepareTransition(
         RecoverySessionWizardTransition transition,
         DateTimeOffset occurredAt);
 
     void CommitPreparedTransition(PreparedRecoveryWizardUpdate update);
+
+    void SetSessionDisplayName(string? sessionDisplayName);
 }

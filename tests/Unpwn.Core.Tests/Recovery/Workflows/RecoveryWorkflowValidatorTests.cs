@@ -136,11 +136,32 @@ public sealed class RecoveryWorkflowValidatorTests
             RecoveryActionImportance.Critical,
             automationSupport,
             prerequisites ?? [],
+            completionCriteria ?? ["The password was changed through the official provider flow."],
+            Guidance(id, completionCriteria));
+
+    private static RecoveryActionGuidanceKeys Guidance(
+        string id,
+        IReadOnlyList<string>? completionCriteria = null) =>
+        new(
+            $"Workflow.Test.{id}.Title",
+            $"Workflow.Test.{id}.Instruction",
+            null,
+            $"Workflow.Test.{id}.Completion",
             completionCriteria ?? ["The password was changed through the official provider flow."]);
 }
 
 public sealed class ProviderContractValidatorTests
 {
+    private static RecoveryActionGuidanceKeys Guidance(
+        string id,
+        IReadOnlyList<string> completionCriteria) =>
+        new(
+            $"Workflow.Test.{id}.Title",
+            $"Workflow.Test.{id}.Instruction",
+            null,
+            $"Workflow.Test.{id}.Completion",
+            completionCriteria);
+
     [Fact]
     public void RepositoryCatalogContractScenariosAreValid()
     {
@@ -195,7 +216,8 @@ public sealed class ProviderContractValidatorTests
                     RecoveryActionImportance.Critical,
                     AutomationSupport.None,
                     [],
-                    ["Authenticated access is confirmed."]),
+                    ["Authenticated access is confirmed."],
+                    Guidance("auth-only", ["Authenticated access is confirmed."])),
                 new RecoveryActionDefinition(
                     "reset-action",
                     RecoveryActionType.ResetPassword,
@@ -204,7 +226,8 @@ public sealed class ProviderContractValidatorTests
                     RecoveryActionImportance.Critical,
                     AutomationSupport.Navigation,
                     ["auth-only"],
-                    ["The password was reset."])
+                    ["The password was reset."],
+                    Guidance("reset-action", ["The password was reset."]))
             ]);
         var scenario = new ProviderContractScenario(
             "impossible-reset",

@@ -17,23 +17,18 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
     };
     private readonly IEncryptedVaultRecordStore _recordStore;
-    private readonly IRecoverySessionService _sessionService;
-    private readonly IRecoverySessionProjectionCoordinator _projectionCoordinator;
+    private readonly IRecoverySessionWorkspaceCoordinator _sessionService;
     private readonly WorkspaceMutationCoordinator _mutationCoordinator;
     private readonly Func<DateTimeOffset> _clock;
 
     public AccountRecoveryExecutionService(
         IEncryptedVaultRecordStore recordStore,
-        IRecoverySessionService sessionService,
+        IRecoverySessionWorkspaceCoordinator sessionService,
         WorkspaceMutationCoordinator mutationCoordinator,
         Func<DateTimeOffset>? clock = null)
     {
         _recordStore = recordStore ?? throw new ArgumentNullException(nameof(recordStore));
         _sessionService = sessionService ?? throw new ArgumentNullException(nameof(sessionService));
-        _projectionCoordinator = sessionService as IRecoverySessionProjectionCoordinator
-            ?? throw new ArgumentException(
-                "The recovery session service must support prepared dashboard projections.",
-                nameof(sessionService));
         _mutationCoordinator = mutationCoordinator ?? throw new ArgumentNullException(nameof(mutationCoordinator));
         _clock = clock ?? (() => DateTimeOffset.UtcNow);
     }
@@ -245,7 +240,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 .Append(projectedAccount)
                 .OrderBy(account => account.AccountId)
                 .ToArray();
-            projection = await _projectionCoordinator.PrepareAccountSummaryUpdateAsync(
+            projection = await _sessionService.PrepareAccountSummaryUpdateAsync(
                 summaries,
                 cancellationToken);
             plaintext = JsonSerializer.SerializeToUtf8Bytes(execution, SerializerOptions);
@@ -255,7 +250,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                     projection.ToWrite(),
                 ],
                 cancellationToken);
-            _projectionCoordinator.CommitPreparedUpdate(projection);
+            _sessionService.CommitPreparedUpdate(projection);
             return AccountRecoveryExecutionResult.Success(execution.State);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)

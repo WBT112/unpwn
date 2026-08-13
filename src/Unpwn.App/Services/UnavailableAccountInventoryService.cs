@@ -11,7 +11,7 @@ internal sealed class UnavailableAccountInventoryService : IAccountInventoryServ
 
     public AccountInventoryState? CurrentInventory => null;
 
-    public AccountInventoryPlan? CurrentPlan => null;
+    public AccountRecoveryOrder? CurrentRecoveryOrder => null;
 
     public Task InitializeAsync(CancellationToken cancellationToken)
     {

@@ -169,17 +169,11 @@ public sealed class AtomicWorkspacePersistenceTests
     }
 
     private sealed class TestWizardCoordinator(RecoveryWizardState initialState) :
-        IRecoveryWizardVaultCoordinator,
         IRecoveryWizardPersistenceCoordinator
     {
         public RecoveryWizardState CurrentWizard { get; private set; } = initialState;
 
         public bool PreparedTransitionCommitted { get; private set; }
-
-        public Task ApplyWizardTransitionAsync(
-            RecoverySessionWizardTransition transition,
-            CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
 
         public void SetSessionDisplayName(string? sessionDisplayName)
         {
@@ -240,8 +234,7 @@ public sealed class AtomicWorkspacePersistenceTests
     }
 
     private sealed class TestSessionProjectionService(RecoverySessionWorkspace currentSession) :
-        IRecoverySessionService,
-        IRecoverySessionProjectionCoordinator
+        IRecoverySessionWorkspaceCoordinator
     {
         public event EventHandler? SessionChanged;
 
@@ -267,11 +260,6 @@ public sealed class AtomicWorkspacePersistenceTests
             throw new NotSupportedException();
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-            CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         public void ClearForLock()

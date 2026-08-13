@@ -14,7 +14,7 @@
   <data name="Workflow.Account.LoginUnavailable" xml:space="preserve"><value>No login identifier recorded</value></data>
   <data name="Workflow.Account.CategoryIndependentWorkflow" xml:space="preserve"><value>The category decides when this account is handled; the provider workflow independently decides how.</value></data>
   <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Why this account now?</value></data>
-  <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>No current plan reason is available.</value></data>
+  <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>No current queue reason is available.</value></data>
   <data name="Workflow.Path.Automatic.Title" xml:space="preserve"><value>Recovery approach selected by unpwn</value></data>
   <data name="Workflow.Path.Automatic.Help" xml:space="preserve"><value>unpwn derives this approach only from your explicit account-access state and the reviewed workflow. Browser navigation never changes it.</value></data>
   <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Change the password in an authenticated account session</value></data>
@@ -29,7 +29,7 @@
   <data name="Workflow.Path.Reason.ProviderFailureFallback" xml:space="preserve"><value>After you reported that the provider approach failed, unpwn moved to the next safe supported recovery approach.</value></data>
   <data name="Workflow.Path.Reason.NoSafeSupportedPath" xml:space="preserve"><value>The workflow offers no safe approach for the currently confirmed account state. Keep this account visibly blocked and use reviewed provider guidance.</value></data>
   <data name="Workflow.Access.Title" xml:space="preserve"><value>Account access</value></data>
-  <data name="Workflow.Access.Help" xml:space="preserve"><value>Record the real access state. Lost access and provider review require a non-secret reason and return you to the recalculated plan.</value></data>
+  <data name="Workflow.Access.Help" xml:space="preserve"><value>Record the real access state. Lost access and provider review require a non-secret reason and return you to the recalculated recovery queue.</value></data>
   <data name="Workflow.Access.Unknown" xml:space="preserve"><value>Not recorded</value></data>
   <data name="Workflow.Access.Available" xml:space="preserve"><value>Access available</value></data>
   <data name="Workflow.Access.Lost" xml:space="preserve"><value>Access lost</value></data>
@@ -126,12 +126,10 @@
   <data name="Workflow.Status.Started.Title" xml:space="preserve"><value>Recovery path started</value></data>
   <data name="Workflow.Status.Started.Message" xml:space="preserve"><value>Work through each required action separately and record the actual outcome.</value></data>
   <data name="Workflow.Status.Active.Title" xml:space="preserve"><value>Account recovery in progress</value></data>
-  <data name="Workflow.Status.Active.Message" xml:space="preserve"><value>Blocked work, failures, lost access, and unresolved risks remain visible in the recovery plan.</value></data>
-  <data name="Workflow.Plan.Recalculated.Title" xml:space="preserve"><value>Recovery plan recalculated</value></data>
-  <data name="Workflow.Plan.Changed" xml:space="preserve"><value>The recommended account or action changed after the recorded outcome. Review the current recommendation before continuing.</value></data>
-  <data name="Workflow.Plan.Unchanged" xml:space="preserve"><value>The plan was recalculated. The current recommendation remains the same and unresolved work is still visible.</value></data>
-  <data name="Workflow.Plan.Status.Unavailable" xml:space="preserve"><value>Plan status unavailable</value></data>
-  <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Ready now</value></data>
+  <data name="Workflow.Status.Active.Message" xml:space="preserve"><value>Blocked work, failures, lost access, and unresolved risks remain visible in the recovery overview.</value></data>
+  <data name="Workflow.Queue.Recalculated.Title" xml:space="preserve"><value>Recovery queue updated</value></data>
+  <data name="Workflow.Queue.Changed" xml:space="preserve"><value>The recommended account or action changed after the recorded outcome. Review the current recommendation before continuing.</value></data>
+  <data name="Workflow.Queue.Unchanged" xml:space="preserve"><value>The recovery queue was updated. The current recommendation remains the same and unresolved work is still visible.</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Unlock a vault and load an account inventory before starting account recovery.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>The selected account is no longer available in the encrypted inventory.</value></data>
   <data name="Workflow.Validation.NoSafeRecoveryPath" xml:space="preserve"><value>No safe supported recovery approach is available for the currently confirmed account state. The account remains visibly blocked.</value></data>
@@ -157,7 +155,6 @@
   <data name="Workflow.Trust.Reviewed.Message" xml:space="preserve"><value>This service-specific guidance and its destinations were reviewed in the unpwn repository. Provider pages can still change, and navigation never proves success.</value></data>
   <data name="Workflow.Trust.General.Title" xml:space="preserve"><value>General manual guidance — not provider-specific</value></data>
   <data name="Workflow.Trust.General.Message" xml:space="preserve"><value>No provider-specific reviewed workflow is available for this service. unpwn can guide a conservative manual checklist, but available pages and security controls may differ.</value></data>
-  <data name="Workflow.Trust.GeneralPreserved.Message" xml:space="preserve"><value>A reviewed provider workflow is now available, but this account already has general-workflow history. unpwn keeps that history and does not migrate or mark it complete automatically.</value></data>
   <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Did this step really work?</value></data>
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Done</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>I cannot continue</value></data>
@@ -167,19 +164,19 @@
   <data name="Workflow.Guided.Credential.PreChangeLogin" xml:space="preserve"><value>If you must sign in before changing the password, use your current provider credential or existing provider session. Generate the replacement password only for the change/reset step.</value></data>
   <data name="Workflow.Guided.Credential.ReplacementPending" xml:space="preserve"><value>The generated replacement is not yet an active provider password. Do not use it for the pre-change sign-in; use it only when the provider asks for the new password, then explicitly confirm the completion criteria.</value></data>
   <data name="Workflow.Guided.Problem.Title" xml:space="preserve"><value>What is stopping you?</value></data>
-  <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Choose the answer that best matches what actually happened. unpwn will keep the resulting work or risk visible in your recovery plan.</value></data>
+  <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Choose the answer that best matches what actually happened. unpwn will keep the resulting work or risk visible in your recovery overview.</value></data>
   <data name="Workflow.Guided.Problem.ReasonPlaceholder" xml:space="preserve"><value>Brief non-secret explanation</value></data>
   <data name="Workflow.Guided.Problem.ReasonWarning" xml:space="preserve"><value>Do not enter passwords, reset links, MFA secrets, recovery codes, tokens, cookies, or identity documents.</value></data>
   <data name="Workflow.Guided.Problem.Apply" xml:space="preserve"><value>Record this outcome</value></data>
   <data name="Workflow.Guided.Problem.Cancel" xml:space="preserve"><value>Keep working on this step</value></data>
   <data name="Workflow.Guided.Problem.LostAccess.Label" xml:space="preserve"><value>I no longer have access to this account</value></data>
-  <data name="Workflow.Guided.Problem.LostAccess.Explanation" xml:space="preserve"><value>Records lost account access and returns to the recalculated recovery plan.</value></data>
+  <data name="Workflow.Guided.Problem.LostAccess.Explanation" xml:space="preserve"><value>Records lost account access and returns to the updated recovery queue.</value></data>
   <data name="Workflow.Guided.Problem.WaitingForProvider.Label" xml:space="preserve"><value>I need to wait for the provider</value></data>
   <data name="Workflow.Guided.Problem.WaitingForProvider.Explanation" xml:space="preserve"><value>Records that provider review or a waiting period is still in progress.</value></data>
   <data name="Workflow.Guided.Problem.MissingPrerequisite.Label" xml:space="preserve"><value>Another account or prerequisite is missing</value></data>
   <data name="Workflow.Guided.Problem.MissingPrerequisite.Explanation" xml:space="preserve"><value>Blocks this step without hiding it, so the missing prerequisite remains visible.</value></data>
   <data name="Workflow.Guided.Problem.ProviderStepFailed.Label" xml:space="preserve"><value>The provider step failed</value></data>
-  <data name="Workflow.Guided.Problem.ProviderStepFailed.Explanation" xml:space="preserve"><value>Records a provider failure. You can retry the step later from the plan.</value></data>
+  <data name="Workflow.Guided.Problem.ProviderStepFailed.Explanation" xml:space="preserve"><value>Records a provider failure. You can retry the step later from the recovery overview.</value></data>
   <data name="Workflow.Guided.Problem.TrulyNotApplicable.Label" xml:space="preserve"><value>This feature truly does not exist for my account</value></data>
   <data name="Workflow.Guided.Problem.TrulyNotApplicable.Explanation" xml:space="preserve"><value>Use only when the capability is genuinely absent, not when it is unavailable or difficult to complete. Confirmation is required.</value></data>
   <data name="Workflow.Guided.Problem.AcceptUnresolvedRisk.Label" xml:space="preserve"><value>I want to leave this unresolved and accept the risk</value></data>

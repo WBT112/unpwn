@@ -107,7 +107,7 @@ Provider workflow execution must never depend on visible text.
 
 User-facing workflow titles, descriptions, completion guidance, warnings, and manual instructions should be represented by stable localization keys plus typed formatting arguments. Workflow validation, prerequisites, recovery paths, automation support, and completion state use canonical identifiers and structured data.
 
-Existing embedded display-language strings should be migrated while the provider catalog is still small. Translation changes alone must not alter workflow semantics or verification metadata.
+Provider display text uses stable localization keys. Translation changes alone must not alter workflow semantics or verification metadata.
 
 ## Parameterized and Plural-Sensitive Messages
 

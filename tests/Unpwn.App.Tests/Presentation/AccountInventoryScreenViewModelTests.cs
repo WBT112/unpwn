@@ -171,7 +171,7 @@ public sealed class AccountInventoryScreenViewModelTests
             AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
                 .ReplaceAccounts(accounts, DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan();
+        public AccountRecoveryOrder? CurrentRecoveryOrder => CurrentInventory?.CreateRecoveryOrder();
 
         public (Guid AccountId, AccountRecoveryCategory Category)? LastCategoryDecision { get; private set; }
 
