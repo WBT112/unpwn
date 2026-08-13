@@ -153,10 +153,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
 
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         _shellContext.ContextChanged += ShellContext_OnContextChanged;
-        if (_recoveryFlow is not null)
-        {
-            _recoveryFlow.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
-        }
+        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
         BuildLocalizedOptions();
     }
 

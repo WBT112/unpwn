@@ -85,10 +85,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             () => ContinueToRecoveryRequested?.Invoke(this, EventArgs.Empty),
             () => CanContinueRecovery);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
-        if (_recoveryFlow is not null)
-        {
-            _recoveryFlow.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
-        }
+        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
         BuildStaticOptions();
         RefreshFromService();
     }

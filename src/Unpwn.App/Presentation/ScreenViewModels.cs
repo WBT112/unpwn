@@ -176,10 +176,7 @@ public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
             () => ContinueRequested?.Invoke(this, EventArgs.Empty),
             () => IsAccountReviewContinuationVisible);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
-        if (_recoveryFlow is not null)
-        {
-            _recoveryFlow.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
-        }
+        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
     }
 
     public CsvImportScreenViewModel(ILocalizationService localization)
