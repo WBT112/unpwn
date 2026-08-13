@@ -22,6 +22,9 @@ public sealed class ShellViewModelTests
         Assert.Equal("No recovery session", shell.SessionContextLabel);
         Assert.IsType<VaultEntryScreenViewModel>(shell.CurrentScreen);
         Assert.False(shell.LockCommand.CanExecute(null));
+        Assert.Equal(StatusPresentation.ScreenInstruction, shell.CurrentScreen.Status.Presentation);
+        Assert.Equal(StatusPresentation.GlobalContext, shell.CurrentStatus.Presentation);
+        Assert.NotSame(shell.CurrentScreen.Status, shell.CurrentStatus);
     }
 
     [Fact]
@@ -45,6 +48,8 @@ public sealed class ShellViewModelTests
 
         Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
         Assert.Equal("Accounts", shell.CurrentScreen.Title);
+        Assert.Equal(StatusPresentation.ScreenInstruction, shell.CurrentScreen.Status.Presentation);
+        Assert.Equal(StatusPresentation.GlobalContext, shell.CurrentStatus.Presentation);
     }
 
     [Fact]
@@ -237,6 +242,7 @@ public sealed class ShellViewModelTests
         Assert.False(shell.IsVaultUnlocked);
         Assert.Equal(AppRoute.VaultEntry, shell.CurrentScreen.Route);
         Assert.Equal(AppVisualState.Success, shell.CurrentStatus.State);
+        Assert.Equal(StatusPresentation.TransientResult, shell.CurrentStatus.Presentation);
     }
 
     [Fact]

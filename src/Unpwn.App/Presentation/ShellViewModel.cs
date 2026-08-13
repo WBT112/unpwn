@@ -110,7 +110,7 @@ public sealed class ShellViewModel : ObservableObject
         _currentScreen = _screenFactory.Create(_selectedNavigation.Route);
         _currentScreen.Activate();
         SubscribeToScreen(_currentScreen);
-        _currentStatus = _currentScreen.Status;
+        _currentStatus = BuildContextualStatus();
         LockCommand = new AsyncCommand(
             LockAsync,
             () => _localization.GetString("Shell.Lock.Error"),
@@ -410,7 +410,8 @@ public sealed class ShellViewModel : ObservableObject
             AppVisualState.Success,
             _localization,
             "Shell.Lock.StatusTitle",
-            "Shell.Lock.StatusMessage");
+            "Shell.Lock.StatusMessage",
+            StatusPresentation.TransientResult);
     }
 
     private async Task AdvanceGuidedStepAsync(CancellationToken cancellationToken)
@@ -427,7 +428,8 @@ public sealed class ShellViewModel : ObservableObject
                 AppVisualState.Warning,
                 _localization,
                 "Shell.Guided.Blocked.Title",
-                GetGuidanceKey(result.Decision));
+                GetGuidanceKey(result.Decision),
+                StatusPresentation.GlobalWarning);
             RefreshGuidance();
             return;
         }
@@ -500,7 +502,8 @@ public sealed class ShellViewModel : ObservableObject
             AppVisualState.Error,
             _localization,
             "Shell.Guided.Error.Title",
-            "Shell.Guided.Error");
+            "Shell.Guided.Error",
+            StatusPresentation.GlobalWarning);
 
     private void ToggleWorkspaceNavigation() =>
         IsWorkspaceNavigationExpanded = !IsWorkspaceNavigationExpanded;
@@ -529,7 +532,6 @@ public sealed class ShellViewModel : ObservableObject
             screen.Activate();
         }
 
-        CurrentStatus = CurrentScreen.Status;
     }
 
     private void RefreshNavigationAvailability()
@@ -639,6 +641,7 @@ public sealed class ShellViewModel : ObservableObject
         LockCommand.RaiseCanExecuteChanged();
         RefreshGuidance();
         RefreshNavigationAvailability();
+        CurrentStatus = BuildContextualStatus();
 
         if (!IsVaultUnlocked && CurrentScreen.Route != AppRoute.VaultEntry)
         {
@@ -658,7 +661,8 @@ public sealed class ShellViewModel : ObservableObject
                 _localization.GetString("Status.Warning"),
                 "!",
                 _localization.GetString("Vault.Inactivity.Warning.Title"),
-                _localization.Format("Vault.Inactivity.Warning.Message", locksAt));
+                _localization.Format("Vault.Inactivity.Warning.Message", locksAt),
+                StatusPresentation.GlobalWarning);
         }
         else if (snapshot.Status == VaultLifecycleStatus.Locked &&
                  snapshot.LastLockReason == VaultLockReason.Inactivity)
@@ -668,7 +672,8 @@ public sealed class ShellViewModel : ObservableObject
                 AppVisualState.Warning,
                 _localization,
                 "Vault.Inactivity.Locked.Title",
-                "Vault.Inactivity.Locked.Message");
+                "Vault.Inactivity.Locked.Message",
+                StatusPresentation.GlobalWarning);
         }
     }
 
@@ -704,7 +709,8 @@ public sealed class ShellViewModel : ObservableObject
                 _localization.GetString("Status.Warning"),
                 "!",
                 _localization.GetString("Vault.Inactivity.Warning.Title"),
-                _localization.Format("Vault.Inactivity.Warning.Message", locksAt));
+                _localization.Format("Vault.Inactivity.Warning.Message", locksAt),
+                StatusPresentation.GlobalWarning);
         }
         else if (LockCommand.LastOutcome == AsyncCommandOutcome.Failed)
         {
@@ -712,15 +718,12 @@ public sealed class ShellViewModel : ObservableObject
                 AppVisualState.Error,
                 _localization,
                 "Shell.Lock.FailedTitle",
-                "Shell.Lock.Error");
+                "Shell.Lock.Error",
+                StatusPresentation.GlobalWarning);
         }
-    }
-
-    private void CurrentScreen_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
-    {
-        if (eventArgs.PropertyName == nameof(ScreenViewModel.Status))
+        else
         {
-            CurrentStatus = CurrentScreen.Status;
+            CurrentStatus = BuildContextualStatus();
         }
     }
 
@@ -739,6 +742,7 @@ public sealed class ShellViewModel : ObservableObject
         _hadRecoverySession = hasRecoverySession;
         RefreshNavigationAvailability();
         RefreshGuidance();
+        CurrentStatus = BuildContextualStatus();
     }
 
     private void AccountInventory_OnInventoryChanged(object? sender, EventArgs eventArgs)
@@ -765,7 +769,8 @@ public sealed class ShellViewModel : ObservableObject
                     AppVisualState.Error,
                     _localization,
                     "Shell.Guided.Error.Title",
-                    "Shell.Guided.Error");
+                    "Shell.Guided.Error",
+                    StatusPresentation.GlobalWarning);
                 return;
             }
         }
@@ -795,7 +800,6 @@ public sealed class ShellViewModel : ObservableObject
 
     private void SubscribeToScreen(ScreenViewModel screen)
     {
-        screen.PropertyChanged += CurrentScreen_OnPropertyChanged;
         if (screen is VaultEntryScreenViewModel vaultEntry)
         {
             vaultEntry.ContinueRequested += VaultEntry_OnContinueRequested;
@@ -822,7 +826,6 @@ public sealed class ShellViewModel : ObservableObject
 
     private void UnsubscribeFromScreen(ScreenViewModel screen)
     {
-        screen.PropertyChanged -= CurrentScreen_OnPropertyChanged;
         if (screen is VaultEntryScreenViewModel vaultEntry)
         {
             vaultEntry.ContinueRequested -= VaultEntry_OnContinueRequested;
@@ -870,7 +873,8 @@ public sealed class ShellViewModel : ObservableObject
                 AppVisualState.Error,
                 _localization,
                 "Shell.Guided.Error.Title",
-                "Shell.Guided.Error");
+                "Shell.Guided.Error",
+                StatusPresentation.GlobalWarning);
         }
     }
 
@@ -1096,6 +1100,52 @@ public sealed class ShellViewModel : ObservableObject
             _ => "Shell.Persistence.Idle",
         };
 
+    private VisualStatusViewModel BuildContextualStatus()
+    {
+        if (!IsVaultUnlocked)
+        {
+            return VisualStatusViewModel.Create(
+                AppVisualState.Normal,
+                _localization,
+                "Shell.Status.VaultLocked.Title",
+                "Shell.Status.VaultLocked.Message",
+                StatusPresentation.GlobalContext);
+        }
+
+        var session = _recoverySession?.CurrentSession;
+        if (session is null)
+        {
+            return VisualStatusViewModel.Create(
+                AppVisualState.Normal,
+                _localization,
+                "Shell.Status.VaultUnlocked.Title",
+                "Shell.Status.VaultUnlocked.Message",
+                StatusPresentation.GlobalContext,
+                VaultContextLabel);
+        }
+
+        var titleKey = session.Status switch
+        {
+            RecoveryWorkspaceLifecycleStatus.Active => "Shell.Status.SessionActive.Title",
+            RecoveryWorkspaceLifecycleStatus.Paused => "Shell.Status.SessionPaused.Title",
+            RecoveryWorkspaceLifecycleStatus.Completed => "Shell.Status.SessionCompleted.Title",
+            RecoveryWorkspaceLifecycleStatus.Archived => "Shell.Status.SessionArchived.Title",
+            RecoveryWorkspaceLifecycleStatus.FollowUpRequired => "Shell.Status.SessionFollowUp.Title",
+            _ => "Shell.Status.SessionActive.Title",
+        };
+        var state = session.Status == RecoveryWorkspaceLifecycleStatus.FollowUpRequired
+            ? AppVisualState.UnresolvedRisk
+            : AppVisualState.Normal;
+        return VisualStatusViewModel.Create(
+            state,
+            _localization,
+            titleKey,
+            "Shell.Status.Session.Message",
+            StatusPresentation.GlobalContext,
+            VaultContextLabel,
+            SessionContextLabel);
+    }
+
     private void LockCommand_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
     {
         if (eventArgs.PropertyName == nameof(AsyncCommand.LastOutcome) &&
@@ -1105,7 +1155,8 @@ public sealed class ShellViewModel : ObservableObject
                 AppVisualState.Error,
                 _localization,
                 "Shell.Lock.FailedTitle",
-                "Shell.Lock.Error");
+                "Shell.Lock.Error",
+                StatusPresentation.GlobalWarning);
         }
     }
 }

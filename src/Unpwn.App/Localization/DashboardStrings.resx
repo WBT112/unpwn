@@ -39,12 +39,12 @@
   <data name="Dashboard.Session.WizardPhase" xml:space="preserve"><value>Current phase: {0}</value></data>
   <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Review the recovery channel first</value></data>
   <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Your answers indicate that a primary recovery channel or critical access may need immediate attention. This is an advisory priority, not an automated detection result.</value></data>
-  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Critical-account readiness</value></data>
-  <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} of {1} critical accounts are fully reviewed without recorded blockers or unresolved risks.</value></data>
+  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Critical accounts</value></data>
+  <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} of {1} critical accounts handled.</value></data>
   <data name="Dashboard.Accounts.Title" xml:space="preserve"><value>Account coverage</value></data>
   <data name="Dashboard.Accounts.Coverage" xml:space="preserve"><value>{0} of {1} accounts are fully reviewed.</value></data>
-  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Weighted required-action progress</value></data>
-  <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>{0:P0} of applicable required-action weight is complete.</value></data>
+  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Recovery progress</value></data>
+  <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>Progress: {0:P0}</value></data>
   <data name="Dashboard.Progress.Disclaimer" xml:space="preserve"><value>Progress is not a security verdict. Lost access, blockers, failures, and unresolved risks remain visible separately.</value></data>
   <data name="Dashboard.Metric.Unavailable" xml:space="preserve"><value>No session data is available.</value></data>
   <data name="Dashboard.Alert.SectionTitle" xml:space="preserve"><value>Work that still needs attention</value></data>
@@ -100,7 +100,7 @@
   <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Recovery session unavailable</value></data>
   <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>The encrypted record could not be parsed safely and was left unchanged.</value></data>
   <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Recovery session active</value></data>
-  <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>Review critical readiness and the recommended next action before relying on aggregate progress.</value></data>
+  <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>The recommended next task and any work that still needs attention are shown below.</value></data>
   <data name="Dashboard.Status.Paused.Title" xml:space="preserve"><value>Recovery session paused</value></data>
   <data name="Dashboard.Status.Paused.Message" xml:space="preserve"><value>Resume the session before changing recovery state.</value></data>
   <data name="Dashboard.Status.Archived.Title" xml:space="preserve"><value>Recovery session archived</value></data>
@@ -108,7 +108,7 @@
   <data name="Dashboard.Status.Emergency.Title" xml:space="preserve"><value>High-impact recovery channel needs review</value></data>
   <data name="Dashboard.Status.Emergency.Message" xml:space="preserve"><value>The incident answers create an advisory priority. They do not prove that an account or device was compromised.</value></data>
   <data name="Dashboard.Status.Created.Title" xml:space="preserve"><value>Recovery session created</value></data>
-  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>The encrypted session and incident indicators were saved. Continue with CSV import.</value></data>
+  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>The encrypted session and incident indicators were saved. Use the recommended next step below.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Session operation failed</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>No source exception or secret value was shown. Review the safe validation message.</value></data>
   <data name="Dashboard.WizardStep.Welcome" xml:space="preserve"><value>Welcome</value></data>
