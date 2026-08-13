@@ -280,15 +280,68 @@ public sealed class RecoverySessionWorkspaceTests
     }
 
     [Fact]
-    public void RetainedIncidentIndicatorsHaveIndependentSemantics()
+    public void RetainedIncidentIndicatorHasEmergencyAdvisorySemantics()
     {
-        var lostAccess = new RecoveryIncidentIntake(IncidentIndicator.LostAccess);
         var compromisedChannel = new RecoveryIncidentIntake(
             IncidentIndicator.CompromisedRecoveryChannel);
 
-        Assert.True(lostAccess.Has(IncidentIndicator.LostAccess));
-        Assert.False(lostAccess.RequiresEmergencyAttention);
         Assert.True(compromisedChannel.RequiresEmergencyAttention);
+    }
+
+    [Fact]
+    public void DashboardRecommendationUsesCanonicalCategoryQueue()
+    {
+        var email = CreateAccount(
+            Guid.Parse("10000000-0000-0000-0000-000000000000"),
+            "z-email",
+            AccountCriticality.Important,
+            AccountRecoveryStatus.Open,
+            0, 1, 0, 1, 0, 0, 0, false, 0, 0, "next") with
+        {
+            Category = AccountRecoveryCategory.Email,
+        };
+        var critical = email with
+        {
+            AccountId = Guid.Parse("20000000-0000-0000-0000-000000000000"),
+            ProviderId = "a-critical",
+            Criticality = AccountCriticality.Critical,
+            Category = AccountRecoveryCategory.Critical,
+        };
+        var unknown = email with
+        {
+            AccountId = Guid.Parse("30000000-0000-0000-0000-000000000000"),
+            ProviderId = "a-unknown",
+            Criticality = AccountCriticality.Routine,
+            Category = AccountRecoveryCategory.Unknown,
+        };
+        var nonCritical = email with
+        {
+            AccountId = Guid.Parse("40000000-0000-0000-0000-000000000000"),
+            ProviderId = "a-non-critical",
+            Criticality = AccountCriticality.Routine,
+            Category = AccountRecoveryCategory.NonCritical,
+        };
+        var workspace = RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Category queue",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+                [nonCritical, unknown, critical, email],
+                DateTimeOffset.UnixEpoch.AddSeconds(1));
+
+        Assert.Equal(email.AccountId, workspace.CreateDashboardSnapshot().Recommendation.AccountId);
+
+        workspace = workspace.ReplaceAccounts(
+            [nonCritical, unknown, critical, email with { RecoveryStatus = AccountRecoveryStatus.FullyReviewed }],
+            DateTimeOffset.UnixEpoch.AddSeconds(2));
+        Assert.Equal(critical.AccountId, workspace.CreateDashboardSnapshot().Recommendation.AccountId);
+
+        workspace = workspace.ReplaceAccounts(
+            [nonCritical, unknown, critical with { RecoveryStatus = AccountRecoveryStatus.FullyReviewed },
+                email with { RecoveryStatus = AccountRecoveryStatus.FullyReviewed }],
+            DateTimeOffset.UnixEpoch.AddSeconds(3));
+        Assert.Equal(unknown.AccountId, workspace.CreateDashboardSnapshot().Recommendation.AccountId);
     }
 
     private static RecoveryAccountDashboardEntry CreateAccount(
@@ -322,5 +375,13 @@ public sealed class RecoverySessionWorkspaceTests
             accessLost,
             awaitingExport,
             awaitingDeletion,
-            actionId);
+            actionId)
+        {
+            Category = criticality switch
+            {
+                AccountCriticality.Critical => AccountRecoveryCategory.Critical,
+                AccountCriticality.Important => AccountRecoveryCategory.Email,
+                _ => AccountRecoveryCategory.NonCritical,
+            },
+        };
 }

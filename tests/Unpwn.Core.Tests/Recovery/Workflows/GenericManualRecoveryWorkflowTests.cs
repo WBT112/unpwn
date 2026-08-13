@@ -52,8 +52,8 @@ public sealed class GenericManualRecoveryWorkflowTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
         var time = StartedAt;
 
         foreach (var action in state.Actions)
@@ -81,14 +81,13 @@ public sealed class GenericManualRecoveryWorkflowTests
     public void LostAccessAndAcceptedRiskRemainVisible()
     {
         var workflow = GenericManualRecoveryWorkflow.Create("unsupported.example");
-        var lost = AccountRecoveryExecutionState.Create(
-                Guid.NewGuid(), workflow, RecoveryPath.ManualRecovery, StartedAt)
+        var lost = AccountRecoveryExecutionState.Create(Guid.NewGuid(), workflow, StartedAt)
             .SetAccessState(
+                workflow,
                 RecoveryAccessState.Lost,
                 "Synthetic provider recovery did not restore access.",
                 StartedAt.AddMinutes(1));
-        var risk = AccountRecoveryExecutionState.Create(
-            Guid.NewGuid(), workflow, RecoveryPath.PasswordReset, StartedAt);
+        var risk = AccountRecoveryExecutionState.Create(Guid.NewGuid(), workflow, StartedAt);
         risk = risk.StartAction(workflow, "identify-account-reset", StartedAt.AddMinutes(1));
         risk = risk.AcceptUnresolvedRisk(
             workflow,

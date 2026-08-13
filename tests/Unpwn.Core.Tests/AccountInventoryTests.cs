@@ -73,7 +73,7 @@ public sealed class AccountInventoryTests
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([nonCritical, unknown, critical, email], DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        var plan = state.CreatePlan(IncidentIndicator.LostAccess);
+        var plan = state.CreatePlan();
 
         Assert.Equal(
             [email.Id, critical.Id, unknown.Id, nonCritical.Id],
@@ -82,17 +82,14 @@ public sealed class AccountInventoryTests
     }
 
     [Fact]
-    public void IncidentInputStillMateriallyChangesCategoryOrderBeforeAutomaticQueueIssue()
+    public void IncidentInputCannotChangeTheCanonicalCategoryOrder()
     {
         var critical = CreateAccount("Banking", AccountRecoveryCategory.Critical);
         var email = CreateAccount("Gmail", AccountRecoveryCategory.Email);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([email, critical], DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        Assert.Equal(critical.Id, state.CreatePlan().Recommended?.AccountId);
-        Assert.Equal(
-            email.Id,
-            state.CreatePlan(IncidentIndicator.CompromisedRecoveryChannel).Recommended?.AccountId);
+        Assert.Equal(email.Id, state.CreatePlan().Recommended?.AccountId);
     }
 
     [Fact]

@@ -98,9 +98,26 @@ The canonical workflow and action types live in `Unpwn.Core`. Provider catalogs,
 
 An action may support one or more recovery paths. Prerequisites must be executable on the same path. The initial catalog deliberately uses path-specific action definitions where prerequisite chains differ, avoiding ambiguous OR-prerequisites between authenticated change and password reset.
 
-Changing the selected path is allowed only before material action state has been recorded. Once an
-action has started, failed, blocked, received notes, or references generated credentials, the user must
-resolve or preserve that work instead of silently replacing it with another path.
+## Automatic recovery-path selection
+
+The user does not choose a raw recovery-path enum. `RecoveryPathSelector` derives the approach only
+from the repository workflow and explicitly recorded canonical account access:
+
+1. confirmed usable authenticated access selects `AuthenticatedChange` when the workflow supports it;
+2. otherwise a supported, internally complete `PasswordReset` path is selected;
+3. otherwise a supported, internally complete `ManualRecovery` path is selected;
+4. if none exists, the account remains visibly blocked and no execution is created.
+
+An available path must contain actions and every prerequisite referenced by those actions must be
+executable on that same path. Categories affect queue position only; they do not affect path selection.
+Browser URL, navigation, DOM state, cookies, redirects, and form submission are not selector inputs.
+
+Explicitly confirmed loss of authenticated access moves an authenticated-change attempt to the next
+safe approach. A provider failure on an action that establishes the current approach similarly moves
+to the next untried safe approach. The encrypted execution records the previous approach, structured
+transition reason, triggering action, timestamp, and user reason. If no fallback remains, the failed
+or lost-access state and the visibly blocked outcome remain canonical; no work is silently discarded
+or represented as successful.
 
 ## Language-neutral semantics
 
@@ -118,7 +135,7 @@ User-facing workflow titles, descriptions, warnings, manual instructions, and co
 
 Translated text must never:
 
-- select a recovery path
+- determine or select a recovery path
 - identify an action or prerequisite
 - change an expected origin or provider URL
 - determine whether an action is complete

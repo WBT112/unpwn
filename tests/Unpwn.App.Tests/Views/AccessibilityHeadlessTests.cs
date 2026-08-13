@@ -114,6 +114,9 @@ public sealed class AccessibilityHeadlessTests
             var currentAction = FindByAutomationId(view, "workflow-current-action");
             Assert.True(Assert.IsType<Control>(currentAction, exactMatch: false).Focusable);
             Assert.NotNull(FindByAutomationId(view, "workflow-primary-action"));
+            Assert.DoesNotContain(
+                view.GetLogicalDescendants().OfType<StyledElement>(),
+                element => AutomationProperties.GetAutomationId(element) == "workflow-recovery-path");
             var browserWorkspace = FindByAutomationId(view, "workflow-browser-workspace");
             Assert.True(Assert.IsType<Control>(browserWorkspace, exactMatch: false).Focusable);
             Assert.NotNull(FindByAutomationId(view, "workflow-open-external-fallback"));

@@ -214,7 +214,10 @@ public sealed class AccountInventoryServiceTests
             AccessLost: true,
             CredentialsAwaitingExport: 1,
             CredentialsAwaitingDeletion: 1,
-            RecommendedActionId: "review-mfa");
+            RecommendedActionId: "review-mfa")
+        {
+            Category = account.EffectiveCategory,
+        };
         Assert.True((await session.ReplaceAccountSummariesAsync(
             [executionSummary],
             CancellationToken.None)).Succeeded);

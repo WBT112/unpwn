@@ -8,19 +8,18 @@
   <data name="Dashboard.State.Locked" xml:space="preserve"><value>Unlock the recovery vault to load the session dashboard.</value></data>
   <data name="Dashboard.State.Loading" xml:space="preserve"><value>Loading the encrypted recovery session…</value></data>
   <data name="Dashboard.State.Empty.Title" xml:space="preserve"><value>Create a recovery session</value></data>
-  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Use the suggested local name or edit it. Two optional answers can move recovery channels earlier; they do not detect or prove a compromise.</value></data>
+  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Use the suggested local name or edit it. You may add one optional recovery-channel warning; it does not detect or prove a compromise.</value></data>
   <data name="Dashboard.State.Corrupted.Title" xml:space="preserve"><value>Session record could not be loaded</value></data>
   <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>The encrypted session record is missing required data or failed integrity-safe parsing. It was not overwritten.</value></data>
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Session name</value></data>
   <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Local recovery session name</value></data>
-  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Should unpwn prioritize your recovery channels?</value></data>
-  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Lost access moves explicitly categorized email accounts earlier. Possible control of a primary email or recovery channel also shows an immediate advisory. These answers guide ordering; they do not prove a compromise.</value></data>
-  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>I cannot access one or more accounts</value></data>
+  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Does a primary recovery channel need immediate attention?</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Possible control of a primary email or recovery channel shows an immediate advisory. Record account-specific access later so unpwn can choose a recovery approach safely. This answer does not prove a compromise.</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>A primary email or recovery channel may be under someone else's control</value></data>
-  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>The selected guidance inputs are stored in the encrypted vault. They change recommendations only.</value></data>
-  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>I understand that these answers guide priorities and do not prove that an account or device was compromised.</value></data>
+  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>The optional guidance warning is stored in the encrypted vault. It changes recommendations only.</value></data>
+  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>I understand that this warning guides priorities and does not prove that an account or device was compromised.</value></data>
   <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Create recovery session</value></data>
-  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Both choices are optional. Leave them unchecked to use the normal recovery order.</value></data>
+  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>This warning is optional. Leave it unchecked when it does not apply.</value></data>
   <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Active</value></data>
   <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Paused</value></data>
   <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archived</value></data>
@@ -57,6 +56,7 @@
   <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Open recommendation</value></data>
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>No recommendation is available.</value></data>
   <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Recommended account or service: {0}</value></data>
+  <data name="Dashboard.Recommendation.Category" xml:space="preserve"><value>Category: {0}</value></data>
   <data name="Dashboard.Recommendation.Action" xml:space="preserve"><value>Current action: {0}</value></data>
   <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Import or add accounts so unpwn can suggest simple recovery categories.</value></data>
   <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Review and secure the primary email or recovery channel before the remaining accounts.</value></data>

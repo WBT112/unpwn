@@ -4,8 +4,7 @@ namespace Unpwn.Core;
 public enum IncidentIndicator
 {
     None = 0,
-    LostAccess = 1 << 0,
-    CompromisedRecoveryChannel = 1 << 1,
+    CompromisedRecoveryChannel = 1 << 0,
 }
 
 public enum RecoveryWorkspaceLifecycleStatus
@@ -43,8 +42,7 @@ public enum RecoveryDashboardAlertKind
 
 public sealed record RecoveryIncidentIntake(IncidentIndicator Indicators)
 {
-    private const IncidentIndicator SupportedIndicators =
-        IncidentIndicator.LostAccess | IncidentIndicator.CompromisedRecoveryChannel;
+    private const IncidentIndicator SupportedIndicators = IncidentIndicator.CompromisedRecoveryChannel;
 
     public bool Has(IncidentIndicator indicator) => (Indicators & indicator) == indicator;
 
@@ -79,6 +77,8 @@ public sealed record RecoveryAccountDashboardEntry(
     int CredentialsAwaitingDeletion,
     string? RecommendedActionId)
 {
+    public AccountRecoveryCategory Category { get; init; } = (AccountRecoveryCategory)(-1);
+
     public int RequiredActionsOpen { get; init; }
 
     public int RequiredActionsInProgress { get; init; }
@@ -107,6 +107,11 @@ public sealed record RecoveryAccountDashboardEntry(
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(ProviderId);
+        if (!Enum.IsDefined(Category))
+        {
+            throw new ArgumentException("A dashboard account contains an invalid recovery category.", nameof(Category));
+        }
+
         ValidateNonNegative(RequiredActionsCompleted, nameof(RequiredActionsCompleted));
         ValidateNonNegative(RequiredActionsTotal, nameof(RequiredActionsTotal));
         ValidateNonNegative(CompletedRequiredWeight, nameof(CompletedRequiredWeight));
@@ -409,11 +414,9 @@ public sealed record RecoverySessionWorkspace(
 
         var candidates = Accounts
             .Where(account => !account.IsFullyReviewed || account.AccessLost || account.UnresolvedRisks > 0)
-            .OrderByDescending(account => account.Criticality)
-            .ThenByDescending(account => account.AccessLost)
-            .ThenByDescending(account => account.BlockedRequiredActions + account.FailedRequiredActions)
-            .ThenByDescending(account => account.UnresolvedRisks)
+            .OrderBy(account => CategoryOrder(account.Category))
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
+            .ThenBy(account => account.AccountId)
             .ToArray();
         var next = candidates.FirstOrDefault();
         if (next is null)
@@ -443,6 +446,15 @@ public sealed record RecoverySessionWorkspace(
                         : RecoveryDashboardRecommendationCode.ReviewNextAccount;
         return CreateRecommendation(code, next);
     }
+
+    private static int CategoryOrder(AccountRecoveryCategory category) => category switch
+    {
+        AccountRecoveryCategory.Email => 0,
+        AccountRecoveryCategory.Critical => 1,
+        AccountRecoveryCategory.Unknown => 2,
+        AccountRecoveryCategory.NonCritical => 3,
+        _ => throw new ArgumentOutOfRangeException(nameof(category)),
+    };
 
     private RecoverySessionWorkspace TransitionTo(
         RecoveryWorkspaceLifecycleStatus next,

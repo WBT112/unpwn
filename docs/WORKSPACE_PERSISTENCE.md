@@ -49,8 +49,9 @@ The following operations are committed as one encrypted batch:
 - recovery-session creation and the matching wizard transition from incident intake to account inventory
 - recovery-session pause, resume, and archive together with the matching wizard lifecycle transition
 - account-inventory mutation together with the derived recovery-dashboard account projection
+- account-recovery execution creation or transition together with its derived recovery-dashboard account projection
 
-Dashboard counters and recommendations are projections. The account inventory remains the canonical source for account metadata, the versioned local category suggestion, and the user's explicit category decision and confirmation revision.
+Dashboard counters and recommendations are projections. The account inventory remains the canonical source for account metadata, the versioned local category suggestion, the user's explicit category decision and confirmation revision, and the fixed category queue. Account recovery execution remains canonical for automatic path selection, prior path attempts, actions, access, and outcomes.
 
 ## Concurrency and revisions
 

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json;
 using Unpwn.Core;
 using Xunit;
 
@@ -51,6 +53,40 @@ public sealed class AccountInventoryAcceptanceTests
         Assert.Equal(
             ["unknown-a", "unknown-b"],
             state.CreatePlan().Items.Select(item => item.ProviderId));
+    }
+
+    [Fact]
+    public void CategoryQueueIsStableAcrossCulturesRestartAndIncompleteTriage()
+    {
+        var state = AccountInventoryState.Empty(Guid.Parse("10000000-0000-0000-0000-000000000000"), DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+                [
+                    CreateAccount("Streaming") with { Id = Guid.Parse("40000000-0000-0000-0000-000000000000") },
+                    CreateAccount("ı-service") with { Id = Guid.Parse("30000000-0000-0000-0000-000000000000") },
+                    CreateAccount("Banking") with { Id = Guid.Parse("20000000-0000-0000-0000-000000000000") },
+                    CreateAccount("Gmail") with { Id = Guid.Parse("10000000-0000-0000-0000-000000000001") },
+                ],
+                DateTimeOffset.UnixEpoch.AddSeconds(1));
+        var originalCulture = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
+            var turkishOrder = state.CreatePlan().Items.Select(item => item.AccountId).ToArray();
+            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
+            var reloaded = JsonSerializer.Deserialize<AccountInventoryState>(JsonSerializer.Serialize(state))!;
+            var restartedOrder = reloaded.CreatePlan().Items.Select(item => item.AccountId).ToArray();
+
+            Assert.Equal(turkishOrder, restartedOrder);
+            Assert.Equal(
+                [AccountRecoveryCategory.Email, AccountRecoveryCategory.Critical,
+                    AccountRecoveryCategory.Unknown, AccountRecoveryCategory.NonCritical],
+                reloaded.CreatePlan().Items.Select(item => item.Category));
+            Assert.Contains(reloaded.Accounts, account => !account.IsCategorized);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+        }
     }
 
     private static AccountInventoryEntry CreateAccount(string provider) =>

@@ -8,19 +8,18 @@
   <data name="Dashboard.State.Locked" xml:space="preserve"><value>Entsperre den Wiederherstellungstresor, um das Sitzungs-Dashboard zu laden.</value></data>
   <data name="Dashboard.State.Loading" xml:space="preserve"><value>Die verschlüsselte Wiederherstellungssitzung wird geladen…</value></data>
   <data name="Dashboard.State.Empty.Title" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
-  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Nutze den vorgeschlagenen lokalen Namen oder ändere ihn. Zwei optionale Antworten können Wiederherstellungskanäle vorziehen; sie erkennen oder beweisen keine Kompromittierung.</value></data>
+  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Nutze den vorgeschlagenen lokalen Namen oder ändere ihn. Optional kannst du vor einem möglicherweise betroffenen Wiederherstellungskanal warnen; das erkennt oder beweist keine Kompromittierung.</value></data>
   <data name="Dashboard.State.Corrupted.Title" xml:space="preserve"><value>Sitzungsdatensatz konnte nicht geladen werden</value></data>
   <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>Im verschlüsselten Sitzungsdatensatz fehlen erforderliche Daten oder die sichere Integritätsprüfung ist fehlgeschlagen. Er wurde nicht überschrieben.</value></data>
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Name der Sitzung</value></data>
   <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Lokaler Name der Wiederherstellungssitzung</value></data>
-  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Soll unpwn deine Wiederherstellungskanäle priorisieren?</value></data>
-  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Verlorener Zugriff zieht ausdrücklich als E-Mail kategorisierte Konten vor. Mögliche fremde Kontrolle über eine primäre E-Mail-Adresse oder einen Wiederherstellungskanal zeigt zusätzlich einen sofortigen Hinweis. Diese Antworten steuern nur die Reihenfolge und beweisen keine Kompromittierung.</value></data>
-  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>Ich kann auf mindestens ein Konto nicht zugreifen</value></data>
+  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Benötigt ein primärer Wiederherstellungskanal sofortige Aufmerksamkeit?</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Mögliche fremde Kontrolle über eine primäre E-Mail-Adresse oder einen Wiederherstellungskanal zeigt einen sofortigen Hinweis. Erfasse den Zugriff später pro Konto, damit unpwn sicher einen Wiederherstellungsweg wählen kann. Diese Angabe beweist keine Kompromittierung.</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>Eine primäre E-Mail-Adresse oder ein Wiederherstellungskanal könnte unter fremder Kontrolle stehen</value></data>
-  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Die ausgewählten Eingaben zur Steuerung werden im verschlüsselten Tresor gespeichert. Sie ändern ausschließlich Empfehlungen.</value></data>
-  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>Ich verstehe, dass diese Antworten Prioritäten steuern und keine Kompromittierung eines Kontos oder Geräts beweisen.</value></data>
+  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Der optionale Hinweis wird im verschlüsselten Tresor gespeichert. Er ändert ausschließlich Empfehlungen.</value></data>
+  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>Ich verstehe, dass dieser Hinweis Prioritäten steuert und keine Kompromittierung eines Kontos oder Geräts beweist.</value></data>
   <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
-  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Beide Angaben sind optional. Lasse sie deaktiviert, um die normale Wiederherstellungsreihenfolge zu verwenden.</value></data>
+  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Diese Warnung ist optional. Lasse sie deaktiviert, wenn sie nicht zutrifft.</value></data>
   <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Aktiv</value></data>
   <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Pausiert</value></data>
   <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archiviert</value></data>
@@ -57,6 +56,7 @@
   <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Empfehlung öffnen</value></data>
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>Keine Empfehlung verfügbar.</value></data>
   <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Empfohlenes Konto oder Dienst: {0}</value></data>
+  <data name="Dashboard.Recommendation.Category" xml:space="preserve"><value>Kategorie: {0}</value></data>
   <data name="Dashboard.Recommendation.Action" xml:space="preserve"><value>Aktuelle Aktion: {0}</value></data>
   <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Importiere oder ergänze Konten, damit unpwn einfache Wiederherstellungskategorien vorschlagen kann.</value></data>
   <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Prüfe und sichere die primäre E-Mail-Adresse oder den Wiederherstellungskanal vor den übrigen Konten.</value></data>

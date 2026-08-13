@@ -31,7 +31,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
                 Guid.NewGuid(),
                 accountId,
                 workflow,
-                RecoveryPath.AuthenticatedChange,
                 ProjectionContext()),
             CancellationToken.None);
 
@@ -59,7 +58,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             Guid.NewGuid(),
             Guid.NewGuid(),
             CreateWorkflow(),
-            RecoveryPath.AuthenticatedChange,
             ProjectionContext());
         var result = await service.CreateAsync(
             request,
@@ -82,6 +80,46 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreationFailsWithoutWritingWhenNoSafePathIsAvailable()
+    {
+        var store = new InMemoryAtomicRecordStore();
+        var session = new ProjectionSessionService(CreateSession());
+        var service = new AccountRecoveryExecutionService(
+            store,
+            session,
+            _mutations,
+            () => StartedAt.AddMinutes(1));
+        var workflow = CreateWorkflow() with
+        {
+            Actions =
+            [
+                Action(
+                    "authenticated-only",
+                    RecoveryActionType.ChangePassword,
+                    [],
+                    "Workflow.Test.Action.authenticated-only") with
+                {
+                    RecoveryPaths = [RecoveryPath.AuthenticatedChange],
+                },
+            ],
+        };
+
+        var result = await service.CreateAsync(
+            new AccountRecoveryExecutionCreateRequest(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                workflow,
+                ProjectionContext()),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(AccountRecoveryExecutionFailureCode.NoSafeRecoveryPath, result.FailureCode);
+        Assert.Equal(0, store.BatchWrites);
+        Assert.Empty(store.Records);
+        Assert.False(session.PreparedProjectionCommitted);
+    }
+
+    [Fact]
     public async Task RepeatedOperationIsIdempotentAndRevisionConflictIsRejected()
     {
         var store = new InMemoryAtomicRecordStore();
@@ -99,7 +137,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
                 createOperation,
                 accountId,
                 workflow,
-                RecoveryPath.AuthenticatedChange,
                 ProjectionContext()),
             CancellationToken.None);
         var repeatedCreate = await service.CreateAsync(
@@ -107,7 +144,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
                 createOperation,
                 accountId,
                 workflow,
-                RecoveryPath.AuthenticatedChange,
                 ProjectionContext()),
             CancellationToken.None);
         var transitionOperation = Guid.NewGuid();
@@ -159,7 +195,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
                 Guid.NewGuid(),
                 accountId,
                 workflow,
-                RecoveryPath.AuthenticatedChange,
                 ProjectionContext()),
             CancellationToken.None);
         var blocked = await service.ApplyAsync(
@@ -199,7 +234,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
                 Guid.NewGuid(),
                 accountId,
                 workflow,
-                RecoveryPath.AuthenticatedChange,
                 ProjectionContext()),
             CancellationToken.None);
         var started = await service.ApplyAsync(
@@ -272,7 +306,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
                 Guid.NewGuid(),
                 dependencyId,
                 workflow,
-                RecoveryPath.AuthenticatedChange,
                 ProjectionContext()),
             CancellationToken.None);
 
@@ -343,7 +376,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             ProjectionContext());
 
     private static AccountRecoveryProjectionContext ProjectionContext() =>
-        new(AccountCriticality.Critical);
+        new(AccountRecoveryCategory.Critical);
 
     private static RecoverySessionWorkspace CreateSession() =>
         RecoverySessionWorkspace.Create(
@@ -368,7 +401,10 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             AccessLost: false,
             CredentialsAwaitingExport: 0,
             CredentialsAwaitingDeletion: 0,
-            RecommendedActionId: null);
+            RecommendedActionId: null)
+        {
+            Category = AccountRecoveryCategory.NonCritical,
+        };
 
     private static RecoveryWorkflowDefinition CreateWorkflow()
     {
@@ -403,7 +439,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
         return new RecoveryActionDefinition(
             id,
             type,
-            [RecoveryPath.AuthenticatedChange],
+            [RecoveryPath.PasswordReset],
             RecoveryActionRequirement.Required,
             RecoveryActionImportance.Critical,
             AutomationSupport.None,

@@ -19,7 +19,7 @@ An execution is bound to:
 - canonical `ProviderId`
 - repository `WorkflowId`
 - repository `WorkflowVersion`
-- selected `RecoveryPath`
+- automatically selected `RecoveryPath` and structured selection reason
 - monotonically increasing revision
 
 Loading an execution against a different provider, workflow, version, or path fails closed. Repository workflow changes therefore cannot silently reinterpret persisted action state.
@@ -68,9 +68,12 @@ User-authored reasons are required for user blocking, provider failure, not-appl
 - completed and not-applicable terminal states cannot be silently reopened
 - lost access remains distinct from progress and produces `AccessNotRestored`
 - browser navigation and elapsed time never complete an action
-- the selected recovery path may change only while every action is still pristine; once progress,
-  notes, or a generated-credential reference exists, the path change fails closed so required work
-  cannot disappear from the execution
+- explicit confirmed access, lost access, or provider failure may trigger the canonical automatic
+  selector; users do not directly choose or change the recovery-path enum
+- each automatic fallback preserves the prior approach and its structured transition reason before
+  materializing the next path's actions
+- when no safe supported fallback exists, failed or lost-access work stays visible and the execution
+  records `NoSafeSupportedPath` instead of inventing success
 
 Repository actions may reference one reviewed recovery-location identifier from their workflow.
 Validation rejects unknown identifiers. The UI therefore does not infer provider URLs from translated
@@ -111,6 +114,7 @@ The workflow UI consumes this application service rather than mutating action in
 summaries directly. It:
 
 - display inventory metadata alongside the canonical execution
+- display the automatically selected recovery approach and its reason without a path chooser
 - resolve provider guidance through localization resources
 - show the structured reason and affected prerequisites
 - require explicit completion acknowledgement

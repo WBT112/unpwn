@@ -164,10 +164,10 @@ public sealed record AccountInventoryState(
         };
     }
 
-    public AccountInventoryPlan CreatePlan(IncidentIndicator incidentIndicators = IncidentIndicator.None)
+    public AccountInventoryPlan CreatePlan()
     {
         Validate();
-        return AccountInventoryPlanner.Create(Accounts, incidentIndicators);
+        return AccountInventoryPlanner.Create(Accounts);
     }
 
     public void Validate()
@@ -198,12 +198,11 @@ public sealed record AccountInventoryState(
 public static class AccountInventoryPlanner
 {
     public static AccountInventoryPlan Create(
-        IReadOnlyCollection<AccountInventoryEntry> accounts,
-        IncidentIndicator incidentIndicators)
+        IReadOnlyCollection<AccountInventoryEntry> accounts)
     {
         ArgumentNullException.ThrowIfNull(accounts);
         var items = accounts
-            .OrderBy(account => SortOrder(account.EffectiveCategory, incidentIndicators))
+            .OrderBy(account => SortOrder(account.EffectiveCategory))
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
             .ThenBy(account => account.Id)
             .Select((account, index) => new AccountInventoryPlanItem(
@@ -216,23 +215,14 @@ public static class AccountInventoryPlanner
         return new AccountInventoryPlan(items);
     }
 
-    private static int SortOrder(
-        AccountRecoveryCategory category,
-        IncidentIndicator incidentIndicators)
+    private static int SortOrder(AccountRecoveryCategory category) => category switch
     {
-        var recoveryChannelNeedsAttention =
-            incidentIndicators.HasFlag(IncidentIndicator.LostAccess) ||
-            incidentIndicators.HasFlag(IncidentIndicator.CompromisedRecoveryChannel);
-        return category switch
-        {
-            AccountRecoveryCategory.Email when recoveryChannelNeedsAttention => 0,
-            AccountRecoveryCategory.Critical => recoveryChannelNeedsAttention ? 1 : 0,
-            AccountRecoveryCategory.Email => 1,
-            AccountRecoveryCategory.Unknown => 2,
-            AccountRecoveryCategory.NonCritical => 3,
-            _ => throw new ArgumentOutOfRangeException(nameof(category)),
-        };
-    }
+        AccountRecoveryCategory.Email => 0,
+        AccountRecoveryCategory.Critical => 1,
+        AccountRecoveryCategory.Unknown => 2,
+        AccountRecoveryCategory.NonCritical => 3,
+        _ => throw new ArgumentOutOfRangeException(nameof(category)),
+    };
 
     private static AccountInventoryPlanReasonCode Reason(AccountRecoveryCategory category) => category switch
     {

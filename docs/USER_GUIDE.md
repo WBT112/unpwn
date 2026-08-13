@@ -47,11 +47,11 @@ can edit it before creation. If no usable local user name is available, the sugg
 **Recovery**. The suggestion is created locally; unpwn does not query a directory service or derive it
 from imported account or email data.
 
-Two optional choices can change the recovery order: whether you cannot access one or more accounts,
-and whether a primary email or recovery channel may be under someone else's control. Lost access
-moves explicitly categorized email accounts earlier. A possibly controlled recovery channel also shows
-an immediate advisory. These answers guide prioritization and do not prove that an account, device,
-or credential was compromised. unpwn does not collect a free-form incident narrative.
+One optional warning can add immediate guidance: whether a primary email or recovery channel may be
+under someone else's control. Confirm account-specific access later while working on that account;
+this lets unpwn choose the recovery approach without changing the category order. The warning guides
+prioritization and does not prove that an account, device, or credential was compromised. unpwn does
+not collect a free-form incident narrative.
 
 ### 4. Add your accounts
 
@@ -73,7 +73,16 @@ Categories decide when an account is considered; the reviewed provider workflow 
 
 ### 6. Follow the recommended recovery order
 
-unpwn explains which account is recommended next and why. A recommendation is guidance, not proof that an account is compromised.
+unpwn automatically orders outstanding accounts as **Email → Critical → Unknown → Not critical** and
+explains which account is recommended next. Stable account identifiers resolve ties, so language and
+restart do not change the queue. A recommendation is guidance, not proof that an account is
+compromised.
+
+For each account, unpwn also chooses the safest supported recovery approach. Confirmed usable access
+uses an authenticated password change where supported; otherwise unpwn prefers password reset and
+then manual recovery. If access is lost or the provider rejects an approach, unpwn records why and
+moves to the next safe option. If none remains, the account stays visibly blocked. Browser activity
+never selects an approach, and the normal interface does not ask you to choose an internal path value.
 
 Depending on the provider, recovery may involve more than changing a password: active sessions, MFA/passkeys, recovery addresses, trusted devices, connected applications, tokens, or keys may also require review.
 

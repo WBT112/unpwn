@@ -19,12 +19,12 @@ public enum AccountRecoveryExecutionFailureCode
     NotFound,
     Conflict,
     Corrupted,
+    NoSafeRecoveryPath,
     PersistenceFailure,
 }
 
 public enum AccountRecoveryExecutionTransitionKind
 {
-    ChangeRecoveryPath,
     SetAccessAvailable,
     SetAccessLost,
     SetWaitingForProviderReview,
@@ -41,11 +41,11 @@ public enum AccountRecoveryExecutionTransitionKind
     AttachCredentialReference,
 }
 
-public sealed record AccountRecoveryProjectionContext(AccountCriticality Criticality)
+public sealed record AccountRecoveryProjectionContext(AccountRecoveryCategory Category)
 {
     public void Validate()
     {
-        if (!Enum.IsDefined(Criticality))
+        if (!Enum.IsDefined(Category))
         {
             throw new InvalidOperationException("The account execution projection context is invalid.");
         }
@@ -56,7 +56,6 @@ public sealed record AccountRecoveryExecutionCreateRequest(
     Guid OperationId,
     Guid AccountId,
     RecoveryWorkflowDefinition Workflow,
-    RecoveryPath SelectedPath,
     AccountRecoveryProjectionContext ProjectionContext);
 
 public sealed record AccountRecoveryExecutionTransitionRequest(
@@ -72,8 +71,6 @@ public sealed record AccountRecoveryExecutionTransitionRequest(
     GeneratedCredentialReference? CredentialReference,
     AccountRecoveryProjectionContext ProjectionContext)
 {
-    public RecoveryPath? SelectedPath { get; init; }
-
     public string[]? AcknowledgedCompletionCriteria { get; init; }
 }
 

@@ -91,7 +91,6 @@ public sealed class DashboardScreenViewModelTests
     {
         var sessionService = new TestRecoverySessionService();
         var viewModel = CreateViewModel(sessionService);
-        viewModel.LostAccess = true;
         viewModel.CompromisedRecoveryChannel = true;
         viewModel.SecurityWarningAcknowledged = true;
 
@@ -99,7 +98,7 @@ public sealed class DashboardScreenViewModelTests
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
         Assert.Equal(
-            IncidentIndicator.LostAccess | IncidentIndicator.CompromisedRecoveryChannel,
+            IncidentIndicator.CompromisedRecoveryChannel,
             sessionService.CurrentSession?.Incident.Indicators);
         Assert.Equal(
             RecoveryDashboardRecommendationCode.SecureRecoveryChannel,
@@ -156,15 +155,20 @@ public sealed class DashboardScreenViewModelTests
                     AccessLost: false,
                     CredentialsAwaitingExport: 0,
                     CredentialsAwaitingDeletion: 0,
-                    RecommendedActionId: "change-password"),
+                    RecommendedActionId: "change-password")
+                {
+                    Category = AccountRecoveryCategory.Email,
+                },
             ],
             DateTimeOffset.UnixEpoch.AddMinutes(1));
         var localization = CreateLocalization();
         var viewModel = CreateViewModel(new TestRecoverySessionService(session), localization);
 
         Assert.True(viewModel.HasRecommendationTarget);
+        Assert.True(viewModel.HasRecommendationCategory);
         Assert.True(viewModel.HasRecommendationAction);
         Assert.Equal("Recommended account or service: GitHub", viewModel.RecommendationTargetText);
+        Assert.Equal("Category: Email", viewModel.RecommendationCategoryText);
         Assert.Equal("Current action: Change the password", viewModel.RecommendationActionText);
         Assert.Equal("0 of 0 critical accounts handled.", viewModel.CriticalReadinessText);
         Assert.Equal("Progress: 0%", viewModel.WeightedProgressText);
@@ -172,6 +176,7 @@ public sealed class DashboardScreenViewModelTests
         localization.SetLanguage("de");
 
         Assert.Equal("Empfohlenes Konto oder Dienst: GitHub", viewModel.RecommendationTargetText);
+        Assert.Equal("Kategorie: E-Mail", viewModel.RecommendationCategoryText);
         Assert.Equal("Aktuelle Aktion: Passwort ändern", viewModel.RecommendationActionText);
         Assert.Equal("0 von 0 kritischen Konten bearbeitet.", viewModel.CriticalReadinessText);
         Assert.Equal("Fortschritt: 0 %", viewModel.WeightedProgressText);
@@ -203,7 +208,10 @@ public sealed class DashboardScreenViewModelTests
                     AccessLost: false,
                     CredentialsAwaitingExport: 0,
                     CredentialsAwaitingDeletion: 0,
-                    RecommendedActionId: "reset-password"),
+                    RecommendedActionId: "reset-password")
+                {
+                    Category = AccountRecoveryCategory.Critical,
+                },
             ],
             DateTimeOffset.UnixEpoch.AddMinutes(1));
         var viewModel = CreateViewModel(new TestRecoverySessionService(session));

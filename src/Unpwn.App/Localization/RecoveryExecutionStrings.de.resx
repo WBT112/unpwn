@@ -15,14 +15,19 @@
   <data name="Workflow.Account.CategoryIndependentWorkflow" xml:space="preserve"><value>Die Kategorie bestimmt, wann dieses Konto bearbeitet wird; der Provider-Workflow bestimmt unabhängig davon, wie.</value></data>
   <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Warum dieses Konto jetzt?</value></data>
   <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>Derzeit ist keine Planbegründung verfügbar.</value></data>
-  <data name="Workflow.Path.Title" xml:space="preserve"><value>Wiederherstellungspfad</value></data>
-  <data name="Workflow.Path.Help" xml:space="preserve"><value>Wähle den Pfad, der deinem tatsächlichen Zugriff entspricht. Authentifizierte Änderung, Passwortzurücksetzung und manuelle Wiederherstellung haben unterschiedliche Voraussetzungen.</value></data>
+  <data name="Workflow.Path.Automatic.Title" xml:space="preserve"><value>Von unpwn gewählter Wiederherstellungsweg</value></data>
+  <data name="Workflow.Path.Automatic.Help" xml:space="preserve"><value>unpwn leitet diesen Weg ausschließlich aus deinem ausdrücklich erfassten Kontozugriff und dem geprüften Workflow ab. Browsernavigation ändert ihn niemals.</value></data>
   <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Passwort in einer authentifizierten Kontositzung ändern</value></data>
   <data name="Workflow.Path.PasswordReset" xml:space="preserve"><value>Passwort über einen gesicherten Wiederherstellungskanal zurücksetzen</value></data>
   <data name="Workflow.Path.ManualRecovery" xml:space="preserve"><value>Manuellen Kontowiederherstellungsprozess des Anbieters verwenden</value></data>
-  <data name="Workflow.Path.Begin" xml:space="preserve"><value>Diesen Wiederherstellungspfad beginnen</value></data>
-  <data name="Workflow.Path.Change" xml:space="preserve"><value>Wiederherstellungspfad ändern</value></data>
-  <data name="Workflow.Path.ChangeHelp" xml:space="preserve"><value>Der Pfad kann nur geändert werden, bevor Aktionsfortschritt, Notizen oder eine Referenz auf ein erzeugtes Zugangsdatenobjekt erfasst wurden. So kann erforderliche Arbeit nicht still verworfen werden.</value></data>
+  <data name="Workflow.Path.Start" xml:space="preserve"><value>Wiederherstellung starten</value></data>
+  <data name="Workflow.Path.Blocked" xml:space="preserve"><value>Kein sicherer Wiederherstellungsweg verfügbar</value></data>
+  <data name="Workflow.Path.Reason.ConfirmedAuthenticatedAccess" xml:space="preserve"><value>Du hast nutzbaren Kontozugriff ausdrücklich bestätigt. Deshalb hat unpwn die authentifizierte Passwortänderung gewählt.</value></data>
+  <data name="Workflow.Path.Reason.PasswordResetAvailable" xml:space="preserve"><value>Es ist kein nutzbarer authentifizierter Zugriff bestätigt. Der geprüfte Weg zur Passwortzurücksetzung ist verfügbar.</value></data>
+  <data name="Workflow.Path.Reason.ManualRecoveryAvailable" xml:space="preserve"><value>Weder authentifizierte Änderung noch Passwortzurücksetzung sind sicher verfügbar. Deshalb hat unpwn den manuellen Wiederherstellungsprozess des Anbieters gewählt.</value></data>
+  <data name="Workflow.Path.Reason.AuthenticatedAccessLostFallback" xml:space="preserve"><value>Nach deiner Meldung über verlorenen Zugriff ist unpwn zum nächsten sicheren unterstützten Wiederherstellungsweg gewechselt.</value></data>
+  <data name="Workflow.Path.Reason.ProviderFailureFallback" xml:space="preserve"><value>Nach deiner Meldung über den fehlgeschlagenen Anbieterweg ist unpwn zum nächsten sicheren unterstützten Wiederherstellungsweg gewechselt.</value></data>
+  <data name="Workflow.Path.Reason.NoSafeSupportedPath" xml:space="preserve"><value>Der Workflow bietet für den aktuell bestätigten Kontozustand keinen sicheren Weg. Das Konto bleibt sichtbar blockiert; nutze geprüfte Anbieterhinweise.</value></data>
   <data name="Workflow.Access.Title" xml:space="preserve"><value>Kontozugriff</value></data>
   <data name="Workflow.Access.Help" xml:space="preserve"><value>Erfasse den tatsächlichen Zugriffsstatus. Verlorener Zugriff und Anbieterprüfung benötigen eine nicht geheime Begründung und führen zum neu berechneten Plan zurück.</value></data>
   <data name="Workflow.Access.Unknown" xml:space="preserve"><value>Nicht erfasst</value></data>
@@ -113,8 +118,10 @@
   <data name="Workflow.Status.FullyReviewed" xml:space="preserve"><value>Vollständig geprüft</value></data>
   <data name="Workflow.Status.NotFullySecured" xml:space="preserve"><value>Nicht vollständig gesichert</value></data>
   <data name="Workflow.Status.AccessNotRestored" xml:space="preserve"><value>Zugriff nicht wiederhergestellt</value></data>
-  <data name="Workflow.Status.Ready.Title" xml:space="preserve"><value>Wiederherstellungspfad wählen</value></data>
-  <data name="Workflow.Status.Ready.Message" xml:space="preserve"><value>Prüfe den Kontokontext und wähle den Pfad, der deinem tatsächlichen Zugriff entspricht.</value></data>
+  <data name="Workflow.Status.Ready.Title" xml:space="preserve"><value>Bereit für die Wiederherstellung</value></data>
+  <data name="Workflow.Status.Ready.Message" xml:space="preserve"><value>unpwn hat anhand des bestätigten Kontozustands den sichersten unterstützten Weg ausgewählt.</value></data>
+  <data name="Workflow.Status.Blocked.Title" xml:space="preserve"><value>Wiederherstellungsweg blockiert</value></data>
+  <data name="Workflow.Status.Blocked.Message" xml:space="preserve"><value>Aktuell ist kein sicherer unterstützter Weg verfügbar. Bestätige den Kontozugriff oder nutze die sichtbare manuelle Anleitung, sobald sie verfügbar ist.</value></data>
   <data name="Workflow.Status.Started.Title" xml:space="preserve"><value>Wiederherstellungspfad begonnen</value></data>
   <data name="Workflow.Status.Started.Message" xml:space="preserve"><value>Bearbeite jede erforderliche Aktion getrennt und erfasse das tatsächliche Ergebnis.</value></data>
   <data name="Workflow.Status.Active.Title" xml:space="preserve"><value>Kontowiederherstellung läuft</value></data>
@@ -126,7 +133,7 @@
   <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Jetzt bereit</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Entsperre einen Vault und lade ein Kontoinventar, bevor du die Kontowiederherstellung beginnst.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>Das ausgewählte Konto ist im verschlüsselten Inventar nicht mehr verfügbar.</value></data>
-  <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Wähle vor dem Start einen Wiederherstellungspfad.</value></data>
+  <data name="Workflow.Validation.NoSafeRecoveryPath" xml:space="preserve"><value>Für den aktuell bestätigten Kontozustand ist kein sicherer unterstützter Wiederherstellungsweg verfügbar. Das Konto bleibt sichtbar blockiert.</value></data>
   <data name="Workflow.Validation.CriteriaRequired" xml:space="preserve"><value>Bestätige die Abschlusskriterien ausdrücklich, bevor du den Abschluss erfasst.</value></data>
   <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Gib eine nicht geheime Begründung für dieses Ergebnis ein.</value></data>
   <data name="Workflow.Validation.Locked" xml:space="preserve"><value>Der Recovery Vault ist gesperrt.</value></data>
@@ -136,7 +143,6 @@
   <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>Das Ergebnis konnte nicht gespeichert werden. Die UI behauptet nicht, dass es erfasst wurde.</value></data>
   <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>Der angeforderte Wiederherstellungsübergang ist ungültig.</value></data>
   <data name="Workflow.Command.Error" xml:space="preserve"><value>Der Wiederherstellungsvorgang ist fehlgeschlagen, ohne Anbieter- oder Kontodaten offenzulegen.</value></data>
-  <data name="Workflow.Guided.Path.Title" xml:space="preserve"><value>Wähle, wie du dieses Konto wiederherstellen kannst</value></data>
   <data name="Workflow.Guided.Warning.Title" xml:space="preserve"><value>Wichtig vor dem Fortfahren</value></data>
   <data name="Workflow.Guided.Prerequisites.Title" xml:space="preserve"><value>Was zuerst bereit sein muss</value></data>
   <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Warum dies als Nächstes kommt: {0}</value></data>

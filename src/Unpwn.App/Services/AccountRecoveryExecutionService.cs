@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Unpwn.Application.Recovery;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
@@ -11,7 +12,10 @@ namespace Unpwn.App.Services;
 public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionService
 {
     private const string RecordType = "account-execution";
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General);
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    };
     private readonly IEncryptedVaultRecordStore _recordStore;
     private readonly IRecoverySessionService _sessionService;
     private readonly IRecoverySessionProjectionCoordinator _projectionCoordinator;
@@ -130,10 +134,15 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         AccountRecoveryExecutionState state;
         try
         {
+            if (!RecoveryPathSelector.Select(request.Workflow).HasSafePath)
+            {
+                return AccountRecoveryExecutionResult.Failure(
+                    AccountRecoveryExecutionFailureCode.NoSafeRecoveryPath);
+            }
+
             state = AccountRecoveryExecutionState.Create(
                 request.AccountId,
                 request.Workflow,
-                request.SelectedPath,
                 _clock());
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
@@ -230,7 +239,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
             }
 
-            var projectedAccount = execution.State.CreateDashboardProjection(context.Criticality);
+            var projectedAccount = execution.State.CreateDashboardProjection(context.Category);
             var summaries = session.Accounts
                 .Where(account => account.AccountId != execution.State.AccountId)
                 .Append(projectedAccount)
@@ -328,18 +337,16 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
     {
         return request.Transition switch
         {
-            AccountRecoveryExecutionTransitionKind.ChangeRecoveryPath =>
-                state.ChangePath(
-                    request.Workflow,
-                    request.SelectedPath
-                        ?? throw new InvalidOperationException("The transition requires a recovery path."),
-                    occurredAt),
             AccountRecoveryExecutionTransitionKind.SetAccessAvailable =>
-                state.SetAccessState(RecoveryAccessState.Available, null, occurredAt),
+                state.SetAccessState(request.Workflow, RecoveryAccessState.Available, null, occurredAt),
             AccountRecoveryExecutionTransitionKind.SetAccessLost =>
-                state.SetAccessState(RecoveryAccessState.Lost, request.UserReason, occurredAt),
+                state.SetAccessState(request.Workflow, RecoveryAccessState.Lost, request.UserReason, occurredAt),
             AccountRecoveryExecutionTransitionKind.SetWaitingForProviderReview =>
-                state.SetAccessState(RecoveryAccessState.WaitingForProviderReview, request.UserReason, occurredAt),
+                state.SetAccessState(
+                    request.Workflow,
+                    RecoveryAccessState.WaitingForProviderReview,
+                    request.UserReason,
+                    occurredAt),
             AccountRecoveryExecutionTransitionKind.StartAction =>
                 state.StartAction(request.Workflow, RequireActionId(request), occurredAt),
             AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements =>
@@ -369,7 +376,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                     RequireReason(request),
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.FailAction =>
-                state.FailAction(
+                state.FailActionAndSelectFallback(
                     request.Workflow,
                     RequireActionId(request),
                     RequireReason(request),

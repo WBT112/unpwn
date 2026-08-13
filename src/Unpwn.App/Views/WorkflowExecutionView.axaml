@@ -47,24 +47,15 @@
             Padding="18" CornerRadius="10"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="12">
-        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Path.Title}" />
+        <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Path.Automatic.Title}" />
         <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding AccountName}" TextWrapping="Wrap" />
         <TextBlock Text="{Binding CurrentActionWhyText}" TextWrapping="Wrap" />
-        <TextBlock Text="{DynamicResource Workflow.Path.Help}" TextWrapping="Wrap" />
-        <ComboBox Classes="initial-focus"
-                  AutomationProperties.AutomationId="workflow-recovery-path"
-                  AutomationProperties.Name="{DynamicResource Workflow.Path.Title}"
-                  ItemsSource="{Binding PathOptions}"
-                  SelectedItem="{Binding SelectedPath, Mode=TwoWay}">
-          <ComboBox.ItemTemplate>
-            <DataTemplate x:DataType="vm:RecoveryPathOptionViewModel">
-              <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
-            </DataTemplate>
-          </ComboBox.ItemTemplate>
-        </ComboBox>
+        <TextBlock FontWeight="SemiBold" Text="{Binding SelectedPathText}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding PathSelectionReasonText}" TextWrapping="Wrap" />
         <Button HorizontalAlignment="Left"
+                Classes="initial-focus"
                 AutomationProperties.AutomationId="workflow-begin"
-                Content="{DynamicResource Workflow.Path.Begin}"
+                Content="{DynamicResource Workflow.Path.Start}"
                 Command="{Binding BeginCommand}" />
       </StackPanel>
     </Border>
@@ -284,12 +275,10 @@
 
         <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
           <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Path.Title}" />
-            <ComboBox ItemsSource="{Binding PathOptions}" SelectedItem="{Binding SelectedPath, Mode=TwoWay}">
-              <ComboBox.ItemTemplate><DataTemplate x:DataType="vm:RecoveryPathOptionViewModel"><TextBlock Text="{Binding Label}" TextWrapping="Wrap" /></DataTemplate></ComboBox.ItemTemplate>
-            </ComboBox>
-            <Button HorizontalAlignment="Left" Content="{DynamicResource Workflow.Path.Change}" Command="{Binding ChangePathCommand}" />
-            <TextBlock Text="{DynamicResource Workflow.Path.ChangeHelp}" TextWrapping="Wrap" />
+            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Path.Automatic.Title}" />
+            <TextBlock FontWeight="SemiBold" Text="{Binding SelectedPathText}" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding PathSelectionReasonText}" TextWrapping="Wrap" />
+            <TextBlock Text="{DynamicResource Workflow.Path.Automatic.Help}" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 

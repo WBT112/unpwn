@@ -70,7 +70,7 @@ Unpwn.App
 
 ### Recovery domain
 
-Canonical accounts, account categories, actions, statuses, progress, and audit semantics live in the platform-neutral domain. Presentation code must not create a parallel recovery state machine. The repository-controlled account-classification catalog is platform-neutral and offline-only.
+Canonical accounts, account categories, actions, statuses, progress, and audit semantics live in the platform-neutral domain. Presentation code must not create a parallel recovery state machine. The repository-controlled account-classification catalog and automatic recovery-path selector are platform-neutral and offline-only. The selector consumes only the repository workflow plus explicit canonical access state; browser and presentation observations are not inputs.
 
 See [Data Model](DATA_MODEL.md) and [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
 

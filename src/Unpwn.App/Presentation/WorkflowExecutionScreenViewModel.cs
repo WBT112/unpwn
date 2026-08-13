@@ -97,7 +97,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private AccountRecoveryExecutionState? _execution;
     private RecoveryNavigationHandoff? _preparedNavigation;
     private bool _reviewedWorkflowAvailable;
-    private RecoveryPathOptionViewModel[] _pathOptions = [];
     private RecoveryPathOptionViewModel? _selectedPath;
     private WorkflowActionItemViewModel[] _actions = [];
     private WorkflowActionItemViewModel? _selectedAction;
@@ -143,8 +142,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _browserSessions = browserSessions;
 
         RefreshCommand = Command(LoadAsync, () => _inventory.CurrentInventory is not null);
-        BeginCommand = Command(BeginAsync, () => _account is not null && _workflow is not null && _execution is null && SelectedPath is not null);
-        ChangePathCommand = Command(ChangePathAsync, CanChangePath);
+        BeginCommand = Command(BeginAsync, () =>
+            _account is not null && _workflow is not null && _execution is null && SelectedPath is not null);
         SetAccessAvailableCommand = TransitionCommand(
             AccountRecoveryExecutionTransitionKind.SetAccessAvailable,
             requiresReason: false,
@@ -214,8 +213,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand BeginCommand { get; }
 
-    public AsyncCommand ChangePathCommand { get; }
-
     public AsyncCommand SetAccessAvailableCommand { get; }
 
     public AsyncCommand SetAccessLostCommand { get; }
@@ -258,24 +255,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     public RelayCommand ShowGuidedActionCommand { get; }
 
-    public IReadOnlyList<RecoveryPathOptionViewModel> PathOptions => _pathOptions;
-
-    public RecoveryPathOptionViewModel? SelectedPath
-    {
-        get => _selectedPath;
-        set
-        {
-            if (SetProperty(ref _selectedPath, value))
-            {
-                if (_execution is null)
-                {
-                    RefreshActions();
-                }
-
-                RaiseCommandStates();
-            }
-        }
-    }
+    public RecoveryPathOptionViewModel? SelectedPath => _selectedPath;
 
     public IReadOnlyList<WorkflowActionItemViewModel> Actions => _actions;
 
@@ -459,8 +439,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public bool HasNavigationStatus => _navigationStatusKey is not null ||
         _navigationFailureCode != ExternalNavigationFailureCode.None;
 
-    public bool CanChangeRecoveryPath => CanChangePath();
-
     public string ValidationMessage => _validationKey is null
         ? string.Empty
         : Localization.GetString(_validationKey);
@@ -504,6 +482,25 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         get
         {
             return Localization.GetString("Workflow.Account.CategoryIndependentWorkflow");
+        }
+    }
+
+    public bool HasSafeRecoveryPath => SelectedPath is not null &&
+        _execution?.PathSelectionReason != RecoveryPathSelectionReasonCode.NoSafeSupportedPath;
+
+    public string SelectedPathText => HasSafeRecoveryPath
+        ? SelectedPath?.Label ?? string.Empty
+        : Localization.GetString("Workflow.Path.Blocked");
+
+    public string PathSelectionReasonText
+    {
+        get
+        {
+            var reason = _execution?.PathSelectionReason ??
+                (_workflow is null
+                    ? RecoveryPathSelectionReasonCode.NoSafeSupportedPath
+                    : RecoveryPathSelector.Select(_workflow).ReasonCode);
+            return Localization.GetString($"Workflow.Path.Reason.{reason}");
         }
     }
 
@@ -662,7 +659,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     {
         base.RefreshLocalization();
         RefreshProblemOptions();
-        RefreshPathOptions();
+        RefreshPathSelection();
         RefreshActions();
         NotifyAccountProperties();
         NotifyCurrentActionProperties();
@@ -735,6 +732,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             _validationKey = FailureKey(loaded.FailureCode);
         }
 
+        if (_execution is null && !RecoveryPathSelector.Select(_workflow).HasSafePath)
+        {
+            _validationKey = "Workflow.Validation.NoSafeRecoveryPath";
+        }
+
         RefreshProjection();
     }
 
@@ -742,7 +744,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     {
         if (_account is null || _workflow is null || SelectedPath is null)
         {
-            SetValidation("Workflow.Validation.PathRequired");
+            SetValidation("Workflow.Validation.NoSafeRecoveryPath");
             return;
         }
 
@@ -751,7 +753,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                 Guid.NewGuid(),
                 _account.Id,
                 _workflow,
-                SelectedPath.Path,
                 CreateProjectionContext()),
             cancellationToken);
         ApplyResult(result);
@@ -762,20 +763,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                 "Workflow.Status.Started.Title",
                 "Workflow.Status.Started.Message");
         }
-    }
-
-    private async Task ChangePathAsync(CancellationToken cancellationToken)
-    {
-        if (_execution is null || SelectedPath is null)
-        {
-            return;
-        }
-
-        await ApplyAsync(
-            AccountRecoveryExecutionTransitionKind.ChangeRecoveryPath,
-            cancellationToken,
-            selectedPath: SelectedPath.Path,
-            returnToPlan: true);
     }
 
     private async Task CompleteCurrentActionAsync(CancellationToken cancellationToken)
@@ -1109,7 +1096,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         bool completionCriteriaAcknowledged = false,
         GeneratedCredentialReference? credentialReference = null,
         string[]? acknowledgedCompletionCriteria = null,
-        RecoveryPath? selectedPath = null,
         bool returnToPlan = false,
         bool preserveNavigation = false)
     {
@@ -1132,10 +1118,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                 completionCriteriaAcknowledged,
                 credentialReference,
                 CreateProjectionContext())
-            {
-                SelectedPath = selectedPath,
-                AcknowledgedCompletionCriteria = acknowledgedCompletionCriteria,
-            },
+            { AcknowledgedCompletionCriteria = acknowledgedCompletionCriteria },
             cancellationToken);
         ApplyResult(result, preserveNavigation);
         var blockedByPrerequisite = transition == AccountRecoveryExecutionTransitionKind.StartAction &&
@@ -1185,7 +1168,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private AccountRecoveryProjectionContext CreateProjectionContext()
     {
         return new AccountRecoveryProjectionContext(
-            _account?.DashboardCriticality ?? AccountCriticality.Routine);
+            _account?.EffectiveCategory ?? AccountRecoveryCategory.Unknown);
     }
 
     private AccountInventoryEntry? ResolveAccount(AccountInventoryState inventory)
@@ -1215,7 +1198,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private void RefreshProjection()
     {
-        RefreshPathOptions();
+        RefreshPathSelection();
         RefreshActions();
         NotifyAccountProperties();
         NotifyCurrentActionProperties();
@@ -1223,10 +1206,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         if (_execution is null)
         {
+            var isBlocked = _workflow is null || !HasSafeRecoveryPath;
             SetLocalizedStatus(
-                _workflow is null ? AppVisualState.Blocked : AppVisualState.Normal,
-                _workflow is null ? "Screen.Workflow.StatusTitle" : "Workflow.Status.Ready.Title",
-                _workflow is null ? "Screen.Workflow.StatusMessage" : "Workflow.Status.Ready.Message");
+                isBlocked ? AppVisualState.Blocked : AppVisualState.Normal,
+                isBlocked ? "Workflow.Status.Blocked.Title" : "Workflow.Status.Ready.Title",
+                isBlocked ? "Workflow.Status.Blocked.Message" : "Workflow.Status.Ready.Message");
             return;
         }
 
@@ -1244,22 +1228,20 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             "Workflow.Status.Active.Message");
     }
 
-    private void RefreshPathOptions()
+    private void RefreshPathSelection()
     {
-        var selected = _execution?.SelectedPath ?? SelectedPath?.Path;
-        _pathOptions = _workflow?.Actions
-            .SelectMany(action => action.RecoveryPaths)
-            .Distinct()
-            .Order()
-            .Select(path => new RecoveryPathOptionViewModel(
+        var selected = _execution is null && _workflow is not null
+            ? RecoveryPathSelector.Select(_workflow).Path
+            : _execution?.SelectedPath;
+        _selectedPath = selected is { } path
+            ? new RecoveryPathOptionViewModel(
                 path,
-                Localization.GetString($"Workflow.Path.{path}")))
-            .ToArray() ?? [];
-        _selectedPath = selected is { } selectedPath
-            ? _pathOptions.SingleOrDefault(option => option.Path == selectedPath)
-            : _pathOptions.Length > 0 ? _pathOptions[0] : null;
-        OnPropertyChanged(nameof(PathOptions));
+                Localization.GetString($"Workflow.Path.{path}"))
+            : null;
         OnPropertyChanged(nameof(SelectedPath));
+        OnPropertyChanged(nameof(SelectedPathText));
+        OnPropertyChanged(nameof(PathSelectionReasonText));
+        OnPropertyChanged(nameof(HasSafeRecoveryPath));
     }
 
     private void RefreshProblemOptions()
@@ -1363,17 +1345,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private RecoveryLocationDefinition? CurrentLocation => _workflow is null || CurrentDefinition?.RecoveryLocationId is not { } id
         ? null
         : _workflow.RecoveryLocations.SingleOrDefault(location => location.Id == id);
-
-    private bool CanChangePath() => _execution is not null &&
-        SelectedPath is not null &&
-        SelectedPath.Path != _execution.SelectedPath &&
-        _execution.Actions.All(action =>
-            action.Status == RecoveryActionStatus.Open &&
-            action.StartedAt is null &&
-            action.CompletedAt is null &&
-            action.UserReason is null &&
-            action.UserNotes is null &&
-            action.CredentialReference is null);
 
     private bool CanStartCurrentAction() => CurrentActionState?.Status == RecoveryActionStatus.Open;
 
@@ -1503,13 +1474,15 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CategoryText));
         OnPropertyChanged(nameof(CategoryDecisionText));
         OnPropertyChanged(nameof(WorkflowIndependenceText));
+        OnPropertyChanged(nameof(HasSafeRecoveryPath));
+        OnPropertyChanged(nameof(SelectedPathText));
+        OnPropertyChanged(nameof(PathSelectionReasonText));
         OnPropertyChanged(nameof(RecommendationReasonText));
         OnPropertyChanged(nameof(PlanStatusText));
         OnPropertyChanged(nameof(AccessStateText));
         OnPropertyChanged(nameof(HasAccessReason));
         OnPropertyChanged(nameof(AccessReasonText));
         OnPropertyChanged(nameof(RecoveryStatusText));
-        OnPropertyChanged(nameof(CanChangeRecoveryPath));
         OnPropertyChanged(nameof(HasValidationMessage));
         OnPropertyChanged(nameof(ValidationMessage));
     }
@@ -1554,7 +1527,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     {
         foreach (var command in new[]
                  {
-                     RefreshCommand, BeginCommand, ChangePathCommand, SetAccessAvailableCommand,
+                     RefreshCommand, BeginCommand, SetAccessAvailableCommand,
                      SetAccessLostCommand, SetWaitingCommand, StartActionCommand, RetryActionCommand,
                      CompleteActionCommand, RequireUserActionCommand, BlockActionCommand,
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,
@@ -1567,7 +1540,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             command.RaiseCanExecuteChanged();
         }
 
-        OnPropertyChanged(nameof(CanChangeRecoveryPath));
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(CanRunGuidedPrimary));
         OnPropertyChanged(nameof(CanReportCurrentProblem));
@@ -1614,6 +1586,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         AccountRecoveryExecutionFailureCode.NotFound => "Workflow.Validation.NotFound",
         AccountRecoveryExecutionFailureCode.Conflict => "Workflow.Validation.Conflict",
         AccountRecoveryExecutionFailureCode.Corrupted => "Workflow.Validation.Corrupted",
+        AccountRecoveryExecutionFailureCode.NoSafeRecoveryPath => "Workflow.Validation.NoSafeRecoveryPath",
         AccountRecoveryExecutionFailureCode.PersistenceFailure => "Workflow.Validation.PersistenceFailure",
         _ => "Workflow.Validation.InvalidInput",
     };

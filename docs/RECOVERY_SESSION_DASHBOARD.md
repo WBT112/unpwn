@@ -34,15 +34,10 @@ existing 120-character session-name boundary, and a missing or unusable user nam
 `Recovery`. The suggestion remains editable. No directory or network service is queried, and no
 additional identity metadata is persisted.
 
-The only optional structured guidance inputs are:
-
-- lost account access;
-- possible third-party control of a primary email or recovery channel.
-
-Both inputs have a direct canonical consumer. Lost access moves explicitly categorized email accounts
-earlier in the account-inventory plan. Possible control of a primary recovery channel produces the
-immediate `SecureRecoveryChannel` dashboard recommendation and also prioritizes email-category
-accounts in the plan. Both choices are optional; skipping them uses the normal recovery order.
+The only optional structured guidance input is possible third-party control of a primary email or
+recovery channel. It produces the immediate `SecureRecoveryChannel` advisory. Account-specific access
+is confirmed later inside the relevant recovery execution, where it can safely influence the recovery
+approach without changing the category queue. Skipping the warning uses the normal recovery order.
 
 Free-form incident narrative and structured choices without a recovery consumer are not collected.
 The interface explains the effect before creation and requires acknowledgement that the answers guide
@@ -83,15 +78,17 @@ warning groups and is never labelled as a security verdict.
 
 ### Recommended next step
 
-The recommendation uses stable reason codes and persisted recovery-order information. The current ordering favors:
+The recommendation uses stable reason codes and persisted recovery-order information. A reported
+high-impact recovery-channel problem remains an explicit advisory before account work. The account
+queue itself then follows `Email`, `Critical`, `Unknown`, and `NonCritical`, with stable provider and
+opaque account IDs as tie-breakers. For the next account, the recommendation explains the most
+important visible condition:
 
-1. a reported high-impact recovery-channel problem;
-2. critical accounts with lost access;
-3. critical blockers or failures;
-4. unresolved risks;
-5. critical accounts still needing review;
-6. other accounts allowed by the recovery order;
-7. generated-credential export and cleanup.
+- lost access;
+- blockers or failures;
+- unresolved risk;
+- outstanding account review;
+- generated-credential export and cleanup after account work.
 
 Each warning summary carries an optional account identifier and action identifier into the shell navigation context. Account and workflow screens can use this target without parsing localized text.
 
@@ -144,7 +141,7 @@ The test suite covers:
 - safe local session-name suggestions, sanitization, editing, and neutral fallback;
 - empty sessions and skipped optional guidance inputs;
 - removed narrative and obsolete indicator fields rejected as incompatible current-schema data;
-- a documented planning or dashboard effect for each retained guidance input;
+- a documented dashboard effect for the retained guidance input;
 - emergency advisory prioritization;
 - mixed criticality, blockers, unresolved risks, lost access, and credential cleanup;
 - critical accounts handled kept separate from the simple progress presentation;
