@@ -110,7 +110,9 @@ public sealed class AccountInventoryScreenViewModelTests
         var service = new TestAccountInventoryService([reviewed, remaining]);
         var viewModel = CreateViewModel(service);
 
-        Assert.False(viewModel.CanContinueRecovery);
+        Assert.True(viewModel.CanContinueRecovery);
+        Assert.True(viewModel.HasRemainingCategoryReview);
+        Assert.False(viewModel.IsCategoryReviewComplete);
         Assert.Equal(1, viewModel.RemainingCategoryCount);
         Assert.Contains("1", viewModel.TriageProgress, StringComparison.Ordinal);
 
@@ -119,6 +121,7 @@ public sealed class AccountInventoryScreenViewModelTests
         viewModel.Activate();
 
         Assert.True(viewModel.CanContinueRecovery);
+        Assert.True(viewModel.IsCategoryReviewComplete);
         Assert.False(viewModel.HasConfirmedEmailCategory);
         Assert.Contains("without an email", viewModel.ContinuationGuidance, StringComparison.OrdinalIgnoreCase);
     }

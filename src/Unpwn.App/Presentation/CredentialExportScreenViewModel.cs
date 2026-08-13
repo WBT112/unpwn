@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Application;
 using Unpwn.Application.Credentials;
 using Unpwn.Core;
 
@@ -58,6 +59,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
     private readonly ICredentialClipboardService _clipboard;
     private readonly IConfirmationDialogService _confirmationDialog;
     private readonly IPresentationDelay _delay;
+    private readonly IRecoveryFlowService? _recoveryFlow;
     private IReadOnlyList<CredentialAccountOption> _accounts = [];
     private IReadOnlyList<GeneratedCredentialListItemViewModel> _credentials = [];
     private IReadOnlyList<CredentialExportFormatOption> _formats = [];
@@ -87,7 +89,8 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         ICredentialClipboardService clipboard,
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
-        IPresentationDelay? delay = null)
+        IPresentationDelay? delay = null,
+        IRecoveryFlowService? recoveryFlow = null)
         : base(
             AppRoute.CredentialsExport,
             localization,
@@ -104,6 +107,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         _clipboard = clipboard ?? throw new ArgumentNullException(nameof(clipboard));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         _delay = delay ?? SystemPresentationDelay.Instance;
+        _recoveryFlow = recoveryFlow;
 
         RefreshCommand = Command(RefreshAsync, () => _repository.IsUnlocked);
         GenerateCommand = Command(GenerateAsync, CanGenerate);
@@ -143,9 +147,13 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
                 token),
             CanConfirmCleanup);
         DeleteCommand = Command(DeleteAsync, CanDelete);
+        ContinueToCompletionCommand = new RelayCommand(
+            () => ContinueToCompletionRequested?.Invoke(this, EventArgs.Empty),
+            CanContinueToCompletion);
 
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         _shellContext.ContextChanged += ShellContext_OnContextChanged;
+        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
         BuildLocalizedOptions();
     }
 
@@ -174,6 +182,10 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand ConfirmCleanupCommand { get; }
 
     public AsyncCommand DeleteCommand { get; }
+
+    public RelayCommand ContinueToCompletionCommand { get; }
+
+    public event EventHandler? ContinueToCompletionRequested;
 
     public IReadOnlyList<CredentialAccountOption> Accounts
     {
@@ -367,6 +379,8 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
     public bool IsImportConfirmed =>
         SelectedCredential?.Metadata.PasswordManagerImportConfirmedAt is not null;
 
+    public bool IsCompletionContinuationVisible => CanContinueToCompletion();
+
     public override void Activate() => _ = RefreshCommand.ExecuteAsync();
 
     public override void Deactivate()
@@ -388,6 +402,17 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
 
     private AsyncCommand Command(Func<CancellationToken, Task> execute, Func<bool>? canExecute = null) =>
         new(execute, () => Localization.GetString("Credentials.Error.Command"), canExecute);
+
+    private bool CanContinueToCompletion() =>
+        _repository.IsUnlocked &&
+        (_recoveryFlow is null ||
+         _recoveryFlow.NextTask.Target == NextUserTaskTarget.CompletionReview);
+
+    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs)
+    {
+        OnPropertyChanged(nameof(IsCompletionContinuationVisible));
+        ContinueToCompletionCommand.RaiseCanExecuteChanged();
+    }
 
     private async Task RefreshAsync(CancellationToken cancellationToken)
     {
@@ -415,6 +440,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
             Credentials.FirstOrDefault(item => !item.IsDeleted) ??
             (Credentials.Count > 0 ? Credentials[0] : null);
         RaiseCommandStates();
+        ContinueToCompletionCommand.RaiseCanExecuteChanged();
     }
 
     private async Task GenerateAsync(CancellationToken cancellationToken)

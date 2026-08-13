@@ -19,6 +19,14 @@ public sealed class RecoveryWizardOrchestratorTests
             step => Assert.Equal(step, RecoveryWizardStepId.Parse(step.Value)));
     }
 
+    [Theory]
+    [InlineData("recovery-plan")]
+    [InlineData("account-recovery")]
+    public void RemovedDevelopmentStepIdentifiersFailClosed(string obsoleteStep)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => RecoveryWizardStepId.Parse(obsoleteStep));
+    }
+
     [Fact]
     public void SensitiveStepsRequireAnUnlockedVaultContext()
     {
@@ -65,9 +73,6 @@ public sealed class RecoveryWizardOrchestratorTests
         Assert.True(state.IsTerminal);
         Assert.Equal(RecoveryWizardLifecycleStatus.StoppedForDeviceSafety, state.Status);
         Assert.False(state.HasVaultContext);
-        Assert.Equal(
-            RecoveryWizardRecommendationCode.NoFurtherAction,
-            RecoveryWizardOrchestrator.GetRecommendation(state).ReasonCode);
     }
 
     [Fact]
@@ -103,67 +108,52 @@ public sealed class RecoveryWizardOrchestratorTests
             StartTime.AddMinutes(5));
         state = RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.RecoveryPlan,
+            RecoveryWizardStepId.RecoveryOverview,
             StartTime.AddMinutes(6));
         state = RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.AccountRecovery,
+            RecoveryWizardStepId.CredentialExport,
             StartTime.AddMinutes(7));
         state = RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.RecoveryPlan,
+            RecoveryWizardStepId.CompletionPreflight,
             StartTime.AddMinutes(8));
         state = RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.CredentialExport,
-            StartTime.AddMinutes(9));
-        state = RecoveryWizardOrchestrator.Continue(
-            state,
-            RecoveryWizardStepId.CompletionPreflight,
-            StartTime.AddMinutes(10));
-        state = RecoveryWizardOrchestrator.Continue(
-            state,
             RecoveryWizardStepId.FinalReport,
-            StartTime.AddMinutes(11));
+            StartTime.AddMinutes(9));
         state = RecoveryWizardOrchestrator.Finish(
             state,
             RecoveryWizardTerminalOutcome.Completed,
-            StartTime.AddMinutes(12));
+            StartTime.AddMinutes(10));
 
         Assert.True(state.IsTerminal);
         Assert.True(state.HasVaultContext);
         Assert.Equal(RecoveryWizardLifecycleStatus.Completed, state.Status);
         Assert.Equal(RecoveryWizardStepId.FinalReport, state.CurrentStep);
-        Assert.Equal(12, state.Revision);
+        Assert.Equal(10, state.Revision);
     }
 
     [Fact]
-    public void PausingDuringExternalAccountRecoveryResumesAtTheRecoveryPlan()
+    public void PausingDuringRecoveryResumesAtTheRecoveryOverview()
     {
-        var state = StartAtRecoveryPlan();
-        state = RecoveryWizardOrchestrator.Continue(
-            state,
-            RecoveryWizardStepId.AccountRecovery,
-            StartTime.AddMinutes(7));
+        var state = StartAtRecoveryOverview();
 
-        state = RecoveryWizardOrchestrator.Pause(state, StartTime.AddMinutes(8));
+        state = RecoveryWizardOrchestrator.Pause(state, StartTime.AddMinutes(7));
 
         Assert.Equal(RecoveryWizardLifecycleStatus.Paused, state.Status);
-        Assert.Equal(RecoveryWizardStepId.RecoveryPlan, state.ResumeStep);
-        Assert.Equal(
-            RecoveryWizardRecommendationCode.ResumeWizard,
-            RecoveryWizardOrchestrator.GetRecommendation(state).ReasonCode);
+        Assert.Equal(RecoveryWizardStepId.RecoveryOverview, state.ResumeStep);
 
-        state = RecoveryWizardOrchestrator.Resume(state, StartTime.AddMinutes(9));
+        state = RecoveryWizardOrchestrator.Resume(state, StartTime.AddMinutes(8));
 
         Assert.Equal(RecoveryWizardLifecycleStatus.Active, state.Status);
-        Assert.Equal(RecoveryWizardStepId.RecoveryPlan, state.CurrentStep);
+        Assert.Equal(RecoveryWizardStepId.RecoveryOverview, state.CurrentStep);
     }
 
     [Fact]
     public void LockingDuringFinalReportRequiresCompletionPreflightAgain()
     {
-        var state = StartAtRecoveryPlan();
+        var state = StartAtRecoveryOverview();
         state = RecoveryWizardOrchestrator.Continue(
             state,
             RecoveryWizardStepId.CompletionPreflight,
@@ -177,9 +167,6 @@ public sealed class RecoveryWizardOrchestratorTests
 
         Assert.Equal(RecoveryWizardLifecycleStatus.Locked, state.Status);
         Assert.Equal(RecoveryWizardStepId.CompletionPreflight, state.ResumeStep);
-        Assert.Equal(
-            RecoveryWizardRecommendationCode.UnlockVault,
-            RecoveryWizardOrchestrator.GetRecommendation(state).ReasonCode);
 
         state = RecoveryWizardOrchestrator.Resume(state, StartTime.AddMinutes(10));
 
@@ -209,54 +196,6 @@ public sealed class RecoveryWizardOrchestratorTests
                 StartTime.AddSeconds(-1)));
     }
 
-    [Fact]
-    public void RecommendationsExposeStableCodesInsteadOfDisplayText()
-    {
-        var state = StartWithVaultContext();
-        var recommendation = RecoveryWizardOrchestrator.GetRecommendation(state);
-
-        Assert.Equal(RecoveryWizardStepId.IncidentIntake, recommendation.StepId);
-        Assert.Equal(RecoveryWizardRecommendationCode.CaptureIncidentContext, recommendation.ReasonCode);
-    }
-
-    [Theory]
-    [MemberData(nameof(ActiveRecommendations))]
-    public void EveryActiveStepHasAStableRecommendation(
-        string stepValue,
-        RecoveryWizardRecommendationCode expected)
-    {
-        var step = RecoveryWizardStepId.Parse(stepValue);
-        var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime) with
-        {
-            CurrentStep = step,
-            ResumeStep = step,
-            HasVaultContext = step != RecoveryWizardStepId.Welcome &&
-                step != RecoveryWizardStepId.TrustedDeviceCheck &&
-                step != RecoveryWizardStepId.TrustedDeviceGuidance &&
-                step != RecoveryWizardStepId.VaultEntry,
-        };
-
-        var recommendation = RecoveryWizardOrchestrator.GetRecommendation(state);
-
-        Assert.Equal(step, recommendation.StepId);
-        Assert.Equal(expected, recommendation.ReasonCode);
-    }
-
-    [Theory]
-    [InlineData(RecoveryWizardLifecycleStatus.StoppedForDeviceSafety)]
-    [InlineData(RecoveryWizardLifecycleStatus.Cancelled)]
-    [InlineData(RecoveryWizardLifecycleStatus.Completed)]
-    [InlineData(RecoveryWizardLifecycleStatus.Archived)]
-    [InlineData(RecoveryWizardLifecycleStatus.FollowUpRequired)]
-    public void EveryTerminalStatusHasNoFurtherAction(RecoveryWizardLifecycleStatus status)
-    {
-        var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime) with { Status = status };
-
-        Assert.Equal(
-            RecoveryWizardRecommendationCode.NoFurtherAction,
-            RecoveryWizardOrchestrator.GetRecommendation(state).ReasonCode);
-    }
-
     [Theory]
     [InlineData(RecoveryWizardTerminalOutcome.Completed, RecoveryWizardLifecycleStatus.Completed)]
     [InlineData(RecoveryWizardTerminalOutcome.Archived, RecoveryWizardLifecycleStatus.Archived)]
@@ -265,7 +204,7 @@ public sealed class RecoveryWizardOrchestratorTests
         RecoveryWizardTerminalOutcome outcome,
         RecoveryWizardLifecycleStatus expected)
     {
-        var state = StartAtRecoveryPlan();
+        var state = StartAtRecoveryOverview();
         state = RecoveryWizardOrchestrator.BeginCompletionReview(state, StartTime.AddMinutes(7));
         state = RecoveryWizardOrchestrator.Continue(
             state,
@@ -337,23 +276,6 @@ public sealed class RecoveryWizardOrchestratorTests
             RecoveryWizardOrchestrator.Cancel(archivedActive, StartTime.AddMinutes(8)));
     }
 
-    public static TheoryData<string, RecoveryWizardRecommendationCode> ActiveRecommendations =>
-        new()
-        {
-            { RecoveryWizardStepId.Welcome.Value, RecoveryWizardRecommendationCode.WelcomeUser },
-            { RecoveryWizardStepId.TrustedDeviceCheck.Value, RecoveryWizardRecommendationCode.ConfirmTrustedDevice },
-            { RecoveryWizardStepId.TrustedDeviceGuidance.Value, RecoveryWizardRecommendationCode.MoveToTrustedDevice },
-            { RecoveryWizardStepId.VaultEntry.Value, RecoveryWizardRecommendationCode.CreateOrUnlockVault },
-            { RecoveryWizardStepId.IncidentIntake.Value, RecoveryWizardRecommendationCode.CaptureIncidentContext },
-            { RecoveryWizardStepId.AccountInventory.Value, RecoveryWizardRecommendationCode.ReviewAccountInventory },
-            { RecoveryWizardStepId.AccountTriage.Value, RecoveryWizardRecommendationCode.ReviewAccountCategories },
-            { RecoveryWizardStepId.RecoveryPlan.Value, RecoveryWizardRecommendationCode.ReviewRecoveryPlan },
-            { RecoveryWizardStepId.AccountRecovery.Value, RecoveryWizardRecommendationCode.RecoverRecommendedAccount },
-            { RecoveryWizardStepId.CredentialExport.Value, RecoveryWizardRecommendationCode.ExportGeneratedCredentials },
-            { RecoveryWizardStepId.CompletionPreflight.Value, RecoveryWizardRecommendationCode.RunCompletionPreflight },
-            { RecoveryWizardStepId.FinalReport.Value, RecoveryWizardRecommendationCode.ReviewFinalReport },
-        };
-
     private static RecoveryWizardState StartAtTrustedDeviceCheck()
     {
         var state = RecoveryWizardOrchestrator.Start(Guid.NewGuid(), StartTime);
@@ -373,7 +295,7 @@ public sealed class RecoveryWizardOrchestratorTests
         return RecoveryWizardOrchestrator.ConfirmVaultReady(state, StartTime.AddMinutes(3));
     }
 
-    private static RecoveryWizardState StartAtRecoveryPlan()
+    private static RecoveryWizardState StartAtRecoveryOverview()
     {
         var state = StartWithVaultContext();
         state = RecoveryWizardOrchestrator.Continue(
@@ -386,7 +308,7 @@ public sealed class RecoveryWizardOrchestratorTests
             StartTime.AddMinutes(5));
         return RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.RecoveryPlan,
+            RecoveryWizardStepId.RecoveryOverview,
             StartTime.AddMinutes(6));
     }
 }

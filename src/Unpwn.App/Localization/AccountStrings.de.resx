@@ -38,10 +38,12 @@
   <data name="Accounts.Action.Delete" xml:space="preserve"><value>Konto entfernen</value></data>
   <data name="Accounts.Triage.Title" xml:space="preserve"><value>Welche Konten sind am wichtigsten?</value></data>
   <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Noch zu prüfen: {0} von {1}</value></data>
-  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Mehr geprüfte Konten verbessern die Reihenfolge; im Assistenten kannst du trotzdem bewusst fortfahren. Lokale Vorschläge ersetzen nie deine ausdrückliche Auswahl.</value></data>
+  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Mehr geprüfte Konten verbessern die Reihenfolge; du kannst hier trotzdem bewusst fortfahren. Lokale Vorschläge ersetzen nie deine ausdrückliche Auswahl.</value></data>
+  <data name="Accounts.Triage.Continue" xml:space="preserve"><value>Weiter zur Wiederherstellung</value></data>
+  <data name="Accounts.Triage.ContinueEarly" xml:space="preserve"><value>Jetzt zur Wiederherstellung</value></data>
   <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>Ein E-Mail-Konto ist bestätigt. Du kannst die Recovery jetzt fortsetzen oder die übrigen Konten prüfen.</value></data>
   <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>Alle Konten wurden ohne E-Mail-Konto geprüft. Fahre fort, wenn das beabsichtigt ist.</value></data>
-  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Bestätige zuerst ein E-Mail-Konto, sofern du eines hast. Falls du wirklich keines hast, kannst du im Assistenten bewusst fortfahren.</value></data>
+  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Bestätige zuerst ein E-Mail-Konto, sofern du eines hast. Falls du wirklich keines hast, kannst du hier bewusst fortfahren.</value></data>
   <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Deine Auswahl</value></data>
   <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Lokaler Vorschlag – nicht bestätigt</value></data>
   <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Kategorieprüfung empfohlen</value></data>
@@ -71,4 +73,7 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>Es wurden keine neuen Konten importiert, weil alle geprüften Konten bereits im Inventar vorhanden sind.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Kläre die Duplikatwahl oder prüfe den Inventarstatus.</value></data>
+  <data name="Import.Continue.Title" xml:space="preserve"><value>Konten können geprüft werden</value></data>
+  <data name="Import.Continue.Message" xml:space="preserve"><value>Bestätige als Nächstes für jedes importierte Konto die einfache Recovery-Kategorie. Du kannst später zurückkehren und weitere Konten importieren.</value></data>
+  <data name="Import.Continue.Action" xml:space="preserve"><value>Kontokategorien prüfen</value></data>
 </root>

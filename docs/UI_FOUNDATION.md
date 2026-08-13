@@ -9,7 +9,10 @@ The application starts with no vault unlocked. The header displays explicit lock
 During an active recovery session, the active workspace owns its instructions, explanation, current
 task, and primary action. Persistent shell chrome does not present a second assistant card or CTA.
 The dashboard projects the canonical next recommendation into the workspace; merely opening a route
-never advances the wizard.
+never advances the recovery flow. Session creation opens CSV import, successful import exposes a
+workspace-owned category-review action, triage exposes complete and deliberate early continuation,
+and credential handoff exposes completion review. Each of those buttons persists the canonical
+transition before navigation.
 
 The stable top-level routes remain available as secondary detail and correction views behind the
 workspace disclosure:
@@ -82,7 +85,8 @@ and action controls use a predictable tab order.
 
 Accessibility names, descriptions, keyboard hints, and dialog consequences are localized. Stable automation IDs and test selectors remain language-neutral so tests and assistive integrations do not depend on visible text.
 
-Navigated screens focus their first relevant enabled control. When a validation summary becomes
+Navigated screens focus their first relevant enabled control, including the current workspace-owned
+continuation when prior work is already present on resume. When a validation summary becomes
 visible, focus moves to that summary; sensitive confirmations start on the safe cancel action and
 restore the invoking focus after closing. Status, persistence, blocking, validation, credential
 reveal, and clipboard-expiry surfaces expose appropriate polite or assertive live regions. Timed

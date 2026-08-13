@@ -5,12 +5,12 @@ using Xunit;
 
 namespace Unpwn.App.Tests.Services;
 
-public sealed class GuidedRecoveryWizardServiceTests
+public sealed class RecoveryFlowServiceTests
 {
     private const string TestPassword = "UNPWN_TEST_SECRET_guided-wizard-vault-password";
 
     [Fact]
-    public async Task GuidedStepIsEncryptedPersistedAndResumesAfterLock()
+    public async Task WorkspaceTransitionIsEncryptedPersistedAndResumesAfterLock()
     {
         using var directory = new TemporaryDirectory();
         var time = DateTimeOffset.UnixEpoch;
@@ -45,7 +45,7 @@ public sealed class GuidedRecoveryWizardServiceTests
                 SecurityWarningAcknowledged: true),
             CancellationToken.None)).Succeeded);
         await inventory.InitializeAsync(CancellationToken.None);
-        using var guided = new GuidedRecoveryWizardService(
+        using var flow = new RecoveryFlowService(
             vault,
             wizard,
             session,
@@ -53,9 +53,9 @@ public sealed class GuidedRecoveryWizardServiceTests
             mutations,
             () => time);
 
-        var blocked = await guided.AdvanceAsync(CancellationToken.None);
+        var blocked = await flow.AdvanceAsync(CancellationToken.None);
         Assert.False(blocked.Succeeded);
-        Assert.Equal(GuidedRecoveryBlockCode.AccountsRequired, blocked.Decision.BlockCode);
+        Assert.Equal(NextUserTaskTarget.CsvImport, blocked.Task.Target);
         Assert.Equal(RecoveryWizardStepId.AccountInventory, wizard.Current.CurrentStep);
 
         Assert.True((await inventory.UpsertAsync(
@@ -67,7 +67,7 @@ public sealed class GuidedRecoveryWizardServiceTests
                 null),
             CancellationToken.None)).Succeeded);
         time = time.AddMinutes(1);
-        var advanced = await guided.AdvanceAsync(CancellationToken.None);
+        var advanced = await flow.AdvanceAsync(CancellationToken.None);
 
         Assert.True(advanced.Succeeded);
         Assert.Equal(RecoveryWizardStepId.AccountTriage, wizard.Current.CurrentStep);

@@ -1,5 +1,6 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Application;
 using Unpwn.Import.Csv;
 
 namespace Unpwn.App.Presentation;
@@ -150,26 +151,50 @@ public sealed class PlaceholderScreenViewModel(
         statusTitleKey,
         statusMessageKey);
 
-public sealed class CsvImportScreenViewModel(
-    IAccountInventoryService inventory,
-    ILocalizationService localization)
-    : LocalizedScreenViewModel(
-        AppRoute.CsvImport,
-        localization,
-        "Screen.Import.Title",
-        "Screen.Import.Description",
-        AppVisualState.Warning,
-        "Screen.Import.StatusTitle",
-        "Screen.Import.StatusMessage")
+public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
 {
-    private readonly IAccountInventoryService _inventory =
-        inventory ?? throw new ArgumentNullException(nameof(inventory));
+    private readonly IAccountInventoryService _inventory;
+    private readonly IRecoveryFlowService? _recoveryFlow;
     private int _importActive;
+
+    public CsvImportScreenViewModel(
+        IAccountInventoryService inventory,
+        ILocalizationService localization,
+        IRecoveryFlowService? recoveryFlow = null)
+        : base(
+            AppRoute.CsvImport,
+            localization,
+            "Screen.Import.Title",
+            "Screen.Import.Description",
+            AppVisualState.Warning,
+            "Screen.Import.StatusTitle",
+            "Screen.Import.StatusMessage")
+    {
+        _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+        _recoveryFlow = recoveryFlow;
+        ContinueToAccountReviewCommand = new RelayCommand(
+            () => ContinueRequested?.Invoke(this, EventArgs.Empty),
+            () => IsAccountReviewContinuationVisible);
+        _inventory.InventoryChanged += Inventory_OnInventoryChanged;
+        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
+    }
 
     public CsvImportScreenViewModel(ILocalizationService localization)
         : this(new UnavailableAccountInventoryService(), localization)
     {
     }
+
+    public event EventHandler? ContinueRequested;
+
+    public RelayCommand ContinueToAccountReviewCommand { get; }
+
+    public bool HasImportedAccounts =>
+        _inventory.CurrentInventory?.Accounts.Length > 0;
+
+    public bool IsAccountReviewContinuationVisible =>
+        HasImportedAccounts &&
+        (_recoveryFlow is null ||
+         _recoveryFlow.NextTask.Target == NextUserTaskTarget.AccountTriage);
 
     public IReadOnlyList<ExistingAccountReference> ExistingAccounts =>
         _inventory.GetExistingAccountReferences();
@@ -194,12 +219,29 @@ public sealed class CsvImportScreenViewModel(
                 return AccountInventoryOperationResult.Success(affectedAccounts: 0);
             }
 
-            return await _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+            var result = await _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
+            RefreshContinuationState();
+            return result;
         }
         finally
         {
             Interlocked.Exchange(ref _importActive, 0);
         }
+    }
+
+    public override void Activate() => RefreshContinuationState();
+
+    private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs) =>
+        RefreshContinuationState();
+
+    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs) =>
+        RefreshContinuationState();
+
+    private void RefreshContinuationState()
+    {
+        OnPropertyChanged(nameof(HasImportedAccounts));
+        OnPropertyChanged(nameof(IsAccountReviewContinuationVisible));
+        ContinueToAccountReviewCommand.RaiseCanExecuteChanged();
     }
 
     public static string GetImportResultResourceKey(AccountInventoryOperationResult result)
