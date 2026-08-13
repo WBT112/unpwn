@@ -2,9 +2,9 @@
 
 **unpwn** is an open-source, local-first recovery assistant for people who suspect that their digital identity has been compromised.
 
-It helps users organize affected accounts, prioritize critical identities and dependencies, work through provider recovery actions step by step, track unresolved risks, and move newly generated credentials into an established password manager.
+It helps users import and categorize affected accounts, recover email and critical identities first, work through provider recovery actions step by step, track unresolved risks, and move newly generated credentials into an established password manager.
 
-The desktop recovery flow includes a managed Recovery Browser so the provider website, current recovery guidance, explicit completion checklist, and credential handoff can remain in one workspace. Browser activity is never treated as proof that a recovery action succeeded.
+The desktop recovery flow includes a managed Recovery Browser so the provider website, current recovery guidance, explicit completion checklist, and credential handoff can remain in one workspace. Browser activity is context only and is never treated as proof that a recovery action succeeded.
 
 unpwn is **not** an antivirus, malware scanner, password manager, general-purpose web browser, or autonomous account-recovery bot.
 
@@ -28,6 +28,8 @@ dotnet restore unpwn.slnx
 dotnet test unpwn.slnx
 dotnet run --project src/Unpwn.App/Unpwn.App.csproj
 ```
+
+The managed Recovery Browser uses the installed WebView2 runtime on Windows and WPE WebKit through Avalonia `NativeWebView` on Linux. If the maintained embedded host is unavailable, unpwn keeps recovery guidance visible and offers an explicitly labelled operating-system-browser fallback; it never silently uses a normal browser profile.
 
 See [Contributing](CONTRIBUTING.md) for the full development checks.
 

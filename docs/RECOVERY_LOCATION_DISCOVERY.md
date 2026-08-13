@@ -4,7 +4,7 @@
 
 Recovery-location discovery identifies a safe official destination for starting a credential change or recovery action. It does not perform the recovery action, submit forms, infer success, or transmit account credentials.
 
-The application contract is `IRecoveryLocationDiscoveryService`. Its HTTP implementation belongs to `Unpwn.Automation`, because location discovery is an automation-assistance adapter rather than general infrastructure. The result is a structured `RecoveryNavigationHandoff` that a workflow screen can display before opening an external browser.
+The application contract is `IRecoveryLocationDiscoveryService`. Its HTTP implementation belongs to `Unpwn.Automation`, because location discovery is an automation-assistance adapter rather than general infrastructure. The result is a structured `RecoveryNavigationHandoff` consumed by the managed Recovery Browser security boundary. The operating-system browser uses the same validated handoff only as an explicit fallback.
 
 ## Selection policies
 
@@ -53,6 +53,12 @@ An insecure redirect, an unexpected origin, a missing or malformed `Location` he
 
 Exact origin matching is intentional. Subdomains are not trusted implicitly; a provider workflow must list every expected origin explicitly.
 
+HTTPS and origin validation do not by themselves create a complete outbound-network boundary. The
+current pre-release resolver does not yet enforce a public-network-only policy for literal addresses,
+DNS results, and every redirect target. A supported production resolver must reject loopback, local,
+private, link-local, unspecified, and multicast destinations as close as practical to the actual
+connection, while retaining explicit loopback support only in injected synthetic tests.
+
 ## Provider fallback
 
 A repository-defined `RecoveryLocationDefinition` is accepted only when:
@@ -65,9 +71,9 @@ When standards-based discovery fails and a valid reviewed provider location exis
 
 The generic unsupported-provider workflow deliberately has no provider fallback and no trusted-origin
 metadata. For its authenticated password-change action, discovery may derive only the standard
-endpoint from the validated HTTPS origin of the account URL. A successful handoff is displayed before
-a separate open action. Password-reset and manual-recovery destinations are never inferred from an
-unknown provider ID, name, or arbitrary path.
+endpoint from the validated HTTPS origin of the account URL. A successful handoff remains visible as
+part of the guided start transaction. Password-reset and manual-recovery destinations are never
+inferred from an unknown provider ID, name, or arbitrary path.
 
 ## Visible navigation handoff
 
@@ -79,13 +85,13 @@ A successful result contains:
 - the resolution source
 - a mandatory visible-confirmation flag
 
-The workflow UI must display the destination and expected origin before navigation. A browser open, browser return, redirect, or elapsed time is never evidence that the external action succeeded.
+The workflow UI must display the destination and expected origin before navigation. Opening either the embedded or fallback browser, returning, redirecting, or waiting is never evidence that the provider action succeeded.
 
 The final destination is transient navigation data. It must not be copied into audit events or general diagnostics. Redirect diagnostics contain only normalized origins and a hop count; paths, queries, fragments, reset tokens, and other URL values are not retained.
 
 ## Known standard limitation
 
-The current MVP resolver handles HTTP redirects and direct `200 OK` responses. It does not parse HTML meta-refresh instructions. A provider that relies on meta refresh must have a repository-reviewed provider location or fall back to manual guidance. This limitation must not be hidden by treating arbitrary HTML as a successful action.
+The current resolver handles HTTP redirects and direct `200 OK` responses. It does not parse HTML meta-refresh instructions. A provider that relies on meta refresh must have a repository-reviewed provider location or fall back to manual guidance. This limitation must not be hidden by treating arbitrary HTML as a successful action.
 
 ## Testing
 

@@ -15,8 +15,14 @@ These files are developer and test fixtures. Do not replace their values with ex
    - `url` → account URL
    - leave `scenario` unmapped
 3. Review all 16 valid candidates and import them.
-4. Configure the roles and dependencies described below; the CSV intentionally does not smuggle unsupported domain state into extra columns.
-5. Exercise the selected provider path and verify that returning from a browser never marks an action complete.
+4. Select **Review account categories**. Explicitly categorize `Primary recovery email` as **Email**,
+   `Synthetic password manager` and one provider account as **Critical**, `Marketplace, account` as
+   **Not critical**, and at least one account as **Unknown**.
+5. Confirm that the queue is `Email → Critical → Unknown → NonCritical` and that remaining category
+   reviews stay visible if you deliberately continue early.
+6. Select **Start recovery** for the recommended account. Exercise the selected provider approach in
+   the managed Recovery Browser and verify that navigation, returning, and closing the browser never
+   mark an action complete.
 
 `bitwarden-recovery-sample.csv` uses Bitwarden's [official individual-vault CSV format](https://bitwarden.com/help/condition-bitwarden-import/) as documented in August 2026. Verify that unpwn maps `folder` to service/provider, `name` to account name, `login_username` to login identifier, and `login_uri` to account URL. `login_password` must be excluded automatically and unavailable as a mapping option. The password values are synthetic markers included only to verify exclusion. Notes, fields, reprompt, and TOTP remain unmapped.
 
@@ -30,28 +36,29 @@ The generic fixture contains one dedicated account for every currently shipped p
 | `microsoft.com` | `Microsoft / authenticated-change` | `Microsoft / password-reset` | `Microsoft / manual-recovery` |
 | `github.com` | `GitHub / authenticated-change` | `GitHub / password-reset` | `GitHub / manual-recovery` |
 
-The Bitwarden-style fixture supplies a smaller cross-format smoke set: Google authenticated change, Microsoft password reset, GitHub manual recovery, a password-manager root, and a UTF-8 account name.
+The Bitwarden-style fixture supplies a smaller cross-format smoke set: Google authenticated change, Microsoft password reset, GitHub manual recovery, a password-manager account, and a UTF-8 account name.
 
 ## Post-import recovery setup
 
-Use these deliberate setup steps to reproduce planning and workflow states:
+Use these deliberate setup steps to reproduce current category, queue, workflow, and browser states:
 
 | Scenario | Setup |
 | --- | --- |
-| Dependency root | Mark `Primary recovery email` as an email/recovery-channel role. Make selected reset accounts depend on it. It must be reviewed before those dependents become ready. |
-| Password manager | Mark `Synthetic password manager` as a password-manager and critical root. Do not store an old password in notes. |
-| Critical and ordinary accounts | Mark the primary email, password manager, and one provider account critical. Leave `Marketplace, account` at normal priority. |
-| Missing dependency | Add a dependency to a synthetic account, remove that dependency account, and confirm the missing dependency remains visible. |
-| Dependency cycle | Make the Google reset account depend on the Microsoft reset account and vice versa. Confirm the cycle is shown, then apply an explicit override with its unresolved risk retained. |
+| Category order | Categorize the primary recovery email as **Email**, the password manager and one provider account as **Critical**, one account as **Unknown**, and the marketplace as **Not critical**. Confirm the fixed queue order and stable ordering after restart. |
+| Incomplete triage | Leave at least one suggestion unconfirmed, choose the deliberate early-continuation action, then return to Accounts. The remaining count and next unreviewed account must still be visible. |
+| Password manager | Categorize `Synthetic password manager` as **Critical**. Do not store an old password in notes or any account field. |
+| Authenticated change | Use an `authenticated-change` fixture and explicitly confirm that usable account access exists. The reviewed workflow should select authenticated password change without a manual path chooser. |
+| Password reset | Use a `password-reset` fixture and record the explicit access condition requested by the guided workflow. The selector should prefer the reviewed reset approach when authenticated change is unavailable. |
+| Manual recovery | Use a `manual-recovery` fixture and follow the guided access/failure choices until no safer reviewed automated-navigation path remains. Manual recovery must stay visible rather than being represented as success. |
 | Lost access | Select a manual-recovery account and record that access cannot currently be restored. |
-| Blocked required action | On a password-reset account, block the reset action because its recovery-channel dependency is not secured. |
+| Blocked required action | Start an action before one of its workflow-defined prerequisite actions is complete, or use the guided cannot-continue choice. The blocker and required reason must remain visible. |
 | Failed action and retry | Record a synthetic provider failure on a required action, verify it remains failed, then use the supported retry path. |
 | Waiting/user interaction | Pause an action for MFA, CAPTCHA, email-link handoff, or manual provider review. Do not store codes or links. |
 | Not applicable | Mark a capability not applicable only with the required structured disposition and user reason. |
 | Accepted unresolved risk | Explicitly accept a remaining required-action risk and confirm the account is not represented as fully secured. |
-| Browser return | Open a reviewed destination and return to unpwn without confirming completion. The action must remain incomplete. |
-| Plan recalculation | Complete, block, fail, or accept risk on a material action and verify the recommendation is recalculated. |
-| Unsupported provider | Use `Manual fallback account`; the visibly labelled generic manual workflow should remain in the normal plan, and no provider URL or control should be guessed for `unsupported.example`. |
+| Browser return | Open a reviewed destination in the managed Recovery Browser, navigate or close it, and return without confirming completion. The action must remain incomplete. |
+| Queue recalculation | Complete, block, fail, defer, or accept risk on material work and verify that the recovery-overview recommendation is recalculated from persisted state. |
+| Unsupported provider | Use `Manual fallback account`; the visibly labelled generic manual workflow should remain in the normal queue, and no provider URL or control should be guessed for `unsupported.example`. |
 
 ## Import edge-case fixture
 

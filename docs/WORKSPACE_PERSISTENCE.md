@@ -4,7 +4,7 @@
 
 The recovery workspace contains several encrypted records that represent one user-visible state. A successful UI operation must not persist one part while reporting that the overall operation failed.
 
-This document defines the persistence boundary established before guided provider workflow execution.
+This document defines the persistence boundary used by the integrated guided workflow.
 
 ## Atomic encrypted record batches
 
@@ -92,6 +92,12 @@ The monitor retains neither plaintext nor an executable retry closure: retry is 
 the original guarded command, so existing operation IDs and revision checks continue to prevent
 duplicate state transitions and audit events.
 
+A workspace continuation translates platform-specific storage failures into a language-neutral
+failure result. The Avalonia event boundary also contains unexpected continuation or destination-view
+activation failures so they become visible application state instead of terminating the desktop
+dispatcher. Failed continuation never advances the in-memory wizard or claims that provider work
+succeeded.
+
 A repository-controlled run marker records only that the process is active. If it remains after an
 abnormal exit, the next launch displays a dismissible warning and loads persisted state through the
 normal validating services. It does not persist workflow details and does not infer provider success.
@@ -115,4 +121,4 @@ Tests cover:
 - abnormal-exit marker detection and crash-boundary locking
 - secret-marker scans of test artifacts
 
-Future workflow-state tests must inject failures between every logically grouped state update and verify that reload produces either the complete previous state or the complete next state, never a mixture.
+Failure-injection tests cover logically grouped state updates and require reload to produce either the complete previous state or the complete next state, never a mixture.

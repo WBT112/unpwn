@@ -4,7 +4,7 @@ The roadmap prioritizes a trustworthy guided recovery flow over broad automation
 
 ## Current foundation
 
-The repository now contains the main end-to-end foundations for the desktop MVP:
+The repository contains the main end-to-end foundations for the desktop application:
 
 - trusted-device gate and encrypted local Recovery Vault;
 - incident intake, recovery session, risk-first dashboard, pause/lock/resume, and final completion review;
@@ -22,7 +22,7 @@ The repository now contains the main end-to-end foundations for the desktop MVP:
 The next work should be driven by review and validation rather than adding another broad feature layer. Priorities are:
 
 1. exercise representative full recovery journeys from a user's perspective and turn concrete defects or friction into focused issues;
-2. complete security review of the current trust boundaries, especially vault, Recovery Browser, credential handoff, exports, and interrupted-work behavior;
+2. complete security review and hardening of the current trust boundaries, including bounded untrusted input, local file/profile permissions, recovery-discovery egress, dedicated security analysis, vault, Recovery Browser, credential handoff, exports, and interrupted-work behavior;
 3. keep provider workflows current and add provider-specific browser assistance only when the user value justifies the maintenance/security cost;
 4. perform the documented Windows/NVDA and Ubuntu/Orca accessibility acceptance checks and minimum-window validation;
 5. define supported installation, packaging, update, and release-signing behavior before calling the desktop build production-ready;

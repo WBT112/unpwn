@@ -28,7 +28,7 @@ accessibility-tree dumps, clipboard artifacts, or secret-bearing output.
 
 ## Manual release gate
 
-Before an MVP release candidate is published, execute this checklist once on current Ubuntu with
+Before a release candidate is published, execute this checklist once on current Ubuntu with
 Orca and once on supported Windows with NVDA. Record the date, application commit, OS version,
 screen-reader version, tester, and result in the release notes. Any failed critical item blocks the
 release.

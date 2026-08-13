@@ -34,11 +34,11 @@ Operating-system integrations may later offer optional convenience unlocking, bu
 
 This design permits a vault-password change by re-encrypting the data key rather than every stored record.
 
-Argon2id parameters are stored as versioned vault metadata so they can be increased in future versions. Concrete parameters must be benchmarked on the minimum supported hardware before release.
+Argon2id parameters are stored as versioned vault metadata so they can be increased in future versions. New vaults currently use the repository's interactive profile of 64 MiB memory, three iterations, and parallelism two. Persisted parameters are part of the untrusted vault-file boundary. The current loader validates structural and minimum-strength requirements; production hardening also requires explicit resource ceilings and benchmarking on the minimum supported hardware before a supported release.
 
-## Cryptographic Prototype
+## Current cryptographic implementation
 
-The focused Argon2id and AES-256-GCM prototype for Issue #5 is documented in [Cryptographic Prototype](CRYPTO_PROTOTYPE.md). It validates password-derived key wrapping, random vault data keys, per-encryption nonces, AES-GCM authentication tags, and associated-data binding before the encrypted SQLite vault is implemented.
+`Unpwn.Vault` implements the complete key hierarchy above and the encrypted SQLite storage boundary. Its cryptographic tests cover password-derived key wrapping, random vault data keys, password changes by rewrapping the data key, per-encryption nonces, AES-GCM authentication tags, associated-data binding, modified-record rejection, and atomic encrypted record persistence.
 
 ## Record Encryption
 
@@ -112,6 +112,8 @@ A credential record must track whether it was:
 - used in a recovery action
 - confirmed by the user
 - exported
+- confirmed or postponed for password-manager import
+- confirmed cleaned up after plaintext export
 - deleted
 
 Credential lifecycle values are canonical. The UI localizes their descriptions at display time.
@@ -159,13 +161,14 @@ Machine-readable export formats use deterministic field names and value encoding
 
 ## Locking and Lifecycle
 
-The vault should lock when:
+The current desktop lifecycle locks or discards the unlocked key when:
 
 - the user requests it
 - the application is inactive for a configurable period
-- the operating system session is locked, where detectable
 - the application exits normally
 - an unhandled application failure reaches the last-chance crash boundary and cleanup is still possible
+
+Operating-system session-lock integration is not currently claimed as a cross-platform protection. Users should explicitly lock unpwn before leaving the device unattended.
 
 An abnormal-exit marker contains only the static word `running`; it contains no vault path, session
 identifier, provider state, or personal data. Seeing that marker on the next launch warns the user but

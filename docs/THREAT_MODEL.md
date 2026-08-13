@@ -52,6 +52,14 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 
 **Mitigations:** centralized reviewed cryptographic services, secure nonce generation, versioned formats, tests for crypto invariants, and focused security review before production release.
 
+### Untrusted-input resource exhaustion
+
+**Risk:** a crafted vault selects extreme unauthenticated KDF costs or oversized encrypted records, or a hostile CSV grows fields/rows/diagnostics until the process stalls or exhausts memory.
+
+**Current controls:** vault parameters have structural/minimum validation; CSV parsing is streaming, excludes password fields early, uses structured diagnostics, and does not persist before explicit reviewed import.
+
+**Pre-release gap:** explicit upper bounds for vault KDF/record resources and every material CSV dimension are not yet complete. A supported release requires rejection before expensive derivation/allocation and deterministic tests with small injected limits rather than OOM/stress behavior.
+
 ### Unsafe plaintext exports
 
 **Risk:** exported credentials are synchronized, backed up, shared, or forgotten.
@@ -59,6 +67,8 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 **Mitigations:** explicit plaintext warning/destination choice, no overwrite, synchronized-location warning, prompt password-manager import, separate import confirmation and cleanup state, and clear reporting when a plaintext file may exist after a later persistence failure.
 
 **Residual risk:** deleting a file is not forensic erasure on modern storage.
+
+**Pre-release gap:** Unix plaintext-export files and Linux Recovery Browser profile storage do not yet have a complete owner-only-from-creation permission invariant. Default process permissions must not be treated as that guarantee.
 
 ### Secret leakage through diagnostics or presentation
 
@@ -73,6 +83,14 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 **Mitigations:** repository-controlled workflows, pull-request review, no runtime third-party workflow code/plugins, exact reviewed recovery origins, semantic validation, stable canonical identifiers, and provider verification metadata.
 
 **Residual risk:** provider behavior can change after review; scheduled read-only smoke checks are observations, not proof of safety.
+
+### Recovery-discovery network reachability
+
+**Risk:** standards-based recovery-location discovery is derived from an inventory URL and could be abused to contact a local, private, link-local, or otherwise disallowed network target.
+
+**Current controls:** production requests require HTTPS, omit credentials/cookies/referrers, bound redirects, validate every redirect origin, and retain reviewed-provider/manual fallback.
+
+**Pre-release gap:** the resolver does not yet bind a public-network-only policy to literal addresses, DNS resolution, and redirect connection targets. Exact-origin validation is not a substitute for that egress control.
 
 ### Recovery Browser escape or cross-account state reuse
 

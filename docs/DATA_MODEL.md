@@ -101,7 +101,7 @@ Provider IDs, category values, catalog versions, confirmation revisions, and sta
 
 The repository-controlled classification catalog proposes an account category from stable provider identifiers and safe URL host names. It is versioned, deterministic, local-only, and separate from provider workflow definitions. Unknown services stay `UNKNOWN`, and catalog observations never become recovery truth.
 
-The removed priority, role, and account-dependency graph is not retained as compatibility state in current development vaults. Such obsolete serialized members fail closed at the inventory persistence boundary.
+The inventory accepts only its current category schema. Unsupported serialized members fail closed at the inventory persistence boundary rather than being interpreted as recovery state.
 
 Category ordering and provider workflow selection are separate: category answers **when**, workflow answers **how**. The category queue is always `EMAIL`, `CRITICAL`, `UNKNOWN`, then `NON_CRITICAL`, with provider and opaque account IDs as stable tie-breakers. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
 

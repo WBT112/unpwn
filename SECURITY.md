@@ -4,7 +4,7 @@ unpwn handles sensitive recovery state and newly generated credentials. Security
 
 ## Project status
 
-unpwn is under active development and does not yet have a supported production release. Do not infer production security guarantees from unreleased builds or prototypes.
+unpwn is under active development and does not yet have a supported production release. Do not infer production security guarantees from unreleased builds.
 
 ## Important limits
 
@@ -23,7 +23,18 @@ The detailed security assumptions and mitigations are documented in [Threat Mode
 
 ## Sensitive data
 
-Recovery data is local-first in the MVP. Old passwords are not stored. Credentials, vault keys, reset data, MFA secrets, cookies, browser state, and other sensitive values must not appear in logs, telemetry, crash reports, audit summaries, localization diagnostics, or public test artifacts.
+Recovery data is local-first. Old passwords are not stored. Credentials, vault keys, reset data, MFA secrets, cookies, browser state, and other sensitive values must not appear in logs, telemetry, crash reports, audit summaries, localization diagnostics, or public test artifacts.
+
+## Known pre-release hardening gaps
+
+The current source tree is not a supported security release. In particular, release hardening still needs to establish and test:
+
+- upper resource bounds for untrusted vault metadata/records and CSV input;
+- owner-only Unix creation permissions for plaintext credential exports and Recovery Browser profile data;
+- a public-network-only egress policy for standards-based recovery-location discovery, including DNS and redirects;
+- dedicated code-security analysis, stricter dependency gating, and review guards around native interop.
+
+These gaps are availability, local confidentiality, network-boundary, and regression-detection risks. Existing encryption, no-overwrite behavior, exact-origin validation, secret-safe diagnostics, and normal CI remain useful controls, but they must not be presented as covering the missing boundaries.
 
 ## Reporting a vulnerability
 

@@ -79,7 +79,7 @@ guidance or action names.
 
 ## Generated credential reference
 
-Actions refer to generated credentials only through the opaque credential and account IDs introduced by Issue #14. Secret values are obtained only from the unlocked credential repository through a disposable lease.
+Actions refer to generated credentials only through opaque credential and account IDs. Secret values are obtained only from the unlocked credential repository through a disposable lease.
 
 ## Atomic persistence
 
@@ -117,7 +117,7 @@ summaries directly. It:
 - show the structured reason and affected prerequisites
 - require explicit completion acknowledgement
 - return to the recalculated recovery overview and queue after each material transition
-- restore focus and announce state changes according to the accessibility baseline in Issue #38
+- restore focus and announce state changes according to [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md)
 
 The normal journey makes only the current recommended action visually dominant. It explains why the
 account and action are next, shows relevant warnings and prerequisites, and displays the reviewed
@@ -150,6 +150,7 @@ status**. Guided and advanced controls call the same `IAccountRecoveryExecutionS
 second execution state.
 
 Each material outcome persists the execution and dashboard projection atomically and returns to the
-recalculated dashboard recommendation. A visible provider-page
-handoff shows the reviewed destination and expected origins before using the operating-system launcher.
-Opening the page changes only transient presentation status and never changes an action state.
+recalculated recovery-overview recommendation. A visible provider-page handoff shows the reviewed
+destination and expected origins before the managed Recovery Browser starts. The operating-system
+launcher remains an explicitly labelled fallback using the same validated handoff. Opening either
+browser changes only transient presentation status and never changes an action state.

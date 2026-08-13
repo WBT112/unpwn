@@ -53,6 +53,11 @@ The Recovery Browser never points at or imports a normal Chrome, Edge, Firefox, 
 
 Browser cookies/session storage are temporary operational state, not Recovery Vault records and not canonical recovery evidence.
 
+The profile path is treated as sensitive application-owned storage. The current pre-release Linux
+implementation validates path ownership and cleanup scope but does not yet claim an explicit
+owner-only filesystem mode for every profile/data/cache directory and marker from creation. A
+supported Linux release requires that invariant and controlled failure when it cannot be established.
+
 ## Clean close and abnormal termination
 
 A controlled close runs conservatively:

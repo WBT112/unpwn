@@ -21,7 +21,7 @@ Old passwords are never part of the import model.
 
 Detected password columns are excluded automatically and are not offered as mapping choices. Their
 column names are shown in one concise notice; there is no additional exclusion confirmation. Excluded
-password values must not enter account candidates, diagnostics, duplicate keys, role inference,
+password values must not enter account candidates, diagnostics, duplicate keys, category suggestions,
 serialized previews, UI strings, logs, test artifacts, or encrypted inventory state. The stream parser
 does not append excluded field characters to its field buffers.
 
@@ -52,6 +52,12 @@ The importer is platform-neutral and language-neutral. Changing the GUI language
 - future numeric or date fields require an explicit import culture or unambiguous machine format.
 
 Saved mappings contain column names and canonical target identifiers only, never source values or translated target labels.
+
+CSV files are untrusted input. The current parser rejects malformed structure and unsafe account URLs,
+but the pre-release implementation does not yet enforce explicit finite limits for total bytes, field
+length, column count, row count, and retained preview/diagnostic size. A supported release requires
+those limits at the parser boundary, deterministic language-neutral limit failures, cancellation, and
+proof that rejection cannot partially mutate inventory.
 
 ## Mapping quality
 

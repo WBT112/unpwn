@@ -67,6 +67,11 @@ The export core supports generic CSV and Bitwarden-compatible login CSV for expl
 
 Plaintext export requires an explicit acknowledgement and destination. The parent directory must exist and an existing destination is not overwritten.
 
+The current pre-release writer relies on the operating system/process defaults when creating its
+temporary file. It does not yet claim an owner-only Unix mode from the first byte written. A supported
+Unix release requires atomic user-only creation for both temporary and final plaintext files while
+preserving no-overwrite and cleanup behavior.
+
 The write lifecycle is:
 
 1. validate selected metadata and secret leases;

@@ -36,8 +36,6 @@ action available while mutation-capable detail routes remain disabled. Screens r
 they are activated, in addition to reacting to change notifications, so data imported on another route
 is visible immediately.
 
-Routes whose functional application use cases are not implemented show an explicit localized placeholder instead of simulating recovery behavior.
-
 Status ownership is explicit and language-neutral. `ScreenInstruction` and screen-local
 `TransientResult` messages render in the active workspace. The persistent status line renders
 `GlobalContext`, such as the current vault and recovery-session lifecycle, while `GlobalWarning`
@@ -56,6 +54,11 @@ from the encrypted inventory, binds it to a reviewed repository workflow, and pr
 account-execution aggregate. Unsupported providers fail closed to manual guidance rather than guessed
 URLs or actions. Material outcomes return to the dashboard after its recommendation has been
 recalculated.
+
+Workspace-owned asynchronous continuation actions contain recovery-flow, persistence, navigation,
+and screen-activation failures before they reach Avalonia's platform dispatcher. A failure leaves an
+explicit localized warning and never fabricates a transition or treats a route change as recovery
+truth.
 
 ## Localization service
 

@@ -12,7 +12,7 @@ unpwn should guide the user through one understandable recovery process:
 
 1. start on a trusted device;
 2. create or resume an encrypted local recovery workspace;
-3. record affected accounts and relevant observations;
+3. import or add affected accounts and record only guidance inputs that change recovery behavior;
 4. categorize accounts as email, critical, unknown, or non-critical;
 5. recommend a deterministic recovery order and explain why;
 6. guide provider recovery actions one step at a time;
@@ -31,18 +31,18 @@ unpwn is not:
 - a replacement for a password manager;
 - an autonomous account-recovery bot;
 - a CAPTCHA, MFA, identity-verification, or ownership-check bypass;
-- a general enterprise incident-response platform in the MVP.
+- a general enterprise incident-response platform.
 
 Automation may assist recovery, but security-relevant decisions and external provider actions remain visible to the user.
 
 ## Principles
 
-- **Local-first:** recovery data stays on the user's device in the MVP.
+- **Local-first:** recovery data stays on the user's device.
 - **Human control:** sensitive actions require visible user participation and confirmation.
 - **No false assurance:** progress never hides blocked work or unresolved risk.
 - **Explainable ordering:** email and critical accounts are prioritized for understandable reasons.
 - **Open source:** security-sensitive behavior is reviewable.
-- **Platform-neutral core:** Windows is the first target, but recovery logic remains portable.
+- **Platform-neutral core:** Windows and Linux share the same recovery semantics, while recovery logic remains portable to additional platforms.
 - **Language-neutral semantics:** changing the UI language must not change recovery logic, security decisions, or persisted state.
 - **Maintainable automation:** stable recovery workflows are more important than brittle website automation.
 

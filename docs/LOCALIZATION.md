@@ -6,8 +6,6 @@ unpwn must support additional GUI languages without coupling translated text to 
 
 Localization is a presentation concern. Canonical identifiers and security decisions remain stable regardless of the selected language.
 
-Issue #49 tracks implementation of this architecture.
-
 ## Scope
 
 The localization boundary covers all user-facing desktop content, including:
@@ -41,17 +39,21 @@ Missing keys in the default resource set are test and release failures. Runtime 
 
 Use version-controlled .NET resource files owned by the desktop presentation project.
 
-Recommended layout:
+Current layout:
 
 ```text
 src/Unpwn.App/
 └── Localization/
-    ├── Strings.resx
-    ├── Strings.de.resx
-    └── ...
+    ├── Strings.resx / Strings.de.resx
+    ├── AccountStrings.resx / AccountStrings.de.resx
+    ├── DashboardStrings.resx / DashboardStrings.de.resx
+    ├── RecoveryExecutionStrings.resx / RecoveryExecutionStrings.de.resx
+    ├── CredentialStrings.resx / CredentialStrings.de.resx
+    ├── VaultStrings.resx / VaultStrings.de.resx
+    └── other feature-owned English/German pairs
 ```
 
-`Strings.resx` is the complete English source set. Every shipped translation must contain the same required keys or rely on an explicitly documented fallback policy checked by CI.
+The English `.resx` file in each feature pair is its complete source set. Every shipped German pair contains the same keys and formatting placeholders. Pseudo-localization is generated at runtime for layout/testing and is not a shipped translation resource. A new feature should extend the owning resource pair instead of creating a second generic source of the same text.
 
 Resource keys are stable, descriptive, and grouped by feature, for example:
 
@@ -183,7 +185,7 @@ Security-sensitive translations should be reviewed for meaning, not only grammar
 Tests cover:
 
 - English resource lookup
-- one secondary culture, initially suitable for exercising non-English formatting
+- German as the shipped secondary culture
 - exact-culture and parent-culture fallback
 - fallback to English
 - missing default keys
@@ -197,7 +199,7 @@ Tests cover:
 
 Pseudo-localization should expand text, add visible delimiters, and preserve formatting placeholders so clipping and concatenation defects are detectable without finished translations.
 
-Localization checks are part of normal pull-request CI once the resource architecture exists. Missing security-critical keys are release-blocking.
+Localization checks are part of normal pull-request CI. Missing security-critical keys are release-blocking.
 
 ## Translation Contributions
 
@@ -221,4 +223,4 @@ The localization architecture does not:
 - infer parsing rules from the selected GUI language
 - download unreviewed runtime translations
 - use translated display text as workflow control data
-- require every planned language to ship with the MVP
+- require every planned language to ship in the same release

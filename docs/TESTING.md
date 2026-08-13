@@ -120,6 +120,12 @@ Before a supported release:
 
 `.github/workflows/ci.yml` is authoritative. It currently runs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting/analyzer verification runs on Linux. Linux also collects Cobertura coverage, merges it, enforces the numeric gate, scans generated artifacts for synthetic secret markers, and uploads short-lived test/coverage artifacts. Windows uploads test artifacts only on failure after the same secret-safety check.
 
+The current baseline uses the .NET `Recommended` analyzer set with warnings as errors and audits
+direct/transitive NuGet dependencies at `high` severity. It does not yet claim a dedicated CodeQL/SAST
+job, all applicable .NET security-category rules, moderate-or-higher dependency blocking, or a CI
+allowlist that detects expansion of native/unsafe interop. Those controls are release-hardening work,
+not properties implied by a green current workflow.
+
 The Linux coverage gate requires at least 80% line and 80% branch coverage across platform-neutral production assemblies (`Unpwn.Core`, `Unpwn.Application`, `Unpwn.Import`, `Unpwn.Export`, `Unpwn.Vault`, `Unpwn.Providers`, and `Unpwn.Automation`). `Unpwn.App` is validated through view-model, Avalonia headless, integration, and manual accessibility layers rather than the numeric gate. Presentation-independent behavior should not be moved into `Unpwn.App` merely to avoid coverage requirements.
 
 To reproduce the coverage check after a Release build:

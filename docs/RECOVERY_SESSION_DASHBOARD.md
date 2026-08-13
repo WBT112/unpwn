@@ -1,10 +1,10 @@
-# Recovery Session Intake and Dashboard
+# Recovery Session and Recovery Overview
 
-This document defines the desktop recovery-session boundary implemented for the MVP dashboard.
+This document defines the encrypted recovery-session boundary and the projections shown in the user-facing recovery overview. `Dashboard` remains an internal projection/service name; it is not a separate competing workflow or assistant.
 
 ## Purpose
 
-The recovery session gives the user one encrypted, resumable workspace for an incident. It records structured observations, account-review summaries, lifecycle state, and the next recommended recovery step.
+The recovery session gives the user one encrypted, resumable workspace for an incident. It records the single retained guidance input, account-review summaries, lifecycle state, and the next recommended recovery step.
 
 The session does not detect malware, determine whether an account was compromised, or certify that an incident is resolved. Recommendations remain advisory and explainable.
 
@@ -17,7 +17,7 @@ The encrypted record contains:
 - a stable session identifier;
 - the editable, locally suggested session name;
 - language-neutral incident-indicator flags;
-- active, paused, or archived lifecycle state;
+- active, paused, completed, follow-up-required, or archived lifecycle state;
 - created and last-updated timestamps;
 - revision number;
 - language-neutral account dashboard summaries.
@@ -43,15 +43,15 @@ Free-form incident narrative and structured choices without a recovery consumer 
 The interface explains the effect before creation and requires acknowledgement that the answers guide
 prioritization but do not prove compromise.
 
-## Advisory emergency priority
+## Advisory recovery-channel priority
 
-A reported possibly controlled recovery channel creates a high-impact advisory recommendation. The dashboard directs the user to review the primary recovery channel before the remaining accounts.
+A reported possibly controlled recovery channel creates a high-impact advisory recommendation. The recovery overview directs the user to review the primary recovery channel before the remaining accounts.
 
 This recommendation is derived only from user-provided structured observations. The application does not claim that the channel, account, or device was automatically detected as compromised.
 
-## Dashboard semantics
+## Recovery-overview semantics
 
-The dashboard deliberately does not reduce recovery status to one percentage.
+The recovery overview is backed by the language-neutral dashboard projection and deliberately does not reduce recovery status to one percentage.
 
 ### Primary account signal
 
@@ -140,7 +140,7 @@ The test suite covers:
 
 - safe local session-name suggestions, sanitization, editing, and neutral fallback;
 - empty sessions and skipped optional guidance inputs;
-- removed narrative and obsolete indicator fields rejected as incompatible current-schema data;
+- unexpected narrative or additional indicator fields rejected as incompatible current-schema data;
 - a documented dashboard effect for the retained guidance input;
 - emergency advisory prioritization;
 - mixed criticality, blockers, unresolved risks, lost access, and credential cleanup;

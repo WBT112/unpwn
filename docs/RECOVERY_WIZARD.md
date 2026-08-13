@@ -47,7 +47,7 @@ Generic navigation must not bypass the trusted-device gate, manufacture a vault 
 
 Session creation completes incident intake with a locally suggested, editable display name and only
 the optional compromised-recovery-channel warning documented in
-[Recovery Session and Dashboard](RECOVERY_SESSION_DASHBOARD.md). The active workspace owns the current
+[Recovery Session and Recovery Overview](RECOVERY_SESSION_DASHBOARD.md). The active workspace owns the current
 instruction and primary action; persistent shell chrome does not duplicate them. Opening a detail
 route does not mark a step complete, and every guided transition is written to the encrypted vault
 before the in-memory state changes.
@@ -69,7 +69,7 @@ The post-intake gates are deterministic:
 - returning from material account work recalculates the next task from the latest persisted projections without a separate account-recovery wizard phase;
 - a successful completion preflight advances to final-report review, while the terminal outcome still requires explicit confirmation.
 
-Blocked and failed actions, lost access, and unresolved risks are not hidden by assistant navigation. They remain visible in recovery execution and completion review. The removed account-dependency graph has no assistant gate or parallel queue authority.
+Blocked and failed actions, lost access, and unresolved risks are not hidden by assistant navigation. They remain visible in recovery execution and completion review. No presentation route or cross-account planning model has parallel queue authority.
 
 ## Safe resume
 
@@ -84,8 +84,7 @@ Wizard state that belongs to an active recovery session is persisted only throug
 The application projection exposes stable task codes, task states, workspace targets, and optional
 account/action identifiers. The presentation layer explains them in the selected language.
 Account-specific ordering is derived from the persisted queue and execution state rather than UI text.
-Unknown or obsolete serialized step identifiers fail closed; development states from the removed
-`recovery-plan` and `account-recovery` phases are intentionally not migrated.
+Unknown or unsupported serialized step identifiers fail closed and are not reinterpreted as current recovery state.
 
 See [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md) and [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
 

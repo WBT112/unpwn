@@ -1,6 +1,30 @@
 # unpwn Documentation
 
-This directory contains the canonical project documentation. Each topic has one primary home; other documents should link to it instead of repeating the same rules.
+This directory contains the canonical project documentation. Each topic has one primary home; other documents link to it instead of maintaining parallel specifications. GitHub issues define bounded implementation work, not durable product or architecture truth.
+
+## Current product flow
+
+The normal journey is one integrated workspace:
+
+1. confirm a reasonably trusted device;
+2. create or unlock the encrypted Recovery Vault and create or resume a session;
+3. import accounts, then explicitly review their simple categories;
+4. follow the automatic `Email → Critical → Unknown → NonCritical` queue;
+5. perform provider work in the isolated Recovery Browser while unpwn shows one instruction and checklist;
+6. handle generated credentials and explicitly review unresolved work before finishing.
+
+Only canonical user confirmations advance recovery state. Browser navigation, redirects, form state, credential insertion, closing a view, and application restart never prove success. The [User Guide](USER_GUIDE.md) is the canonical user-facing walkthrough; the documents below own the corresponding technical contracts.
+
+## Documentation ownership
+
+| Concern | Canonical document |
+| --- | --- |
+| Product purpose and non-goals | [Vision](VISION.md) |
+| User-visible journey and terminology | [User Guide](USER_GUIDE.md) |
+| Module boundaries and dependency direction | [Architecture](ARCHITECTURE.md) |
+| Canonical entities, progress, and completion semantics | [Data Model](DATA_MODEL.md) |
+| Threats, mitigations, and residual risk | [Threat Model](THREAT_MODEL.md) |
+| Test layers, CI, fixtures, and release verification | [Testing Strategy](TESTING.md) |
 
 ## For users
 
@@ -22,8 +46,8 @@ This directory contains the canonical project documentation. Each topic has one 
 
 ## Recovery flow
 
-- [Guided Recovery Wizard](RECOVERY_WIZARD.md) — end-to-end wizard state and resume rules
-- [Recovery Session and Dashboard](RECOVERY_SESSION_DASHBOARD.md) — incident intake, dashboard, and session lifecycle
+- [Integrated Recovery Flow](RECOVERY_WIZARD.md) — canonical next-task state and resume rules; there is no separate wizard UI
+- [Recovery Session and Overview](RECOVERY_SESSION_DASHBOARD.md) — session input, overview projections, lifecycle, and completion
 - [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md) — account categories, local suggestions, and ordering
 - [CSV Import](IMPORT.md) — import parsing, password exclusion, and duplicate handling
 - [Recovery Workflows](RECOVERY_WORKFLOWS.md) — provider workflow semantics and validation
@@ -37,7 +61,6 @@ This directory contains the canonical project documentation. Each topic has one 
 - [Vault Security](VAULT_SECURITY.md) — cryptographic and secret-handling design
 - [Workspace Persistence](WORKSPACE_PERSISTENCE.md) — atomic persistence and interrupted work
 - [Generated Credentials](GENERATED_CREDENTIALS.md) — generation, encrypted lifecycle, in-context handoff, and export
-- [Cryptographic Prototype](CRYPTO_PROTOTYPE.md) — focused Argon2id/AES-GCM design history and validation
 
 ## Engineering
 

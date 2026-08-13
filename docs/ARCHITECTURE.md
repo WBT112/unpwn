@@ -4,7 +4,7 @@
 
 unpwn is a modular, local-first desktop application for account-recovery orchestration. The architecture keeps the recovery domain independent from UI, storage, operating-system APIs, localization, providers, and browser-host implementation details.
 
-Windows is the first target platform. Core recovery logic must remain portable to macOS and Linux.
+Windows and Linux are the current desktop targets. Core recovery logic must remain portable to additional platforms, including macOS.
 
 ## Technology
 

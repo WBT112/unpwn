@@ -13,9 +13,9 @@ The encrypted `account-state` record contains:
 - the user's optional explicit category and the inventory revision at which it was confirmed;
 - inventory revision and timestamps.
 
-An explicit user category always wins over a catalog suggestion. Explicit `Unknown` is distinct from an account that has not been reviewed. Passwords, recovery codes, MFA secrets, reset links, role graphs, account dependencies, cycle overrides, and free-form dependency reasons are not part of this model.
+An explicit user category always wins over a catalog suggestion. Explicit `Unknown` is distinct from an account that has not been reviewed. Passwords, recovery codes, MFA secrets, reset links, and cross-account planning graphs are not part of this model.
 
-Materialized account data is cleared when the vault locks. The current development schema intentionally has no compatibility migration: records containing the removed priority, role, or dependency structure fail closed as corrupted and are not overwritten.
+Materialized account data is cleared when the vault locks. Only the current schema is accepted; a structurally incompatible record fails closed as corrupted and is not overwritten.
 
 ## Local classification catalog
 
@@ -31,7 +31,7 @@ The account screen shows a recognizable identity, current suggestion or explicit
 
 Once at least one account is explicitly categorized as `Email`, the user can return to the assistant and continue immediately; reviewing remaining accounts is optional but improves ordering. On resume, the screen shows the remaining count and keeps the next unreviewed account selected. If the user genuinely has no email account, reviewing all accounts permits continuation without one. The assistant also remains a deliberate exit from category triage; navigation itself never silently records a category.
 
-Account removal still requires the normal destructive confirmation, but there is no dependency-impact acknowledgement because account dependency editing no longer exists.
+Account removal requires the normal destructive confirmation.
 
 ## Recovery queue boundary
 
@@ -47,10 +47,10 @@ are deterministic tie-breakers. UI culture, display text, incident warnings, bro
 incomplete category review never change this order. An unreviewed account keeps its conservative
 catalog suggestion, including `Unknown`, until the user explicitly overrides it.
 
-There are no dependency graph, cycle, missing-target, or override queue states. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
+The category queue has no parallel cross-account planning authority. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
 
 ## Persistence and testing
 
-Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog aliases and types, unknown fallback, explicit override precedence, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, early exit/resume guidance, fail-closed obsolete records, lock clearing, import integration, and language-independent semantics.
+Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog aliases and types, unknown fallback, explicit override precedence, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, early exit/resume guidance, incompatible-record failure, lock clearing, import integration, and language-independent semantics.
 
-See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Recovery Wizard](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).
+See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Integrated Recovery Flow](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).

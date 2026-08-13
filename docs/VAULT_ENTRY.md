@@ -8,7 +8,7 @@ The desktop application places a trusted-device decision in front of every new o
 2. The user answers whether the current device is trusted: `Trusted`, `NotTrusted`, or `Unsure`.
 3. `NotTrusted` and `Unsure` lead only to non-sensitive safety guidance and a terminal stop.
 4. Only `Trusted` permits creation or opening of a recovery vault.
-5. After the vault is available, the guided recovery wizard continues at a conservative safe review point.
+5. After the vault is available, the integrated recovery flow continues at a conservative safe review point.
 
 The lifecycle service enforces this sequence independently of the view model. A direct call to create or open a vault is rejected unless the language-neutral wizard state is at `vault-entry` with a confirmed trusted-device decision.
 

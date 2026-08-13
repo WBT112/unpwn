@@ -16,7 +16,7 @@ unpwn starts in the operating-system UI language when that language is supported
 
 On first run, the main desktop window opens maximized. Later runs restore the last normal window size and whether the window was normal or maximized. Window position is deliberately not persisted, so stale coordinates from a removed or rearranged monitor cannot place unpwn off-screen.
 
-Use **Settings** in the main header to change the runtime language or create a local support diagnostic report. Diagnostics are no longer part of the Recovery Vault screen. The diagnostic flow requires an explicit preview, destination, and approval before export. Existing destination files are not overwritten.
+Use **Settings** in the main header to change the runtime language or create a local support diagnostic report. Diagnostic export is owned only by Settings. The flow requires an explicit preview, destination, and approval before export. Existing destination files are not overwritten.
 
 The application-preferences file is separate from the Recovery Vault and contains only non-sensitive presentation state such as the normal window dimensions and maximized state. It does not store recovery accounts, vault contents, credentials, browser state, or recovery results.
 
