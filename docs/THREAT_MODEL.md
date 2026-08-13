@@ -56,9 +56,9 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 
 **Risk:** a crafted vault selects extreme unauthenticated KDF costs or oversized encrypted records, or a hostile CSV grows fields/rows/diagnostics until the process stalls or exhausts memory.
 
-**Current controls:** vault parameters have structural/minimum validation; CSV parsing is streaming, excludes password fields early, uses structured diagnostics, and does not persist before explicit reviewed import.
+**Mitigations:** current-format vault KDF and encrypted-record sizes are capped before expensive derivation or payload materialization. CSV input is streamed through finite raw-byte and decoded-character budgets and separately caps header, logical-record, field, column, row, preview-candidate, and retained-diagnostic dimensions. Excluded password fields remain non-materialized but still consume resource budgets. Limit violations fail closed with structured secret-free codes, return no import candidates, and are covered with small deterministic boundary fixtures rather than OOM or wall-clock stress tests.
 
-**Pre-release gap:** explicit upper bounds for vault KDF/record resources and every material CSV dimension are not yet complete. A supported release requires rejection before expensive derivation/allocation and deterministic tests with small injected limits rather than OOM/stress behavior.
+**Residual risk:** finite limits reduce attacker-controlled resource amplification but cannot guarantee progress on an already resource-starved or compromised host. Limit changes require security review and regression coverage.
 
 ### Unsafe plaintext exports
 
