@@ -49,7 +49,6 @@ public sealed record RecoverySessionOperationResult(
 
 public sealed record RecoverySessionCreateRequest(
     string Name,
-    string? IncidentDescription,
     IncidentIndicator Indicators,
     bool SecurityWarningAcknowledged);
 

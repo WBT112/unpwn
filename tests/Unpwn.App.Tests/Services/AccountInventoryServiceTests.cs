@@ -351,7 +351,7 @@ public sealed class AccountInventoryServiceTests
             RecoverySessionWorkspace.Create(
                 Guid.NewGuid(),
                 "Synthetic session",
-                new RecoveryIncidentIntake(indicators, null),
+                new RecoveryIncidentIntake(indicators),
                 DateTimeOffset.UnixEpoch);
 
         public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();

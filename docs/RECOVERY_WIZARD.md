@@ -46,17 +46,16 @@ The trusted-device decision is the first mandatory security gate:
 
 Generic navigation must not bypass the trusted-device gate, manufacture a vault context, or silently skip a required security step.
 
-After incident intake, the shell presents the guided assistant task as its primary surface. The task
-shows the current phase, the next recommendation, its reason, and one context-sensitive primary
-action. Review-oriented workspace routes remain available through secondary detail navigation. The
-assistant's forward and back controls move the canonical wizard state; opening a detail route does not
-mark a step complete. A blocked task opens the current work without advancing, and a paused session
-offers explicit resume instead of mutation-capable detail routes. Every guided transition is written
-to the encrypted vault before the in-memory state changes.
+Session creation completes incident intake with a locally suggested, editable display name and only
+the two optional recovery-channel guidance inputs documented in
+[Recovery Session and Dashboard](RECOVERY_SESSION_DASHBOARD.md). The active workspace owns the current
+instruction and primary action; persistent shell chrome does not duplicate them. Opening a detail
+route does not mark a step complete, and every guided transition is written to the encrypted vault
+before the in-memory state changes.
 
 The post-intake gates are deterministic:
 
-- the account-inventory assistant task opens CSV import as the primary path after incident intake;
+- the account-inventory step opens CSV import as the primary path after session creation;
 - inventory cannot advance until at least one imported account exists, after which the assistant opens account and role review;
 - identity review cannot advance while an inferred role is still only `Suggested`;
 - recovery planning routes to outstanding account work first, then credential handoff, then completion preflight;

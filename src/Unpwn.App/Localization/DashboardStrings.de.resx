@@ -8,27 +8,19 @@
   <data name="Dashboard.State.Locked" xml:space="preserve"><value>Entsperre den Wiederherstellungstresor, um das Sitzungs-Dashboard zu laden.</value></data>
   <data name="Dashboard.State.Loading" xml:space="preserve"><value>Die verschlüsselte Wiederherstellungssitzung wird geladen…</value></data>
   <data name="Dashboard.State.Empty.Title" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
-  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Erfasse nur beobachtbare Vorfallhinweise. unpwn erkennt keine Schadsoftware und bestätigt nicht, dass ein Konto kompromittiert wurde.</value></data>
+  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Nutze den vorgeschlagenen lokalen Namen oder ändere ihn. Zwei optionale Antworten können Wiederherstellungskanäle vorziehen; sie erkennen oder beweisen keine Kompromittierung.</value></data>
   <data name="Dashboard.State.Corrupted.Title" xml:space="preserve"><value>Sitzungsdatensatz konnte nicht geladen werden</value></data>
   <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>Im verschlüsselten Sitzungsdatensatz fehlen erforderliche Daten oder die sichere Integritätsprüfung ist fehlgeschlagen. Er wurde nicht überschrieben.</value></data>
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Name der Sitzung</value></data>
-  <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Zum Beispiel: Wiederherstellung nach Phishing-Meldung</value></data>
-  <data name="Dashboard.Intake.DescriptionLabel" xml:space="preserve"><value>Optionale Beschreibung des Vorfalls</value></data>
-  <data name="Dashboard.Intake.DescriptionWatermark" xml:space="preserve"><value>Beschreibe ausschließlich deine Beobachtungen</value></data>
-  <data name="Dashboard.Intake.DescriptionHelp" xml:space="preserve"><value>Keine alten Passwörter, Zurücksetzlinks, Token, MFA-Geheimnisse, Wiederherstellungscodes, Cookies oder Browserdaten eingeben.</value></data>
-  <data name="Dashboard.Intake.DescriptionCounter" xml:space="preserve"><value>{0} von {1} Zeichen</value></data>
-  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Was hast du beobachtet?</value></data>
-  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Diese Angaben ändern nur die empfohlene Reihenfolge. Sie sind keine automatische Feststellung einer Kompromittierung.</value></data>
-  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>Ich habe den Zugriff auf mindestens ein Konto verloren</value></data>
-  <data name="Dashboard.Intake.Indicator.UnexpectedPassword" xml:space="preserve"><value>Ein Passwort wurde unerwartet geändert</value></data>
-  <data name="Dashboard.Intake.Indicator.UnexpectedMfa" xml:space="preserve"><value>MFA- oder Wiederherstellungseinstellungen wurden unerwartet geändert</value></data>
-  <data name="Dashboard.Intake.Indicator.UnknownSessions" xml:space="preserve"><value>Ich habe unbekannte Sitzungen oder Geräte gesehen</value></data>
+  <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Lokaler Name der Wiederherstellungssitzung</value></data>
+  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Soll unpwn deine Wiederherstellungskanäle priorisieren?</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Verlorener Zugriff zieht bestätigte Wiederherstellungskonten vor. Mögliche fremde Kontrolle über eine primäre E-Mail-Adresse oder einen Wiederherstellungskanal zeigt zusätzlich einen sofortigen Hinweis. Diese Antworten steuern nur die Reihenfolge und beweisen keine Kompromittierung.</value></data>
+  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>Ich kann auf mindestens ein Konto nicht zugreifen</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>Eine primäre E-Mail-Adresse oder ein Wiederherstellungskanal könnte unter fremder Kontrolle stehen</value></data>
-  <data name="Dashboard.Intake.Indicator.UntrustedDevice" xml:space="preserve"><value>Das während des Vorfalls verwendete Gerät könnte nicht vertrauenswürdig sein</value></data>
-  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Vorfallangaben werden im verschlüsselten Tresor gespeichert. Geheime Zugangsdaten gehören dennoch nicht in dieses Formular.</value></data>
-  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>Ich verstehe, dass unpwn keine Schadsoftware erkennt, und habe keine Zugangsdaten oder Wiederherstellungsgeheimnisse eingegeben.</value></data>
-  <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Sitzung anlegen und Prioritäten prüfen</value></data>
-  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Alle Vorfallhinweise sind optional. Lasse sie deaktiviert, um ohne Vorfalldetails fortzufahren.</value></data>
+  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Die ausgewählten Eingaben zur Steuerung werden im verschlüsselten Tresor gespeichert. Sie ändern ausschließlich Empfehlungen.</value></data>
+  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>Ich verstehe, dass diese Antworten Prioritäten steuern und keine Kompromittierung eines Kontos oder Geräts beweisen.</value></data>
+  <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
+  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Beide Angaben sind optional. Lasse sie deaktiviert, um die normale Wiederherstellungsreihenfolge zu verwenden.</value></data>
   <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Aktiv</value></data>
   <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Pausiert</value></data>
   <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archiviert</value></data>
@@ -85,9 +77,8 @@
   <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Sitzung archivieren</value></data>
   <data name="Dashboard.Validation.NameRequired" xml:space="preserve"><value>Gib einen Sitzungsnamen ein.</value></data>
   <data name="Dashboard.Validation.AcknowledgementRequired" xml:space="preserve"><value>Bestätige den Sicherheitshinweis, bevor du die Sitzung anlegst.</value></data>
-  <data name="Dashboard.Validation.DescriptionUnsafe" xml:space="preserve"><value>Entferne Zugangsdaten, Links, Token, Wiederherstellungscodes, Cookies oder geheimnisähnliche Werte aus der Vorfallbeschreibung.</value></data>
   <data name="Dashboard.Validation.Locked" xml:space="preserve"><value>Der Tresor ist gesperrt.</value></data>
-  <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Prüfe Sitzungsnamen, Vorfallbeschreibung und Sicherheitsbestätigung.</value></data>
+  <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Prüfe Sitzungsnamen und Bestätigung der Hinweise.</value></data>
   <data name="Dashboard.Validation.Corrupted" xml:space="preserve"><value>Der vorhandene Sitzungsdatensatz ist beschädigt und wurde nicht ersetzt.</value></data>
   <data name="Dashboard.Validation.Conflict" xml:space="preserve"><value>Die Wiederherstellungssitzung wurde geändert oder befindet sich nicht im erforderlichen Lebenszykluszustand.</value></data>
   <data name="Dashboard.Validation.PersistenceFailure" xml:space="preserve"><value>Die verschlüsselte Wiederherstellungssitzung konnte nicht gespeichert werden.</value></data>
@@ -96,7 +87,7 @@
   <data name="Dashboard.Status.Loading.Title" xml:space="preserve"><value>Wiederherstellungssitzung wird geladen</value></data>
   <data name="Dashboard.Status.Loading.Message" xml:space="preserve"><value>Der verschlüsselte Sitzungsdatensatz wird aus dem aktuellen Tresor gelesen.</value></data>
   <data name="Dashboard.Status.Empty.Title" xml:space="preserve"><value>Noch keine Wiederherstellungssitzung</value></data>
-  <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Lege eine Sitzung an und erfasse optional strukturierte Vorfallhinweise.</value></data>
+  <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Lege eine Sitzung an und passe optional die Priorität der Wiederherstellungskanäle an.</value></data>
   <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Wiederherstellungssitzung nicht verfügbar</value></data>
   <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>Der verschlüsselte Datensatz konnte nicht sicher verarbeitet werden und blieb unverändert.</value></data>
   <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Wiederherstellungssitzung aktiv</value></data>

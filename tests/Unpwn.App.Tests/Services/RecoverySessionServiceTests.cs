@@ -1,3 +1,4 @@
+using System.Text;
 using Unpwn.App.Services;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
@@ -8,7 +9,7 @@ namespace Unpwn.App.Tests.Services;
 public sealed class RecoverySessionServiceTests
 {
     [Fact]
-    public async Task EmptyVaultCreatesAndReloadsEncryptedSessionWithoutOptionalIncidentDetails()
+    public async Task EmptyVaultCreatesAndReloadsEncryptedSessionWithCurrentIntakeSchema()
     {
         var currentTime = DateTimeOffset.UnixEpoch;
         var store = new TestEncryptedRecordStore();
@@ -19,7 +20,6 @@ public sealed class RecoverySessionServiceTests
         var result = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Recovery session",
-                null,
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None);
@@ -27,6 +27,10 @@ public sealed class RecoverySessionServiceTests
         Assert.Equal(RecoverySessionLoadState.Loaded, service.LoadState);
         Assert.True(result.Succeeded);
         Assert.NotNull(store.StoredRecord);
+        Assert.DoesNotContain(
+            "Description",
+            Encoding.UTF8.GetString(store.StoredRecord),
+            StringComparison.Ordinal);
         Assert.Equal("Recovery session", service.CurrentSession?.Name);
         Assert.Equal(IncidentIndicator.None, service.CurrentSession?.Incident.Indicators);
         Assert.Equal(RecoveryWizardStepId.AccountInventory, coordinator.CurrentWizard.CurrentStep);
@@ -63,7 +67,6 @@ public sealed class RecoverySessionServiceTests
         var result = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Replacement",
-                null,
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None);
@@ -76,26 +79,29 @@ public sealed class RecoverySessionServiceTests
     }
 
     [Fact]
-    public async Task UnsafeDescriptionDoesNotReachEncryptedRecordStore()
+    public async Task RemovedLegacyDescriptionFieldFailsClosedOnReload()
     {
-        const string secret = "UNPWN_TEST_SECRET_incident-token";
         var store = new TestEncryptedRecordStore();
         var coordinator = new TestWizardCoordinator(DateTimeOffset.UnixEpoch);
         using var service = new RecoverySessionService(store, coordinator, () => DateTimeOffset.UnixEpoch);
         await service.InitializeAsync(CancellationToken.None);
-
-        var result = await service.CreateAsync(
+        Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
-                "Unsafe",
-                $"token: {secret}",
+                "Current schema",
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
-            CancellationToken.None);
+            CancellationToken.None)).Succeeded);
+        var currentJson = Encoding.UTF8.GetString(Assert.IsType<byte[]>(store.StoredRecord));
+        store.StoredRecord = Encoding.UTF8.GetBytes(currentJson.Replace(
+            "\"Indicators\":0",
+            "\"Indicators\":0,\"Description\":\"legacy\"",
+            StringComparison.Ordinal));
 
-        Assert.False(result.Succeeded);
-        Assert.Equal(RecoverySessionOperationFailureCode.InvalidInput, result.FailureCode);
-        Assert.Null(store.StoredRecord);
-        Assert.Equal(0, store.WriteCount);
+        using var reloaded = new RecoverySessionService(store, coordinator, () => DateTimeOffset.UnixEpoch);
+        await reloaded.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(RecoverySessionLoadState.Corrupted, reloaded.LoadState);
+        Assert.Null(reloaded.CurrentSession);
     }
 
     [Fact]
@@ -109,7 +115,6 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Lifecycle",
-                null,
                 IncidentIndicator.LostAccess,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None)).Succeeded);
@@ -141,7 +146,6 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Memory boundary",
-                null,
                 IncidentIndicator.None,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None)).Succeeded);

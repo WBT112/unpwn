@@ -266,6 +266,8 @@ public sealed class RecoveryCompletionServiceTests
             Assert.DoesNotContain("AccountName", original, StringComparison.Ordinal);
             Assert.DoesNotContain("UserNote", original, StringComparison.Ordinal);
             Assert.DoesNotContain("CredentialId", original, StringComparison.Ordinal);
+            Assert.DoesNotContain("Incident", original, StringComparison.Ordinal);
+            Assert.DoesNotContain("Description", original, StringComparison.Ordinal);
 
             var failed = await writer.WriteAsync(
                 report,

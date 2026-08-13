@@ -8,27 +8,19 @@
   <data name="Dashboard.State.Locked" xml:space="preserve"><value>Unlock the recovery vault to load the session dashboard.</value></data>
   <data name="Dashboard.State.Loading" xml:space="preserve"><value>Loading the encrypted recovery session…</value></data>
   <data name="Dashboard.State.Empty.Title" xml:space="preserve"><value>Create a recovery session</value></data>
-  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Record only observable incident indicators. unpwn does not detect malware or confirm that an account was compromised.</value></data>
+  <data name="Dashboard.State.Empty.Message" xml:space="preserve"><value>Use the suggested local name or edit it. Two optional answers can move recovery channels earlier; they do not detect or prove a compromise.</value></data>
   <data name="Dashboard.State.Corrupted.Title" xml:space="preserve"><value>Session record could not be loaded</value></data>
   <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>The encrypted session record is missing required data or failed integrity-safe parsing. It was not overwritten.</value></data>
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Session name</value></data>
-  <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>For example: Recovery after phishing report</value></data>
-  <data name="Dashboard.Intake.DescriptionLabel" xml:space="preserve"><value>Optional incident description</value></data>
-  <data name="Dashboard.Intake.DescriptionWatermark" xml:space="preserve"><value>Describe only what you observed</value></data>
-  <data name="Dashboard.Intake.DescriptionHelp" xml:space="preserve"><value>Do not enter old passwords, reset links, tokens, MFA secrets, recovery codes, cookies, or browser storage.</value></data>
-  <data name="Dashboard.Intake.DescriptionCounter" xml:space="preserve"><value>{0} of {1} characters</value></data>
-  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>What did you observe?</value></data>
-  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>These answers change the recommended order only. They are not an automated compromise finding.</value></data>
-  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>I lost access to one or more accounts</value></data>
-  <data name="Dashboard.Intake.Indicator.UnexpectedPassword" xml:space="preserve"><value>A password changed unexpectedly</value></data>
-  <data name="Dashboard.Intake.Indicator.UnexpectedMfa" xml:space="preserve"><value>MFA or recovery settings changed unexpectedly</value></data>
-  <data name="Dashboard.Intake.Indicator.UnknownSessions" xml:space="preserve"><value>I saw sessions or devices I do not recognize</value></data>
+  <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Local recovery session name</value></data>
+  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Should unpwn prioritize your recovery channels?</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Lost access moves confirmed recovery-channel accounts earlier. Possible control of a primary email or recovery channel also shows an immediate advisory. These answers guide ordering; they do not prove a compromise.</value></data>
+  <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>I cannot access one or more accounts</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>A primary email or recovery channel may be under someone else's control</value></data>
-  <data name="Dashboard.Intake.Indicator.UntrustedDevice" xml:space="preserve"><value>The device used during the incident may not be trustworthy</value></data>
-  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Incident details are stored in the encrypted vault, but secret credentials still do not belong in this form.</value></data>
-  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>I understand that unpwn does not detect malware and I have not entered credentials or recovery secrets.</value></data>
-  <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Create session and review priorities</value></data>
-  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>All incident indicators are optional. Leave them unchecked to continue without incident details.</value></data>
+  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>The selected guidance inputs are stored in the encrypted vault. They change recommendations only.</value></data>
+  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>I understand that these answers guide priorities and do not prove that an account or device was compromised.</value></data>
+  <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Create recovery session</value></data>
+  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Both choices are optional. Leave them unchecked to use the normal recovery order.</value></data>
   <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Active</value></data>
   <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Paused</value></data>
   <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archived</value></data>
@@ -85,9 +77,8 @@
   <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Archive session</value></data>
   <data name="Dashboard.Validation.NameRequired" xml:space="preserve"><value>Enter a session name.</value></data>
   <data name="Dashboard.Validation.AcknowledgementRequired" xml:space="preserve"><value>Confirm the security warning before creating the session.</value></data>
-  <data name="Dashboard.Validation.DescriptionUnsafe" xml:space="preserve"><value>Remove credentials, links, tokens, recovery codes, cookies, or secret-like values from the incident description.</value></data>
   <data name="Dashboard.Validation.Locked" xml:space="preserve"><value>The vault is locked.</value></data>
-  <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Review the session name, incident description, and security acknowledgement.</value></data>
+  <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Review the session name and guidance acknowledgement.</value></data>
   <data name="Dashboard.Validation.Corrupted" xml:space="preserve"><value>The existing session record is corrupted and was not replaced.</value></data>
   <data name="Dashboard.Validation.Conflict" xml:space="preserve"><value>The recovery session changed or is not in the required lifecycle state.</value></data>
   <data name="Dashboard.Validation.PersistenceFailure" xml:space="preserve"><value>The encrypted recovery session could not be saved.</value></data>
@@ -96,7 +87,7 @@
   <data name="Dashboard.Status.Loading.Title" xml:space="preserve"><value>Loading recovery session</value></data>
   <data name="Dashboard.Status.Loading.Message" xml:space="preserve"><value>Reading the encrypted session record from the current vault.</value></data>
   <data name="Dashboard.Status.Empty.Title" xml:space="preserve"><value>No recovery session yet</value></data>
-  <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Create a session and optionally record structured incident indicators.</value></data>
+  <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Create a session and optionally adjust recovery-channel priority.</value></data>
   <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Recovery session unavailable</value></data>
   <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>The encrypted record could not be parsed safely and was left unchanged.</value></data>
   <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Recovery session active</value></data>
