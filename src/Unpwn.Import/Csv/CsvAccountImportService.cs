@@ -5,6 +5,11 @@ namespace Unpwn.Import.Csv;
 public sealed class CsvAccountImportService
 {
     private static readonly char[] SupportedDelimiters = [',', ';', '\t', '|'];
+    private static readonly string[] ServiceNameAliases = ["service", "servicename", "site", "provider", "folder"];
+    private static readonly string[] AccountNameAliases = ["account", "accountname", "title", "label", "name"];
+    private static readonly string[] LoginIdentifierAliases =
+        ["username", "user", "login", "loginusername", "email", "emailaddress"];
+    private static readonly string[] AccountUrlAliases = ["url", "uri", "loginuri", "website", "origin", "hostname"];
 
     public static CsvImportAnalysis Analyze(TextReader source, char? delimiter = null)
     {
@@ -67,6 +72,18 @@ public sealed class CsvAccountImportService
         return new CsvImportPreview(analysis, mapping, candidates, diagnostics);
     }
 
+    public static CsvMappingAssessment AssessMapping(
+        CsvImportAnalysis analysis,
+        CsvColumnMapping mapping)
+    {
+        ArgumentNullException.ThrowIfNull(analysis);
+        ArgumentNullException.ThrowIfNull(mapping);
+        return AssessMapping(
+            analysis.Headers,
+            analysis.DetectedPasswordColumns,
+            mapping);
+    }
+
     private static CsvImportAnalysis AnalyzeHeader(string? headerLine, char? requestedDelimiter)
     {
         var diagnostics = new List<CsvImportDiagnostic>();
@@ -81,6 +98,12 @@ public sealed class CsvAccountImportService
                 [],
                 CsvColumnMapping.Empty,
                 [],
+                new CsvMappingAssessment(
+                    CsvMappingQuality.Incomplete,
+                    [
+                        CsvMappingIssue.MissingServiceIdentity,
+                        CsvMappingIssue.MissingAccountIdentity,
+                    ]),
                 diagnostics);
         }
 
@@ -105,22 +128,120 @@ public sealed class CsvAccountImportService
         }
 
         var passwordColumns = headers.Where(IsPasswordColumn).ToArray();
-        if (passwordColumns.Length > 0)
-        {
-            diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Warning,
-                "PasswordColumnsDetected",
-                CsvImportAnalysis.PasswordWarning));
-        }
 
         var mapping = new CsvColumnMapping(
-            FindHeader(headers, "service", "servicename", "site", "provider", "name"),
-            FindHeader(headers, "account", "accountname", "title", "label"),
-            FindHeader(headers, "username", "user", "login", "loginusername", "email", "emailaddress"),
-            FindHeader(headers, "url", "uri", "loginuri", "website", "origin", "hostname"),
+            FindUnambiguousHeader(headers, ServiceNameAliases),
+            FindUnambiguousHeader(headers, AccountNameAliases),
+            FindUnambiguousHeader(headers, LoginIdentifierAliases),
+            FindUnambiguousHeader(headers, AccountUrlAliases),
             passwordColumns);
+        var assessment = AssessMapping(headers, passwordColumns, mapping);
 
-        return new CsvImportAnalysis(delimiter, headers, mapping, passwordColumns, diagnostics);
+        return new CsvImportAnalysis(
+            delimiter,
+            headers,
+            mapping,
+            passwordColumns,
+            assessment,
+            diagnostics);
+    }
+
+    private static CsvMappingAssessment AssessMapping(
+        IReadOnlyList<string> headers,
+        IReadOnlyList<string> passwordColumns,
+        CsvColumnMapping mapping)
+    {
+        var issues = new List<CsvMappingIssue>();
+        var mappedColumns = new[]
+        {
+            mapping.ServiceNameColumn,
+            mapping.AccountNameColumn,
+            mapping.LoginIdentifierColumn,
+            mapping.AccountUrlColumn,
+        }.Where(column => column is not null).Cast<string>().ToArray();
+        var referencedColumns = mappedColumns.Concat(mapping.ExcludedPasswordColumns).ToArray();
+
+        if (referencedColumns.Any(column =>
+                !headers.Contains(column, StringComparer.OrdinalIgnoreCase)))
+        {
+            issues.Add(CsvMappingIssue.MissingMappedColumn);
+        }
+
+        if (mappedColumns.Distinct(StringComparer.OrdinalIgnoreCase).Count() != mappedColumns.Length)
+        {
+            issues.Add(CsvMappingIssue.RepeatedMappedColumn);
+        }
+
+        if (mappedColumns.Any(mappedColumn =>
+                passwordColumns.Contains(mappedColumn, StringComparer.OrdinalIgnoreCase)))
+        {
+            issues.Add(CsvMappingIssue.PasswordColumnMapped);
+        }
+
+        if (passwordColumns.Any(passwordColumn =>
+                !mapping.ExcludedPasswordColumns.Contains(passwordColumn, StringComparer.OrdinalIgnoreCase)))
+        {
+            issues.Add(CsvMappingIssue.PasswordColumnNotExcluded);
+        }
+
+        if (mapping.ServiceNameColumn is null && mapping.AccountUrlColumn is null)
+        {
+            AddUnresolvedIdentityIssues(
+                issues,
+                headers,
+                ServiceNameAliases,
+                CsvMappingIssue.AmbiguousServiceName,
+                AccountUrlAliases,
+                CsvMappingIssue.AmbiguousAccountUrl,
+                CsvMappingIssue.MissingServiceIdentity);
+        }
+
+        if (mapping.LoginIdentifierColumn is null && mapping.AccountNameColumn is null)
+        {
+            AddUnresolvedIdentityIssues(
+                issues,
+                headers,
+                LoginIdentifierAliases,
+                CsvMappingIssue.AmbiguousLoginIdentifier,
+                AccountNameAliases,
+                CsvMappingIssue.AmbiguousAccountName,
+                CsvMappingIssue.MissingAccountIdentity);
+        }
+
+        var quality = issues.Count == 0
+            ? CsvMappingQuality.Complete
+            : issues.Contains(CsvMappingIssue.MissingServiceIdentity) ||
+              issues.Contains(CsvMappingIssue.MissingAccountIdentity)
+                ? CsvMappingQuality.Incomplete
+                : CsvMappingQuality.NeedsReview;
+        return new CsvMappingAssessment(quality, issues);
+    }
+
+    private static void AddUnresolvedIdentityIssues(
+        List<CsvMappingIssue> issues,
+        IEnumerable<string> headers,
+        IReadOnlyCollection<string> primaryAliases,
+        CsvMappingIssue primaryAmbiguity,
+        IReadOnlyCollection<string> alternativeAliases,
+        CsvMappingIssue alternativeAmbiguity,
+        CsvMappingIssue missingIssue)
+    {
+        var primaryMatches = FindHeaders(headers, primaryAliases).Length;
+        var alternativeMatches = FindHeaders(headers, alternativeAliases).Length;
+        if (primaryMatches > 1)
+        {
+            issues.Add(primaryAmbiguity);
+        }
+
+        if (alternativeMatches > 1)
+        {
+            issues.Add(alternativeAmbiguity);
+        }
+
+        if (primaryMatches <= 1 && alternativeMatches <= 1)
+        {
+            issues.Add(missingIssue);
+        }
     }
 
     private static void ValidateMapping(
@@ -160,7 +281,7 @@ public sealed class CsvAccountImportService
             diagnostics.Add(new CsvImportDiagnostic(
                 CsvImportDiagnosticSeverity.Error,
                 "PasswordColumnNotExcluded",
-                "Every detected password column must be explicitly excluded before previewing the import."));
+                "Every detected password column must be excluded before previewing the import."));
         }
 
         if (mappedColumns.Any(mappedColumn =>
@@ -341,8 +462,19 @@ public sealed class CsvAccountImportService
             .Select((header, index) => (header, index))
             .ToDictionary(item => item.header, item => item.index, StringComparer.OrdinalIgnoreCase);
 
-    private static string? FindHeader(IEnumerable<string> headers, params string[] aliases) =>
-        headers.FirstOrDefault(header => aliases.Contains(NormalizeHeader(header), StringComparer.Ordinal));
+    private static string? FindUnambiguousHeader(
+        IEnumerable<string> headers,
+        IReadOnlyCollection<string> aliases)
+    {
+        var matches = FindHeaders(headers, aliases);
+        return matches.Length == 1 ? matches[0] : null;
+    }
+
+    private static string[] FindHeaders(
+        IEnumerable<string> headers,
+        IReadOnlyCollection<string> aliases) =>
+        [.. headers.Where(header =>
+            aliases.Contains(NormalizeHeader(header), StringComparer.Ordinal))];
 
     private static bool IsPasswordColumn(string header)
     {

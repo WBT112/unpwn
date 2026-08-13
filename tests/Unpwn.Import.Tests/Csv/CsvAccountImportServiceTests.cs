@@ -16,12 +16,71 @@ public sealed class CsvAccountImportServiceTests
         Assert.True(analysis.ContainsPasswordColumns);
         Assert.Equal(["password"], analysis.DetectedPasswordColumns);
         Assert.Equal(["password"], analysis.SuggestedMapping.ExcludedPasswordColumns);
-        Assert.Equal("name", analysis.SuggestedMapping.ServiceNameColumn);
+        Assert.Null(analysis.SuggestedMapping.ServiceNameColumn);
+        Assert.Equal("name", analysis.SuggestedMapping.AccountNameColumn);
         Assert.Equal("url", analysis.SuggestedMapping.AccountUrlColumn);
         Assert.Equal("username", analysis.SuggestedMapping.LoginIdentifierColumn);
+        Assert.Equal(CsvMappingQuality.Complete, analysis.MappingAssessment.Quality);
+        Assert.Empty(analysis.MappingAssessment.Issues);
+        Assert.Empty(analysis.Diagnostics);
+    }
+
+    [Fact]
+    public void AnalyzeRequiresReviewInsteadOfGuessingBetweenAmbiguousRequiredColumns()
+    {
+        using var source = new StringReader("service,username,email,password\n");
+
+        var analysis = CsvAccountImportService.Analyze(source);
+
+        Assert.Equal(CsvMappingQuality.NeedsReview, analysis.MappingAssessment.Quality);
         Assert.Contains(
-            analysis.Diagnostics,
-            diagnostic => diagnostic.Message == CsvImportAnalysis.PasswordWarning);
+            CsvMappingIssue.AmbiguousLoginIdentifier,
+            analysis.MappingAssessment.Issues);
+        Assert.Null(analysis.SuggestedMapping.LoginIdentifierColumn);
+        Assert.Equal(["password"], analysis.SuggestedMapping.ExcludedPasswordColumns);
+    }
+
+    [Fact]
+    public void AnalyzeReportsExactlyWhichRequiredIdentitiesAreMissing()
+    {
+        using var source = new StringReader("notes,password\n");
+
+        var analysis = CsvAccountImportService.Analyze(source);
+
+        Assert.Equal(CsvMappingQuality.Incomplete, analysis.MappingAssessment.Quality);
+        Assert.Equal(
+            [
+                CsvMappingIssue.MissingServiceIdentity,
+                CsvMappingIssue.MissingAccountIdentity,
+            ],
+            analysis.MappingAssessment.Issues);
+    }
+
+    [Fact]
+    public void ExplicitMappingCompletesAmbiguousAnalysisAndKeepsPasswordsExcluded()
+    {
+        using var source = new StringReader("service,username,email,password\n");
+        var analysis = CsvAccountImportService.Analyze(source);
+        var mapping = analysis.SuggestedMapping with { LoginIdentifierColumn = "email" };
+
+        var assessment = CsvAccountImportService.AssessMapping(analysis, mapping);
+
+        Assert.True(assessment.IsComplete);
+        Assert.Empty(assessment.Issues);
+    }
+
+    [Fact]
+    public void MappingAssessmentRejectsMissingPasswordExclusionAndRepeatedColumns()
+    {
+        using var source = new StringReader("service,username,password\n");
+        var analysis = CsvAccountImportService.Analyze(source);
+        var mapping = new CsvColumnMapping("service", "service", "username", null, []);
+
+        var assessment = CsvAccountImportService.AssessMapping(analysis, mapping);
+
+        Assert.Equal(CsvMappingQuality.NeedsReview, assessment.Quality);
+        Assert.Contains(CsvMappingIssue.RepeatedMappedColumn, assessment.Issues);
+        Assert.Contains(CsvMappingIssue.PasswordColumnNotExcluded, assessment.Issues);
     }
 
     [Fact]
@@ -154,7 +213,7 @@ public sealed class CsvAccountImportServiceTests
     }
 
     [Fact]
-    public void PreviewRequiresExplicitExclusionOfEveryPasswordColumn()
+    public void PreviewRequiresExclusionOfEveryPasswordColumn()
     {
         const string oldPassword = "UNPWN_TEST_SECRET_must-not-be-read";
         using var source = new TrackingReader(

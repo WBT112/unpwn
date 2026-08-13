@@ -7,7 +7,8 @@ These files are developer and test fixtures. Do not replace their values with ex
 ## Quick manual smoke test
 
 1. Start with a trusted test device choice and create a new temporary recovery vault.
-2. Import `generic-recovery-sample.csv` with these mappings:
+2. Select `generic-recovery-sample.csv`. Verify that unpwn automatically detects these mappings and
+   opens the preview without an additional action:
    - `service` → service/provider
    - `account` → account name
    - `username` → login identifier
@@ -17,7 +18,7 @@ These files are developer and test fixtures. Do not replace their values with ex
 4. Configure the roles and dependencies described below; the CSV intentionally does not smuggle unsupported domain state into extra columns.
 5. Exercise the selected provider path and verify that returning from a browser never marks an action complete.
 
-`bitwarden-recovery-sample.csv` uses Bitwarden's [official individual-vault CSV format](https://bitwarden.com/help/condition-bitwarden-import/) as documented in August 2026. Map `folder` to service/provider, `name` to account name, `login_username` to login identifier, and `login_uri` to account URL. Explicitly exclude `login_password`. The password values are synthetic markers included only to verify exclusion. Leave notes, fields, reprompt, and TOTP unmapped.
+`bitwarden-recovery-sample.csv` uses Bitwarden's [official individual-vault CSV format](https://bitwarden.com/help/condition-bitwarden-import/) as documented in August 2026. Verify that unpwn maps `folder` to service/provider, `name` to account name, `login_username` to login identifier, and `login_uri` to account URL. `login_password` must be excluded automatically and unavailable as a mapping option. The password values are synthetic markers included only to verify exclusion. Notes, fields, reprompt, and TOTP remain unmapped.
 
 ## Provider path matrix
 

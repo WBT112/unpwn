@@ -5,11 +5,13 @@
 ## User-visible flow
 
 1. Select a CSV file.
-2. Review the detected delimiter and suggested column mapping.
-3. Explicitly exclude every detected password column.
-4. Map service, account name, login identifier, and optional account URL.
+2. unpwn analyzes the header, automatically excludes detected password columns, and evaluates the
+   suggested mapping.
+3. A complete, unambiguous mapping immediately creates the preview; mapping controls stay hidden.
+4. If a required service/account identity is missing or ambiguous, resolve only the affected mapping
+   choices. The preview updates automatically as soon as the mapping is valid.
 5. Review valid rows, row-level diagnostics, and duplicates.
-6. Import the reviewed candidates into the encrypted account inventory.
+6. Explicitly confirm the reviewed candidates for import into the encrypted account inventory.
 
 A successful preview is not a successful import. Persistence must complete before the UI reports imported work.
 
@@ -17,7 +19,11 @@ A successful preview is not a successful import. Persistence must complete befor
 
 Old passwords are never part of the import model.
 
-Preview creation is blocked until detected password columns are excluded. Excluded password values must not enter account candidates, diagnostics, duplicate keys, role inference, serialized previews, or encrypted inventory state.
+Detected password columns are excluded automatically and are not offered as mapping choices. Their
+column names are shown in one concise notice; there is no additional exclusion confirmation. Excluded
+password values must not enter account candidates, diagnostics, duplicate keys, role inference,
+serialized previews, UI strings, logs, test artifacts, or encrypted inventory state. The stream parser
+does not append excluded field characters to its field buffers.
 
 Diagnostics use structured codes and row numbers rather than echoing imported values.
 
@@ -46,6 +52,17 @@ The importer is platform-neutral and language-neutral. Changing the GUI language
 - future numeric or date fields require an explicit import culture or unambiguous machine format.
 
 Saved mappings contain column names and canonical target identifiers only, never source values or translated target labels.
+
+## Mapping quality
+
+`CsvImportAnalysis.MappingAssessment` is the language-neutral source of truth for progressive
+disclosure. It reports `Complete`, `NeedsReview`, or `Incomplete` together with structured issue codes.
+The view does not infer validity from control state. Common aliases are accepted only when exactly one
+header matches a semantic field; multiple plausible required headers are left unmapped for explicit
+review rather than guessed. User-selected mappings are evaluated through the same import boundary.
+
+Mapping quality controls preview preparation only. It never imports accounts or changes recovery
+state. Final import remains an explicit user action after reviewing candidates and diagnostics.
 
 ## Application boundary
 

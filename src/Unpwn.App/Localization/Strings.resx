@@ -111,8 +111,7 @@
   <data name="Import.Diagnostic.MissingServiceMapping" xml:space="preserve"><value>Map either a service name or an account URL column.</value></data>
   <data name="Import.Diagnostic.MissingServiceValue" xml:space="preserve"><value>The row does not contain a service name or account URL.</value></data>
   <data name="Import.Diagnostic.PasswordColumnMapped" xml:space="preserve"><value>A detected password column cannot be mapped to an account field.</value></data>
-  <data name="Import.Diagnostic.PasswordColumnNotExcluded" xml:space="preserve"><value>Every detected password column must be explicitly excluded before previewing the import.</value></data>
-  <data name="Import.Diagnostic.PasswordColumnsDetected" xml:space="preserve"><value>The source contains password columns. Old passwords are excluded and will not be imported.</value></data>
+  <data name="Import.Diagnostic.PasswordColumnNotExcluded" xml:space="preserve"><value>Every detected password column must be excluded before previewing the import.</value></data>
   <data name="Import.Diagnostic.RepeatedMappedColumn" xml:space="preserve"><value>A source column cannot be mapped to more than one account field.</value></data>
   <data name="Import.Diagnostic.WithRow" xml:space="preserve"><value>{0}: row {1}: {2}</value></data>
   <data name="Import.Diagnostic.WithoutRow" xml:space="preserve"><value>{0}: {1}</value></data>
@@ -122,16 +121,24 @@
   <data name="Import.FilePicker.Title" xml:space="preserve"><value>Choose account CSV file</value></data>
   <data name="Import.FilePicker.Type" xml:space="preserve"><value>CSV files</value></data>
   <data name="Import.Mapping.Account" xml:space="preserve"><value>Account name</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousAccountName" xml:space="preserve"><value>Choose which possible account-name column to use.</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousAccountUrl" xml:space="preserve"><value>Choose which possible account-URL column to use.</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousLoginIdentifier" xml:space="preserve"><value>Choose which possible username or email column to use.</value></data>
+  <data name="Import.Mapping.Issue.AmbiguousServiceName" xml:space="preserve"><value>Choose which possible service-name column to use.</value></data>
+  <data name="Import.Mapping.Issue.MissingAccountIdentity" xml:space="preserve"><value>Choose a username, email, or account-name column.</value></data>
+  <data name="Import.Mapping.Issue.MissingMappedColumn" xml:space="preserve"><value>One selected column is no longer present in this file.</value></data>
+  <data name="Import.Mapping.Issue.MissingServiceIdentity" xml:space="preserve"><value>Choose a service-name or account-URL column.</value></data>
+  <data name="Import.Mapping.Issue.PasswordColumnMapped" xml:space="preserve"><value>Choose a non-password column for imported account data.</value></data>
+  <data name="Import.Mapping.Issue.PasswordColumnNotExcluded" xml:space="preserve"><value>Detected password columns must remain excluded.</value></data>
+  <data name="Import.Mapping.Issue.RepeatedMappedColumn" xml:space="preserve"><value>Choose a different source column for each account field.</value></data>
   <data name="Import.Mapping.Login" xml:space="preserve"><value>Username or email</value></data>
   <data name="Import.Mapping.None" xml:space="preserve"><value>(not mapped)</value></data>
   <data name="Import.Mapping.Service" xml:space="preserve"><value>Service name</value></data>
   <data name="Import.Mapping.Url" xml:space="preserve"><value>Account URL</value></data>
   <data name="Import.NoFile" xml:space="preserve"><value>No file selected</value></data>
-  <data name="Import.Password.Exclude" xml:space="preserve"><value>Exclude all detected password columns from this import</value></data>
-  <data name="Import.Password.Warning" xml:space="preserve"><value>The source contains password columns. Old passwords are excluded and will not be imported. Detected: {0}</value></data>
-  <data name="Import.Preview.Create" xml:space="preserve"><value>Create import preview</value></data>
-  <data name="Import.Preview.Initial" xml:space="preserve"><value>Select a CSV file and create a preview.</value></data>
-  <data name="Import.Preview.MappingReview" xml:space="preserve"><value>Review the mapping, then create the import preview.</value></data>
+  <data name="Import.Password.Warning" xml:space="preserve"><value>Old passwords are ignored automatically. Excluded columns: {0}</value></data>
+  <data name="Import.Preview.Initial" xml:space="preserve"><value>Select a CSV file. unpwn will detect columns and create the preview automatically.</value></data>
+  <data name="Import.Preview.MappingReview" xml:space="preserve"><value>Resolve the column choices shown above. The preview updates automatically once the mapping is complete.</value></data>
   <data name="Import.Preview.NotReady" xml:space="preserve"><value>The preview is not ready to import. Review the diagnostics and mapping.</value></data>
   <data name="Import.Preview.ValidAccounts.One" xml:space="preserve"><value>{0} valid account; {1} duplicate candidate(s). No old passwords will be imported.</value></data>
   <data name="Import.Preview.ValidAccounts.Other" xml:space="preserve"><value>{0} valid accounts; {1} duplicate candidate(s). No old passwords will be imported.</value></data>
@@ -141,9 +148,9 @@
   <data name="Import.Severity.Error" xml:space="preserve"><value>Error</value></data>
   <data name="Import.Severity.Information" xml:space="preserve"><value>Information</value></data>
   <data name="Import.Severity.Warning" xml:space="preserve"><value>Warning</value></data>
-  <data name="Import.Step.Mapping" xml:space="preserve"><value>2. Map columns</value></data>
-  <data name="Import.Step.Review" xml:space="preserve"><value>3. Review preview</value></data>
-  <data name="Import.Step.Source" xml:space="preserve"><value>1. Select source</value></data>
+  <data name="Import.Step.Mapping" xml:space="preserve"><value>Resolve column mapping</value></data>
+  <data name="Import.Step.Review" xml:space="preserve"><value>Review and confirm import</value></data>
+  <data name="Import.Step.Source" xml:space="preserve"><value>Select source</value></data>
   <data name="Import.UnknownAccount" xml:space="preserve"><value>(unknown account)</value></data>
   <data name="Import.UnknownService" xml:space="preserve"><value>(unknown service)</value></data>
   <data name="Language.English" xml:space="preserve"><value>English</value></data>
@@ -165,9 +172,9 @@
   <data name="Screen.Dashboard.StatusMessage" xml:space="preserve"><value>Unlock a recovery vault to load session progress.</value></data>
   <data name="Screen.Dashboard.StatusTitle" xml:space="preserve"><value>Dashboard placeholder</value></data>
   <data name="Screen.Dashboard.Title" xml:space="preserve"><value>Recovery dashboard</value></data>
-  <data name="Screen.Import.Description" xml:space="preserve"><value>Map account fields from a CSV file without importing old passwords.</value></data>
-  <data name="Screen.Import.StatusMessage" xml:space="preserve"><value>The import preview requires explicit exclusion of every detected password column.</value></data>
-  <data name="Screen.Import.StatusTitle" xml:space="preserve"><value>Password columns are excluded</value></data>
+  <data name="Screen.Import.Description" xml:space="preserve"><value>Select a CSV file, review the automatic preview, and confirm the account import.</value></data>
+  <data name="Screen.Import.StatusMessage" xml:space="preserve"><value>Detected password columns are ignored automatically and never enter the account preview.</value></data>
+  <data name="Screen.Import.StatusTitle" xml:space="preserve"><value>Old passwords stay outside the vault</value></data>
   <data name="Screen.Import.Title" xml:space="preserve"><value>Import account inventory</value></data>
   <data name="Screen.Vault.Description" xml:space="preserve"><value>Create or unlock a local recovery vault to begin. No recovery data is loaded while the vault is locked.</value></data>
   <data name="Screen.Vault.StatusMessage" xml:space="preserve"><value>unpwn cannot detect or remove malware. Begin recovery only after moving to a device you trust.</value></data>
