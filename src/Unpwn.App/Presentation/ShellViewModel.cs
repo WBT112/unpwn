@@ -29,6 +29,8 @@ public sealed class ShellViewModel : ObservableObject
     private bool _hasStartupRecoveryWarning;
     private bool _isWorkspaceNavigationExpanded;
     private bool _hadRecoverySession;
+    private bool _wasVaultUnlocked;
+    private bool _resumeWorkspaceAfterUnlock;
 
     public ShellViewModel(
         IScreenFactory screenFactory,
@@ -100,6 +102,7 @@ public sealed class ShellViewModel : ObservableObject
         _enforceNavigationPrerequisites = enforceNavigationPrerequisites;
         _isWorkspaceNavigationExpanded = recoverySession?.CurrentSession is null;
         _hadRecoverySession = recoverySession?.CurrentSession is not null;
+        _wasVaultUnlocked = IsVaultUnlocked;
         _navigationItems = BuildNavigationItems();
         _languageOptions = BuildLanguageOptions();
         _selectedLanguage = _languageOptions.Single(option =>
@@ -426,6 +429,17 @@ public sealed class ShellViewModel : ObservableObject
 
     private void ShellContext_OnContextChanged(object? sender, EventArgs eventArgs)
     {
+        var wasVaultUnlocked = _wasVaultUnlocked;
+        _wasVaultUnlocked = IsVaultUnlocked;
+        if (!_wasVaultUnlocked)
+        {
+            _resumeWorkspaceAfterUnlock = false;
+        }
+        else if (!wasVaultUnlocked && _recoveryFlow is not null)
+        {
+            _resumeWorkspaceAfterUnlock = true;
+        }
+
         OnPropertyChanged(nameof(IsVaultUnlocked));
         OnPropertyChanged(nameof(VaultContextLabel));
         OnPropertyChanged(nameof(SessionContextLabel));
@@ -442,6 +456,8 @@ public sealed class ShellViewModel : ObservableObject
             NavigationActionId = null;
             NavigateTo(AppRoute.VaultEntry);
         }
+
+        TryResumeWorkspaceAfterUnlock();
     }
 
     private void VaultLifecycle_OnStateChanged(object? sender, EventArgs eventArgs)
@@ -534,15 +550,25 @@ public sealed class ShellViewModel : ObservableObject
         _hadRecoverySession = hasRecoverySession;
         RefreshNavigationAvailability();
         CurrentStatus = BuildContextualStatus();
+        TryResumeWorkspaceAfterUnlock();
     }
 
     private void AccountInventory_OnInventoryChanged(object? sender, EventArgs eventArgs)
     {
         RefreshNavigationAvailability();
+        TryResumeWorkspaceAfterUnlock();
     }
 
-    private void VaultEntry_OnContinueRequested(object? sender, EventArgs eventArgs) =>
+    private void VaultEntry_OnContinueRequested(object? sender, EventArgs eventArgs)
+    {
+        if (_resumeWorkspaceAfterUnlock)
+        {
+            TryResumeWorkspaceAfterUnlock();
+            return;
+        }
+
         NavigateTo(AppRoute.Dashboard);
+    }
 
     private async void Dashboard_OnNavigationRequested(
         object? sender,
@@ -691,8 +717,65 @@ public sealed class ShellViewModel : ObservableObject
         }
     }
 
-    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs) =>
+    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs)
+    {
         RefreshNavigationAvailability();
+        TryResumeWorkspaceAfterUnlock();
+    }
+
+    private void TryResumeWorkspaceAfterUnlock()
+    {
+        if (!_resumeWorkspaceAfterUnlock ||
+            !IsVaultUnlocked ||
+            _recoveryFlow is null ||
+            !WorkspaceStateHasFinishedLoading())
+        {
+            return;
+        }
+
+        var task = _recoveryFlow.NextTask;
+        var route = HasWorkspaceLoadFailure()
+            ? AppRoute.Dashboard
+            : RouteFor(task.Target);
+        var navigation = NavigationItems.Single(item => item.Route == route);
+        if (!navigation.IsEnabled)
+        {
+            route = AppRoute.Dashboard;
+        }
+
+        _resumeWorkspaceAfterUnlock = false;
+        NavigationAccountId = task.AccountId;
+        NavigationActionId = task.ActionId;
+        NavigateTo(route);
+    }
+
+    private bool WorkspaceStateHasFinishedLoading() =>
+        _recoverySession is not null &&
+        _accountInventory is not null &&
+        _recoverySession.LoadState is not RecoverySessionLoadState.Locked and
+            not RecoverySessionLoadState.Loading &&
+        _accountInventory.LoadState is not AccountInventoryLoadState.Locked and
+            not AccountInventoryLoadState.Loading;
+
+    private bool HasWorkspaceLoadFailure() =>
+        _recoverySession?.LoadState is RecoverySessionLoadState.Corrupted or
+            RecoverySessionLoadState.LoadFailed ||
+        _accountInventory?.LoadState is AccountInventoryLoadState.Corrupted or
+            AccountInventoryLoadState.LoadFailed;
+
+    private static AppRoute RouteFor(NextUserTaskTarget target) => target switch
+    {
+        NextUserTaskTarget.TrustedDeviceCheck or
+        NextUserTaskTarget.TrustedDeviceGuidance or
+        NextUserTaskTarget.VaultEntry => AppRoute.VaultEntry,
+        NextUserTaskTarget.RecoveryOverview => AppRoute.Dashboard,
+        NextUserTaskTarget.CsvImport => AppRoute.CsvImport,
+        NextUserTaskTarget.AccountTriage => AppRoute.Accounts,
+        NextUserTaskTarget.AccountRecovery => AppRoute.Workflow,
+        NextUserTaskTarget.CredentialHandoff => AppRoute.CredentialsExport,
+        NextUserTaskTarget.CompletionReview => AppRoute.Completion,
+        _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unknown recovery task target."),
+    };
 
     private async void CsvImport_OnContinueRequested(object? sender, EventArgs eventArgs)
     {
