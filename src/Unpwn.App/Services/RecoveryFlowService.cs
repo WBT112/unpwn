@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Unpwn.Application;
 using Unpwn.Core;
 
@@ -138,6 +139,10 @@ public sealed class RecoveryFlowService : IRecoveryFlowService, IDisposable
         _disposed = true;
     }
 
+    [SuppressMessage(
+        "Design",
+        "CA1031:Do not catch general exception types",
+        Justification = "Encrypted persistence implementations can surface platform-specific storage exceptions. The recovery-flow contract returns a language-neutral failure and must never leak exception details into presentation state.")]
     private Task<RecoveryFlowMoveResult> PersistAsync(
         NextUserTask task,
         Func<PreparedRecoveryWizardUpdate> prepare,
@@ -168,7 +173,11 @@ public sealed class RecoveryFlowService : IRecoveryFlowService, IDisposable
                         RecoveryFlowMoveFailureCode.Conflict,
                         task);
                 }
-                catch (IOException)
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception)
                 {
                     return RecoveryFlowMoveResult.Failure(
                         RecoveryFlowMoveFailureCode.PersistenceFailure,

@@ -455,6 +455,53 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public async Task ImportWorkspaceContinuationContainsUnexpectedAsyncFlowFailure()
+    {
+        var sessionId = Guid.NewGuid();
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+            sessionId,
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        var inventory = new TestAccountInventoryService();
+        inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [InventoryAccount(Guid.NewGuid(), "example.test", "Synthetic account")],
+            DateTimeOffset.UnixEpoch));
+        var flow = new ThrowingRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new NextUserTask(
+                RecoveryWizardStepId.AccountInventory,
+                NextUserTaskState.ActionAvailable,
+                NextUserTaskCode.ReviewAccountCategories,
+                NextUserTaskTarget.AccountTriage,
+                RecoveryWizardStepId.AccountTriage));
+        var shell = CreateFlowShell(vault, session, inventory, flow);
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
+        var failureVisible = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        shell.PropertyChanged += (_, eventArgs) =>
+        {
+            if (eventArgs.PropertyName == nameof(ShellViewModel.CurrentStatus) &&
+                shell.CurrentStatus.State == AppVisualState.Error)
+            {
+                failureVisible.TrySetResult();
+            }
+        };
+
+        var import = Assert.IsType<CsvImportScreenViewModel>(shell.CurrentScreen);
+        import.ContinueToAccountReviewCommand.Execute(null);
+        await failureVisible.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
+        Assert.Equal(1, flow.AdvanceCalls);
+        Assert.Equal(AppVisualState.Error, shell.CurrentStatus.State);
+        Assert.Equal(RecoveryWizardStepId.AccountInventory, flow.Current.CurrentStep);
+    }
+
+    [Fact]
     public void CategoryWorkspaceContinuationAdvancesAndReturnsToRecoveryOverview()
     {
         var sessionId = Guid.NewGuid();
@@ -820,6 +867,37 @@ public sealed class ShellViewModelTests
         public Task<RecoveryFlowMoveResult> MarkCompletionReviewReadyAsync(
             CancellationToken cancellationToken) =>
             AdvanceAsync(cancellationToken);
+    }
+
+    private sealed class ThrowingRecoveryFlowService(
+        RecoveryWizardState current,
+        NextUserTask next) : IRecoveryFlowService
+    {
+        public event EventHandler? NextTaskChanged
+        {
+            add { }
+            remove { }
+        }
+
+        public RecoveryWizardState Current { get; } = current;
+
+        public NextUserTask NextTask { get; } = next;
+
+        public int AdvanceCalls { get; private set; }
+
+        public async Task<RecoveryFlowMoveResult> AdvanceAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AdvanceCalls++;
+            await Task.Yield();
+            throw new UnauthorizedAccessException("Synthetic platform persistence failure.");
+        }
+
+        public Task<RecoveryFlowMoveResult> BeginCompletionReviewAsync(
+            CancellationToken cancellationToken) => AdvanceAsync(cancellationToken);
+
+        public Task<RecoveryFlowMoveResult> MarkCompletionReviewReadyAsync(
+            CancellationToken cancellationToken) => AdvanceAsync(cancellationToken);
     }
 
     private sealed class TestCompletionService(
