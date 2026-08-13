@@ -644,7 +644,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         "vault-entry" => "Dashboard.WizardStep.VaultEntry",
         "incident-intake" => "Dashboard.WizardStep.IncidentIntake",
         "account-inventory" => "Dashboard.WizardStep.AccountInventory",
-        "identity-review" => "Dashboard.WizardStep.IdentityReview",
+        "account-triage" => "Dashboard.WizardStep.AccountTriage",
         "recovery-plan" => "Dashboard.WizardStep.RecoveryPlan",
         "account-recovery" => "Dashboard.WizardStep.AccountRecovery",
         "credential-export" => "Dashboard.WizardStep.CredentialExport",

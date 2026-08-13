@@ -35,7 +35,7 @@ A reset may require:
 - identity verification
 - opening a time-limited reset link
 
-A password reset is therefore often a multi-account workflow. The primary email account or another recovery channel must be secured before dependent accounts are reset.
+A password reset may therefore require another account or recovery channel. The user must confirm that the required channel is controlled before relying on it; the browser or receipt of a message never proves control.
 
 ### Manual account recovery
 
@@ -51,30 +51,17 @@ This path may require:
 
 unpwn may guide and track this process but cannot guarantee that the provider restores access.
 
-## Account Dependencies
+## Account categories and action prerequisites
 
-Accounts may depend on other accounts or recovery channels.
+Account categories decide when an account should be considered: `Email`, `Critical`, `Unknown`, or
+`NonCritical`. The local classification catalog supplies a suggestion and the user's explicit choice
+wins. Categories do not select or increase trust in a provider workflow.
 
-Examples:
-
-- an online shop sends password-reset links to a primary email account
-- a cloud account uses a secondary email address
-- a developer account depends on an organization-managed identity
-- a financial account requires access to a registered phone number
-
-The Recovery Engine should identify explicit dependencies and recommend an order that secures dependency roots first.
-
-Typical critical roots include:
-
-1. primary email accounts
-2. password managers
-3. operating-system or platform identities
-4. mobile phone and carrier accounts
-5. financial accounts
-
-A dependency does not automatically prove that an account is compromised. It only affects recovery order and blocking conditions.
-
-`READY` in a recovery-order plan means that the account can be worked on now. An account whose dependency is only earlier in the topological plan, but has not yet been fully reviewed, remains `WAITING_FOR_DEPENDENCIES`.
+Provider workflows independently decide how an account can be recovered. Their action prerequisites
+express ordering inside one reviewed workflow path, such as reviewing account access before changing
+a password. A missing provider capability or unavailable recovery channel remains blocked work or an
+unresolved risk in the canonical execution state; it is not represented through a user-maintained
+cross-account dependency graph.
 
 ## Workflow Structure
 
@@ -230,7 +217,7 @@ Accounts without a matching reviewed provider definition use the repository-cont
 `generic/manual-account-recovery` workflow. The UI labels it as general, non-provider-specific
 guidance; it must never be presented with the same confidence as a reviewed provider workflow.
 Its stable authenticated-change, password-reset, and manual-recovery paths keep unsupported accounts
-inside the normal dependency plan, persisted action state, credential handoff, risk model, and
+inside the normal category plan, persisted action state, credential handoff, risk model, and
 completion review.
 
 The generic definition contains no provider recovery locations or trusted-origin metadata. Arbitrary
@@ -294,11 +281,10 @@ Review references:
 - [Update your recovery info](https://support.google.com/accounts/answer/17299765)
 - [Manage your linked apps](https://support.google.com/accounts/answer/16363505)
 
-A password reset may depend on access to a recovery email account or another recovery channel. The
+A password reset may require access to a recovery email account or another recovery channel. The
 provider scenarios therefore distinguish a reset through an already secured channel from one blocked
-by an unsecured recovery email dependency. That cross-account dependency remains part of the account
-inventory and recovery plan; the provider workflow does not assume that receiving a message proves
-the channel is under the user's control.
+because the user cannot safely use that channel. The provider action remains visibly blocked or
+unresolved; the account inventory does not infer control, and receiving a message never proves it.
 
 The workflow covers consumer accounts. Organization-managed Google Workspace policies may remove or
 alter available controls, in which case the user must keep the limitation visible as blocked work or

@@ -286,21 +286,10 @@ public sealed class AccountRecoveryExecutionCoverageTests
                 initial.Actions[1] with { Status = RecoveryActionStatus.NeedsUserAction },
             ],
         };
-        var dashboard = projected.CreateDashboardProjection(
-            AccountCriticality.Critical,
-            dependencyDepth: 2,
-            waitingForAccountIds: [Guid.NewGuid()],
-            inventoryBlockedIssues: 1,
-            inventoryUnresolvedRisks: 1);
+        var dashboard = projected.CreateDashboardProjection(AccountCriticality.Critical);
 
         Assert.Equal("identify-account", dashboard.RecommendedActionId);
-        Assert.Equal(2, dashboard.DependencyDepth);
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            initial.CreateDashboardProjection(AccountCriticality.Routine, 0, [], -1, 0));
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            initial.CreateDashboardProjection(AccountCriticality.Routine, 0, [], 0, -1));
-        Assert.Throws<ArgumentNullException>(() =>
-            initial.CreateDashboardProjection(AccountCriticality.Routine, 0, null!));
+        Assert.Equal(1, dashboard.FailedRequiredActions);
     }
 
     public static TheoryData<RecoveryActionStatus, RecoveryActionStatus, bool> ActionTransitions

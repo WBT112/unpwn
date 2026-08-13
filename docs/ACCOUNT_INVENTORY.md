@@ -1,92 +1,46 @@
-# Account Inventory and Recovery Planning
+# Account Inventory and Category Triage
 
-The account inventory is the encrypted, language-neutral source of truth for the accounts in one recovery session. It connects reviewed account data to roles, dependencies, and deterministic recovery ordering.
+The account inventory is the encrypted, language-neutral source of truth for the accounts in one recovery session. The normal review deliberately asks one simple question per account: is it **Email**, **Critical**, **Not critical**, or **Unknown**?
 
 ## Stored account state
 
-The encrypted `account-state` record contains the recovery-session reference and reviewed account information such as:
+The encrypted `account-state` record contains:
 
-- opaque account identifiers;
-- provider or service identifiers;
-- account name, login identifier, and optional HTTP/HTTPS account URL without embedded URL credentials;
-- priority;
-- explicit role decisions;
-- dependencies and override reasons;
-- revision and timestamps.
+- opaque account and recovery-session identifiers;
+- provider or service identifier;
+- recognizable account name, login identifier, and optional HTTP/HTTPS URL without embedded URL credentials;
+- the locally suggested category and classification-catalog version;
+- the user's optional explicit category and the inventory revision at which it was confirmed;
+- inventory revision and timestamps.
 
-Old passwords are not part of this model. Materialized account data is cleared when the vault locks. Invalid or mismatched encrypted state fails closed rather than being silently replaced.
+An explicit user category always wins over a catalog suggestion. Explicit `Unknown` is distinct from an account that has not been reviewed. Passwords, recovery codes, MFA secrets, reset links, role graphs, account dependencies, cycle overrides, and free-form dependency reasons are not part of this model.
 
-## Account management
+Materialized account data is cleared when the vault locks. The current development schema intentionally has no compatibility migration: records containing the removed priority, role, or dependency structure fail closed as corrupted and are not overwritten.
 
-An account needs a service/provider and either an account name or login identifier. The user can assign low, normal, high, or critical priority.
+## Local classification catalog
 
-Removing an account requires confirmation. Dependencies that pointed to the removed account remain visible as missing dependencies so the risk does not disappear silently.
+`RepositoryAccountClassificationCatalog` is versioned, repository-controlled, deterministic, and offline-only. It matches stable provider identifiers and safe HTTP/HTTPS host names already present in imported account data. It does not inspect arbitrary page content and performs no network lookup.
 
-CSV parsing, password-column exclusion, duplicate rules, and import diagnostics are defined only in [CSV Import](IMPORT.md).
+The catalog contains more than 100 common email domains and aliases, plus curated critical services such as financial/payment, commerce, health/insurance, government/identity, communications, password-manager, and identity-provider accounts. It also contains conservative not-critical patterns. Anything not matched remains `Unknown`.
 
-## Guided review and advanced details
+The catalog only proposes **when** an account should be handled. Provider workflow definitions independently decide **how** recovery works. A catalog entry cannot select a provider action, change recovery execution state, or prove control of an account.
 
-The normal account-review journey presents the canonical inventory as questions about accounts the user recognizes:
+## Triage flow
 
-- review imported accounts and add anything missing;
-- confirm or reject each inferred identity or recovery role explicitly;
-- describe recovery dependencies as “Can this account be recovered using that account?”;
-- explain possible duplicates, missing dependencies, cycles, and overrides in user language.
+The account screen shows a recognizable identity, current suggestion or explicit choice, one category selector, and **Save and review next**. Saving advances to the next unreviewed account automatically.
 
-The guided review is a presentation of `AccountInventoryState`; it is not a second inventory or recovery state machine. Role answers and dependency choices use the same `IAccountInventoryService` mutations as the advanced editor. The recovery wizard's `AccountsRequired` and `RoleConfirmationRequired` gates remain authoritative.
+Once at least one account is explicitly categorized as `Email`, the user can return to the assistant and continue immediately; reviewing remaining accounts is optional but improves ordering. On resume, the screen shows the remaining count and keeps the next unreviewed account selected. If the user genuinely has no email account, reviewing all accounts permits continuation without one. The assistant also remains a deliberate exit from category triage; navigation itself never silently records a category.
 
-Detailed provider metadata, priority, role removal, dependency removal, and cycle overrides remain available behind **Advanced account details**. An override still requires a written reason and continues to appear as an unresolved risk. Switching between guided and advanced views must therefore round-trip immediately through the same encrypted canonical state.
+Account removal still requires the normal destructive confirmation, but there is no dependency-impact acknowledgement because account dependency editing no longer exists.
 
-## Roles
+## Planning boundary
 
-Supported recovery and identity roles include:
+Until the automatic queue work in issue #111, the simplified planner uses effective categories and preserves the material incident-input behavior introduced with session simplification: a lost-access or possibly compromised-recovery-channel indicator moves `Email` ahead of `Critical`; otherwise `Critical` remains ahead of `Email`. `Unknown` and `Not critical` follow, with provider and opaque account identifiers as deterministic tie-breakers.
 
-- email mailbox;
-- password manager;
-- identity provider;
-- recovery email;
-- telephone recovery channel;
-- organization-managed sign-in.
+There are no dependency graph, cycle, missing-target, or override planning states. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
 
-A suggested role has no planning authority until the user confirms it. A login identifier that looks like an email address is not proof that the corresponding mailbox is controlled by the user.
+## Persistence and testing
 
-## Dependencies
+Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog aliases and types, unknown fallback, explicit override precedence, deterministic ordering, category revision persistence, early exit/resume guidance, fail-closed obsolete records, lock clearing, import integration, and language-independent semantics.
 
-An account may depend on another account or recovery channel for:
-
-- password reset;
-- MFA;
-- identity-provider access;
-- recovery contact;
-- password-manager access;
-- organization-managed sign-in.
-
-Missing targets and dependency cycles are blocking conditions.
-
-A cycle may be overridden only with an explicit reason. The overridden edge can stop blocking scheduling, but the underlying dependency remains recorded as an unresolved risk.
-
-## Recovery plan
-
-The plan is recalculated after persisted inventory changes. For the same state, the result must be deterministic.
-
-Ordering considers:
-
-1. non-overridden dependencies;
-2. confirmed recovery and identity roles;
-3. relevant incident indicators such as lost access or a compromised recovery channel;
-4. user-assigned priority;
-5. stable identifiers as tie-breakers.
-
-Plan items use language-neutral statuses and reason codes. Presentation text never controls ordering.
-
-Typical planning states distinguish work that is ready now, planned after dependencies, blocked by a missing dependency, or blocked by a cycle. Material workflow outcomes are fed back through the account-recovery execution boundary and can change the next recommendation.
-
-See [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md) and [Recovery Session and Dashboard](RECOVERY_SESSION_DASHBOARD.md).
-
-## Persistence rule
-
-Inventory changes and the dashboard projection that depends on them are persisted atomically. A failed write must not be published as successful state.
-
-See [Workspace Persistence](WORKSPACE_PERSISTENCE.md).
-
-Testing for role confirmation, dependencies, ordering, persistence, lock clearing, import integration, and language-independent semantics follows [Testing Strategy](TESTING.md).
+See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Recovery Wizard](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).

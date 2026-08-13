@@ -526,9 +526,10 @@ public sealed class ShellViewModelTests
         accountName,
         null,
         null,
-        AccountInventoryPriority.Normal,
-        [],
-        [],
+        AccountRecoveryCategory.Unknown,
+        RepositoryAccountClassificationCatalog.CurrentVersion,
+        ConfirmedCategory: null,
+        CategoryConfirmedRevision: null,
         DateTimeOffset.UnixEpoch);
 
     private static RecoveryAccountDashboardEntry DashboardAccount(
@@ -549,9 +550,7 @@ public sealed class ShellViewModelTests
         AccessLost: false,
         CredentialsAwaitingExport: 0,
         CredentialsAwaitingDeletion: 0,
-        RecommendedActionId: actionId,
-        DependencyDepth: 0,
-        WaitingForAccountIds: []);
+        RecommendedActionId: actionId);
 
     private static ResourceLocalizationService CreateLocalization() =>
         new(CultureInfo.GetCultureInfo("en"));
@@ -699,25 +698,13 @@ public sealed class ShellViewModelTests
             AccountInventoryUpsertRequest request,
             CancellationToken cancellationToken) => Unsupported();
 
-        public Task<AccountInventoryOperationResult> DecideRoleAsync(
+        public Task<AccountInventoryOperationResult> CategorizeAsync(
             Guid accountId,
-            AccountInventoryRole role,
-            AccountRoleDecision decision,
-            CancellationToken cancellationToken) => Unsupported();
-
-        public Task<AccountInventoryOperationResult> AddDependencyAsync(
-            AccountDependencyRequest request,
-            CancellationToken cancellationToken) => Unsupported();
-
-        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-            Guid accountId,
-            Guid dependsOnAccountId,
-            AccountDependencyKind kind,
+            AccountRecoveryCategory category,
             CancellationToken cancellationToken) => Unsupported();
 
         public Task<AccountInventoryOperationResult> RemoveAccountAsync(
             Guid accountId,
-            bool dependencyImpactAcknowledged,
             CancellationToken cancellationToken) => Unsupported();
 
         public Task<AccountInventoryOperationResult> ImportAsync(

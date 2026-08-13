@@ -173,68 +173,6 @@ public sealed class RecoveryDomainTests
     }
 
     [Fact]
-    public void RecoveryOrderSecuresDependencyRootsBeforeDependentAccounts()
-    {
-        var email = new Account(Guid.Parse("00000000-0000-0000-0000-000000000001"), "primary-email", AccountCriticality.Critical, [CompletedAction("email")]);
-        var shop = new Account(Guid.Parse("00000000-0000-0000-0000-000000000002"), "online-shop", AccountCriticality.Important, [RequiredActionInstance("shop")]);
-        var social = new Account(Guid.Parse("00000000-0000-0000-0000-000000000003"), "social", AccountCriticality.Routine, [RequiredActionInstance("social")]);
-        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
-        session.AddAccount(shop);
-        session.AddAccount(social);
-        session.AddAccount(email);
-        session.AddDependency(new AccountDependency(shop.Id, email.Id, "Password reset links are sent to the primary email account."));
-        session.AddDependency(new AccountDependency(social.Id, email.Id, "Password reset links are sent to the primary email account."));
-
-        var plan = session.PlanRecoveryOrder();
-
-        Assert.False(plan.HasBlockingIssues);
-        Assert.Equal([email.Id, shop.Id, social.Id], plan.Items.Select(item => item.AccountId));
-        Assert.All(plan.Items, item => Assert.Equal(AccountRecoveryOrderStatus.Ready, item.OrderStatus));
-        Assert.Equal(0, plan.Items.Single(item => item.AccountId == email.Id).DependencyDepth);
-        Assert.Equal(1, plan.Items.Single(item => item.AccountId == shop.Id).DependencyDepth);
-    }
-
-    [Fact]
-    public void RecoveryOrderMarksDependentAccountAsWaitingUntilDependencyIsReviewed()
-    {
-        var email = new Account(Guid.Parse("00000000-0000-0000-0000-000000000021"), "primary-email", AccountCriticality.Critical, [RequiredActionInstance("email")]);
-        var shop = new Account(Guid.Parse("00000000-0000-0000-0000-000000000022"), "online-shop", AccountCriticality.Important, [RequiredActionInstance("shop")]);
-        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
-        session.AddAccount(shop);
-        session.AddAccount(email);
-        session.AddDependency(new AccountDependency(shop.Id, email.Id, "Password reset links are sent to the primary email account."));
-
-        var plan = session.PlanRecoveryOrder();
-
-        Assert.Equal(AccountRecoveryOrderStatus.Ready, plan.Items.Single(item => item.AccountId == email.Id).OrderStatus);
-        var shopPlan = plan.Items.Single(item => item.AccountId == shop.Id);
-        Assert.Equal(AccountRecoveryOrderStatus.WaitingForDependencies, shopPlan.OrderStatus);
-        Assert.Equal([email.Id], shopPlan.WaitingForAccountIds);
-    }
-
-    [Fact]
-    public void RecoveryOrderReportsCyclesAndUnknownAccountDependencies()
-    {
-        var first = new Account(Guid.Parse("00000000-0000-0000-0000-000000000011"), "first", AccountCriticality.Critical, [RequiredActionInstance("first")]);
-        var second = new Account(Guid.Parse("00000000-0000-0000-0000-000000000012"), "second", AccountCriticality.Critical, [RequiredActionInstance("second")]);
-        var missing = Guid.Parse("00000000-0000-0000-0000-000000000099");
-        var session = new RecoverySession(Guid.NewGuid(), DateTimeOffset.UnixEpoch);
-        session.AddAccount(first);
-        session.AddAccount(second);
-        session.AddDependency(new AccountDependency(first.Id, second.Id, "Synthetic cyclic dependency."));
-        session.AddDependency(new AccountDependency(second.Id, first.Id, "Synthetic cyclic dependency."));
-        session.AddDependency(new AccountDependency(first.Id, missing, "Imported dependency references an account that is not present."));
-
-        var plan = session.PlanRecoveryOrder();
-
-        Assert.True(plan.HasBlockingIssues);
-        Assert.Single(plan.UnknownAccountDependencies);
-        Assert.NotEmpty(plan.Cycles);
-        Assert.All(plan.Items, item => Assert.Equal(AccountRecoveryOrderStatus.DependencyCycle, item.OrderStatus));
-        Assert.Contains(plan.Cycles, cycle => cycle.Contains(first.Id) && cycle.Contains(second.Id));
-    }
-
-    [Fact]
     public void AuditEventsUseStructuredFieldsInsteadOfFreeText()
     {
         var accountId = Guid.NewGuid();

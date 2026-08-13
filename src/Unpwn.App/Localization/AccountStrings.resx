@@ -5,94 +5,62 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Accounts.Error.Command" xml:space="preserve"><value>The account operation could not be completed safely.</value></data>
-  <data name="Accounts.Priority.Low" xml:space="preserve"><value>Low</value></data>
-  <data name="Accounts.Priority.Normal" xml:space="preserve"><value>Normal</value></data>
-  <data name="Accounts.Priority.High" xml:space="preserve"><value>High</value></data>
-  <data name="Accounts.Priority.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Accounts.Category.Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Accounts.Category.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Accounts.Category.NonCritical" xml:space="preserve"><value>Not critical</value></data>
+  <data name="Accounts.Category.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Accounts.Filter.All" xml:space="preserve"><value>All accounts</value></data>
-  <data name="Accounts.Filter.Critical" xml:space="preserve"><value>Critical accounts</value></data>
-  <data name="Accounts.Filter.RecoveryChannels" xml:space="preserve"><value>Recovery channels</value></data>
-  <data name="Accounts.Filter.NeedsRoleConfirmation" xml:space="preserve"><value>Role confirmation needed</value></data>
-  <data name="Accounts.Filter.Blocked" xml:space="preserve"><value>Blocked dependencies</value></data>
+  <data name="Accounts.Filter.Unreviewed" xml:space="preserve"><value>Not reviewed</value></data>
+  <data name="Accounts.Filter.Email" xml:space="preserve"><value>Email</value></data>
+  <data name="Accounts.Filter.Critical" xml:space="preserve"><value>Critical</value></data>
+  <data name="Accounts.Filter.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Accounts.Sort.RecoveryOrder" xml:space="preserve"><value>Recovery order</value></data>
-  <data name="Accounts.Sort.Priority" xml:space="preserve"><value>Priority</value></data>
   <data name="Accounts.Sort.Provider" xml:space="preserve"><value>Provider</value></data>
   <data name="Accounts.Sort.Updated" xml:space="preserve"><value>Last updated</value></data>
-  <data name="Accounts.Dependency.Kind.PasswordReset" xml:space="preserve"><value>Password reset</value></data>
-  <data name="Accounts.Dependency.Kind.Mfa" xml:space="preserve"><value>MFA channel</value></data>
-  <data name="Accounts.Dependency.Kind.IdentityProvider" xml:space="preserve"><value>Identity provider</value></data>
-  <data name="Accounts.Dependency.Kind.RecoveryContact" xml:space="preserve"><value>Recovery contact</value></data>
-  <data name="Accounts.Dependency.Kind.PasswordManager" xml:space="preserve"><value>Password manager</value></data>
-  <data name="Accounts.Dependency.Kind.OrganizationManagedSignIn" xml:space="preserve"><value>Organization-managed sign-in</value></data>
   <data name="Accounts.State.Locked" xml:space="preserve"><value>Unlock the recovery vault to view the account inventory.</value></data>
   <data name="Accounts.State.Loading" xml:space="preserve"><value>Loading the encrypted account inventory.</value></data>
-  <data name="Accounts.State.Corrupted" xml:space="preserve"><value>The encrypted account inventory could not be read. It was not replaced.</value></data>
+  <data name="Accounts.State.Corrupted" xml:space="preserve"><value>The encrypted account inventory is incompatible or unreadable. It was not replaced.</value></data>
   <data name="Accounts.State.Empty" xml:space="preserve"><value>No recovery session is available for an account inventory.</value></data>
   <data name="Accounts.Summary.Count.Zero" xml:space="preserve"><value>No accounts recorded.</value></data>
   <data name="Accounts.Summary.Count.One" xml:space="preserve"><value>{0} account recorded.</value></data>
   <data name="Accounts.Summary.Count.Other" xml:space="preserve"><value>{0} accounts recorded.</value></data>
-  <data name="Accounts.Plan.Issues.Zero" xml:space="preserve"><value>No unresolved dependency issues.</value></data>
-  <data name="Accounts.Plan.Issues.One" xml:space="preserve"><value>{0} unresolved dependency issue.</value></data>
-  <data name="Accounts.Plan.Issues.Other" xml:space="preserve"><value>{0} unresolved dependency issues.</value></data>
-  <data name="Accounts.Status.Blocked.Title" xml:space="preserve"><value>Dependency review required</value></data>
-  <data name="Accounts.Status.Blocked.Message" xml:space="preserve"><value>Missing dependencies, cycles, or justified overrides remain visible until reviewed.</value></data>
-  <data name="Accounts.Role.EmailMailbox" xml:space="preserve"><value>Email mailbox</value></data>
-  <data name="Accounts.Role.PasswordManager" xml:space="preserve"><value>Password manager</value></data>
-  <data name="Accounts.Role.IdentityProvider" xml:space="preserve"><value>Identity provider</value></data>
-  <data name="Accounts.Role.RecoveryEmail" xml:space="preserve"><value>Recovery email</value></data>
-  <data name="Accounts.Role.TelephoneRecovery" xml:space="preserve"><value>Telephone recovery channel</value></data>
-  <data name="Accounts.Role.OrganizationManagedSignIn" xml:space="preserve"><value>Organization-managed sign-in</value></data>
-  <data name="Accounts.Role.NoneConfirmed" xml:space="preserve"><value>No confirmed role</value></data>
-  <data name="Accounts.Plan.Status.ReadyNow" xml:space="preserve"><value>Ready now</value></data>
-  <data name="Accounts.Plan.Status.PlannedLater" xml:space="preserve"><value>Planned after dependencies</value></data>
-  <data name="Accounts.Plan.Status.BlockedMissingDependency" xml:space="preserve"><value>Blocked by missing dependency</value></data>
-  <data name="Accounts.Plan.Status.BlockedCycle" xml:space="preserve"><value>Blocked by dependency cycle</value></data>
-  <data name="Accounts.Plan.Reason.RecoveryChannelFirst" xml:space="preserve"><value>Recovery channel or identity root</value></data>
-  <data name="Accounts.Plan.Reason.CriticalPriority" xml:space="preserve"><value>Critical priority</value></data>
-  <data name="Accounts.Plan.Reason.DependencyRoot" xml:space="preserve"><value>No unresolved predecessor</value></data>
-  <data name="Accounts.Plan.Reason.WaitingForDependency" xml:space="preserve"><value>Waits for another account</value></data>
-  <data name="Accounts.Plan.Reason.MissingDependency" xml:space="preserve"><value>References an account that is not in the inventory</value></data>
-  <data name="Accounts.Plan.Reason.DependencyCycle" xml:space="preserve"><value>Part of a dependency cycle</value></data>
-  <data name="Accounts.Plan.Reason.UserOverridePresent" xml:space="preserve"><value>User override recorded; underlying risk remains</value></data>
-  <data name="Accounts.Plan.Item" xml:space="preserve"><value>{0}. {1} — {2}. Reason: {3}</value></data>
-  <data name="Accounts.Dependency.Item" xml:space="preserve"><value>{0} — {1} {2}</value></data>
-  <data name="Accounts.Dependency.Missing" xml:space="preserve"><value>Missing account</value></data>
-  <data name="Accounts.Dependency.OverrideMarker" xml:space="preserve"><value>(override; risk remains)</value></data>
+  <data name="Accounts.Plan.Reason.EmailCategory" xml:space="preserve"><value>Email account first</value></data>
+  <data name="Accounts.Plan.Reason.CriticalCategory" xml:space="preserve"><value>Critical account</value></data>
+  <data name="Accounts.Plan.Reason.UnknownCategory" xml:space="preserve"><value>Category still unknown</value></data>
+  <data name="Accounts.Plan.Reason.NonCriticalCategory" xml:space="preserve"><value>Not-critical account</value></data>
   <data name="Accounts.Action.New" xml:space="preserve"><value>New account</value></data>
-  <data name="Accounts.Search.Placeholder" xml:space="preserve"><value>Search provider, account, login, or URL</value></data>
-  <data name="Accounts.List.Title" xml:space="preserve"><value>Account inventory</value></data>
-  <data name="Accounts.Editor.Title" xml:space="preserve"><value>Account details</value></data>
+  <data name="Accounts.List.Title" xml:space="preserve"><value>Accounts</value></data>
   <data name="Accounts.Field.Provider" xml:space="preserve"><value>Provider or service</value></data>
-  <data name="Accounts.Field.Priority" xml:space="preserve"><value>Priority</value></data>
   <data name="Accounts.Field.Name" xml:space="preserve"><value>Account name</value></data>
   <data name="Accounts.Field.Login" xml:space="preserve"><value>Login identifier or email</value></data>
   <data name="Accounts.Field.Url" xml:space="preserve"><value>Account URL</value></data>
   <data name="Accounts.Action.Save" xml:space="preserve"><value>Save account</value></data>
   <data name="Accounts.Action.Delete" xml:space="preserve"><value>Remove account</value></data>
-  <data name="Accounts.Roles.Title" xml:space="preserve"><value>Identity and recovery roles</value></data>
-  <data name="Accounts.Roles.Help" xml:space="preserve"><value>Suggestions never become canonical automatically. Accept, reject, add, or remove each role explicitly.</value></data>
-  <data name="Accounts.Roles.Accept" xml:space="preserve"><value>Accept suggestion</value></data>
-  <data name="Accounts.Roles.Reject" xml:space="preserve"><value>Reject suggestion</value></data>
-  <data name="Accounts.Roles.Remove" xml:space="preserve"><value>Remove confirmed role</value></data>
-  <data name="Accounts.Roles.Add" xml:space="preserve"><value>Add role</value></data>
-  <data name="Accounts.Dependency.Title" xml:space="preserve"><value>Recovery dependencies</value></data>
-  <data name="Accounts.Dependency.Help" xml:space="preserve"><value>Record which account or channel must be secured first. A cycle requires a written override reason and remains an unresolved risk.</value></data>
-  <data name="Accounts.Dependency.OverridePlaceholder" xml:space="preserve"><value>Override reason, required only when this link creates a cycle</value></data>
-  <data name="Accounts.Dependency.Add" xml:space="preserve"><value>Add dependency</value></data>
-  <data name="Accounts.Dependency.Remove" xml:space="preserve"><value>Remove selected dependency</value></data>
-  <data name="Accounts.Plan.Title" xml:space="preserve"><value>Recommended recovery order</value></data>
-  <data name="Accounts.Plan.Help" xml:space="preserve"><value>The order is deterministic and uses confirmed dependencies, priority, confirmed recovery roles, and incident indicators. It is advisory and is recalculated after each change.</value></data>
+  <data name="Accounts.Triage.Title" xml:space="preserve"><value>Which accounts matter most?</value></data>
+  <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Review remaining: {0} of {1}</value></data>
+  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Reviewing more accounts improves the order, but you can deliberately continue from the assistant. Suggestions are local and never replace your explicit choice.</value></data>
+  <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>An email account is confirmed. You can continue recovery now or review the remaining accounts.</value></data>
+  <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>All accounts were reviewed without an email account. Continue if this is intentional.</value></data>
+  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Confirm an email account first when you have one. If you genuinely have none, you may deliberately continue from the assistant.</value></data>
+  <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Your choice</value></data>
+  <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Local suggestion — not confirmed</value></data>
+  <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Category review recommended</value></data>
+  <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Review the suggested categories, especially an email account, to improve the recovery order.</value></data>
+  <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Recognizable account</value></data>
+  <data name="Accounts.Triage.AccountHelp" xml:space="preserve"><value>Keep only enough information to recognize the account. Never enter a password, recovery code, MFA secret, or reset link.</value></data>
+  <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Choose one category</value></data>
+  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Email accounts come first, then critical, unknown, and not-critical accounts. This choice never decides how a provider recovery works.</value></data>
+  <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Save and review next</value></data>
   <data name="Accounts.Delete.Action" xml:space="preserve"><value>Remove this account from the recovery session</value></data>
-  <data name="Accounts.Delete.Consequence" xml:space="preserve"><value>{0} other account(s) currently reference this account. Their dependency will remain visible as missing after removal.</value></data>
+  <data name="Accounts.Triage.DeleteConsequence" xml:space="preserve"><value>The account and its category choice will be removed from this recovery session.</value></data>
   <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Remove account</value></data>
   <data name="Accounts.Operation.Saved" xml:space="preserve"><value>The encrypted account inventory was updated.</value></data>
   <data name="Accounts.Error.Locked" xml:space="preserve"><value>Unlock the vault before changing the account inventory.</value></data>
   <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Review the account fields. A provider and an account name or login are required, and URLs must use HTTP or HTTPS.</value></data>
-  <data name="Accounts.Error.NotFound" xml:space="preserve"><value>The selected account or dependency no longer exists.</value></data>
+  <data name="Accounts.Error.NotFound" xml:space="preserve"><value>The selected account no longer exists.</value></data>
   <data name="Accounts.Error.Conflict" xml:space="preserve"><value>The requested change conflicts with the current inventory.</value></data>
-  <data name="Accounts.Error.RequiresConfirmation" xml:space="preserve"><value>Resolve the duplicate or dependency impact explicitly before continuing.</value></data>
-  <data name="Accounts.Error.RequiresOverrideReason" xml:space="preserve"><value>This dependency creates a cycle. Enter a specific override reason or change the dependency.</value></data>
-  <data name="Accounts.Error.Corrupted" xml:space="preserve"><value>The encrypted inventory is unreadable and was not overwritten.</value></data>
+  <data name="Accounts.Error.RequiresConfirmation" xml:space="preserve"><value>Choose how duplicate accounts should be handled before continuing.</value></data>
+  <data name="Accounts.Error.Corrupted" xml:space="preserve"><value>The encrypted inventory is incompatible or unreadable and was not overwritten.</value></data>
   <data name="Accounts.Error.IoFailure" xml:space="preserve"><value>The inventory could not be saved. Do not assume the change was persisted.</value></data>
   <data name="Confirmation.Risk.Destructive" xml:space="preserve"><value>Destructive change</value></data>
   <data name="Import.Resolution.Label" xml:space="preserve"><value>Duplicate resolution</value></data>
@@ -103,42 +71,4 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>No new accounts were imported because all reviewed accounts already exist in the inventory.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
-  <data name="Accounts.Guided.Mode.Help" xml:space="preserve"><value>Review your real accounts in plain language. Technical fields and exceptional risk overrides remain available when you need them.</value></data>
-  <data name="Accounts.Guided.Action.Advanced" xml:space="preserve"><value>Edit advanced account details</value></data>
-  <data name="Accounts.Guided.Action.Back" xml:space="preserve"><value>Back to guided review</value></data>
-  <data name="Accounts.Guided.Inventory.Title" xml:space="preserve"><value>1. Check which accounts belong here</value></data>
-  <data name="Accounts.Guided.Inventory.Help" xml:space="preserve"><value>Check the imported list and add anything missing. Possible duplicates and unsafe recovery paths are called out below; no account is merged automatically.</value></data>
-  <data name="Accounts.Guided.Action.AddMissing" xml:space="preserve"><value>Add missing account</value></data>
-  <data name="Accounts.Guided.Details.Title" xml:space="preserve"><value>Account you recognize</value></data>
-  <data name="Accounts.Guided.Details.Help" xml:space="preserve"><value>Record only enough information to recognize the account. Never enter a password, recovery code, MFA secret, or reset link.</value></data>
-  <data name="Accounts.Guided.Roles.Title" xml:space="preserve"><value>2. How does this account help you recover?</value></data>
-  <data name="Accounts.Guided.Roles.Help" xml:space="preserve"><value>Answer for the selected account. Your answers determine whether it can support recovery of other accounts.</value></data>
-  <data name="Accounts.Guided.Roles.SuggestionQuestion" xml:space="preserve"><value>Is “{0}” really one of the recovery functions of {1}?</value></data>
-  <data name="Accounts.Guided.Roles.AddQuestion" xml:space="preserve"><value>Does {0} also act as “{1}”?</value></data>
-  <data name="Accounts.Guided.Roles.NoSuggestions" xml:space="preserve"><value>There are no unreviewed suggestions for this account.</value></data>
-  <data name="Accounts.Guided.Roles.AllReviewed" xml:space="preserve"><value>All recovery functions have been reviewed for this account.</value></data>
-  <data name="Accounts.Guided.Roles.SuggestionsAdvisory" xml:space="preserve"><value>This is only a suggestion. It does not become authoritative until you answer Yes.</value></data>
-  <data name="Accounts.Guided.Roles.EmailWarning" xml:space="preserve"><value>An email-like login is not proof that the account is an email mailbox or recovery address.</value></data>
-  <data name="Accounts.Guided.Roles.ConfirmAdditional" xml:space="preserve"><value>Yes, this applies</value></data>
-  <data name="Accounts.Guided.Answer.Yes" xml:space="preserve"><value>Yes</value></data>
-  <data name="Accounts.Guided.Answer.No" xml:space="preserve"><value>No</value></data>
-  <data name="Accounts.Guided.Dependency.Title" xml:space="preserve"><value>3. What must work first?</value></data>
-  <data name="Accounts.Guided.Dependency.Help" xml:space="preserve"><value>Choose another account only when it is genuinely needed to recover the selected account. The direction matters.</value></data>
-  <data name="Accounts.Guided.Dependency.Question" xml:space="preserve"><value>Can {0} be recovered using {1} because {2}?</value></data>
-  <data name="Accounts.Guided.Dependency.NoTarget" xml:space="preserve"><value>Add another account before recording a recovery connection.</value></data>
-  <data name="Accounts.Guided.Dependency.Kind.PasswordReset" xml:space="preserve"><value>it receives the password-reset message</value></data>
-  <data name="Accounts.Guided.Dependency.Kind.Mfa" xml:space="preserve"><value>it receives or provides the second-factor code</value></data>
-  <data name="Accounts.Guided.Dependency.Kind.IdentityProvider" xml:space="preserve"><value>you sign in through it</value></data>
-  <data name="Accounts.Guided.Dependency.Kind.RecoveryContact" xml:space="preserve"><value>it is the recovery contact</value></data>
-  <data name="Accounts.Guided.Dependency.Kind.PasswordManager" xml:space="preserve"><value>it stores the login needed for recovery</value></data>
-  <data name="Accounts.Guided.Dependency.Kind.OrganizationManagedSignIn" xml:space="preserve"><value>your organization controls the sign-in through it</value></data>
-  <data name="Accounts.Guided.Dependency.Add" xml:space="preserve"><value>Yes, add this recovery connection</value></data>
-  <data name="Accounts.Guided.Dependency.AdvancedHint" xml:space="preserve"><value>If the connection creates a circle, change it. Use advanced account details only when no alternative exists and you need to document the unresolved risk explicitly.</value></data>
-  <data name="Accounts.Guided.Issue.PossibleDuplicate" xml:space="preserve"><value>These entries may describe the same account: {0}. Compare them before continuing; they are not merged automatically.</value></data>
-  <data name="Accounts.Guided.Issue.MissingDependency" xml:space="preserve"><value>{0} refers to a recovery account that is no longer in the list. Add the missing account again or remove the broken connection in advanced account details.</value></data>
-  <data name="Accounts.Guided.Issue.DependencyCycle" xml:space="preserve"><value>{0} is part of a circular recovery path. Change one recovery connection before continuing.</value></data>
-  <data name="Accounts.Guided.Issue.DependencyOverride" xml:space="preserve"><value>{0} contains a documented exception. The circular recovery risk remains unresolved and visible.</value></data>
-  <data name="Accounts.Guided.Ready.Title" xml:space="preserve"><value>Return to the recovery assistant</value></data>
-  <data name="Accounts.Guided.Ready.Help" xml:space="preserve"><value>After every real account and suggested role has been reviewed, return to the assistant and choose Continue. The assistant uses the authoritative account and role checks; this page does not bypass them.</value></data>
-  <data name="Accounts.Advanced.Title" xml:space="preserve"><value>Advanced account details</value></data>
 </root>

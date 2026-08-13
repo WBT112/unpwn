@@ -16,7 +16,7 @@
   <data name="Completion.Confirmed.Message" xml:space="preserve"><value>Der abschließende Wiederherstellungsstatus und der geheimnisfreie Bericht wurden verschlüsselt in der Sitzung gespeichert.</value></data>
   <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Wiederherstellungssitzung beendet</value></data>
   <data name="Completion.Review.Button" xml:space="preserve"><value>Abschlussprüfung ausführen</value></data>
-  <data name="Completion.Section.Description" xml:space="preserve"><value>Die Prüfung lädt den gespeicherten Konten-, Aktions-, Abhängigkeits- und Zugangsdatenstatus neu. Die Prüfung selbst verändert die Sitzung nicht.</value></data>
+  <data name="Completion.Section.Description" xml:space="preserve"><value>Die Prüfung lädt den gespeicherten Konten-, Aktions-, Risiko- und Zugangsdatenstatus neu. Die Prüfung selbst verändert die Sitzung nicht.</value></data>
   <data name="Completion.Section.Title" xml:space="preserve"><value>Abschlussprüfung</value></data>
   <data name="Completion.UnlockHint" xml:space="preserve"><value>Entsperre einen Tresor, bevor du den Sitzungsabschluss prüfst.</value></data>
   <data name="Completion.AcceptRisks" xml:space="preserve"><value>Ich akzeptiere ausdrücklich, dass offene Arbeiten und Risiken verbleiben.</value></data>
@@ -55,7 +55,6 @@
   <data name="Completion.Issue.CredentialNotExported" xml:space="preserve"><value>Erzeugte Zugangsdaten nicht exportiert</value></data>
   <data name="Completion.Issue.CredentialRetainedInVault" xml:space="preserve"><value>Erzeugte Zugangsdaten im Tresor aufbewahrt</value></data>
   <data name="Completion.Issue.CriticalAccountNotFullyReviewed" xml:space="preserve"><value>Kritisches Konto nicht vollständig geprüft</value></data>
-  <data name="Completion.Issue.DependencyIssue" xml:space="preserve"><value>Unbestätigte oder ungeklärte Kontoabhängigkeit</value></data>
   <data name="Completion.Issue.Detail" xml:space="preserve"><value>{0}: {1} Befund(e)</value></data>
   <data name="Completion.Issue.LostAccountAccess" xml:space="preserve"><value>Kontozugriff bleibt verloren</value></data>
   <data name="Completion.Issue.Open" xml:space="preserve"><value>Betroffenen Punkt öffnen</value></data>
@@ -65,7 +64,6 @@
   <data name="Completion.Issue.RequiredActionFailed" xml:space="preserve"><value>Erforderliche Aktion fehlgeschlagen</value></data>
   <data name="Completion.Issue.RequiredActionIncomplete" xml:space="preserve"><value>Erforderliche Aktion noch offen</value></data>
   <data name="Completion.Issue.SessionLevel" xml:space="preserve"><value>Wiederherstellungssitzung</value></data>
-  <data name="Completion.Issue.UnconfirmedRoleInference" xml:space="preserve"><value>Vorgeschlagene Kontorolle nicht bestätigt oder abgelehnt</value></data>
   <data name="Completion.Issue.UnresolvedRisk" xml:space="preserve"><value>Ungeklärtes Risiko verbleibt</value></data>
   <data name="Completion.Issues.None" xml:space="preserve"><value>Im aktuell gespeicherten Zustand sind keine Befunde für die Abschlussprüfung abgebildet.</value></data>
   <data name="Completion.Issues.Title" xml:space="preserve"><value>Offene Arbeiten und Risiken</value></data>
@@ -84,7 +82,7 @@
   <data name="Completion.Severity.UnresolvedRisk" xml:space="preserve"><value>Ungeklärtes Risiko</value></data>
   <data name="Completion.Severity.Warning" xml:space="preserve"><value>Warnung</value></data>
   <data name="Completion.Summary.Accounts" xml:space="preserve"><value>Vollständig geprüfte Konten: {0} von {1}</value></data>
-  <data name="Completion.Summary.Actions" xml:space="preserve"><value>Erforderliche Aktionen – abgeschlossen: {0}; offen: {1}; in Bearbeitung: {2}; wartet auf Benutzer: {3}; nicht anwendbar: {4}; blockiert: {5}; fehlgeschlagen: {6}; Risiko akzeptiert: {7}; Konten warten auf Abhängigkeiten: {8}</value></data>
+  <data name="Completion.Summary.Actions" xml:space="preserve"><value>Erforderliche Aktionen – abgeschlossen: {0}; offen: {1}; in Bearbeitung: {2}; wartet auf Benutzer: {3}; nicht anwendbar: {4}; blockiert: {5}; fehlgeschlagen: {6}; Risiko akzeptiert: {7}</value></data>
   <data name="Completion.Summary.Credentials" xml:space="preserve"><value>Zugangsdaten – nicht exportiert: {0}; Passwortmanager-Import unbestätigt: {1}; aufbewahrt: {2}; ausdrücklich gelöscht: {3}; Klartextbereinigung offen: {4}</value></data>
   <data name="Completion.Summary.Critical" xml:space="preserve"><value>Bereite kritische Konten: {0} von {1}</value></data>
   <data name="Completion.Summary.Title" xml:space="preserve"><value>Aktuell gespeicherte Zusammenfassung</value></data>
@@ -156,9 +154,9 @@
   <data name="Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Language.German" xml:space="preserve"><value>Deutsch</value></data>
   <data name="Language.Pseudo" xml:space="preserve"><value>Pseudo</value></data>
-  <data name="Screen.Accounts.Description" xml:space="preserve"><value>Prüfe importierte Konten, Prioritäten und Wiederherstellungsabhängigkeiten.</value></data>
+  <data name="Screen.Accounts.Description" xml:space="preserve"><value>Wähle für jedes importierte Konto eine einfache Recovery-Kategorie.</value></data>
   <data name="Screen.Accounts.StatusMessage" xml:space="preserve"><value>Bei gesperrtem Tresor werden keine Kontendaten geladen.</value></data>
-  <data name="Screen.Accounts.StatusTitle" xml:space="preserve"><value>Platzhalter für den Kontenbestand</value></data>
+  <data name="Screen.Accounts.StatusTitle" xml:space="preserve"><value>Kontokategorien lokal gespeichert</value></data>
   <data name="Screen.Accounts.Title" xml:space="preserve"><value>Konten</value></data>
   <data name="Screen.Completion.Description" xml:space="preserve"><value>Prüfe offene Arbeiten, ungeklärte Risiken und verbleibende Zugangsdatenexporte.</value></data>
   <data name="Screen.Completion.StatusMessage" xml:space="preserve"><value>Eine Sitzung mit ungeklärten Risiken kann nur nach ausdrücklicher Bestätigung abgeschlossen werden.</value></data>
@@ -180,7 +178,7 @@
   <data name="Screen.Vault.StatusMessage" xml:space="preserve"><value>unpwn kann Schadsoftware weder erkennen noch entfernen. Beginne die Wiederherstellung erst auf einem Gerät, dem du vertraust.</value></data>
   <data name="Screen.Vault.StatusTitle" xml:space="preserve"><value>Vertrauenswürdiges Gerät verwenden</value></data>
   <data name="Screen.Vault.Title" xml:space="preserve"><value>Wiederherstellungsbereich öffnen</value></data>
-  <data name="Screen.Workflow.Description" xml:space="preserve"><value>Bearbeite erforderliche Maßnahmen mit Abhängigkeiten und sichtbaren Automatisierungsgrenzen.</value></data>
+  <data name="Screen.Workflow.Description" xml:space="preserve"><value>Bearbeite erforderliche Maßnahmen mit sichtbaren Voraussetzungen und Automatisierungsgrenzen.</value></data>
   <data name="Screen.Workflow.StatusMessage" xml:space="preserve"><value>Wähle in einer entsperrten Wiederherstellungssitzung ein Konto aus.</value></data>
   <data name="Screen.Workflow.StatusTitle" xml:space="preserve"><value>Ablauf nicht verfügbar</value></data>
   <data name="Screen.Workflow.Title" xml:space="preserve"><value>Wiederherstellungsablauf</value></data>
@@ -227,9 +225,9 @@
   <data name="Shell.Assistant.Target" xml:space="preserve"><value>Empfohlenes Konto: {0}</value></data>
   <data name="Shell.Assistant.TargetWithAction" xml:space="preserve"><value>Empfohlenes Konto: {0} — aktuelle Aktion: {1}</value></data>
   <data name="Shell.Assistant.Why.AccountInventory" xml:space="preserve"><value>Eine vollständige Kontenliste ist nötig, bevor unpwn eine verlässliche Wiederherstellungsreihenfolge berechnen kann.</value></data>
-  <data name="Shell.Assistant.Why.IdentityReview" xml:space="preserve"><value>Bestätigte Wiederherstellungsrollen und Beziehungen bestimmen, welche Konten zuerst bearbeitet werden müssen.</value></data>
-  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>Der Wiederherstellungsplan ordnet Voraussetzungen und kritische Konten vor abhängiger Arbeit ein.</value></data>
-  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>Dieses Konto ist im gespeicherten, abhängigkeitsbasierten Plan derzeit zulässig und empfohlen.</value></data>
+  <data name="Shell.Assistant.Why.AccountTriage" xml:space="preserve"><value>Einfache Kontokategorien verbessern die Recovery-Reihenfolge, ohne dass du Kontenbeziehungen modellieren musst.</value></data>
+  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>Der Wiederherstellungsplan erklärt, welches Konto als Nächstes bearbeitet werden sollte.</value></data>
+  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>Dieses Konto wird aktuell vom gespeicherten Wiederherstellungsplan empfohlen.</value></data>
   <data name="Shell.Assistant.Why.CredentialExport" xml:space="preserve"><value>Erzeugte Zugangsdaten benötigen eine ausdrückliche Übergabe an einen Passwortmanager und eine Bereinigungsprüfung.</value></data>
   <data name="Shell.Assistant.Why.Completion" xml:space="preserve"><value>Die Abschlussprüfung hält unvollständige Arbeit und ungeklärte Risiken sichtbar, statt vollständige Sicherheit zu behaupten.</value></data>
   <data name="Shell.Assistant.Why.Paused" xml:space="preserve"><value>Beim Pausieren bleibt der verschlüsselte Wiederherstellungsstand erhalten; weitere Änderungen erfordern ein ausdrückliches Fortsetzen.</value></data>
@@ -239,11 +237,12 @@
   <data name="Shell.Guided.Continue" xml:space="preserve"><value>Weiter</value></data>
   <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Öffne diesen Schritt, um mit der Wiederherstellung fortzufahren.</value></data>
   <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Importiere mindestens ein Konto aus einer CSV-Datei, bevor du fortfährst. Im nächsten Schritt kannst du die Konten prüfen und korrigieren.</value></data>
-  <data name="Shell.Guided.RoleConfirmationRequired" xml:space="preserve"><value>Bestätige oder verwerfe alle vorgeschlagenen Kontorollen, bevor du fortfährst.</value></data>
   <data name="Shell.Guided.Paused" xml:space="preserve"><value>Setze die Wiederherstellungssitzung fort, bevor du weitergehst.</value></data>
   <data name="Shell.Guided.Terminal" xml:space="preserve"><value>Diese Wiederherstellungssitzung ist beendet und bleibt als schreibgeschützter Bericht verfügbar.</value></data>
-  <data name="Shell.Guided.NextIdentityReview" xml:space="preserve"><value>Bestätige als Nächstes Kontorollen und Wiederherstellungsbeziehungen.</value></data>
-  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Gehe zum abhängigkeitsbasierten Wiederherstellungsplan weiter.</value></data>
+  <data name="Shell.Guided.NextAccountTriage" xml:space="preserve"><value>Prüfe als Nächstes die Kontokategorien. Nach einem bestätigten E-Mail-Konto kannst du früh fortfahren – oder bewusst ohne E-Mail-Konto.</value></data>
+  <data name="Shell.Guided.RemainingCategoryReviewOptional" xml:space="preserve"><value>Ein E-Mail-Konto ist bestätigt. Setze die Recovery jetzt fort oder verbessere die Reihenfolge, indem du die übrigen Konten prüfst.</value></data>
+  <data name="Shell.Guided.ContinueWithoutEmailCategory" xml:space="preserve"><value>Kein E-Mail-Konto ist bestätigt. Prüfe nach Möglichkeit zuerst die Kategorien; wähle Fortfahren nur, wenn du bewusst ohne E-Mail-Konto fortfahren möchtest.</value></data>
+  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Gehe zum Wiederherstellungsplan weiter.</value></data>
   <data name="Shell.Guided.NextAccountRecovery" xml:space="preserve"><value>Bearbeite das aktuell empfohlene Konto und seine erforderlichen Maßnahmen.</value></data>
   <data name="Shell.Guided.NextCredentialExport" xml:space="preserve"><value>Erledige Export und Bereinigung erzeugter Zugangsdaten vor dem Abschluss.</value></data>
   <data name="Shell.Guided.NextCompletion" xml:space="preserve"><value>Starte die Abschlussprüfung; offene Arbeit und Risiken bleiben sichtbar.</value></data>

@@ -167,9 +167,10 @@ public sealed class CredentialExportScreenViewModelTests
             "Example account",
             "person@example.invalid",
             "https://example.invalid/account",
-            AccountInventoryPriority.Normal,
-            [],
-            [],
+            AccountRecoveryCategory.Unknown,
+            RepositoryAccountClassificationCatalog.CurrentVersion,
+            ConfirmedCategory: null,
+            CategoryConfirmedRevision: null,
             StartedAt));
         var shell = new TestShellContext();
         clipboard ??= new TestClipboard();
@@ -377,20 +378,12 @@ public sealed class CredentialExportScreenViewModelTests
             AccountInventoryUpsertRequest request, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
-        public Task<AccountInventoryOperationResult> DecideRoleAsync(
-            Guid accountId, AccountInventoryRole role, AccountRoleDecision decision,
-            CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<AccountInventoryOperationResult> AddDependencyAsync(
-            AccountDependencyRequest request, CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-            Guid accountId, Guid dependsOnAccountId, AccountDependencyKind kind,
+        public Task<AccountInventoryOperationResult> CategorizeAsync(
+            Guid accountId, AccountRecoveryCategory category,
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<AccountInventoryOperationResult> RemoveAccountAsync(
-            Guid accountId, bool dependencyImpactAcknowledged, CancellationToken cancellationToken) =>
+            Guid accountId, CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         public Task<AccountInventoryOperationResult> ImportAsync(

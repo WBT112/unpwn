@@ -52,13 +52,13 @@ public static class RecoveryWizardStepCatalog
             requiresUnlockedVault: true,
             mayCollectSensitiveData: true,
             RecoveryWizardStepId.AccountInventory,
-            [RecoveryWizardStepId.IdentityReview],
+            [RecoveryWizardStepId.AccountTriage],
             [RecoveryWizardStepId.IncidentIntake]),
         Contract(
-            RecoveryWizardStepId.IdentityReview,
+            RecoveryWizardStepId.AccountTriage,
             requiresUnlockedVault: true,
             mayCollectSensitiveData: true,
-            RecoveryWizardStepId.IdentityReview,
+            RecoveryWizardStepId.AccountTriage,
             [RecoveryWizardStepId.RecoveryPlan],
             [RecoveryWizardStepId.AccountInventory]),
         Contract(
@@ -71,7 +71,7 @@ public static class RecoveryWizardStepCatalog
                 RecoveryWizardStepId.CredentialExport,
                 RecoveryWizardStepId.CompletionPreflight,
             ],
-            [RecoveryWizardStepId.IdentityReview, RecoveryWizardStepId.AccountRecovery]),
+            [RecoveryWizardStepId.AccountTriage, RecoveryWizardStepId.AccountRecovery]),
         Contract(
             RecoveryWizardStepId.AccountRecovery,
             requiresUnlockedVault: true,

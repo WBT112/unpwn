@@ -25,7 +25,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.True(viewModel.HasAccount);
         Assert.True(viewModel.HasWorkflow);
         Assert.Contains("GitHub", viewModel.ProviderName, StringComparison.Ordinal);
-        Assert.Contains("Identity", viewModel.RolesText, StringComparison.Ordinal);
+        Assert.Contains("choice", viewModel.CategoryDecisionText, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(RecoveryPath.AuthenticatedChange, viewModel.SelectedPath?.Path);
 
         await viewModel.BeginCommand.ExecuteAsync();
@@ -36,7 +36,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         Assert.Equal(actionId, viewModel.SelectedAction.DefinitionId);
         Assert.Equal(path, viewModel.SelectedPath.Path);
-        Assert.Contains("Identitäts", viewModel.RolesText, StringComparison.Ordinal);
+        Assert.Contains("Auswahl", viewModel.CategoryDecisionText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -636,9 +636,10 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 $"{providerId} recovery account",
                 "synthetic-user",
                 accountUrl,
-                AccountInventoryPriority.Critical,
-                [new AccountRoleState(AccountInventoryRole.IdentityProvider, AccountRoleDecision.Confirmed)],
-                [],
+                AccountRecoveryCategory.Critical,
+                RepositoryAccountClassificationCatalog.CurrentVersion,
+                AccountRecoveryCategory.Critical,
+                CategoryConfirmedRevision: 1,
                 StartedAt);
             var inventory = new AccountInventoryState(
                 Guid.NewGuid(),
@@ -714,9 +715,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 AccessLost: false,
                 CredentialsAwaitingExport: 0,
                 CredentialsAwaitingDeletion: 0,
-                RecommendedActionId: null,
-                DependencyDepth: 0,
-                WaitingForAccountIds: []);
+                RecommendedActionId: null);
     }
 
     private sealed class TestBrowserSessionLifecycle : IRecoveryBrowserSessionLifecycle
@@ -1058,19 +1057,15 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         public AccountInventoryState? CurrentInventory { get; private set; } = inventory;
 
-        public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan(IncidentIndicator.None);
+        public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan();
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<AccountInventoryOperationResult> UpsertAsync(AccountInventoryUpsertRequest request, CancellationToken cancellationToken) => Unsupported();
 
-        public Task<AccountInventoryOperationResult> DecideRoleAsync(Guid accountId, AccountInventoryRole role, AccountRoleDecision decision, CancellationToken cancellationToken) => Unsupported();
+        public Task<AccountInventoryOperationResult> CategorizeAsync(Guid accountId, AccountRecoveryCategory category, CancellationToken cancellationToken) => Unsupported();
 
-        public Task<AccountInventoryOperationResult> AddDependencyAsync(AccountDependencyRequest request, CancellationToken cancellationToken) => Unsupported();
-
-        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(Guid accountId, Guid dependsOnAccountId, AccountDependencyKind kind, CancellationToken cancellationToken) => Unsupported();
-
-        public Task<AccountInventoryOperationResult> RemoveAccountAsync(Guid accountId, bool dependencyImpactAcknowledged, CancellationToken cancellationToken) => Unsupported();
+        public Task<AccountInventoryOperationResult> RemoveAccountAsync(Guid accountId, CancellationToken cancellationToken) => Unsupported();
 
         public Task<AccountInventoryOperationResult> ImportAsync(IReadOnlyCollection<Unpwn.Import.Csv.ImportAccountCandidate> candidates, ImportDuplicateResolution? duplicateResolution, CancellationToken cancellationToken) => Unsupported();
 

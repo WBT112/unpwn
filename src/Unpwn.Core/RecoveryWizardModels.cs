@@ -48,7 +48,7 @@ public sealed record RecoveryWizardStepId
 
     public static RecoveryWizardStepId AccountInventory { get; } = new("account-inventory");
 
-    public static RecoveryWizardStepId IdentityReview { get; } = new("identity-review");
+    public static RecoveryWizardStepId AccountTriage { get; } = new("account-triage");
 
     public static RecoveryWizardStepId RecoveryPlan { get; } = new("recovery-plan");
 
@@ -68,7 +68,7 @@ public sealed record RecoveryWizardStepId
         VaultEntry,
         IncidentIntake,
         AccountInventory,
-        IdentityReview,
+        AccountTriage,
         RecoveryPlan,
         AccountRecovery,
         CredentialExport,

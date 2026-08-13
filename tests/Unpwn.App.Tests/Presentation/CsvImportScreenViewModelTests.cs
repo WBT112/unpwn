@@ -143,25 +143,13 @@ public sealed class CsvImportScreenViewModelTests
             AccountInventoryUpsertRequest request,
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public Task<AccountInventoryOperationResult> DecideRoleAsync(
+        public Task<AccountInventoryOperationResult> CategorizeAsync(
             Guid accountId,
-            AccountInventoryRole role,
-            AccountRoleDecision decision,
-            CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<AccountInventoryOperationResult> AddDependencyAsync(
-            AccountDependencyRequest request,
-            CancellationToken cancellationToken) => throw new NotSupportedException();
-
-        public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-            Guid accountId,
-            Guid dependsOnAccountId,
-            AccountDependencyKind kind,
+            AccountRecoveryCategory category,
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<AccountInventoryOperationResult> RemoveAccountAsync(
             Guid accountId,
-            bool dependencyImpactAcknowledged,
             CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public Task<AccountInventoryOperationResult> ImportAsync(

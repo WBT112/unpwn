@@ -8,60 +8,26 @@ namespace Unpwn.App.Tests.Services;
 public sealed class AccountInventoryRemovalTests
 {
     [Fact]
-    public async Task AccountWithDependentsRequiresAcknowledgementAndLeavesMissingDependencyVisible()
+    public async Task RemovingAccountNeedsNoObsoleteDependencyAcknowledgement()
     {
         var time = DateTimeOffset.UnixEpoch;
         var store = new TestEncryptedRecordStore();
         var session = new TestRecoverySessionService();
         using var service = new AccountInventoryService(store, session, () => time);
         await service.InitializeAsync(CancellationToken.None);
-        Assert.True((await service.UpsertAsync(
-            CreateRequest("Recovery mailbox"),
-            CancellationToken.None)).Succeeded);
+        Assert.True((await service.UpsertAsync(CreateRequest("Recovery mailbox"), CancellationToken.None)).Succeeded);
         time = time.AddSeconds(1);
-        Assert.True((await service.UpsertAsync(
-            CreateRequest("Critical account"),
-            CancellationToken.None)).Succeeded);
+        Assert.True((await service.UpsertAsync(CreateRequest("Critical account"), CancellationToken.None)).Succeeded);
         var mailbox = service.CurrentInventory!.Accounts.Single(account =>
             account.ProviderId == "Recovery mailbox");
-        var critical = service.CurrentInventory.Accounts.Single(account =>
-            account.ProviderId == "Critical account");
-        time = time.AddSeconds(1);
-        Assert.True((await service.AddDependencyAsync(
-            new AccountDependencyRequest(
-                critical.Id,
-                mailbox.Id,
-                AccountDependencyKind.PasswordReset,
-                null),
-            CancellationToken.None)).Succeeded);
 
         time = time.AddSeconds(1);
-        var unacknowledged = await service.RemoveAccountAsync(
-            mailbox.Id,
-            dependencyImpactAcknowledged: false,
-            CancellationToken.None);
-        var acknowledged = await service.RemoveAccountAsync(
-            mailbox.Id,
-            dependencyImpactAcknowledged: true,
-            CancellationToken.None);
+        var result = await service.RemoveAccountAsync(mailbox.Id, CancellationToken.None);
 
-        Assert.False(unacknowledged.Succeeded);
-        Assert.Equal(
-            AccountInventoryFailureCode.RequiresConfirmation,
-            unacknowledged.FailureCode);
-        Assert.True(acknowledged.Succeeded);
-        Assert.DoesNotContain(
-            service.CurrentInventory!.Accounts,
-            account => account.Id == mailbox.Id);
-        Assert.Contains(
-            service.CurrentPlan!.Issues,
-            issue => issue.Kind == AccountInventoryIssueKind.MissingDependency &&
-                     issue.AccountId == critical.Id &&
-                     issue.RelatedAccountId == mailbox.Id);
-        Assert.Contains(
-            session.LastSummaries,
-            summary => summary.AccountId == critical.Id &&
-                       summary.BlockedRequiredActions == 1);
+        Assert.True(result.Succeeded);
+        Assert.DoesNotContain(service.CurrentInventory!.Accounts, account => account.Id == mailbox.Id);
+        Assert.Single(service.CurrentInventory.Accounts);
+        Assert.Single(session.LastSummaries);
     }
 
     private static AccountInventoryUpsertRequest CreateRequest(string provider) =>
@@ -70,10 +36,7 @@ public sealed class AccountInventoryRemovalTests
             provider,
             provider,
             $"{provider.Replace(" ", string.Empty, StringComparison.Ordinal).ToLowerInvariant()}@example.invalid",
-            null,
-            provider == "Critical account"
-                ? AccountInventoryPriority.Critical
-                : AccountInventoryPriority.High);
+            null);
 
     private sealed class TestEncryptedRecordStore : IEncryptedVaultRecordStore
     {

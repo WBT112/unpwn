@@ -91,18 +91,16 @@ public sealed class AccessibilityHeadlessTests
     }
 
     [Fact]
-    public async Task AccountReviewExposesGuidedActionsAndAnExplicitAdvancedMode()
+    public async Task AccountReviewExposesSingleCategoryDecisionAndSaveNextAction()
     {
         await Session.Dispatch(() =>
         {
             var view = new AccountsView();
 
-            Assert.NotNull(FindByAutomationId(view, "accounts-guided-list"));
-            Assert.NotNull(FindByAutomationId(view, "accounts-role-confirm"));
-            Assert.NotNull(FindByAutomationId(view, "accounts-role-reject"));
-            Assert.NotNull(FindByAutomationId(view, "accounts-dependency-add"));
-            Assert.NotNull(FindByAutomationId(view, "accounts-show-advanced"));
-            Assert.NotNull(FindByAutomationId(view, "accounts-show-guided"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-triage-list"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-category"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-category-save"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-new"));
         }, CancellationToken.None);
     }
 

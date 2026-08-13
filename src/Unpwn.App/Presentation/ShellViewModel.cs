@@ -1024,7 +1024,7 @@ public sealed class ShellViewModel : ObservableObject
             "vault-entry" => AppRoute.VaultEntry,
             "incident-intake" or "recovery-plan" => AppRoute.Dashboard,
             "account-inventory" => AppRoute.CsvImport,
-            "identity-review" => AppRoute.Accounts,
+            "account-triage" => AppRoute.Accounts,
             "account-recovery" => AppRoute.Workflow,
             "credential-export" => AppRoute.CredentialsExport,
             "completion-preflight" or "final-report" => AppRoute.Completion,
@@ -1035,7 +1035,7 @@ public sealed class ShellViewModel : ObservableObject
     private static string GetWizardStepKey(RecoveryWizardStepId step) => step.Value switch
     {
         "account-inventory" => "Dashboard.WizardStep.AccountInventory",
-        "identity-review" => "Dashboard.WizardStep.IdentityReview",
+        "account-triage" => "Dashboard.WizardStep.AccountTriage",
         "recovery-plan" => "Dashboard.WizardStep.RecoveryPlan",
         "account-recovery" => "Dashboard.WizardStep.AccountRecovery",
         "credential-export" => "Dashboard.WizardStep.CredentialExport",
@@ -1044,29 +1044,35 @@ public sealed class ShellViewModel : ObservableObject
         _ => "Dashboard.WizardStep.Unknown",
     };
 
-    private static string GetGuidanceKey(GuidedRecoveryDecision decision) => decision.BlockCode switch
+    private static string GetGuidanceKey(GuidedRecoveryDecision decision) => decision.AdvisoryCode switch
     {
-        GuidedRecoveryBlockCode.AccountsRequired => "Shell.Guided.AccountsRequired",
-        GuidedRecoveryBlockCode.RoleConfirmationRequired => "Shell.Guided.RoleConfirmationRequired",
-        GuidedRecoveryBlockCode.Paused => "Shell.Guided.Paused",
-        GuidedRecoveryBlockCode.Terminal => "Shell.Guided.Terminal",
-        GuidedRecoveryBlockCode.UnsupportedStep => "Shell.Guided.OpenCurrent",
-        _ => decision.TargetStep?.Value switch
+        GuidedRecoveryAdvisoryCode.RemainingCategoryReviewOptional =>
+            "Shell.Guided.RemainingCategoryReviewOptional",
+        GuidedRecoveryAdvisoryCode.ContinueWithoutEmailCategory =>
+            "Shell.Guided.ContinueWithoutEmailCategory",
+        _ => decision.BlockCode switch
         {
-            "identity-review" => "Shell.Guided.NextIdentityReview",
-            "recovery-plan" => "Shell.Guided.NextRecoveryPlan",
-            "account-recovery" => "Shell.Guided.NextAccountRecovery",
-            "credential-export" => "Shell.Guided.NextCredentialExport",
-            "completion-preflight" => "Shell.Guided.NextCompletion",
-            "final-report" => "Shell.Guided.NextFinalReport",
-            _ => "Shell.Guided.OpenCurrent",
+            GuidedRecoveryBlockCode.AccountsRequired => "Shell.Guided.AccountsRequired",
+            GuidedRecoveryBlockCode.Paused => "Shell.Guided.Paused",
+            GuidedRecoveryBlockCode.Terminal => "Shell.Guided.Terminal",
+            GuidedRecoveryBlockCode.UnsupportedStep => "Shell.Guided.OpenCurrent",
+            _ => decision.TargetStep?.Value switch
+            {
+                "account-triage" => "Shell.Guided.NextAccountTriage",
+                "recovery-plan" => "Shell.Guided.NextRecoveryPlan",
+                "account-recovery" => "Shell.Guided.NextAccountRecovery",
+                "credential-export" => "Shell.Guided.NextCredentialExport",
+                "completion-preflight" => "Shell.Guided.NextCompletion",
+                "final-report" => "Shell.Guided.NextFinalReport",
+                _ => "Shell.Guided.OpenCurrent",
+            },
         },
     };
 
     private static string GetGuidedWhyKey(RecoveryWizardStepId step) => step.Value switch
     {
         "account-inventory" => "Shell.Assistant.Why.AccountInventory",
-        "identity-review" => "Shell.Assistant.Why.IdentityReview",
+        "account-triage" => "Shell.Assistant.Why.AccountTriage",
         "recovery-plan" => "Shell.Assistant.Why.RecoveryPlan",
         "account-recovery" => "Shell.Assistant.Why.AccountRecovery",
         "credential-export" => "Shell.Assistant.Why.CredentialExport",
@@ -1077,7 +1083,6 @@ public sealed class ShellViewModel : ObservableObject
     private static string GetGuidedBlockWhyKey(GuidedRecoveryBlockCode blockCode) => blockCode switch
     {
         GuidedRecoveryBlockCode.AccountsRequired => "Shell.Assistant.Why.AccountInventory",
-        GuidedRecoveryBlockCode.RoleConfirmationRequired => "Shell.Assistant.Why.IdentityReview",
         GuidedRecoveryBlockCode.Paused => "Shell.Assistant.Why.Paused",
         GuidedRecoveryBlockCode.Terminal => "Shell.Assistant.Why.Completion",
         _ => "Shell.Assistant.Why.General",

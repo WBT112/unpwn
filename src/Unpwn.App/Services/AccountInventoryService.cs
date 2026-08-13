@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Unpwn.Core;
 using Unpwn.Import.Csv;
 using Unpwn.Vault.Cryptography;
@@ -15,16 +16,10 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
         "account-state",
         InventoryRecordId,
         1);
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General);
-    private static readonly AccountInventoryRole[] IndividualRoles =
-    [
-        AccountInventoryRole.EmailMailbox,
-        AccountInventoryRole.PasswordManager,
-        AccountInventoryRole.IdentityProvider,
-        AccountInventoryRole.RecoveryEmail,
-        AccountInventoryRole.TelephoneRecovery,
-        AccountInventoryRole.OrganizationManagedSignIn,
-    ];
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    };
 
     private readonly IEncryptedVaultRecordStore _recordStore;
     private readonly IRecoverySessionService _recoverySession;
@@ -85,10 +80,11 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                     request.AccountName,
                     request.LoginIdentifier,
                     request.AccountUrl,
-                    request.Priority,
-                    existing?.Roles ?? [],
-                    existing?.Dependencies ?? [],
-                    _clock()).NormalizeAndInfer(_clock());
+                    existing?.SuggestedCategory ?? AccountRecoveryCategory.Unknown,
+                    existing?.ClassificationCatalogVersion ?? RepositoryAccountClassificationCatalog.CurrentVersion,
+                    existing?.ConfirmedCategory,
+                    existing?.CategoryConfirmedRevision,
+                    _clock()).NormalizeAndClassify(_clock());
                 if (existingIndex >= 0)
                 {
                     accounts[existingIndex] = updated;
@@ -103,13 +99,12 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
             cancellationToken);
     }
 
-    public Task<AccountInventoryOperationResult> DecideRoleAsync(
+    public Task<AccountInventoryOperationResult> CategorizeAsync(
         Guid accountId,
-        AccountInventoryRole role,
-        AccountRoleDecision decision,
+        AccountRecoveryCategory category,
         CancellationToken cancellationToken)
     {
-        if (accountId == Guid.Empty || !IndividualRoles.Contains(role))
+        if (accountId == Guid.Empty || !Enum.IsDefined(category))
         {
             return Task.FromResult(AccountInventoryOperationResult.Failure(
                 AccountInventoryFailureCode.InvalidInput));
@@ -126,122 +121,18 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                 }
 
                 var account = accounts[index];
-                var roles = account.Roles
-                    .Where(candidate => candidate.Role != role)
-                    .Append(new AccountRoleState(role, decision))
-                    .OrderBy(candidate => candidate.Role)
-                    .ToArray();
-                accounts[index] = (account with { Roles = roles }).NormalizeAndInfer(_clock());
-                return inventory.ReplaceAccounts(accounts, _clock());
-            },
-            cancellationToken);
-    }
-
-    public Task<AccountInventoryOperationResult> AddDependencyAsync(
-        AccountDependencyRequest request,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-        if (request.AccountId == Guid.Empty || request.DependsOnAccountId == Guid.Empty ||
-            request.AccountId == request.DependsOnAccountId)
-        {
-            return Task.FromResult(AccountInventoryOperationResult.Failure(
-                AccountInventoryFailureCode.InvalidInput));
-        }
-
-        return MutateAsync(
-            inventory =>
-            {
-                var accounts = inventory.Accounts.ToList();
-                var index = accounts.FindIndex(account => account.Id == request.AccountId);
-                if (index < 0 || accounts.All(account => account.Id != request.DependsOnAccountId))
-                {
-                    throw new AccountInventoryMutationException(AccountInventoryFailureCode.NotFound);
-                }
-
-                var account = accounts[index];
-                if (account.Dependencies.Any(dependency =>
-                        dependency.DependsOnAccountId == request.DependsOnAccountId &&
-                        dependency.Kind == request.Kind))
-                {
-                    throw new AccountInventoryMutationException(AccountInventoryFailureCode.Conflict);
-                }
-
-                var dependency = new AccountInventoryDependency(
-                    request.DependsOnAccountId,
-                    request.Kind,
-                    IsOverride: false,
-                    OverrideReason: null);
                 accounts[index] = account with
                 {
-                    Dependencies = [.. account.Dependencies, dependency],
-                };
-                var proposed = inventory.ReplaceAccounts(accounts, _clock());
-                var createsCycle = proposed.CreatePlan(
-                        _recoverySession.CurrentSession?.Incident.Indicators ?? IncidentIndicator.None)
-                    .Issues.Any(issue =>
-                        issue.Kind == AccountInventoryIssueKind.DependencyCycle &&
-                        issue.AccountId == request.AccountId);
-                if (!createsCycle)
-                {
-                    return proposed;
-                }
-
-                if (string.IsNullOrWhiteSpace(request.OverrideReason))
-                {
-                    throw new AccountInventoryMutationException(
-                        AccountInventoryFailureCode.RequiresOverrideReason);
-                }
-
-                accounts[index] = account with
-                {
-                    Dependencies =
-                    [
-                        .. account.Dependencies,
-                        dependency with
-                        {
-                            IsOverride = true,
-                            OverrideReason = request.OverrideReason.Trim(),
-                        },
-                    ],
+                    ConfirmedCategory = category,
+                    CategoryConfirmedRevision = inventory.Revision + 1,
                 };
                 return inventory.ReplaceAccounts(accounts, _clock());
             },
             cancellationToken);
     }
-
-    public Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-        Guid accountId,
-        Guid dependsOnAccountId,
-        AccountDependencyKind kind,
-        CancellationToken cancellationToken) =>
-        MutateAsync(
-            inventory =>
-            {
-                var accounts = inventory.Accounts.ToList();
-                var index = accounts.FindIndex(account => account.Id == accountId);
-                if (index < 0)
-                {
-                    throw new AccountInventoryMutationException(AccountInventoryFailureCode.NotFound);
-                }
-
-                var account = accounts[index];
-                var dependencies = account.Dependencies.Where(dependency =>
-                        dependency.DependsOnAccountId != dependsOnAccountId || dependency.Kind != kind)
-                    .ToArray();
-                if (dependencies.Length == account.Dependencies.Length)
-                {
-                    throw new AccountInventoryMutationException(AccountInventoryFailureCode.NotFound);
-                }
-
-                accounts[index] = account with { Dependencies = dependencies };
-                return inventory.ReplaceAccounts(accounts, _clock());
-            },
-            cancellationToken);
 
     public Task<AccountInventoryOperationResult> RemoveAccountAsync(
         Guid accountId,
-        bool dependencyImpactAcknowledged,
         CancellationToken cancellationToken) =>
         MutateAsync(
             inventory =>
@@ -249,14 +140,6 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                 if (inventory.Accounts.All(account => account.Id != accountId))
                 {
                     throw new AccountInventoryMutationException(AccountInventoryFailureCode.NotFound);
-                }
-
-                var hasDependents = inventory.Accounts.Any(account => account.Dependencies.Any(dependency =>
-                    dependency.DependsOnAccountId == accountId));
-                if (hasDependents && !dependencyImpactAcknowledged)
-                {
-                    throw new AccountInventoryMutationException(
-                        AccountInventoryFailureCode.RequiresConfirmation);
                 }
 
                 return inventory.ReplaceAccounts(
@@ -301,10 +184,11 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                         candidate.AccountName,
                         candidate.LoginIdentifier,
                         candidate.AccountUrl,
-                        AccountInventoryPriority.Normal,
-                        [],
-                        [],
-                        _clock()).NormalizeAndInfer(_clock());
+                        AccountRecoveryCategory.Unknown,
+                        RepositoryAccountClassificationCatalog.CurrentVersion,
+                        ConfirmedCategory: null,
+                        CategoryConfirmedRevision: null,
+                        _clock()).NormalizeAndClassify(_clock());
                     accounts.Add(entry);
                     imported++;
                 }
@@ -614,10 +498,7 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
         RecoveryAccountDashboardEntry left,
         RecoveryAccountDashboardEntry right)
     {
-        var sharedEmptyDependencies = Array.Empty<Guid>();
-        return left.WaitingForAccountIds.SequenceEqual(right.WaitingForAccountIds) &&
-            (left with { WaitingForAccountIds = sharedEmptyDependencies }) ==
-            (right with { WaitingForAccountIds = sharedEmptyDependencies });
+        return left == right;
     }
 
     [SuppressMessage(
@@ -672,30 +553,11 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
 
     private RecoveryAccountDashboardEntry[] BuildDashboardSummaries(AccountInventoryState inventory)
     {
-        var plan = inventory.CreatePlan(
-            _recoverySession.CurrentSession?.Incident.Indicators ?? IncidentIndicator.None);
-        var planByAccount = plan.Items.ToDictionary(item => item.AccountId);
         var existingByAccount = _recoverySession.CurrentSession?.Accounts
             .ToDictionary(account => account.AccountId) ?? [];
         return inventory.Accounts.Select(account =>
         {
-            var planItem = planByAccount[account.Id];
-            var isBlocked = planItem.Status is
-                AccountInventoryPlanStatus.BlockedCycle or
-                AccountInventoryPlanStatus.BlockedMissingDependency;
             existingByAccount.TryGetValue(account.Id, out var existing);
-            var hasExecution = existing?.RequiredActionsTotal > 0;
-            var executionBlocked = hasExecution
-                ? Math.Max(0, existing!.BlockedRequiredActions - existing.InventoryBlockedIssues)
-                : 0;
-            var executionUnresolved = hasExecution
-                ? Math.Max(0, existing!.UnresolvedRisks - existing.InventoryUnresolvedRisks)
-                : 0;
-            var waitingFor = planItem.WaitingForAccountIds
-                .Where(dependencyId =>
-                    !existingByAccount.TryGetValue(dependencyId, out var dependency) ||
-                    !dependency.IsFullyReviewed)
-                .ToArray();
             return new RecoveryAccountDashboardEntry(
                 account.Id,
                 account.ProviderId,
@@ -705,19 +567,13 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                 existing?.RequiredActionsTotal ?? 0,
                 existing?.CompletedRequiredWeight ?? 0,
                 existing?.TotalRequiredWeight ?? 0,
-                BlockedRequiredActions: executionBlocked + (isBlocked ? 1 : 0),
+                existing?.BlockedRequiredActions ?? 0,
                 existing?.FailedRequiredActions ?? 0,
-                UnresolvedRisks: executionUnresolved + (planItem.HasDependencyOverride ? 1 : 0),
+                existing?.UnresolvedRisks ?? 0,
                 existing?.AccessLost ?? false,
                 existing?.CredentialsAwaitingExport ?? 0,
                 existing?.CredentialsAwaitingDeletion ?? 0,
-                existing?.RecommendedActionId,
-                planItem.DependencyDepth,
-                waitingFor)
-            {
-                InventoryBlockedIssues = isBlocked ? 1 : 0,
-                InventoryUnresolvedRisks = planItem.HasDependencyOverride ? 1 : 0,
-            };
+                existing?.RecommendedActionId);
         }).ToArray();
     }
 

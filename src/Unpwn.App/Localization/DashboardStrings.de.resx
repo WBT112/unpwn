@@ -14,7 +14,7 @@
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Name der Sitzung</value></data>
   <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Lokaler Name der Wiederherstellungssitzung</value></data>
   <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Soll unpwn deine Wiederherstellungskanäle priorisieren?</value></data>
-  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Verlorener Zugriff zieht bestätigte Wiederherstellungskonten vor. Mögliche fremde Kontrolle über eine primäre E-Mail-Adresse oder einen Wiederherstellungskanal zeigt zusätzlich einen sofortigen Hinweis. Diese Antworten steuern nur die Reihenfolge und beweisen keine Kompromittierung.</value></data>
+  <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Verlorener Zugriff zieht ausdrücklich als E-Mail kategorisierte Konten vor. Mögliche fremde Kontrolle über eine primäre E-Mail-Adresse oder einen Wiederherstellungskanal zeigt zusätzlich einen sofortigen Hinweis. Diese Antworten steuern nur die Reihenfolge und beweisen keine Kompromittierung.</value></data>
   <data name="Dashboard.Intake.Indicator.LostAccess" xml:space="preserve"><value>Ich kann auf mindestens ein Konto nicht zugreifen</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>Eine primäre E-Mail-Adresse oder ein Wiederherstellungskanal könnte unter fremder Kontrolle stehen</value></data>
   <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Die ausgewählten Eingaben zur Steuerung werden im verschlüsselten Tresor gespeichert. Sie ändern ausschließlich Empfehlungen.</value></data>
@@ -58,9 +58,9 @@
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>Keine Empfehlung verfügbar.</value></data>
   <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Empfohlenes Konto oder Dienst: {0}</value></data>
   <data name="Dashboard.Recommendation.Action" xml:space="preserve"><value>Aktuelle Aktion: {0}</value></data>
-  <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Importiere oder ergänze das Konteninventar, damit Abhängigkeiten und kritische Identitäten geprüft werden können.</value></data>
-  <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Prüfe und sichere die primäre E-Mail-Adresse oder den Wiederherstellungskanal vor abhängigen Konten.</value></data>
-  <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Stelle den Zugriff auf das kritische Konto wieder her, bevor du mit abhängigen Konten fortfährst.</value></data>
+  <data name="Dashboard.Recommendation.ImportAccounts" xml:space="preserve"><value>Importiere oder ergänze Konten, damit unpwn einfache Wiederherstellungskategorien vorschlagen kann.</value></data>
+  <data name="Dashboard.Recommendation.SecureRecoveryChannel" xml:space="preserve"><value>Prüfe und sichere die primäre E-Mail-Adresse oder den Wiederherstellungskanal vor den übrigen Konten.</value></data>
+  <data name="Dashboard.Recommendation.RestoreCriticalAccess" xml:space="preserve"><value>Stelle den Zugriff auf das kritische Konto wieder her, bevor du mit den übrigen Konten fortfährst.</value></data>
   <data name="Dashboard.Recommendation.ResolveCriticalBlocker" xml:space="preserve"><value>Behebe die erfasste Blockade oder den Fehlschlag beim kritischen Konto.</value></data>
   <data name="Dashboard.Recommendation.AddressUnresolvedRisk" xml:space="preserve"><value>Prüfe das ungelöste Risiko und erfasse die nächste sichere Aktion.</value></data>
   <data name="Dashboard.Recommendation.ExportGeneratedCredentials" xml:space="preserve"><value>Exportiere erzeugte Zugangsdaten in einen etablierten Passwortmanager und bestätige die Bereinigung.</value></data>
@@ -108,7 +108,7 @@
   <data name="Dashboard.WizardStep.VaultEntry" xml:space="preserve"><value>Tresoreinstieg</value></data>
   <data name="Dashboard.WizardStep.IncidentIntake" xml:space="preserve"><value>Vorfallaufnahme</value></data>
   <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Konten importieren</value></data>
-  <data name="Dashboard.WizardStep.IdentityReview" xml:space="preserve"><value>Prüfung von Identitäten und Wiederherstellungswegen</value></data>
+  <data name="Dashboard.WizardStep.AccountTriage" xml:space="preserve"><value>Kontokategorien</value></data>
   <data name="Dashboard.WizardStep.RecoveryPlan" xml:space="preserve"><value>Wiederherstellungsplan</value></data>
   <data name="Dashboard.WizardStep.AccountRecovery" xml:space="preserve"><value>Kontowiederherstellung</value></data>
   <data name="Dashboard.WizardStep.CredentialExport" xml:space="preserve"><value>Export von Zugangsdaten</value></data>

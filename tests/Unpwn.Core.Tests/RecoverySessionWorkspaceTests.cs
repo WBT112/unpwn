@@ -322,7 +322,5 @@ public sealed class RecoverySessionWorkspaceTests
             accessLost,
             awaitingExport,
             awaitingDeletion,
-            actionId,
-            DependencyDepth: 0,
-            WaitingForAccountIds: []);
+            actionId);
 }

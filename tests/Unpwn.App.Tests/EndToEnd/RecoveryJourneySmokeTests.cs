@@ -45,24 +45,21 @@ public sealed class RecoveryJourneySmokeTests
 
             var inventoryMove = await journey.Guided.AdvanceAsync(CancellationToken.None);
             Assert.True(inventoryMove.Succeeded);
-            Assert.Equal(RecoveryWizardStepId.IdentityReview, journey.Guided.Current.CurrentStep);
+            Assert.Equal(RecoveryWizardStepId.AccountTriage, journey.Guided.Current.CurrentStep);
 
-            foreach (var role in account.Roles.Where(role => role.Decision == AccountRoleDecision.Suggested))
-            {
-                journey.Tick();
-                Assert.True((await journey.Inventory.DecideRoleAsync(
-                    account.Id,
-                    role.Role,
-                    AccountRoleDecision.Rejected,
-                    CancellationToken.None)).Succeeded);
-            }
+            journey.Tick();
+            Assert.True((await journey.Inventory.CategorizeAsync(
+                account.Id,
+                account.SuggestedCategory,
+                CancellationToken.None)).Succeeded);
+            account = Assert.Single(journey.Inventory.CurrentInventory!.Accounts);
 
             Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
             Assert.Equal(RecoveryWizardStepId.RecoveryPlan, journey.Guided.Current.CurrentStep);
 
             var workflow = RepositoryWorkflowCatalog.Workflows.Single(candidate =>
                 candidate.ProviderId == account.ProviderId);
-            var projection = journey.CreateProjection(account);
+            var projection = RecoveryJourney.CreateProjection(account);
             journey.Tick();
             var createdExecution = await journey.Execution.CreateAsync(
                 new AccountRecoveryExecutionCreateRequest(
@@ -272,7 +269,7 @@ public sealed class RecoveryJourneySmokeTests
                 candidate => candidate.ProviderId == "unsupported.example");
             accountId = account.Id;
             var workflow = RepositoryWorkflowCatalog.CreateGenericManualWorkflow(account.ProviderId);
-            var projection = journey.CreateProjection(account);
+            var projection = RecoveryJourney.CreateProjection(account);
             journey.Tick();
             var execution = AssertSuccess(await journey.Execution.CreateAsync(
                 new AccountRecoveryExecutionCreateRequest(
@@ -525,21 +522,9 @@ public sealed class RecoveryJourneySmokeTests
             await Inventory.InitializeAsync(CancellationToken.None);
         }
 
-        public AccountRecoveryProjectionContext CreateProjection(AccountInventoryEntry account)
+        public static AccountRecoveryProjectionContext CreateProjection(AccountInventoryEntry account)
         {
-            var planItem = Inventory.CurrentPlan!.Items.Single(item => item.AccountId == account.Id);
-            return new AccountRecoveryProjectionContext(
-                account.DashboardCriticality,
-                planItem.DependencyDepth,
-                planItem.WaitingForAccountIds)
-            {
-                InventoryBlockedIssues = planItem.Status is
-                    AccountInventoryPlanStatus.BlockedCycle or
-                    AccountInventoryPlanStatus.BlockedMissingDependency
-                        ? 1
-                        : 0,
-                InventoryUnresolvedRisks = planItem.HasDependencyOverride ? 1 : 0,
-            };
+            return new AccountRecoveryProjectionContext(account.DashboardCriticality);
         }
 
         public Task<AccountRecoveryExecutionResult> ApplyAsync(

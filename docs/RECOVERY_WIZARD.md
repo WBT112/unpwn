@@ -15,7 +15,7 @@ trusted-device-guidance
 vault-entry
 incident-intake
 account-inventory
-identity-review
+account-triage
 recovery-plan
 account-recovery
 credential-export
@@ -56,13 +56,14 @@ before the in-memory state changes.
 The post-intake gates are deterministic:
 
 - the account-inventory step opens CSV import as the primary path after session creation;
-- inventory cannot advance until at least one imported account exists, after which the assistant opens account and role review;
-- identity review cannot advance while an inferred role is still only `Suggested`;
+- inventory cannot advance until at least one imported account exists, after which the assistant opens account-category triage;
+- category triage shows the next unreviewed account and remaining count; after an explicitly confirmed email account the user may continue early because further review is optional but improves ordering;
+- a user who genuinely has no email account can review all accounts or deliberately use the assistant's Continue action; leaving the step never records an implicit category;
 - recovery planning routes to outstanding account work first, then credential handoff, then completion preflight;
 - returning from material account work recalculates the plan from the latest persisted projections;
 - a successful completion preflight advances to final-report review, while the terminal outcome still requires explicit confirmation.
 
-Dependency cycles, missing dependencies, blocked and failed actions, lost access, and unresolved risks are not hidden by wizard navigation. They remain visible in the plan and completion review.
+Blocked and failed actions, lost access, and unresolved risks are not hidden by wizard navigation. They remain visible in recovery execution and completion review. The removed account-dependency graph has no wizard gate or parallel planning authority.
 
 ## Safe resume
 

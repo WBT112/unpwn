@@ -483,85 +483,37 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public string LoginIdentifier => _account?.LoginIdentifier ??
         Localization.GetString("Workflow.Account.LoginUnavailable");
 
-    public string PriorityText => _account is null
+    public string CategoryText => _account is null
         ? string.Empty
-        : Localization.GetString($"Accounts.Priority.{_account.Priority}");
+        : Localization.GetString($"Accounts.Category.{_account.EffectiveCategory}");
 
-    public string RolesText
+    public string CategoryDecisionText
     {
         get
         {
-            var roles = _account?.Roles
-                .Where(role => role.Decision == AccountRoleDecision.Confirmed)
-                .Select(role => Localization.GetString($"Accounts.Role.{role.Role}"))
-                .ToArray() ?? [];
-            return roles.Length == 0
-                ? Localization.GetString("Workflow.Account.NoConfirmedRoles")
-                : string.Join(", ", roles);
+            return _account is null
+                ? string.Empty
+                : Localization.GetString(_account.IsCategorized
+                    ? "Accounts.Triage.Explicit"
+                    : "Accounts.Triage.Suggested");
         }
     }
 
-    public string DependenciesText
+    public string WorkflowIndependenceText
     {
         get
         {
-            if (_account is null || _inventory.CurrentInventory is null || _account.Dependencies.Length == 0)
-            {
-                return Localization.GetString("Workflow.Account.NoDependencies");
-            }
-
-            var byId = _inventory.CurrentInventory.Accounts.ToDictionary(account => account.Id);
-            return string.Join(", ", _account.Dependencies.Select(dependency =>
-                byId.TryGetValue(dependency.DependsOnAccountId, out var account)
-                    ? account.AccountName ?? account.LoginIdentifier ?? account.ProviderId
-                    : Localization.GetString("Workflow.Account.MissingDependency")));
+            return Localization.GetString("Workflow.Account.CategoryIndependentWorkflow");
         }
     }
 
     public string RecommendationReasonText => _planItem is null
         ? Localization.GetString("Workflow.Recommendation.Unavailable")
-        : AreDependenciesSatisfied
-            ? Localization.GetString("Workflow.Recommendation.DependenciesSatisfied")
-            : Localization.GetString($"Accounts.Plan.Reason.{_planItem.ReasonCode}");
+        : Localization.GetString($"Accounts.Plan.Reason.{_planItem.ReasonCode}");
 
     public string PlanStatusText => _planItem is null
         ? Localization.GetString("Workflow.Plan.Status.Unavailable")
-        : Localization.GetString(AreDependenciesSatisfied
-            ? "Workflow.Plan.Status.ReadyNow"
-            : $"Workflow.Plan.Status.{_planItem.Status}");
-
-    public string DependentsText
-    {
-        get
-        {
-            var count = _account is null || _inventory.CurrentInventory is null
-                ? 0
-                : _inventory.CurrentInventory.Accounts.Count(candidate =>
-                    candidate.Dependencies.Any(dependency =>
-                        !dependency.IsOverride && dependency.DependsOnAccountId == _account.Id));
-            return Localization.FormatPlural("Workflow.Account.Dependents", count, count);
-        }
-    }
-
-    public string DependentAccountNamesText
-    {
-        get
-        {
-            if (_account is null || _inventory.CurrentInventory is null)
-            {
-                return string.Empty;
-            }
-
-            var names = _inventory.CurrentInventory.Accounts
-                .Where(candidate => candidate.Dependencies.Any(dependency =>
-                    !dependency.IsOverride && dependency.DependsOnAccountId == _account.Id))
-                .Select(candidate => candidate.AccountName ?? candidate.LoginIdentifier ?? candidate.ProviderId)
-                .ToArray();
-            return names.Length == 0
-                ? string.Empty
-                : Localization.Format("Workflow.Account.DependentNames", string.Join(", ", names));
-        }
-    }
+        : Localization.GetString("Workflow.Plan.Status.ReadyNow");
 
     public string AccessStateText => Localization.GetString(
         $"Workflow.Access.{_execution?.AccessState ?? RecoveryAccessState.Unknown}");
@@ -1232,25 +1184,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private AccountRecoveryProjectionContext CreateProjectionContext()
     {
-        var planItem = _planItem;
-        var completedById = _session.CurrentSession?.Accounts.ToDictionary(
-            account => account.AccountId,
-            account => account.IsFullyReviewed) ?? [];
-        var waitingFor = planItem?.WaitingForAccountIds
-            .Where(accountId => !completedById.GetValueOrDefault(accountId))
-            .ToArray() ?? [];
         return new AccountRecoveryProjectionContext(
-            _account?.DashboardCriticality ?? AccountCriticality.Routine,
-            planItem?.DependencyDepth ?? 0,
-            waitingFor)
-        {
-            InventoryBlockedIssues = planItem?.Status is
-                AccountInventoryPlanStatus.BlockedCycle or
-                AccountInventoryPlanStatus.BlockedMissingDependency
-                    ? 1
-                    : 0,
-            InventoryUnresolvedRisks = planItem?.HasDependencyOverride == true ? 1 : 0,
-        };
+            _account?.DashboardCriticality ?? AccountCriticality.Routine);
     }
 
     private AccountInventoryEntry? ResolveAccount(AccountInventoryState inventory)
@@ -1429,11 +1364,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         ? null
         : _workflow.RecoveryLocations.SingleOrDefault(location => location.Id == id);
 
-    private bool AreDependenciesSatisfied => _planItem is { WaitingForAccountIds.Length: > 0 } &&
-        _planItem.WaitingForAccountIds.All(dependencyId =>
-            _session.CurrentSession?.Accounts.SingleOrDefault(account => account.AccountId == dependencyId)
-                ?.IsFullyReviewed == true);
-
     private bool CanChangePath() => _execution is not null &&
         SelectedPath is not null &&
         SelectedPath.Path != _execution.SelectedPath &&
@@ -1570,13 +1500,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(AccountName));
         OnPropertyChanged(nameof(ProviderName));
         OnPropertyChanged(nameof(LoginIdentifier));
-        OnPropertyChanged(nameof(PriorityText));
-        OnPropertyChanged(nameof(RolesText));
-        OnPropertyChanged(nameof(DependenciesText));
+        OnPropertyChanged(nameof(CategoryText));
+        OnPropertyChanged(nameof(CategoryDecisionText));
+        OnPropertyChanged(nameof(WorkflowIndependenceText));
         OnPropertyChanged(nameof(RecommendationReasonText));
         OnPropertyChanged(nameof(PlanStatusText));
-        OnPropertyChanged(nameof(DependentsText));
-        OnPropertyChanged(nameof(DependentAccountNamesText));
         OnPropertyChanged(nameof(AccessStateText));
         OnPropertyChanged(nameof(HasAccessReason));
         OnPropertyChanged(nameof(AccessReasonText));

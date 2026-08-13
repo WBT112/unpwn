@@ -164,8 +164,7 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
             _report.RequiredActionsNotApplicable,
             _report.BlockedActions,
             _report.FailedActions,
-            _report.AcceptedRiskActions,
-            _report.AccountsWaitingForDependencies);
+            _report.AcceptedRiskActions);
 
     public string CredentialSummary => _report is null
         ? Localization.GetString("Completion.Summary.Unavailable")
@@ -345,10 +344,7 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
             RecoveryCompletionIssueKind.CredentialRetainedInVault or
             RecoveryCompletionIssueKind.PlaintextExportCleanupPending
                 ? AppRoute.CredentialsExport
-                : issue.Kind is RecoveryCompletionIssueKind.UnconfirmedRoleInference or
-                    RecoveryCompletionIssueKind.DependencyIssue
-                    ? AppRoute.Accounts
-                    : AppRoute.Workflow;
+                : AppRoute.Workflow;
         RequestNavigation(route, issue.AccountId, issue.ActionId);
     }
 

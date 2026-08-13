@@ -259,35 +259,14 @@ public sealed class AccountRecoveryExecutionTests
                 completionCriteriaAcknowledged: true,
                 StartedAt.AddMinutes(2));
 
-        var projection = state.CreateDashboardProjection(
-            AccountCriticality.Critical,
-            dependencyDepth: 0,
-            waitingForAccountIds: []);
-        var (
-            _,
-            _,
-            _,
-            _,
-            completedRequiredActions,
-            totalRequiredActions,
-            completedActionWeight,
-            totalActionWeight,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _,
-            _) = projection;
+        var projection = state.CreateDashboardProjection(AccountCriticality.Critical);
 
-        Assert.Equal(1, completedRequiredActions);
-        Assert.Equal(2, totalRequiredActions);
-        Assert.Equal((int)RecoveryActionImportance.Important, completedActionWeight);
+        Assert.Equal(1, projection.RequiredActionsCompleted);
+        Assert.Equal(2, projection.RequiredActionsTotal);
+        Assert.Equal((int)RecoveryActionImportance.Important, projection.CompletedRequiredWeight);
         Assert.Equal(
             (int)RecoveryActionImportance.Important + (int)RecoveryActionImportance.Critical,
-            totalActionWeight);
+            projection.TotalRequiredWeight);
         Assert.Equal(1, projection.RequiredActionsCompleted);
         Assert.Equal(1, projection.RequiredActionsOpen);
         Assert.Equal(0, projection.RequiredActionsInProgress);

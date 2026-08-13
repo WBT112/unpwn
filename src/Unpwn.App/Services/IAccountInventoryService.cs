@@ -21,7 +21,6 @@ public enum AccountInventoryFailureCode
     NotFound,
     Conflict,
     RequiresConfirmation,
-    RequiresOverrideReason,
     Corrupted,
     IoFailure,
 }
@@ -49,14 +48,7 @@ public sealed record AccountInventoryUpsertRequest(
     string ProviderId,
     string? AccountName,
     string? LoginIdentifier,
-    string? AccountUrl,
-    AccountInventoryPriority Priority);
-
-public sealed record AccountDependencyRequest(
-    Guid AccountId,
-    Guid DependsOnAccountId,
-    AccountDependencyKind Kind,
-    string? OverrideReason);
+    string? AccountUrl);
 
 public interface IAccountInventoryService
 {
@@ -74,25 +66,13 @@ public interface IAccountInventoryService
         AccountInventoryUpsertRequest request,
         CancellationToken cancellationToken);
 
-    Task<AccountInventoryOperationResult> DecideRoleAsync(
+    Task<AccountInventoryOperationResult> CategorizeAsync(
         Guid accountId,
-        AccountInventoryRole role,
-        AccountRoleDecision decision,
-        CancellationToken cancellationToken);
-
-    Task<AccountInventoryOperationResult> AddDependencyAsync(
-        AccountDependencyRequest request,
-        CancellationToken cancellationToken);
-
-    Task<AccountInventoryOperationResult> RemoveDependencyAsync(
-        Guid accountId,
-        Guid dependsOnAccountId,
-        AccountDependencyKind kind,
+        AccountRecoveryCategory category,
         CancellationToken cancellationToken);
 
     Task<AccountInventoryOperationResult> RemoveAccountAsync(
         Guid accountId,
-        bool dependencyImpactAcknowledged,
         CancellationToken cancellationToken);
 
     Task<AccountInventoryOperationResult> ImportAsync(

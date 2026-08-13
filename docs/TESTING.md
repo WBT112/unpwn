@@ -26,7 +26,7 @@ Semantic validation rejects unsafe or contradictory definitions such as duplicat
 
 ### 2. Recovery contract and domain tests
 
-Provider contract scenarios exercise the Recovery Engine without a browser. Representative scenarios include authenticated password change, password reset, blocked dependencies, lost MFA access, expired/unavailable recovery links, manual recovery, required-action failure, blocked work, unresolved-risk acceptance, and access that cannot be restored.
+Provider contract scenarios exercise the Recovery Engine without a browser. Representative scenarios include authenticated password change, password reset, blocked action prerequisites, lost MFA access, expired/unavailable recovery links, manual recovery, required-action failure, blocked work, unresolved-risk acceptance, and access that cannot be restored.
 
 Domain/state-machine tests cover valid and invalid transitions, deterministic planning, progress calculation, completion preflight, credential lifecycle, idempotency, and persistence revisions. Required actions cannot be silently skipped. `NOT_APPLICABLE` and risk acceptance retain their required reason/disposition.
 
@@ -67,7 +67,7 @@ Security meaning must not depend on color alone, and pseudo-localization/minimum
 
 ### 5. End-to-end smoke journeys
 
-The blocking suite includes an `EndToEndSmoke` category that composes real application services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session creation, canonical CSV import, identity-role review, dependency-aware planning, repository-controlled provider workflows, explicit action completion, generated-credential handoff and cleanup, completion review, locking, reopening, and persisted-state validation after an application-style restart.
+The blocking suite includes an `EndToEndSmoke` category that composes real application services around a temporary encrypted SQLite vault. It covers the trusted-device gate, session creation, canonical CSV import, account-category triage, category-aware planning, repository-controlled provider workflows, explicit action completion, generated-credential handoff and cleanup, completion review, locking, reopening, and persisted-state validation after an application-style restart.
 
 Negative smoke coverage verifies that an untrusted or uncertain device decision cannot create a sensitive recovery workspace. All paths use synthetic identities and local files.
 

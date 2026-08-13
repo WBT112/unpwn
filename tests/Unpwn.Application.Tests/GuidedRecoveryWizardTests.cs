@@ -8,13 +8,13 @@ namespace Unpwn.Application.Tests;
 public sealed class GuidedRecoveryWizardTests
 {
     [Fact]
-    public void HappyPathSelectsInventoryIdentityPlanRecoveryCredentialsAndCompletion()
+    public void HappyPathSelectsInventoryTriagePlanRecoveryCredentialsAndCompletion()
     {
         var state = AtAccountInventory();
 
-        var identity = GuidedRecoveryWizard.GetNext(state, Context(accountCount: 2));
-        state = Move(state, identity);
-        Assert.Equal(RecoveryWizardStepId.IdentityReview, state.CurrentStep);
+        var triage = GuidedRecoveryWizard.GetNext(state, Context(accountCount: 2));
+        state = Move(state, triage);
+        Assert.Equal(RecoveryWizardStepId.AccountTriage, state.CurrentStep);
 
         var plan = GuidedRecoveryWizard.GetNext(state, Context(accountCount: 2));
         state = Move(state, plan);
@@ -47,7 +47,7 @@ public sealed class GuidedRecoveryWizardTests
     }
 
     [Fact]
-    public void RequiredInventoryAndRoleConfirmationCannotBeSkipped()
+    public void InventoryIsRequiredAndTriageCanBeEndedDeliberately()
     {
         var inventory = AtAccountInventory();
 
@@ -56,15 +56,20 @@ public sealed class GuidedRecoveryWizardTests
         Assert.False(empty.CanMove);
         Assert.Equal(GuidedRecoveryBlockCode.AccountsRequired, empty.BlockCode);
 
-        var identity = Move(
+        var triage = Move(
             inventory,
             GuidedRecoveryWizard.GetNext(inventory, Context(accountCount: 1)));
-        var suggested = GuidedRecoveryWizard.GetNext(
-            identity,
-            Context(accountCount: 1, suggestedRoles: 1));
+        var withoutEmail = GuidedRecoveryWizard.GetNext(
+            triage,
+            Context(accountCount: 1, uncategorized: 1));
+        var afterEmail = GuidedRecoveryWizard.GetNext(
+            triage,
+            Context(accountCount: 1, uncategorized: 1, hasConfirmedEmail: true));
 
-        Assert.False(suggested.CanMove);
-        Assert.Equal(GuidedRecoveryBlockCode.RoleConfirmationRequired, suggested.BlockCode);
+        Assert.Equal(RecoveryWizardStepId.RecoveryPlan, withoutEmail.TargetStep);
+        Assert.Equal(GuidedRecoveryAdvisoryCode.ContinueWithoutEmailCategory, withoutEmail.AdvisoryCode);
+        Assert.Equal(RecoveryWizardStepId.RecoveryPlan, afterEmail.TargetStep);
+        Assert.Equal(GuidedRecoveryAdvisoryCode.RemainingCategoryReviewOptional, afterEmail.AdvisoryCode);
     }
 
     [Fact]
@@ -75,7 +80,7 @@ public sealed class GuidedRecoveryWizardTests
                 AtAccountInventory(),
                 GuidedRecoveryWizard.GetNext(AtAccountInventory(), Context(accountCount: 1))),
             new GuidedRecoveryDecision(
-                RecoveryWizardStepId.IdentityReview,
+                RecoveryWizardStepId.AccountTriage,
                 RecoveryWizardStepId.RecoveryPlan,
                 GuidedRecoveryBlockCode.None));
 
@@ -112,12 +117,12 @@ public sealed class GuidedRecoveryWizardTests
     [Fact]
     public void BackNavigationIsDeterministicAndTerminalStateCannotMove()
     {
-        var identity = Move(
+        var triage = Move(
             AtAccountInventory(),
             GuidedRecoveryWizard.GetNext(AtAccountInventory(), Context(accountCount: 1)));
         Assert.Equal(
             RecoveryWizardStepId.AccountInventory,
-            GuidedRecoveryWizard.GetPrevious(identity).TargetStep);
+            GuidedRecoveryWizard.GetPrevious(triage).TargetStep);
 
         var terminal = RecoveryWizardOrchestrator.StopAfterTrustedDeviceGuidance(
             RecoveryWizardOrchestrator.RecordTrustedDeviceDecision(
@@ -135,8 +140,8 @@ public sealed class GuidedRecoveryWizardTests
     }
 
     [Theory]
-    [InlineData("identity-review", "account-inventory")]
-    [InlineData("recovery-plan", "identity-review")]
+    [InlineData("account-triage", "account-inventory")]
+    [InlineData("recovery-plan", "account-triage")]
     [InlineData("account-recovery", "recovery-plan")]
     [InlineData("credential-export", "recovery-plan")]
     [InlineData("completion-preflight", "recovery-plan")]
@@ -177,7 +182,9 @@ public sealed class GuidedRecoveryWizardTests
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             GuidedRecoveryWizard.GetNext(active, Context(accountCount: -1)));
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            GuidedRecoveryWizard.GetNext(active, Context(suggestedRoles: -1)));
+            GuidedRecoveryWizard.GetNext(active, Context(uncategorized: -1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            GuidedRecoveryWizard.GetNext(active, Context(accountCount: 1, uncategorized: 2)));
         Assert.Throws<ArgumentNullException>(() =>
             GuidedRecoveryWizard.GetNext(null!, Context()));
         Assert.Throws<ArgumentNullException>(() =>
@@ -213,14 +220,16 @@ public sealed class GuidedRecoveryWizardTests
 
     private static GuidedRecoveryContext Context(
         int accountCount = 0,
-        int suggestedRoles = 0,
+        int uncategorized = 0,
+        bool hasConfirmedEmail = false,
         bool outstanding = false,
         bool credentials = false,
         Guid? accountId = null,
         string? actionId = null) =>
         new(
             accountCount,
-            suggestedRoles,
+            uncategorized,
+            hasConfirmedEmail,
             outstanding,
             credentials,
             accountId,

@@ -230,32 +230,12 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
             }
 
-            var projectedAccount = execution.State.CreateDashboardProjection(
-                context.Criticality,
-                context.DependencyDepth,
-                context.WaitingForAccountIds,
-                context.InventoryBlockedIssues,
-                context.InventoryUnresolvedRisks);
+            var projectedAccount = execution.State.CreateDashboardProjection(context.Criticality);
             var summaries = session.Accounts
                 .Where(account => account.AccountId != execution.State.AccountId)
                 .Append(projectedAccount)
                 .OrderBy(account => account.AccountId)
                 .ToArray();
-            var statusByAccountId = summaries.ToDictionary(
-                account => account.AccountId,
-                account => account.RecoveryStatus);
-            summaries =
-            [
-                .. summaries.Select(account => account with
-                {
-                    WaitingForAccountIds =
-                    [
-                        .. account.WaitingForAccountIds.Where(dependencyId =>
-                            !statusByAccountId.TryGetValue(dependencyId, out var dependencyStatus) ||
-                            dependencyStatus != AccountRecoveryStatus.FullyReviewed),
-                    ],
-                }),
-            ];
             projection = await _projectionCoordinator.PrepareAccountSummaryUpdateAsync(
                 summaries,
                 cancellationToken);

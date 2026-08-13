@@ -99,7 +99,7 @@ public sealed class RecoveryWizardOrchestratorTests
             StartTime.AddMinutes(4));
         state = RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.IdentityReview,
+            RecoveryWizardStepId.AccountTriage,
             StartTime.AddMinutes(5));
         state = RecoveryWizardOrchestrator.Continue(
             state,
@@ -346,7 +346,7 @@ public sealed class RecoveryWizardOrchestratorTests
             { RecoveryWizardStepId.VaultEntry.Value, RecoveryWizardRecommendationCode.CreateOrUnlockVault },
             { RecoveryWizardStepId.IncidentIntake.Value, RecoveryWizardRecommendationCode.CaptureIncidentContext },
             { RecoveryWizardStepId.AccountInventory.Value, RecoveryWizardRecommendationCode.ReviewAccountInventory },
-            { RecoveryWizardStepId.IdentityReview.Value, RecoveryWizardRecommendationCode.ConfirmIdentityAndRecoveryRelationships },
+            { RecoveryWizardStepId.AccountTriage.Value, RecoveryWizardRecommendationCode.ReviewAccountCategories },
             { RecoveryWizardStepId.RecoveryPlan.Value, RecoveryWizardRecommendationCode.ReviewRecoveryPlan },
             { RecoveryWizardStepId.AccountRecovery.Value, RecoveryWizardRecommendationCode.RecoverRecommendedAccount },
             { RecoveryWizardStepId.CredentialExport.Value, RecoveryWizardRecommendationCode.ExportGeneratedCredentials },
@@ -382,7 +382,7 @@ public sealed class RecoveryWizardOrchestratorTests
             StartTime.AddMinutes(4));
         state = RecoveryWizardOrchestrator.Continue(
             state,
-            RecoveryWizardStepId.IdentityReview,
+            RecoveryWizardStepId.AccountTriage,
             StartTime.AddMinutes(5));
         return RecoveryWizardOrchestrator.Continue(
             state,

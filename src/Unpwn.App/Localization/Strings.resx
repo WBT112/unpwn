@@ -16,7 +16,7 @@
   <data name="Completion.Confirmed.Message" xml:space="preserve"><value>The terminal recovery status and secret-free report were saved in the encrypted session.</value></data>
   <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Recovery session ended</value></data>
   <data name="Completion.Review.Button" xml:space="preserve"><value>Run completion preflight</value></data>
-  <data name="Completion.Section.Description" xml:space="preserve"><value>The preflight reloads persisted account, action, dependency, and credential state. Reviewing it does not change the session.</value></data>
+  <data name="Completion.Section.Description" xml:space="preserve"><value>The preflight reloads persisted account, action, risk, and credential state. Reviewing it does not change the session.</value></data>
   <data name="Completion.Section.Title" xml:space="preserve"><value>Completion preflight</value></data>
   <data name="Completion.UnlockHint" xml:space="preserve"><value>Unlock a vault before reviewing session completion.</value></data>
   <data name="Completion.AcceptRisks" xml:space="preserve"><value>I explicitly accept that unresolved work and risks remain.</value></data>
@@ -55,7 +55,6 @@
   <data name="Completion.Issue.CredentialNotExported" xml:space="preserve"><value>Generated credential not exported</value></data>
   <data name="Completion.Issue.CredentialRetainedInVault" xml:space="preserve"><value>Generated credential retained in vault</value></data>
   <data name="Completion.Issue.CriticalAccountNotFullyReviewed" xml:space="preserve"><value>Critical account not fully reviewed</value></data>
-  <data name="Completion.Issue.DependencyIssue" xml:space="preserve"><value>Unconfirmed or unresolved account dependency</value></data>
   <data name="Completion.Issue.Detail" xml:space="preserve"><value>{0}: {1} finding(s)</value></data>
   <data name="Completion.Issue.LostAccountAccess" xml:space="preserve"><value>Account access remains lost</value></data>
   <data name="Completion.Issue.Open" xml:space="preserve"><value>Open affected item</value></data>
@@ -65,7 +64,6 @@
   <data name="Completion.Issue.RequiredActionFailed" xml:space="preserve"><value>Required action failed</value></data>
   <data name="Completion.Issue.RequiredActionIncomplete" xml:space="preserve"><value>Required action still incomplete</value></data>
   <data name="Completion.Issue.SessionLevel" xml:space="preserve"><value>Recovery session</value></data>
-  <data name="Completion.Issue.UnconfirmedRoleInference" xml:space="preserve"><value>Suggested account role not confirmed or rejected</value></data>
   <data name="Completion.Issue.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk remains</value></data>
   <data name="Completion.Issues.None" xml:space="preserve"><value>No preflight findings are represented by the current persisted state.</value></data>
   <data name="Completion.Issues.Title" xml:space="preserve"><value>Open work and risks</value></data>
@@ -84,7 +82,7 @@
   <data name="Completion.Severity.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk</value></data>
   <data name="Completion.Severity.Warning" xml:space="preserve"><value>Warning</value></data>
   <data name="Completion.Summary.Accounts" xml:space="preserve"><value>Accounts fully reviewed: {0} of {1}</value></data>
-  <data name="Completion.Summary.Actions" xml:space="preserve"><value>Required actions — completed: {0}; open: {1}; in progress: {2}; awaiting user: {3}; not applicable: {4}; blocked: {5}; failed: {6}; accepted risk: {7}; accounts waiting for dependencies: {8}</value></data>
+  <data name="Completion.Summary.Actions" xml:space="preserve"><value>Required actions — completed: {0}; open: {1}; in progress: {2}; awaiting user: {3}; not applicable: {4}; blocked: {5}; failed: {6}; accepted risk: {7}</value></data>
   <data name="Completion.Summary.Credentials" xml:space="preserve"><value>Credentials — not exported: {0}; password-manager import unconfirmed: {1}; retained: {2}; deliberately deleted: {3}; plaintext cleanup pending: {4}</value></data>
   <data name="Completion.Summary.Critical" xml:space="preserve"><value>Critical accounts ready: {0} of {1}</value></data>
   <data name="Completion.Summary.Title" xml:space="preserve"><value>Current persisted summary</value></data>
@@ -156,9 +154,9 @@
   <data name="Language.English" xml:space="preserve"><value>English</value></data>
   <data name="Language.German" xml:space="preserve"><value>Deutsch</value></data>
   <data name="Language.Pseudo" xml:space="preserve"><value>Pseudo</value></data>
-  <data name="Screen.Accounts.Description" xml:space="preserve"><value>Review imported accounts, priorities, and recovery dependencies.</value></data>
+  <data name="Screen.Accounts.Description" xml:space="preserve"><value>Choose one simple recovery category for each imported account.</value></data>
   <data name="Screen.Accounts.StatusMessage" xml:space="preserve"><value>No account data is loaded while the vault is locked.</value></data>
-  <data name="Screen.Accounts.StatusTitle" xml:space="preserve"><value>Account inventory placeholder</value></data>
+  <data name="Screen.Accounts.StatusTitle" xml:space="preserve"><value>Account categories saved locally</value></data>
   <data name="Screen.Accounts.Title" xml:space="preserve"><value>Accounts</value></data>
   <data name="Screen.Completion.Description" xml:space="preserve"><value>Review incomplete work, unresolved risks, and remaining credential exports before ending the session.</value></data>
   <data name="Screen.Completion.StatusMessage" xml:space="preserve"><value>A session can be completed with unresolved risks only after an explicit confirmation.</value></data>
@@ -180,7 +178,7 @@
   <data name="Screen.Vault.StatusMessage" xml:space="preserve"><value>unpwn cannot detect or remove malware. Begin recovery only after moving to a device you trust.</value></data>
   <data name="Screen.Vault.StatusTitle" xml:space="preserve"><value>Use a trusted device</value></data>
   <data name="Screen.Vault.Title" xml:space="preserve"><value>Open your recovery workspace</value></data>
-  <data name="Screen.Workflow.Description" xml:space="preserve"><value>Work through required actions with dependencies and user-visible automation boundaries.</value></data>
+  <data name="Screen.Workflow.Description" xml:space="preserve"><value>Work through required actions, visible prerequisites, and user-visible automation boundaries.</value></data>
   <data name="Screen.Workflow.StatusMessage" xml:space="preserve"><value>Select an account from an unlocked recovery session before starting a workflow.</value></data>
   <data name="Screen.Workflow.StatusTitle" xml:space="preserve"><value>Workflow unavailable</value></data>
   <data name="Screen.Workflow.Title" xml:space="preserve"><value>Recovery workflow</value></data>
@@ -227,9 +225,9 @@
   <data name="Shell.Assistant.Target" xml:space="preserve"><value>Recommended account: {0}</value></data>
   <data name="Shell.Assistant.TargetWithAction" xml:space="preserve"><value>Recommended account: {0} — current action: {1}</value></data>
   <data name="Shell.Assistant.Why.AccountInventory" xml:space="preserve"><value>A complete account list is needed before unpwn can calculate a dependable recovery order.</value></data>
-  <data name="Shell.Assistant.Why.IdentityReview" xml:space="preserve"><value>Confirmed recovery roles and relationships determine which accounts must be handled first.</value></data>
-  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>The recovery plan keeps prerequisites and critical accounts ahead of dependent work.</value></data>
-  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>This account is currently allowed and recommended by the persisted dependency-aware plan.</value></data>
+  <data name="Shell.Assistant.Why.AccountTriage" xml:space="preserve"><value>Simple account categories improve recovery order without asking you to model account relationships.</value></data>
+  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>The recovery plan explains which account should be handled next.</value></data>
+  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>This account is currently recommended by the persisted recovery plan.</value></data>
   <data name="Shell.Assistant.Why.CredentialExport" xml:space="preserve"><value>Generated credentials need an explicit password-manager handoff and cleanup review.</value></data>
   <data name="Shell.Assistant.Why.Completion" xml:space="preserve"><value>The final review keeps incomplete work and unresolved risks visible instead of claiming everything is secure.</value></data>
   <data name="Shell.Assistant.Why.Paused" xml:space="preserve"><value>Pausing preserves the encrypted recovery state and requires an explicit resume before any further changes.</value></data>
@@ -239,11 +237,12 @@
   <data name="Shell.Guided.Continue" xml:space="preserve"><value>Continue</value></data>
   <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Open this step to continue the recovery.</value></data>
   <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Import at least one account from CSV before continuing. Accounts can be reviewed and corrected in the next step.</value></data>
-  <data name="Shell.Guided.RoleConfirmationRequired" xml:space="preserve"><value>Confirm or reject every suggested account role before continuing.</value></data>
   <data name="Shell.Guided.Paused" xml:space="preserve"><value>Resume the recovery session before continuing.</value></data>
   <data name="Shell.Guided.Terminal" xml:space="preserve"><value>This recovery session is complete and remains available as a read-only report.</value></data>
-  <data name="Shell.Guided.NextIdentityReview" xml:space="preserve"><value>Continue by confirming account roles and recovery relationships.</value></data>
-  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Continue to the dependency-aware recovery plan.</value></data>
+  <data name="Shell.Guided.NextAccountTriage" xml:space="preserve"><value>Review account categories next. You may continue early after confirming an email account, or deliberately continue without one.</value></data>
+  <data name="Shell.Guided.RemainingCategoryReviewOptional" xml:space="preserve"><value>An email account is confirmed. Continue recovery now, or stay to improve the order by reviewing the remaining accounts.</value></data>
+  <data name="Shell.Guided.ContinueWithoutEmailCategory" xml:space="preserve"><value>No email account is confirmed. Review categories first when possible; choose Continue only if you deliberately want to proceed without one.</value></data>
+  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Continue to the recovery plan.</value></data>
   <data name="Shell.Guided.NextAccountRecovery" xml:space="preserve"><value>Continue with the currently recommended account and required actions.</value></data>
   <data name="Shell.Guided.NextCredentialExport" xml:space="preserve"><value>Handle generated credential export and cleanup before completion.</value></data>
   <data name="Shell.Guided.NextCompletion" xml:space="preserve"><value>Run the completion review; unresolved work and risks will remain visible.</value></data>

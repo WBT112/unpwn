@@ -273,9 +273,9 @@
             <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Account.Title}" />
             <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding AccountName}" TextWrapping="Wrap" />
             <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="7">
-              <TextBlock Grid.Row="0" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Priority}" /><TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding PriorityText}" />
-              <TextBlock Grid.Row="1" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Roles}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding RolesText}" TextWrapping="Wrap" />
-              <TextBlock Grid.Row="2" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Dependencies}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DependenciesText}" TextWrapping="Wrap" />
+              <TextBlock Grid.Row="0" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Category}" /><TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CategoryText}" />
+              <TextBlock Grid.Row="1" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.CategoryDecision}" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding CategoryDecisionText}" TextWrapping="Wrap" />
+              <TextBlock Grid.Row="2" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Workflow}" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding WorkflowIndependenceText}" TextWrapping="Wrap" />
               <TextBlock Grid.Row="3" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Access}" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding AccessStateText}" />
               <TextBlock Grid.Row="4" FontWeight="SemiBold" Text="{DynamicResource Workflow.Account.Status}" /><TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding RecoveryStatusText}" />
             </Grid>
