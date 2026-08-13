@@ -246,6 +246,49 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public async Task UnlockReturnsToCsvImportWhenAccountImportIsStillIncomplete()
+    {
+        var sessionId = Guid.NewGuid();
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+            sessionId,
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        var inventory = new TestAccountInventoryService();
+        inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch));
+        var flow = new TestRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new NextUserTask(
+                RecoveryWizardStepId.AccountInventory,
+                NextUserTaskState.ActionAvailable,
+                NextUserTaskCode.ImportAccounts,
+                NextUserTaskTarget.CsvImport));
+        var shell = CreateFlowShell(vault, session, inventory, flow);
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
+
+        await shell.LockCommand.ExecuteAsync();
+        session.ClearForLock();
+        inventory.ClearForLock();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+
+        Assert.Equal(AppRoute.VaultEntry, shell.CurrentScreen.Route);
+
+        session.SetSession(RecoverySessionWorkspace.Create(
+            sessionId,
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch));
+
+        Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
+        Assert.Equal(RecoveryWizardStepId.AccountInventory, flow.Current.CurrentStep);
+        Assert.Equal(0, flow.AdvanceCalls);
+    }
+
+    [Fact]
     public async Task CompletionCommandCanBeCanceledAndRejectsRepeatedExecution()
     {
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -715,7 +758,12 @@ public sealed class ShellViewModelTests
             InventoryChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public void ClearForLock() => InventoryChanged?.Invoke(this, EventArgs.Empty);
+        public void ClearForLock()
+        {
+            LoadState = AccountInventoryLoadState.Locked;
+            CurrentInventory = null;
+            InventoryChanged?.Invoke(this, EventArgs.Empty);
+        }
 
         private static Task<AccountInventoryOperationResult> Unsupported() =>
             Task.FromResult(AccountInventoryOperationResult.Failure(
