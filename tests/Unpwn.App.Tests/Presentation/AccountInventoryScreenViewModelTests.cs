@@ -126,6 +126,32 @@ public sealed class AccountInventoryScreenViewModelTests
         Assert.Contains("without an email", viewModel.ContinuationGuidance, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void InvalidCurrentModelFailsClosedWithoutReplacingServiceState()
+    {
+        var invalidAccount = CreateAccount("Invalid") with
+        {
+            SuggestedCategory = (AccountRecoveryCategory)99,
+        };
+        var invalidState = new AccountInventoryState(
+            Guid.NewGuid(),
+            1,
+            DateTimeOffset.UnixEpoch,
+            [invalidAccount]);
+        var service = new InvalidCurrentModelInventoryService(invalidState);
+
+        var viewModel = new AccountInventoryScreenViewModel(
+            service,
+            new TestConfirmationDialogService(),
+            new ResourceLocalizationService(CultureInfo.GetCultureInfo("en")));
+
+        Assert.True(viewModel.IsCorrupted);
+        Assert.False(viewModel.CanMutate);
+        Assert.Empty(viewModel.Accounts);
+        Assert.Contains("not replaced", viewModel.InventorySummary, StringComparison.OrdinalIgnoreCase);
+        Assert.Same(invalidState, service.CurrentInventory);
+    }
+
     private static AccountInventoryScreenViewModel CreateViewModel(
         TestAccountInventoryService service,
         ResourceLocalizationService? localization = null) =>
@@ -158,6 +184,46 @@ public sealed class AccountInventoryScreenViewModelTests
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(false);
         }
+    }
+
+    private sealed class InvalidCurrentModelInventoryService(AccountInventoryState invalidState)
+        : IAccountInventoryService
+    {
+        public event EventHandler? InventoryChanged;
+
+        public AccountInventoryLoadState LoadState => AccountInventoryLoadState.Loaded;
+
+        public AccountInventoryState? CurrentInventory { get; } = invalidState;
+
+        public AccountRecoveryOrder? CurrentRecoveryOrder => CurrentInventory?.CreateRecoveryOrder();
+
+        public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public Task<AccountInventoryOperationResult> UpsertAsync(
+            AccountInventoryUpsertRequest request,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> CategorizeAsync(
+            Guid accountId,
+            AccountRecoveryCategory category,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> RemoveAccountAsync(
+            Guid accountId,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public Task<AccountInventoryOperationResult> ImportAsync(
+            IReadOnlyCollection<ImportAccountCandidate> candidates,
+            ImportDuplicateResolution? duplicateResolution,
+            CancellationToken cancellationToken) => Unsupported();
+
+        public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];
+
+        public void ClearForLock() => InventoryChanged?.Invoke(this, EventArgs.Empty);
+
+        private static Task<AccountInventoryOperationResult> Unsupported() =>
+            Task.FromResult(AccountInventoryOperationResult.Failure(
+                AccountInventoryFailureCode.Corrupted));
     }
 
     private sealed class TestAccountInventoryService(AccountInventoryEntry[] accounts)

@@ -36,6 +36,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private readonly IAccountInventoryService _inventory;
     private readonly IConfirmationDialogService _confirmationDialog;
     private readonly IRecoveryFlowService? _recoveryFlow;
+    private AccountInventoryLoadState _loadState;
+    private AccountInventoryState? _currentInventory;
+    private AccountRecoveryOrder? _currentRecoveryOrder;
     private IReadOnlyList<AccountInventoryListItem> _accounts = [];
     private AccountInventoryListItem? _selectedAccount;
     private AccountInventoryOption<AccountRecoveryCategory>? _selectedCategory;
@@ -219,27 +222,27 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public bool HasValidationMessage => ValidationMessage is not null;
 
-    public bool IsLocked => _inventory.LoadState == AccountInventoryLoadState.Locked;
+    public bool IsLocked => _loadState == AccountInventoryLoadState.Locked;
 
-    public bool IsCorrupted => _inventory.LoadState == AccountInventoryLoadState.Corrupted;
+    public bool IsCorrupted => _loadState == AccountInventoryLoadState.Corrupted;
 
-    public bool CanMutate => _inventory.LoadState is AccountInventoryLoadState.Empty or AccountInventoryLoadState.Loaded;
+    public bool CanMutate => _loadState is AccountInventoryLoadState.Empty or AccountInventoryLoadState.Loaded;
 
     public bool IsEditingAccount => _editingAccountId is not null;
 
     public bool HasPersistedAccount => CanMutate &&
         _editingAccountId is { } accountId &&
-        _inventory.CurrentInventory?.Accounts.Any(account => account.Id == accountId) == true;
+        _currentInventory?.Accounts.Any(account => account.Id == accountId) == true;
 
     public bool HasConfirmedEmailCategory =>
-        _inventory.CurrentInventory?.Accounts.Any(account =>
+        _currentInventory?.Accounts.Any(account =>
             account.ConfirmedCategory == AccountRecoveryCategory.Email) == true;
 
     public int RemainingCategoryCount =>
-        _inventory.CurrentInventory?.Accounts.Count(account => !account.IsCategorized) ?? 0;
+        _currentInventory?.Accounts.Count(account => !account.IsCategorized) ?? 0;
 
     public bool CanContinueRecovery =>
-        _inventory.CurrentInventory?.Accounts.Length > 0 &&
+        _currentInventory?.Accounts.Length > 0 &&
         (_recoveryFlow is null ||
          _recoveryFlow.NextTask.Target == NextUserTaskTarget.RecoveryOverview);
 
@@ -296,13 +299,14 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     private void RefreshFromService()
     {
+        CaptureInventoryProjection();
         var selectedId = _editingAccountId;
         OnPropertyChanged(nameof(IsLocked));
         OnPropertyChanged(nameof(IsCorrupted));
         OnPropertyChanged(nameof(CanMutate));
-        var inventory = _inventory.CurrentInventory;
+        var inventory = _currentInventory;
         InventorySummary = inventory is null
-            ? Localization.GetString(_inventory.LoadState switch
+            ? Localization.GetString(_loadState switch
             {
                 AccountInventoryLoadState.Locked => "Accounts.State.Locked",
                 AccountInventoryLoadState.Loading => "Accounts.State.Loading",
@@ -333,7 +337,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     private void RefreshAccountList()
     {
-        IEnumerable<AccountInventoryEntry> accounts = _inventory.CurrentInventory?.Accounts ?? [];
+        IEnumerable<AccountInventoryEntry> accounts = _currentInventory?.Accounts ?? [];
         accounts = (SelectedFilter?.Value ?? AccountInventoryFilter.All) switch
         {
             AccountInventoryFilter.Unreviewed => accounts.Where(account => !account.IsCategorized),
@@ -342,7 +346,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             AccountInventoryFilter.Unknown => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Unknown),
             _ => accounts,
         };
-        var order = _inventory.CurrentRecoveryOrder?.Items.ToDictionary(item => item.AccountId, item => item.Order) ?? [];
+        var order = _currentRecoveryOrder?.Items.ToDictionary(item => item.AccountId, item => item.Order) ?? [];
         accounts = (SelectedSort?.Value ?? AccountInventorySort.RecoveryOrder) switch
         {
             AccountInventorySort.RecoveryOrder => accounts.OrderBy(account => order.GetValueOrDefault(account.Id, int.MaxValue)),
@@ -362,6 +366,39 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                     : "Accounts.Triage.Suggested"),
                 account)),
         ];
+    }
+
+    private void CaptureInventoryProjection()
+    {
+        var loadState = _inventory.LoadState;
+        var inventory = _inventory.CurrentInventory;
+        try
+        {
+            if (loadState == AccountInventoryLoadState.Loaded && inventory is null)
+            {
+                throw new InvalidOperationException(
+                    "A loaded account inventory requires current inventory state.");
+            }
+
+            if (inventory is not null && loadState is not
+                (AccountInventoryLoadState.Empty or AccountInventoryLoadState.Loaded))
+            {
+                throw new InvalidOperationException(
+                    "Account inventory data cannot be exposed outside a readable load state.");
+            }
+
+            inventory?.Validate();
+            _currentRecoveryOrder = inventory?.CreateRecoveryOrder();
+            _currentInventory = inventory;
+            _loadState = loadState;
+        }
+        catch (Exception exception) when (
+            exception is ArgumentException or InvalidOperationException or NotSupportedException)
+        {
+            _currentRecoveryOrder = null;
+            _currentInventory = null;
+            _loadState = AccountInventoryLoadState.Corrupted;
+        }
     }
 
     private void LoadSelectedAccount()

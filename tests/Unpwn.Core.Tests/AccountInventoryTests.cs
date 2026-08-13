@@ -131,6 +131,18 @@ public sealed class AccountInventoryTests
         Assert.Throws<InvalidOperationException>(account.Validate);
     }
 
+    [Fact]
+    public void NullAccountIsRejectedAsInvalidInventoryState()
+    {
+        var state = new AccountInventoryState(
+            Guid.NewGuid(),
+            1,
+            DateTimeOffset.UnixEpoch,
+            [null!]);
+
+        Assert.Throws<InvalidOperationException>(state.Validate);
+    }
+
     private static AccountInventoryEntry CreateAccount(
         string provider,
         AccountRecoveryCategory? confirmed = null) =>
