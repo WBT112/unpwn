@@ -5,6 +5,7 @@ using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.LogicalTree;
 using Avalonia.Threading;
+using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
 using Unpwn.App.Tests.Presentation;
@@ -165,15 +166,17 @@ public sealed class AccessibilityHeadlessTests
             Assert.NotNull(FindByAutomationId(window, "shell-settings"));
             Assert.NotNull(FindByAutomationId(window, "shell-navigation"));
             Assert.NotNull(FindByAutomationId(window, "shell-lock-vault"));
-            Assert.NotNull(FindByAutomationId(window, "shell-assistant-primary"));
             Assert.NotNull(FindByAutomationId(window, "shell-workspace-toggle"));
+            Assert.DoesNotContain(
+                window.GetLogicalDescendants().OfType<StyledElement>(),
+                element => AutomationProperties.GetAutomationId(element) == "shell-assistant-primary");
 
             window.Close();
         }, CancellationToken.None);
     }
 
     [Fact]
-    public async Task AssistantTaskReceivesFocusInitiallyAndWhenCanonicalGuidanceChanges()
+    public async Task WorkspaceAndShellRenderOnlyTheirExplicitStatusPurpose()
     {
         await Session.Dispatch(() =>
         {
@@ -200,20 +203,74 @@ public sealed class AccessibilityHeadlessTests
 
             window.Show();
             Dispatcher.UIThread.RunJobs();
-            var primary = FindByAutomationId(window, "shell-assistant-primary");
-            Assert.Same(primary, window.FocusManager?.GetFocusedElement());
-            var previousFocusRequest = shell.AssistantFocusRequest;
-
-            guided.SetGuidance(
-                ShellViewModelTests.WizardAt(RecoveryWizardStepId.IdentityReview),
-                new GuidedRecoveryDecision(
-                    RecoveryWizardStepId.IdentityReview,
-                    RecoveryWizardStepId.RecoveryPlan,
-                    GuidedRecoveryBlockCode.None));
+            shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
             Dispatcher.UIThread.RunJobs();
 
-            Assert.True(shell.AssistantFocusRequest > previousFocusRequest);
-            Assert.Same(primary, window.FocusManager?.GetFocusedElement());
+            var shellStatuses = window.GetLogicalDescendants()
+                .OfType<StatusBannerView>()
+                .Select(view => Assert.IsType<VisualStatusViewModel>(view.DataContext))
+                .ToArray();
+            Assert.Single(shellStatuses, status => status.Presentation == StatusPresentation.GlobalContext);
+            Assert.DoesNotContain(
+                shellStatuses,
+                status => status.Presentation == StatusPresentation.ScreenInstruction);
+
+            var importView = new CsvImportView { DataContext = shell.CurrentScreen };
+            var workspaceWindow = new Window { Content = importView };
+            workspaceWindow.Show();
+            Dispatcher.UIThread.RunJobs();
+            var workspaceStatus = Assert.IsType<VisualStatusViewModel>(
+                Assert.Single(importView.GetLogicalDescendants().OfType<StatusBannerView>()).DataContext);
+            Assert.Equal(StatusPresentation.ScreenInstruction, workspaceStatus.Presentation);
+
+            shell.SelectedLanguage = shell.LanguageOptions.Single(option => option.Code == "qps-ploc");
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(StatusPresentation.ScreenInstruction, shell.CurrentScreen.Status.Presentation);
+            Assert.Equal(StatusPresentation.GlobalContext, shell.CurrentStatus.Presentation);
+            workspaceWindow.Close();
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task DashboardOwnsItsSingleContinuationAction()
+    {
+        await Session.Dispatch(() =>
+        {
+            var vault = new ShellViewModelTests.TestVaultLifecycleService();
+            vault.Unlock("Synthetic vault", "Synthetic recovery");
+            var session = new ShellViewModelTests.TestRecoverySessionService();
+            session.SetSession(RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch));
+            var guided = new ShellViewModelTests.TestGuidedRecoveryWizardService(
+                ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
+                new GuidedRecoveryDecision(
+                    RecoveryWizardStepId.AccountInventory,
+                    null,
+                    GuidedRecoveryBlockCode.AccountsRequired));
+            var shell = ShellViewModelTests.CreateGuidedShell(
+                vault,
+                session,
+                new ShellViewModelTests.TestAccountInventoryService(),
+                guided);
+            shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Dashboard);
+            var dashboard = new DashboardView { DataContext = shell.CurrentScreen };
+            var window = new Window { Content = dashboard };
+
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.NotNull(FindByAutomationId(dashboard, "dashboard-recommendation-open"));
+            var mainWindow = new global::Unpwn.App.MainWindow { DataContext = shell };
+            mainWindow.Show();
+            Dispatcher.UIThread.RunJobs();
+            Assert.DoesNotContain(mainWindow.GetLogicalDescendants().OfType<StyledElement>(), element =>
+                AutomationProperties.GetAutomationId(element) == "shell-assistant-primary");
+            mainWindow.Close();
             window.Close();
         }, CancellationToken.None);
     }
@@ -285,7 +342,16 @@ public sealed class AccessibilityHeadlessTests
     {
         await Session.Dispatch(() =>
         {
-            var banner = new StatusBannerView();
+            var localization = new ResourceLocalizationService(
+                System.Globalization.CultureInfo.GetCultureInfo("en"));
+            var banner = new StatusBannerView
+            {
+                DataContext = VisualStatusViewModel.Create(
+                    AppVisualState.Normal,
+                    localization,
+                    "Screen.Vault.StatusTitle",
+                    "Screen.Vault.StatusMessage"),
+            };
             var window = new Window { Content = banner };
             window.Show();
             Dispatcher.UIThread.RunJobs();
@@ -293,6 +359,17 @@ public sealed class AccessibilityHeadlessTests
             var liveRegion = FindByAutomationId(banner, "status-banner");
             Assert.Equal(
                 AutomationLiveSetting.Polite,
+                AutomationProperties.GetLiveSetting(liveRegion));
+
+            banner.DataContext = VisualStatusViewModel.Create(
+                AppVisualState.Error,
+                localization,
+                "Shell.Lock.FailedTitle",
+                "Shell.Lock.Error",
+                StatusPresentation.GlobalWarning);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(
+                AutomationLiveSetting.Assertive,
                 AutomationProperties.GetLiveSetting(liveRegion));
 
             window.Close();

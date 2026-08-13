@@ -161,7 +161,7 @@
   <data name="Screen.Credentials.StatusMessage" xml:space="preserve"><value>Exportziel und Bereinigung müssen ausdrücklich bestätigt werden.</value></data>
   <data name="Screen.Credentials.StatusTitle" xml:space="preserve"><value>Klartext-Exporte erfordern Vorsicht</value></data>
   <data name="Screen.Credentials.Title" xml:space="preserve"><value>Zugangsdaten und Export</value></data>
-  <data name="Screen.Dashboard.Description" xml:space="preserve"><value>Hier werden kritische Konten, Fortschritt und blockierte Arbeiten zusammengefasst.</value></data>
+  <data name="Screen.Dashboard.Description" xml:space="preserve"><value>Prüfe deine Wiederherstellungssitzung, die empfohlene nächste Aufgabe und Arbeit mit weiterem Handlungsbedarf.</value></data>
   <data name="Screen.Dashboard.StatusMessage" xml:space="preserve"><value>Entsperre einen Wiederherstellungstresor, um den Sitzungsfortschritt zu laden.</value></data>
   <data name="Screen.Dashboard.StatusTitle" xml:space="preserve"><value>Platzhalter für die Übersicht</value></data>
   <data name="Screen.Dashboard.Title" xml:space="preserve"><value>Wiederherstellungsübersicht</value></data>
@@ -185,6 +185,16 @@
   <data name="Shell.Lock.FailedTitle" xml:space="preserve"><value>Sperren des Tresors fehlgeschlagen</value></data>
   <data name="Shell.Lock.StatusMessage" xml:space="preserve"><value>Wiederherstellungsdaten sind in der Anwendung nicht mehr verfügbar.</value></data>
   <data name="Shell.Lock.StatusTitle" xml:space="preserve"><value>Tresor gesperrt</value></data>
+  <data name="Shell.Status.VaultLocked.Title" xml:space="preserve"><value>Tresor gesperrt</value></data>
+  <data name="Shell.Status.VaultLocked.Message" xml:space="preserve"><value>In der Anwendung sind keine Wiederherstellungsdaten verfügbar.</value></data>
+  <data name="Shell.Status.VaultUnlocked.Title" xml:space="preserve"><value>Tresor entsperrt</value></data>
+  <data name="Shell.Status.VaultUnlocked.Message" xml:space="preserve"><value>Tresor: {0}. Keine Wiederherstellungssitzung ist aktiv.</value></data>
+  <data name="Shell.Status.SessionActive.Title" xml:space="preserve"><value>Wiederherstellungssitzung aktiv</value></data>
+  <data name="Shell.Status.SessionPaused.Title" xml:space="preserve"><value>Wiederherstellungssitzung pausiert</value></data>
+  <data name="Shell.Status.SessionCompleted.Title" xml:space="preserve"><value>Wiederherstellungssitzung abgeschlossen</value></data>
+  <data name="Shell.Status.SessionArchived.Title" xml:space="preserve"><value>Wiederherstellungssitzung archiviert</value></data>
+  <data name="Shell.Status.SessionFollowUp.Title" xml:space="preserve"><value>Wiederherstellungssitzung erfordert Nacharbeit</value></data>
+  <data name="Shell.Status.Session.Message" xml:space="preserve"><value>Tresor: {0} · Sitzung: {1}</value></data>
   <data name="Shell.Navigation.Accounts.Description" xml:space="preserve"><value>Bestand und Prioritäten</value></data>
   <data name="Shell.Navigation.Accounts.Label" xml:space="preserve"><value>Konten</value></data>
   <data name="Shell.Navigation.Completion.Description" xml:space="preserve"><value>Abschließende Prüfung</value></data>

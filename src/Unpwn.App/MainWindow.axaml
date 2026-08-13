@@ -44,7 +44,7 @@
       </Grid>
     </Border>
 
-    <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*,Auto">
       <StackPanel Grid.Row="0">
         <Border IsVisible="{Binding HasStartupRecoveryWarning}"
                 AutomationProperties.AutomationId="shell-startup-recovery-warning"
@@ -115,79 +115,6 @@
       </StackPanel>
 
       <Border Grid.Row="1"
-              IsVisible="{Binding IsGuidedWizardVisible}"
-              AutomationProperties.AutomationId="shell-assistant-task"
-              AutomationProperties.LiveSetting="Polite"
-              AutomationProperties.Name="{Binding GuidedRecommendationText}"
-              Margin="24,20,24,8"
-              Padding="26"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-              BorderThickness="1"
-              CornerRadius="14"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto"
-              ColumnDefinitions="*,Auto"
-              ColumnSpacing="24"
-              RowSpacing="12">
-          <StackPanel Grid.Row="0" Grid.Column="0" Spacing="5">
-            <TextBlock FontSize="12"
-                       FontWeight="Bold"
-                       Text="{DynamicResource Shell.Assistant.Heading}" />
-            <TextBlock FontSize="26"
-                       FontWeight="SemiBold"
-                       Text="{Binding GuidedStepText}"
-                       TextWrapping="Wrap" />
-          </StackPanel>
-
-          <Button x:Name="AssistantPrimaryAction"
-                  Grid.Row="0"
-                  Grid.Column="1"
-                  Classes="initial-focus"
-                  MinWidth="150"
-                  VerticalAlignment="Center"
-                  AutomationProperties.AutomationId="shell-assistant-primary"
-                  Command="{Binding GuidedPrimaryCommand}"
-                  Content="{Binding GuidedPrimaryActionText}" />
-
-          <TextBlock Grid.Row="1"
-                     Grid.ColumnSpan="2"
-                     FontSize="17"
-                     FontWeight="SemiBold"
-                     Text="{Binding GuidedRecommendationText}"
-                     TextWrapping="Wrap" />
-
-          <Border Grid.Row="2"
-                  Grid.ColumnSpan="2"
-                  Padding="14"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <StackPanel Spacing="5">
-              <TextBlock FontSize="12"
-                         FontWeight="Bold"
-                         Text="{DynamicResource Shell.Assistant.WhyHeading}" />
-              <TextBlock Text="{Binding GuidedWhyText}"
-                         TextWrapping="Wrap" />
-              <TextBlock IsVisible="{Binding HasGuidedTarget}"
-                         FontWeight="SemiBold"
-                         Text="{Binding GuidedTargetText}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-
-          <StackPanel Grid.Row="3"
-                      Grid.ColumnSpan="2"
-                      Orientation="Horizontal"
-                      Spacing="8">
-            <Button Command="{Binding GuidedBackCommand}"
-                    Content="{DynamicResource Shell.Guided.Back}" />
-            <Button IsVisible="{Binding IsGuidedPauseAvailable}"
-                    Command="{Binding PauseSessionCommand}"
-                    Content="{DynamicResource Shell.Assistant.Pause}" />
-          </StackPanel>
-        </Grid>
-      </Border>
-
-      <Border Grid.Row="2"
               Margin="24,8,24,0"
               Padding="12"
               BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
@@ -251,14 +178,14 @@
         </StackPanel>
       </Border>
 
-      <ScrollViewer Grid.Row="3" TabIndex="3">
+      <ScrollViewer Grid.Row="2" TabIndex="3">
         <ContentControl Margin="28,24"
                         MaxWidth="1000"
                         HorizontalAlignment="Stretch"
                         Content="{Binding CurrentScreen}" />
       </ScrollViewer>
 
-      <Border Grid.Row="4"
+      <Border Grid.Row="3"
               Padding="20,12"
               BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
               BorderThickness="0,1,0,0"

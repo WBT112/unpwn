@@ -336,7 +336,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         SetLocalizedStatus(
             AppVisualState.Normal,
             "Workflow.Plan.Recalculated.Title",
-            feedbackResourceKey);
+            feedbackResourceKey,
+            StatusPresentation.TransientResult);
     }
 
     public RelayCommand OpenBlockedCommand { get; }
@@ -424,7 +425,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
                 : "Dashboard.Status.Created.Title",
             HasEmergencyAdvisory
                 ? "Dashboard.Status.Emergency.Message"
-                : "Dashboard.Status.Created.Message");
+                : "Dashboard.Status.Created.Message",
+            StatusPresentation.TransientResult);
     }
 
     private async Task PauseAsync(CancellationToken cancellationToken)
@@ -628,7 +630,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         SetLocalizedStatus(
             AppVisualState.Error,
             "Dashboard.Status.OperationFailed.Title",
-            "Dashboard.Status.OperationFailed.Message");
+            "Dashboard.Status.OperationFailed.Message",
+            StatusPresentation.TransientResult);
     }
 
     private void RaiseCommandStates()

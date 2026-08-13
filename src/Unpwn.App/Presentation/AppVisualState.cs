@@ -1,3 +1,4 @@
+using Avalonia.Automation;
 using Unpwn.App.Localization;
 
 namespace Unpwn.App.Presentation;
@@ -12,18 +13,35 @@ public enum AppVisualState
     UnresolvedRisk,
 }
 
+public enum StatusPresentation
+{
+    ScreenInstruction,
+    GlobalContext,
+    GlobalWarning,
+    TransientResult,
+}
+
 public sealed record VisualStatusViewModel(
     AppVisualState State,
     string KindLabel,
     string Symbol,
     string Title,
-    string Message)
+    string Message,
+    StatusPresentation Presentation = StatusPresentation.ScreenInstruction)
 {
+    public AutomationLiveSetting LiveSetting => Presentation == StatusPresentation.GlobalWarning
+        ? AutomationLiveSetting.Assertive
+        : AutomationLiveSetting.Polite;
+
+    public bool IsTransientResult => Presentation == StatusPresentation.TransientResult;
+
     public static VisualStatusViewModel Create(
         AppVisualState state,
         ILocalizationService localization,
         string titleKey,
-        string messageKey)
+        string messageKey,
+        StatusPresentation presentation = StatusPresentation.ScreenInstruction,
+        params object?[] messageArguments)
     {
         ArgumentNullException.ThrowIfNull(localization);
         ArgumentException.ThrowIfNullOrWhiteSpace(titleKey);
@@ -45,6 +63,9 @@ public sealed record VisualStatusViewModel(
             localization.GetString(kindKey),
             symbol,
             localization.GetString(titleKey),
-            localization.GetString(messageKey));
+            messageArguments.Length == 0
+                ? localization.GetString(messageKey)
+                : localization.Format(messageKey, messageArguments),
+            presentation);
     }
 }

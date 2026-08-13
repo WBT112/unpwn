@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -12,7 +11,6 @@ public partial class MainWindow : Window
 {
     private IVaultLifecycleService? _vaultLifecycle;
     private DispatcherTimer? _inactivityTimer;
-    private ShellViewModel? _subscribedShell;
     private IApplicationPreferences? _applicationPreferences;
     private SettingsScreenViewModel? _settingsViewModel;
     private SettingsWindow? _settingsWindow;
@@ -22,8 +20,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        DataContextChanged += MainWindow_OnDataContextChanged;
-        Opened += MainWindow_OnOpened;
         Resized += MainWindow_OnResized;
     }
 
@@ -81,11 +77,6 @@ public partial class MainWindow : Window
         _settingsWindow = null;
         SaveWindowPreferences();
 
-        _subscribedShell?.PropertyChanged -= Shell_OnPropertyChanged;
-        _subscribedShell = null;
-
-        DataContextChanged -= MainWindow_OnDataContextChanged;
-        Opened -= MainWindow_OnOpened;
         Resized -= MainWindow_OnResized;
         if (_inactivityTimer is not null)
         {
@@ -96,22 +87,6 @@ public partial class MainWindow : Window
 
         base.OnClosed(e);
     }
-
-    private void MainWindow_OnDataContextChanged(object? sender, EventArgs eventArgs)
-    {
-        if (sender is not MainWindow window)
-        {
-            return;
-        }
-
-        _subscribedShell?.PropertyChanged -= Shell_OnPropertyChanged;
-
-        _subscribedShell = window.DataContext as ShellViewModel;
-        _subscribedShell?.PropertyChanged += Shell_OnPropertyChanged;
-    }
-
-    private void MainWindow_OnOpened(object? sender, EventArgs eventArgs) =>
-        FocusAssistantTask();
 
     private void MainWindow_OnResized(object? sender, WindowResizedEventArgs eventArgs)
     {
@@ -130,14 +105,6 @@ public partial class MainWindow : Window
             eventArgs.ClientSize.Height >= MainWindowPresentationPolicy.MinimumHeight)
         {
             _lastNormalHeight = eventArgs.ClientSize.Height;
-        }
-    }
-
-    private void Shell_OnPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
-    {
-        if (eventArgs.PropertyName == nameof(ShellViewModel.AssistantFocusRequest))
-        {
-            FocusAssistantTask();
         }
     }
 
@@ -203,17 +170,6 @@ public partial class MainWindow : Window
             return (double.PositiveInfinity, double.PositiveInfinity);
         }
     }
-
-    private void FocusAssistantTask() =>
-        Dispatcher.UIThread.Post(
-            () =>
-            {
-                if (AssistantPrimaryAction is { IsVisible: true, IsEnabled: true })
-                {
-                    AssistantPrimaryAction.Focus(NavigationMethod.Tab);
-                }
-            },
-            DispatcherPriority.Loaded);
 
     private async void InactivityTimer_OnTick(object? sender, EventArgs eventArgs)
     {

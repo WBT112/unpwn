@@ -54,6 +54,7 @@ public sealed class DashboardScreenViewModelTests
         Assert.Equal(IncidentIndicator.None, sessionService.LastCreateRequest.Indicators);
         Assert.True(viewModel.IsDashboardState);
         Assert.False(viewModel.HasValidationMessage);
+        Assert.Equal(StatusPresentation.TransientResult, viewModel.Status.Presentation);
     }
 
     [Fact]
@@ -140,11 +141,15 @@ public sealed class DashboardScreenViewModelTests
         Assert.True(viewModel.HasRecommendationAction);
         Assert.Equal("Recommended account or service: GitHub", viewModel.RecommendationTargetText);
         Assert.Equal("Current action: Change the password", viewModel.RecommendationActionText);
+        Assert.Equal("0 of 0 critical accounts handled.", viewModel.CriticalReadinessText);
+        Assert.Equal("Progress: 0%", viewModel.WeightedProgressText);
 
         localization.SetLanguage("de");
 
         Assert.Equal("Empfohlenes Konto oder Dienst: GitHub", viewModel.RecommendationTargetText);
         Assert.Equal("Aktuelle Aktion: Passwort ändern", viewModel.RecommendationActionText);
+        Assert.Equal("0 von 0 kritischen Konten bearbeitet.", viewModel.CriticalReadinessText);
+        Assert.Equal("Fortschritt: 0 %", viewModel.WeightedProgressText);
     }
 
     [Fact]

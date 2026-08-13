@@ -6,11 +6,10 @@ The Avalonia desktop application uses an MVVM-oriented shell as its composition 
 
 The application starts with no vault unlocked. The header displays explicit locked-vault and no-session labels, the vault-entry route is selected, and no recovery data is loaded. A global lock action is visible whenever an injected shell-context service reports an unlocked vault. Locking returns navigation to the vault-entry route.
 
-During an active recovery session, the primary shell surface is the guided assistant task card. It
-shows the persisted wizard phase, the next task, why it matters, an optional recommended account and
-reviewed action, and one context-sensitive primary action. Back and pause remain secondary actions.
-When the canonical recommendation changes, keyboard and screen-reader focus moves to the new primary
-task action. Merely opening a route never advances the wizard.
+During an active recovery session, the active workspace owns its instructions, explanation, current
+task, and primary action. Persistent shell chrome does not present a second assistant card or CTA.
+The dashboard projects the canonical next recommendation into the workspace; merely opening a route
+never advances the wizard.
 
 The stable top-level routes remain available as secondary detail and correction views behind the
 workspace disclosure:
@@ -36,11 +35,18 @@ is visible immediately.
 
 Routes whose functional application use cases are not implemented show an explicit localized placeholder instead of simulating recovery behavior.
 
-The shell also owns two global, non-domain status surfaces. Encrypted workspace writes publish visible
-saving, saved, retrying, cancelled, and save-failed states; failure text distinguishes access,
-storage, version, and lock/conflict cases without exposing source exception details. A prior abnormal
-exit produces a dismissible warning that instructs the user to review the recovered state. Neither
-surface changes workflow state or implies that an external provider action succeeded.
+Status ownership is explicit and language-neutral. `ScreenInstruction` and screen-local
+`TransientResult` messages render in the active workspace. The persistent status line renders
+`GlobalContext`, such as the current vault and recovery-session lifecycle, while `GlobalWarning`
+messages remain available across routes. The shell never promotes `ScreenViewModel.Status` into the
+global line based on its localized text.
+
+Encrypted workspace writes publish visible saving, saved, retrying, cancelled, and save-failed
+states; failure text distinguishes access, storage, version, and lock/conflict cases without exposing
+source exception details. A prior abnormal exit and interrupted Recovery Browser cleanup produce
+dismissible or retryable global warnings. Material global warnings use one assertive live region;
+normal context and screen results are polite. None of these surfaces changes workflow state or
+implies that an external provider action succeeded.
 
 The workflow-execution route is functional. It resolves the selected or currently recommended account
 from the encrypted inventory, binds it to a reviewed repository workflow, and projects the persisted

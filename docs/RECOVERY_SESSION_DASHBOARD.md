@@ -52,16 +52,18 @@ This recommendation is derived only from user-provided structured observations. 
 
 The dashboard deliberately does not reduce recovery status to one percentage.
 
-### Primary readiness signal
+### Primary account signal
 
-Critical-account readiness is shown before aggregate progress. A critical account counts as ready only when it is fully reviewed and has no recorded lost access, required-action blocker, required-action failure, or unresolved risk.
+The normal UI shows `x of n critical accounts handled` before aggregate progress. A critical account
+counts as handled only when it is fully reviewed and has no recorded lost access, required-action
+blocker, required-action failure, or unresolved risk. Internal readiness terminology is not exposed.
 
 ### Supporting metrics
 
 The dashboard also displays:
 
 - fully reviewed accounts compared with total accounts;
-- weighted completion of applicable required actions;
+- simple recovery progress;
 - blocked required actions;
 - failed required actions;
 - unresolved risks;
@@ -69,7 +71,9 @@ The dashboard also displays:
 - generated credentials awaiting export;
 - exported credentials awaiting deletion.
 
-A high weighted-progress value never hides the separate warning groups and is never labelled as a security verdict.
+The simple percentage retains the deterministic weighted required-action calculation internally. The
+normal UI does not expose that implementation detail. A high progress value never hides the separate
+warning groups and is never labelled as a security verdict.
 
 ### Recommended next step
 
@@ -135,7 +139,7 @@ The test suite covers:
 - secret-like description rejection before persistence;
 - emergency advisory prioritization;
 - mixed criticality, blockers, unresolved risks, lost access, and credential cleanup;
-- critical readiness kept separate from weighted progress;
+- critical accounts handled kept separate from the simple progress presentation;
 - encrypted create and reload behavior;
 - corrupted records that are not overwritten;
 - pause, resume, archive, and lock-memory boundaries;

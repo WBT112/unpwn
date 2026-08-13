@@ -31,8 +31,16 @@ public abstract class ScreenViewModel(
     public VisualStatusViewModel Status
     {
         get => _status;
-        protected set => SetProperty(ref _status, value);
+        protected set
+        {
+            if (SetProperty(ref _status, value))
+            {
+                OnPropertyChanged(nameof(IsTransientStatusVisible));
+            }
+        }
     }
+
+    public bool IsTransientStatusVisible => Status.IsTransientResult;
 
     public virtual void Activate()
     {
@@ -50,6 +58,7 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
     private AppVisualState _statusState;
     private string _statusTitleKey;
     private string _statusMessageKey;
+    private StatusPresentation _statusPresentation;
 
     protected LocalizedScreenViewModel(
         AppRoute route,
@@ -58,7 +67,8 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
         string descriptionKey,
         AppVisualState statusState,
         string statusTitleKey,
-        string statusMessageKey)
+        string statusMessageKey,
+        StatusPresentation statusPresentation = StatusPresentation.ScreenInstruction)
         : base(
             route,
             Get(localization, titleKey),
@@ -67,7 +77,8 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
                 statusState,
                 Require(localization),
                 statusTitleKey,
-                statusMessageKey))
+                statusMessageKey,
+                statusPresentation))
     {
         Localization = localization;
         _titleKey = titleKey;
@@ -75,6 +86,7 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
         _statusState = statusState;
         _statusTitleKey = statusTitleKey;
         _statusMessageKey = statusMessageKey;
+        _statusPresentation = statusPresentation;
         Localization.CultureChanged += Localization_OnCultureChanged;
     }
 
@@ -83,12 +95,19 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
     protected void SetLocalizedStatus(
         AppVisualState state,
         string titleKey,
-        string messageKey)
+        string messageKey,
+        StatusPresentation presentation = StatusPresentation.ScreenInstruction)
     {
         _statusState = state;
         _statusTitleKey = titleKey;
         _statusMessageKey = messageKey;
-        Status = VisualStatusViewModel.Create(state, Localization, titleKey, messageKey);
+        _statusPresentation = presentation;
+        Status = VisualStatusViewModel.Create(
+            state,
+            Localization,
+            titleKey,
+            messageKey,
+            presentation);
     }
 
     protected virtual void RefreshLocalization()
@@ -99,7 +118,8 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
             _statusState,
             Localization,
             _statusTitleKey,
-            _statusMessageKey);
+            _statusMessageKey,
+            _statusPresentation);
     }
 
     private static ILocalizationService Require(ILocalizationService localization)

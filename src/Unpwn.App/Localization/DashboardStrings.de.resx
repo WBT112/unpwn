@@ -39,12 +39,12 @@
   <data name="Dashboard.Session.WizardPhase" xml:space="preserve"><value>Aktuelle Phase: {0}</value></data>
   <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Wiederherstellungskanal zuerst prüfen</value></data>
   <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Deine Angaben deuten darauf hin, dass ein primärer Wiederherstellungskanal oder ein kritischer Zugriff sofortige Aufmerksamkeit benötigen könnte. Das ist eine beratende Priorisierung und kein automatisches Erkennungsergebnis.</value></data>
-  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Bereitschaft kritischer Konten</value></data>
-  <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} von {1} kritischen Konten sind vollständig geprüft, ohne erfasste Blockaden oder ungelöste Risiken.</value></data>
+  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Kritische Konten</value></data>
+  <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} von {1} kritischen Konten bearbeitet.</value></data>
   <data name="Dashboard.Accounts.Title" xml:space="preserve"><value>Kontenabdeckung</value></data>
   <data name="Dashboard.Accounts.Coverage" xml:space="preserve"><value>{0} von {1} Konten sind vollständig geprüft.</value></data>
-  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Gewichteter Fortschritt erforderlicher Aktionen</value></data>
-  <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>{0:P0} des Gewichts der anwendbaren erforderlichen Aktionen ist abgeschlossen.</value></data>
+  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Wiederherstellungsfortschritt</value></data>
+  <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>Fortschritt: {0:P0}</value></data>
   <data name="Dashboard.Progress.Disclaimer" xml:space="preserve"><value>Fortschritt ist kein Sicherheitsurteil. Zugriffsverlust, Blockaden, Fehlschläge und ungelöste Risiken bleiben getrennt sichtbar.</value></data>
   <data name="Dashboard.Metric.Unavailable" xml:space="preserve"><value>Keine Sitzungsdaten verfügbar.</value></data>
   <data name="Dashboard.Alert.SectionTitle" xml:space="preserve"><value>Arbeit mit weiterem Handlungsbedarf</value></data>
@@ -100,7 +100,7 @@
   <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Wiederherstellungssitzung nicht verfügbar</value></data>
   <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>Der verschlüsselte Datensatz konnte nicht sicher verarbeitet werden und blieb unverändert.</value></data>
   <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Wiederherstellungssitzung aktiv</value></data>
-  <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>Prüfe die Bereitschaft kritischer Konten und die nächste Empfehlung, bevor du dich auf den Gesamtfortschritt verlässt.</value></data>
+  <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>Die empfohlene nächste Aufgabe und Arbeit mit weiterem Handlungsbedarf werden unten angezeigt.</value></data>
   <data name="Dashboard.Status.Paused.Title" xml:space="preserve"><value>Wiederherstellungssitzung pausiert</value></data>
   <data name="Dashboard.Status.Paused.Message" xml:space="preserve"><value>Setze die Sitzung fort, bevor du den Wiederherstellungszustand änderst.</value></data>
   <data name="Dashboard.Status.Archived.Title" xml:space="preserve"><value>Wiederherstellungssitzung archiviert</value></data>
@@ -108,7 +108,7 @@
   <data name="Dashboard.Status.Emergency.Title" xml:space="preserve"><value>Wirkungsstarker Wiederherstellungskanal muss geprüft werden</value></data>
   <data name="Dashboard.Status.Emergency.Message" xml:space="preserve"><value>Die Vorfallangaben erzeugen eine beratende Priorität. Sie beweisen keine Kompromittierung eines Kontos oder Geräts.</value></data>
   <data name="Dashboard.Status.Created.Title" xml:space="preserve"><value>Wiederherstellungssitzung angelegt</value></data>
-  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Fahre mit dem CSV-Import fort.</value></data>
+  <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Nutze den unten empfohlenen nächsten Schritt.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Sitzungsaktion fehlgeschlagen</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>Es wurden weder eine Quellfehlermeldung noch geheime Werte angezeigt. Prüfe die sichere Validierungsmeldung.</value></data>
   <data name="Dashboard.WizardStep.Welcome" xml:space="preserve"><value>Willkommen</value></data>

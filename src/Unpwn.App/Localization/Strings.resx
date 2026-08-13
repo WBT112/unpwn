@@ -161,7 +161,7 @@
   <data name="Screen.Credentials.StatusMessage" xml:space="preserve"><value>Export destinations and cleanup must be explicitly confirmed.</value></data>
   <data name="Screen.Credentials.StatusTitle" xml:space="preserve"><value>Plaintext exports require care</value></data>
   <data name="Screen.Credentials.Title" xml:space="preserve"><value>Credentials and export</value></data>
-  <data name="Screen.Dashboard.Description" xml:space="preserve"><value>Critical-account readiness, progress, and blocked work will be summarized here.</value></data>
+  <data name="Screen.Dashboard.Description" xml:space="preserve"><value>Review your recovery session, its next recommended task, and work that still needs attention.</value></data>
   <data name="Screen.Dashboard.StatusMessage" xml:space="preserve"><value>Unlock a recovery vault to load session progress.</value></data>
   <data name="Screen.Dashboard.StatusTitle" xml:space="preserve"><value>Dashboard placeholder</value></data>
   <data name="Screen.Dashboard.Title" xml:space="preserve"><value>Recovery dashboard</value></data>
@@ -185,6 +185,16 @@
   <data name="Shell.Lock.FailedTitle" xml:space="preserve"><value>Vault lock failed</value></data>
   <data name="Shell.Lock.StatusMessage" xml:space="preserve"><value>Recovery data is no longer available in the application shell.</value></data>
   <data name="Shell.Lock.StatusTitle" xml:space="preserve"><value>Vault locked</value></data>
+  <data name="Shell.Status.VaultLocked.Title" xml:space="preserve"><value>Vault locked</value></data>
+  <data name="Shell.Status.VaultLocked.Message" xml:space="preserve"><value>No recovery data is available in the application.</value></data>
+  <data name="Shell.Status.VaultUnlocked.Title" xml:space="preserve"><value>Vault unlocked</value></data>
+  <data name="Shell.Status.VaultUnlocked.Message" xml:space="preserve"><value>Vault: {0}. No recovery session is active.</value></data>
+  <data name="Shell.Status.SessionActive.Title" xml:space="preserve"><value>Recovery session active</value></data>
+  <data name="Shell.Status.SessionPaused.Title" xml:space="preserve"><value>Recovery session paused</value></data>
+  <data name="Shell.Status.SessionCompleted.Title" xml:space="preserve"><value>Recovery session completed</value></data>
+  <data name="Shell.Status.SessionArchived.Title" xml:space="preserve"><value>Recovery session archived</value></data>
+  <data name="Shell.Status.SessionFollowUp.Title" xml:space="preserve"><value>Recovery session needs follow-up</value></data>
+  <data name="Shell.Status.Session.Message" xml:space="preserve"><value>Vault: {0} · Session: {1}</value></data>
   <data name="Shell.Navigation.Accounts.Description" xml:space="preserve"><value>Inventory and priorities</value></data>
   <data name="Shell.Navigation.Accounts.Label" xml:space="preserve"><value>Accounts</value></data>
   <data name="Shell.Navigation.Completion.Description" xml:space="preserve"><value>Final review</value></data>
