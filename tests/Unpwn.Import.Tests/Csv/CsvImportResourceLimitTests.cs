@@ -72,7 +72,7 @@ public sealed class CsvImportResourceLimitTests
     [Fact]
     public void PreviewRejectsRecordBeyondConfiguredLength()
     {
-        const string csv = "service,username\nMail,person@example.invalid\n";
+        const string csv = "service,username\nABCDEFGHIJ,KLMNOPQRST\n";
         var limits = Limits(maximumRecordCharacters: 20, maximumFieldCharacters: 20);
         var analysis = CsvAccountImportService.Analyze(new StringReader(csv), null, limits);
 
@@ -170,7 +170,11 @@ public sealed class CsvImportResourceLimitTests
     public void TextPreviewRejectsDecodedCharacterLimit()
     {
         const string csv = "service,username\nMail,person@example.invalid\n";
-        var limits = Limits(maximumInputCharacters: 24, maximumHeaderCharacters: 16, maximumRecordCharacters: 20);
+        var limits = Limits(
+            maximumInputCharacters: 24,
+            maximumHeaderCharacters: 16,
+            maximumRecordCharacters: 20,
+            maximumFieldCharacters: 20);
         var analysis = CsvAccountImportService.Analyze(new StringReader(csv), null, limits);
 
         var preview = CsvAccountImportService.CreatePreview(
