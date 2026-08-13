@@ -32,6 +32,8 @@ Domain/state-machine tests cover valid and invalid transitions, the exact catego
 
 Representative domain and parsing tests run under multiple cultures to prove that UI culture does not change canonical behavior.
 
+CSV import boundary tests use small injected limits and cover raw bytes, decoded characters, header/record/field size, columns, rows, preview candidates, retained diagnostics, excluded password fields, cancellation, and rejection before inventory persistence. Limit failures must retain no rejected candidates or imported field content.
+
 ### 3. Synthetic provider and Recovery Browser tests
 
 `tests/Unpwn.SyntheticProvider.Tests` provides a local deterministic ASP.NET Core provider on loopback. It exposes explicit scenarios for login, re-authentication, password change/reset, email-link handoff, MFA, CAPTCHA, expired links, provider errors, unexpected content, and manual recovery. The fixture uses synthetic identifiers only and never routes tests to a live provider.
@@ -113,7 +115,7 @@ Before a supported release:
 - review unresolved provider uncertainty;
 - verify localization completeness, placeholder parity, pseudo-localization, and minimum-window behavior;
 - execute and record the Windows/NVDA and Ubuntu/Orca accessibility checklist;
-- review vault, export, Recovery Browser, credential-insertion, and interruption boundaries;
+- review vault, import, export, Recovery Browser, credential-insertion, and interruption boundaries;
 - confirm packaging/update behavior without weakening the trusted-device or browser-profile model.
 
 ## Pull-request CI
