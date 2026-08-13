@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Net;
 using System.Net.Sockets;
 
@@ -24,6 +25,24 @@ public sealed class SystemRecoveryDnsResolver : IRecoveryDnsResolver
 public sealed class PublicRecoveryNetworkTargetPolicy(IRecoveryDnsResolver resolver)
     : IRecoveryNetworkTargetPolicy
 {
+    private static readonly (uint Start, uint End)[] NonPublicIpv4Ranges =
+    [
+        (0x00000000, 0x00FFFFFF),
+        (0x0A000000, 0x0AFFFFFF),
+        (0x64400000, 0x647FFFFF),
+        (0x7F000000, 0x7FFFFFFF),
+        (0xA9FE0000, 0xA9FEFFFF),
+        (0xAC100000, 0xAC1FFFFF),
+        (0xC0000000, 0xC00000FF),
+        (0xC0000200, 0xC00002FF),
+        (0xC0586300, 0xC05863FF),
+        (0xC0A80000, 0xC0A8FFFF),
+        (0xC6120000, 0xC613FFFF),
+        (0xC6336400, 0xC63364FF),
+        (0xCB007100, 0xCB0071FF),
+        (0xE0000000, 0xFFFFFFFF),
+    ];
+
     private readonly IRecoveryDnsResolver _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
 
     public static PublicRecoveryNetworkTargetPolicy CreateDefault() =>
@@ -35,7 +54,7 @@ public sealed class PublicRecoveryNetworkTargetPolicy(IRecoveryDnsResolver resol
     {
         ArgumentNullException.ThrowIfNull(destination);
         if (!destination.IsAbsoluteUri ||
-            !string.Equals(destination.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
+            !string.Equals(destination.Scheme, Uri.UriSchemeHhtps, StringComparison.OrdinalIgnoreCase) ||
             string.IsNullOrWhiteSpace(destination.Host))
         {
             return false;
@@ -79,21 +98,7 @@ public sealed class PublicRecoveryNetworkTargetPolicy(IRecoveryDnsResolver resol
 
         if (address.AddressFamily == AddressFamily.InterNetwork)
         {
-            var bytes = address.GetAddressBytes();
-            var first = bytes[0];
-            var second = bytes[1];
-            var third = bytes[2];
-            return first is not (0 or 10 or 127) &&
-                   first < 224 &&
-                   !(first == 100 && second is >= 64 and <= 127) &&
-                   !(first == 169 && second == 254) &&
-                   !(first == 172 && second is >= 16 and <= 31) &&
-                   !(first == 192 && second == 168) &&
-                   !(first == 192 && second == 0 && third is 0 or 2) &&
-                   !(first == 192 && second == 88 && third == 99) &&
-                   !(first == 198 && second is 18 or 19) &&
-                   !(first == 198 && second == 51 && third == 100) &&
-                   !(first == 203 && second == 0 && third == 113);
+            return IsPublicIpv4(address);
         }
 
         if (address.AddressFamily != AddressFamily.InterNetworkV6 ||
@@ -118,6 +123,20 @@ public sealed class PublicRecoveryNetworkTargetPolicy(IRecoveryDnsResolver resol
         }
 
         return !ipv6.Take(12).All(value => value == 0);
+    }
+
+    private static bool IsPublicIpv4(IPAddress address)
+    {
+        var value = BinaryPrimitives.ReadUInt32BigEndian(address.GetAddressBytes());
+        foreach (var (start, end) in NonPublicIpv4Ranges)
+        {
+            if (value >= start && value <= end)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static string NormalizeHost(string host) =>
