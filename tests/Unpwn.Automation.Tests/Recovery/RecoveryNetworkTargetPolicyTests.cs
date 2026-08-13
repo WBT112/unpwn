@@ -40,7 +40,7 @@ public sealed class RecoveryNetworkTargetPolicyTests
     [Fact]
     public async Task LocalhostNameIsRejectedWithoutDnsResolution()
     {
-        var resolver = new StaticDnsResolver(new Dictionary<string, IPAddress[]>());
+        var resolver = new StaticDnsResolver([]);
         var policy = new PublicRecoveryNetworkTargetPolicy(resolver);
 
         var allowed = await policy.IsAllowedAsync(
@@ -98,9 +98,8 @@ public sealed class RecoveryNetworkTargetPolicyTests
     public async Task LiteralPrivateTargetStopsBeforeHttpHandler()
     {
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
-        var policy = new PublicRecoveryNetworkTargetPolicy(
-            new StaticDnsResolver(new Dictionary<string, IPAddress[]>()));
-        using var service = CreateService(handler, policy, CreateWorkflow([]));
+        var policy = new PublicRecoveryNetworkTargetPolicy(new StaticDnsResolver([]));
+        using var service = CreateService(handler, policy);
 
         var result = await service.DiscoverAsync(
             new RecoveryLocationDiscoveryRequest(
@@ -133,7 +132,7 @@ public sealed class RecoveryNetworkTargetPolicyTests
             new Uri("https://service.example/security"),
             ["https://service.example", "https://accounts.service.example"]);
         var workflow = CreateWorkflow([location]);
-        using var service = CreateService(handler, policy, workflow);
+        using var service = CreateService(handler, policy);
 
         var result = await service.DiscoverAsync(
             new RecoveryLocationDiscoveryRequest(
@@ -152,15 +151,11 @@ public sealed class RecoveryNetworkTargetPolicyTests
 
     private static HttpRecoveryLocationDiscoveryService CreateService(
         HttpMessageHandler handler,
-        IRecoveryNetworkTargetPolicy policy,
-        RecoveryWorkflowDefinition workflow)
-    {
-        _ = workflow;
-        return new HttpRecoveryLocationDiscoveryService(
+        IRecoveryNetworkTargetPolicy policy) =>
+        new(
             new HttpMessageInvoker(handler, disposeHandler: true),
             disposeInvoker: true,
             networkTargetPolicy: policy);
-    }
 
     private static RecoveryWorkflowDefinition CreateWorkflow(
         IReadOnlyList<RecoveryLocationDefinition> locations) =>
