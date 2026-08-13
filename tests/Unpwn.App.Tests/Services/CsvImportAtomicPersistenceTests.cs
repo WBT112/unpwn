@@ -43,6 +43,31 @@ public sealed class CsvImportAtomicPersistenceTests
         Assert.Contains(store.LastBatchWrites, write => write.Descriptor.RecordType == "recovery-session");
     }
 
+    [Fact]
+    public async Task EmptyRejectedCandidateSetDoesNotEnterPersistencePath()
+    {
+        var store = new SuccessfulBatchRecordStore();
+        var session = new TestSessionProjectionService(
+            RecoverySessionWorkspace.Create(
+                Guid.NewGuid(),
+                "Synthetic CSV rejection",
+                RecoveryIncidentIntake.Empty,
+                StartedAt),
+            () => StartedAt);
+        using var service = new AccountInventoryService(store, session, () => StartedAt);
+        await service.InitializeAsync(CancellationToken.None);
+        var writesBefore = store.BatchWriteCalls;
+
+        var result = await service.ImportAsync(
+            [],
+            ImportDuplicateResolution.SkipDuplicates,
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Empty(service.CurrentInventory?.Accounts ?? []);
+        Assert.Equal(writesBefore, store.BatchWriteCalls);
+    }
+
     private static IReadOnlyList<ImportAccountCandidate> CreateDuplicateCandidates()
     {
         const string csv = "service,login\nMail,person@example.invalid\nMail,person@example.invalid\n";
@@ -58,6 +83,8 @@ public sealed class CsvImportAtomicPersistenceTests
         public bool IsVaultUnlocked => true;
 
         public IReadOnlyList<VaultRecordWrite> LastBatchWrites { get; private set; } = [];
+
+        public int BatchWriteCalls { get; private set; }
 
         public Task<byte[]?> ReadEncryptedRecordAsync(
             VaultRecordDescriptor descriptor,
@@ -81,6 +108,7 @@ public sealed class CsvImportAtomicPersistenceTests
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            BatchWriteCalls++;
             LastBatchWrites = [.. writes];
             return Task.CompletedTask;
         }
