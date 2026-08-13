@@ -25,6 +25,9 @@ password values must not enter account candidates, diagnostics, duplicate keys, 
 serialized previews, UI strings, logs, test artifacts, or encrypted inventory state. The stream parser
 does not append excluded field characters to its field buffers.
 
+Excluded fields still participate in resource accounting. A hostile oversized password value therefore
+cannot bypass field, record, decoded-input, or raw-byte limits merely because its content is not retained.
+
 Diagnostics use structured codes and row numbers rather than echoing imported values.
 
 ## Duplicate handling
@@ -53,11 +56,29 @@ The importer is platform-neutral and language-neutral. Changing the GUI language
 
 Saved mappings contain column names and canonical target identifiers only, never source values or translated target labels.
 
-CSV files are untrusted input. The current parser rejects malformed structure and unsafe account URLs,
-but the pre-release implementation does not yet enforce explicit finite limits for total bytes, field
-length, column count, row count, and retained preview/diagnostic size. A supported release requires
-those limits at the parser boundary, deterministic language-neutral limit failures, cancellation, and
-proof that rejection cannot partially mutate inventory.
+CSV files are untrusted input. Resource limits are enforced while data is consumed, before a selected
+file can grow parser or preview state without bound. The current production limits are:
+
+- 32 MiB raw input bytes plus a 32 Mi-character decoded-input backstop;
+- 64 Ki characters for the header line;
+- 512 Ki characters for one logical CSV record;
+- 256 Ki characters for one decoded field, including multiline quoted fields and excluded password fields;
+- 256 columns;
+- 25,000 data rows;
+- 25,000 retained preview candidates;
+- 512 retained diagnostics, with each repository-controlled diagnostic message limited to 512 characters.
+
+Raw stream bytes are bounded before decoding when the stream import boundary is used. Parser limits are
+checked while characters are consumed, including quoted multiline fields, rather than after a large
+field or record has already been materialized. Cancellation is checked throughout the parsing loop.
+
+A resource-limit violation aborts the current analysis or preview and returns one document-level,
+language-neutral `InputTooLarge` or `InputTooComplex` diagnostic. The UI localizes that code. The
+diagnostic contains no imported field value. A rejected preview contains no candidates and cannot be
+confirmed for inventory persistence, so limit rejection cannot partially import the parsed prefix.
+
+These are current safety limits, not a compatibility promise. Changing them requires corresponding
+security review, documentation, and deterministic boundary tests.
 
 ## Mapping quality
 
@@ -76,4 +97,4 @@ The desktop application supplies non-secret existing-account references for dupl
 
 For the resulting account model and queue rules, see [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md). Localization requirements are defined in [Localization](LOCALIZATION.md).
 
-Repository-controlled developer fixtures and their expected mapping, diagnostics, provider paths, and post-import setup live in [`samples/import`](../samples/import/SCENARIOS.md). They contain synthetic data only and are the canonical manual import smoke-test input described by the [Testing Strategy](TESTING.md).
+Repository-controlled developer fixtures and their expected mapping, diagnostics, provider paths, and post-import setup live under `samples/import`. They contain synthetic data only and are the canonical manual import smoke-test input described by the [Testing Strategy](TESTING.md).

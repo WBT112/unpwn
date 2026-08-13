@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Import.Diagnostic.InputTooLarge" xml:space="preserve"><value>The CSV file is larger than the supported import limit. Choose a smaller export.</value></data>
+  <data name="Import.Diagnostic.InputTooComplex" xml:space="preserve"><value>The CSV contains too many rows or columns, or fields that are too large. Reduce the export and try again.</value></data>
+</root>
