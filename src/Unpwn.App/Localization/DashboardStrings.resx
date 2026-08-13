@@ -27,7 +27,6 @@
   <data name="Dashboard.Session.LastSaved" xml:space="preserve"><value>Last saved: {0:g}</value></data>
   <data name="Dashboard.Session.LastSaved.None" xml:space="preserve"><value>Not saved yet</value></data>
   <data name="Dashboard.Session.Vault" xml:space="preserve"><value>Vault: {0}</value></data>
-  <data name="Dashboard.Session.WizardPhase" xml:space="preserve"><value>Current phase: {0}</value></data>
   <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Review the recovery channel first</value></data>
   <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Your answers indicate that a primary recovery channel or critical access may need immediate attention. This is an advisory priority, not an automated detection result.</value></data>
   <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Critical accounts</value></data>
@@ -53,7 +52,12 @@
   <data name="Dashboard.Alert.Deletion.Count" xml:space="preserve"><value>{0} credential(s) awaiting deletion</value></data>
   <data name="Dashboard.Alert.Open" xml:space="preserve"><value>Open affected work</value></data>
   <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Recommended next step</value></data>
-  <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Open recommendation</value></data>
+  <data name="Dashboard.Recommendation.Action.Import" xml:space="preserve"><value>Import accounts</value></data>
+  <data name="Dashboard.Recommendation.Action.ReviewAccounts" xml:space="preserve"><value>Review accounts</value></data>
+  <data name="Dashboard.Recommendation.Action.Credentials" xml:space="preserve"><value>Handle credentials</value></data>
+  <data name="Dashboard.Recommendation.Action.Resume" xml:space="preserve"><value>Resume recovery</value></data>
+  <data name="Dashboard.Recommendation.Action.Report" xml:space="preserve"><value>Open report</value></data>
+  <data name="Dashboard.Recommendation.Action.StartRecovery" xml:space="preserve"><value>Start recovery</value></data>
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>No recommendation is available.</value></data>
   <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Recommended account or service: {0}</value></data>
   <data name="Dashboard.Recommendation.Category" xml:space="preserve"><value>Category: {0}</value></data>
@@ -71,7 +75,6 @@
   <data name="Dashboard.Action.Pause" xml:space="preserve"><value>Pause session</value></data>
   <data name="Dashboard.Action.Resume" xml:space="preserve"><value>Resume session</value></data>
   <data name="Dashboard.Action.Archive" xml:space="preserve"><value>Archive session</value></data>
-  <data name="Dashboard.Action.Completion" xml:space="preserve"><value>Open completion review</value></data>
   <data name="Dashboard.Archive.Confirmation.Action" xml:space="preserve"><value>Archive recovery session</value></data>
   <data name="Dashboard.Archive.Confirmation.Consequence" xml:space="preserve"><value>The session remains encrypted and readable, but recovery-state changes will stop. This does not mark accounts as secure or complete.</value></data>
   <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Archive session</value></data>
@@ -102,17 +105,4 @@
   <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>The encrypted session and incident indicators were saved. Use the recommended next step below.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Session operation failed</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>No source exception or secret value was shown. Review the safe validation message.</value></data>
-  <data name="Dashboard.WizardStep.Welcome" xml:space="preserve"><value>Welcome</value></data>
-  <data name="Dashboard.WizardStep.TrustedDeviceCheck" xml:space="preserve"><value>Trusted-device check</value></data>
-  <data name="Dashboard.WizardStep.TrustedDeviceGuidance" xml:space="preserve"><value>Trusted-device guidance</value></data>
-  <data name="Dashboard.WizardStep.VaultEntry" xml:space="preserve"><value>Vault entry</value></data>
-  <data name="Dashboard.WizardStep.IncidentIntake" xml:space="preserve"><value>Incident intake</value></data>
-  <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Import accounts</value></data>
-  <data name="Dashboard.WizardStep.AccountTriage" xml:space="preserve"><value>Account categories</value></data>
-  <data name="Dashboard.WizardStep.RecoveryPlan" xml:space="preserve"><value>Recovery plan</value></data>
-  <data name="Dashboard.WizardStep.AccountRecovery" xml:space="preserve"><value>Account recovery</value></data>
-  <data name="Dashboard.WizardStep.CredentialExport" xml:space="preserve"><value>Credential export</value></data>
-  <data name="Dashboard.WizardStep.CompletionPreflight" xml:space="preserve"><value>Completion preflight</value></data>
-  <data name="Dashboard.WizardStep.FinalReport" xml:space="preserve"><value>Final report</value></data>
-  <data name="Dashboard.WizardStep.Unknown" xml:space="preserve"><value>Unknown phase</value></data>
 </root>

@@ -69,7 +69,7 @@ public partial class App : Avalonia.Application
                 accountRecovery,
                 confirmationDialog,
                 RepositoryRecoveryBrowserCredentialAssistanceCatalog.Instance);
-            var guidedWizard = new GuidedRecoveryWizardService(
+            var recoveryFlow = new RecoveryFlowService(
                 resilientRecordStore,
                 wizard,
                 recoverySession,
@@ -94,14 +94,15 @@ public partial class App : Avalonia.Application
                 credentialExport,
                 credentialClipboard,
                 localization,
-                browserSessions);
+                browserSessions,
+                recoveryFlow);
             var shell = new ShellViewModel(
                 screenFactory,
                 vaultLifecycle,
                 recoverySession,
                 accountInventory,
                 localization,
-                guidedWizard,
+                recoveryFlow,
                 resilientRecordStore,
                 runState,
                 browserSessions);
@@ -135,7 +136,7 @@ public partial class App : Avalonia.Application
                 TaskScheduler.UnobservedTaskException -= taskFailureHandler;
                 settings.Dispose();
                 sessionVaultBridge.Dispose();
-                guidedWizard.Dispose();
+                recoveryFlow.Dispose();
                 locationDiscovery.Dispose();
                 accountInventory.Dispose();
                 recoverySession.Dispose();

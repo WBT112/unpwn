@@ -1,5 +1,6 @@
 using System.Text;
 using Unpwn.App.Services;
+using Unpwn.Application;
 using Unpwn.Application.Credentials;
 using Unpwn.Application.Diagnostics;
 using Unpwn.Application.Recovery;
@@ -43,9 +44,9 @@ public sealed class RecoveryJourneySmokeTests
             accountId = account.Id;
             sessionId = journey.Session.CurrentSession!.Id;
 
-            var inventoryMove = await journey.Guided.AdvanceAsync(CancellationToken.None);
+            var inventoryMove = await journey.Flow.AdvanceAsync(CancellationToken.None);
             Assert.True(inventoryMove.Succeeded);
-            Assert.Equal(RecoveryWizardStepId.AccountTriage, journey.Guided.Current.CurrentStep);
+            Assert.Equal(RecoveryWizardStepId.AccountTriage, journey.Flow.Current.CurrentStep);
 
             journey.Tick();
             Assert.True((await journey.Inventory.CategorizeAsync(
@@ -54,8 +55,8 @@ public sealed class RecoveryJourneySmokeTests
                 CancellationToken.None)).Succeeded);
             account = Assert.Single(journey.Inventory.CurrentInventory!.Accounts);
 
-            Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
-            Assert.Equal(RecoveryWizardStepId.RecoveryPlan, journey.Guided.Current.CurrentStep);
+            Assert.True((await journey.Flow.AdvanceAsync(CancellationToken.None)).Succeeded);
+            Assert.Equal(RecoveryWizardStepId.RecoveryOverview, journey.Flow.Current.CurrentStep);
 
             var workflow = RepositoryWorkflowCatalog.Workflows.Single(candidate =>
                 candidate.ProviderId == account.ProviderId);
@@ -79,8 +80,8 @@ public sealed class RecoveryJourneySmokeTests
                 projection,
                 AccountRecoveryExecutionTransitionKind.SetAccessAvailable));
 
-            Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
-            Assert.Equal(RecoveryWizardStepId.AccountRecovery, journey.Guided.Current.CurrentStep);
+            Assert.Equal(NextUserTaskTarget.AccountRecovery, journey.Flow.NextTask.Target);
+            Assert.False(journey.Flow.NextTask.RequiresTransition);
 
             GeneratedCredentialReference? credentialReference = null;
             foreach (var action in execution.Actions)
@@ -136,10 +137,8 @@ public sealed class RecoveryJourneySmokeTests
 
             Assert.Equal(AccountRecoveryStatus.FullyReviewed, execution.RecoveryStatus);
             Assert.Equal(1, journey.Session.Dashboard!.CredentialsAwaitingExport);
-            Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
-            Assert.Equal(RecoveryWizardStepId.RecoveryPlan, journey.Guided.Current.CurrentStep);
-            Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
-            Assert.Equal(RecoveryWizardStepId.CredentialExport, journey.Guided.Current.CurrentStep);
+            Assert.True((await journey.Flow.AdvanceAsync(CancellationToken.None)).Succeeded);
+            Assert.Equal(RecoveryWizardStepId.CredentialExport, journey.Flow.Current.CurrentStep);
 
             var exportPath = Path.Combine(directory.Path, "generated-credentials.csv");
             var export = await journey.Export.ExportAsync(
@@ -164,16 +163,16 @@ public sealed class RecoveryJourneySmokeTests
             Assert.True((await journey.Vault.DeleteAsync(
                 credentialReference!, Guid.NewGuid(), CancellationToken.None)).Succeeded);
 
-            Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
-            Assert.Equal(RecoveryWizardStepId.CompletionPreflight, journey.Guided.Current.CurrentStep);
+            Assert.True((await journey.Flow.AdvanceAsync(CancellationToken.None)).Succeeded);
+            Assert.Equal(RecoveryWizardStepId.CompletionPreflight, journey.Flow.Current.CurrentStep);
             var review = await journey.Completion.ReviewAsync(CancellationToken.None);
             Assert.True(review.Succeeded);
             Assert.True(review.Preflight!.IsClean);
             Assert.Equal(1, review.Report!.DeletedCredentials);
 
-            Assert.True((await journey.Guided.MarkCompletionReviewReadyAsync(
+            Assert.True((await journey.Flow.MarkCompletionReviewReadyAsync(
                 CancellationToken.None)).Succeeded);
-            Assert.Equal(RecoveryWizardStepId.FinalReport, journey.Guided.Current.CurrentStep);
+            Assert.Equal(RecoveryWizardStepId.FinalReport, journey.Flow.Current.CurrentStep);
             journey.Tick();
             var refreshedReview = await journey.Completion.ReviewAsync(CancellationToken.None);
             Assert.Equal(review.Preflight.SessionRevision, refreshedReview.Preflight!.SessionRevision);
@@ -190,7 +189,7 @@ public sealed class RecoveryJourneySmokeTests
             Assert.True(completed.Succeeded, completed.FailureCode.ToString());
             Assert.Equal(RecoveryCompletionOutcome.Completed, completed.Completion!.Outcome);
             Assert.True(journey.Session.CurrentSession!.IsReadOnly);
-            Assert.Equal(RecoveryWizardLifecycleStatus.Completed, journey.Guided.Current.Status);
+            Assert.Equal(RecoveryWizardLifecycleStatus.Completed, journey.Flow.Current.Status);
 
             await journey.Vault.LockAsync(CancellationToken.None);
         }
@@ -198,7 +197,7 @@ public sealed class RecoveryJourneySmokeTests
         using var reopened = await RecoveryJourney.OpenExistingAsync(vaultPath, directory.Path);
         Assert.Equal(sessionId, reopened.Session.CurrentSession!.Id);
         Assert.Equal(RecoveryWorkspaceLifecycleStatus.Completed, reopened.Session.CurrentSession.Status);
-        Assert.Equal(RecoveryWizardLifecycleStatus.Completed, reopened.Guided.Current.Status);
+        Assert.Equal(RecoveryWizardLifecycleStatus.Completed, reopened.Flow.Current.Status);
         Assert.Equal(accountId, Assert.Single(reopened.Inventory.CurrentInventory!.Accounts).Id);
         var persistedCredentials = await reopened.Vault.ListAsync(CancellationToken.None);
         Assert.True(Assert.Single(persistedCredentials).IsDeleted);
@@ -460,7 +459,7 @@ public sealed class RecoveryJourneySmokeTests
             Session = new RecoverySessionService(Store, Vault, () => _time, Mutations);
             Inventory = new AccountInventoryService(Store, Session, () => _time, Mutations);
             Execution = new AccountRecoveryExecutionService(Store, Session, Mutations, () => _time);
-            Guided = new GuidedRecoveryWizardService(
+            Flow = new RecoveryFlowService(
                 Store, Wizard, Session, Inventory, Mutations, () => _time);
             Completion = new RecoveryCompletionService(Session, Inventory, Vault, () => _time);
             Export = new GeneratedCredentialExportService(Vault);
@@ -484,7 +483,7 @@ public sealed class RecoveryJourneySmokeTests
 
         public AccountRecoveryExecutionService Execution { get; }
 
-        public GuidedRecoveryWizardService Guided { get; }
+        public RecoveryFlowService Flow { get; }
 
         public RecoveryCompletionService Completion { get; }
 
@@ -564,7 +563,7 @@ public sealed class RecoveryJourneySmokeTests
 
         public void Dispose()
         {
-            Guided.Dispose();
+            Flow.Dispose();
             Inventory.Dispose();
             Session.Dispose();
             Mutations.Dispose();

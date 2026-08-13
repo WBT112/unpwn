@@ -2,29 +2,6 @@ using Unpwn.Core;
 
 namespace Unpwn.Application;
 
-public enum RecoveryWizardRecommendationCode
-{
-    WelcomeUser,
-    ConfirmTrustedDevice,
-    MoveToTrustedDevice,
-    CreateOrUnlockVault,
-    CaptureIncidentContext,
-    ReviewAccountInventory,
-    ReviewAccountCategories,
-    ReviewRecoveryPlan,
-    RecoverRecommendedAccount,
-    ExportGeneratedCredentials,
-    RunCompletionPreflight,
-    ReviewFinalReport,
-    ResumeWizard,
-    UnlockVault,
-    NoFurtherAction,
-}
-
-public sealed record RecoveryWizardRecommendation(
-    RecoveryWizardStepId StepId,
-    RecoveryWizardRecommendationCode ReasonCode);
-
 public static class RecoveryWizardOrchestrator
 {
     public static RecoveryWizardState Start(Guid wizardId, DateTimeOffset createdAt) =>
@@ -94,48 +71,4 @@ public static class RecoveryWizardOrchestrator
         DateTimeOffset occurredAt) =>
         RecoveryWizardStateMachine.BeginCompletionReview(state, occurredAt);
 
-    public static RecoveryWizardRecommendation GetRecommendation(RecoveryWizardState state)
-    {
-        ArgumentNullException.ThrowIfNull(state);
-
-        if (state.Status == RecoveryWizardLifecycleStatus.Paused)
-        {
-            return new RecoveryWizardRecommendation(
-                state.ResumeStep,
-                RecoveryWizardRecommendationCode.ResumeWizard);
-        }
-
-        if (state.Status == RecoveryWizardLifecycleStatus.Locked)
-        {
-            return new RecoveryWizardRecommendation(
-                state.ResumeStep,
-                RecoveryWizardRecommendationCode.UnlockVault);
-        }
-
-        if (state.IsTerminal)
-        {
-            return new RecoveryWizardRecommendation(
-                state.CurrentStep,
-                RecoveryWizardRecommendationCode.NoFurtherAction);
-        }
-
-        var reasonCode = state.CurrentStep.Value switch
-        {
-            "welcome" => RecoveryWizardRecommendationCode.WelcomeUser,
-            "trusted-device-check" => RecoveryWizardRecommendationCode.ConfirmTrustedDevice,
-            "trusted-device-guidance" => RecoveryWizardRecommendationCode.MoveToTrustedDevice,
-            "vault-entry" => RecoveryWizardRecommendationCode.CreateOrUnlockVault,
-            "incident-intake" => RecoveryWizardRecommendationCode.CaptureIncidentContext,
-            "account-inventory" => RecoveryWizardRecommendationCode.ReviewAccountInventory,
-            "account-triage" => RecoveryWizardRecommendationCode.ReviewAccountCategories,
-            "recovery-plan" => RecoveryWizardRecommendationCode.ReviewRecoveryPlan,
-            "account-recovery" => RecoveryWizardRecommendationCode.RecoverRecommendedAccount,
-            "credential-export" => RecoveryWizardRecommendationCode.ExportGeneratedCredentials,
-            "completion-preflight" => RecoveryWizardRecommendationCode.RunCompletionPreflight,
-            "final-report" => RecoveryWizardRecommendationCode.ReviewFinalReport,
-            _ => throw new InvalidOperationException($"No recommendation exists for recovery wizard step '{state.CurrentStep}'."),
-        };
-
-        return new RecoveryWizardRecommendation(state.CurrentStep, reasonCode);
-    }
 }

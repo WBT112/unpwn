@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Unpwn.Application;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
@@ -10,7 +11,10 @@ namespace Unpwn.App.Services;
 public sealed class RecoveryWizardSessionService(DateTimeOffset? createdAt = null)
 {
     private const string WizardRecordId = "0f654bae-1267-468a-bebf-90ee286e1d86";
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General);
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.General)
+    {
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow,
+    };
     private static readonly VaultRecordDescriptor WizardDescriptor = new(
         "recovery-session",
         WizardRecordId,

@@ -115,7 +115,6 @@
             <TextBlock Text="{Binding SessionStatusText}" />
             <TextBlock Text="{Binding LastSavedText}" />
             <TextBlock Text="{Binding VaultText}" />
-            <TextBlock Text="{Binding WizardPhaseText}" />
           </StackPanel>
         </Border>
 
@@ -147,9 +146,10 @@
                          TextWrapping="Wrap" />
             </StackPanel>
             <Button Grid.Column="1"
+                    Classes="initial-focus"
                     VerticalAlignment="Center"
                     AutomationProperties.AutomationId="dashboard-recommendation-open"
-                    Content="{DynamicResource Dashboard.Recommendation.Open}"
+                    Content="{Binding RecommendationButtonText}"
                     Command="{Binding OpenRecommendationCommand}" />
           </Grid>
         </Border>
@@ -327,12 +327,6 @@
           <Button IsVisible="{Binding IsPausedSession}"
                   Content="{DynamicResource Dashboard.Action.Resume}"
                   Command="{Binding ResumeCommand}" />
-          <Button IsVisible="{Binding IsActiveSession}"
-                  Content="{DynamicResource Dashboard.Action.Completion}"
-                  Command="{Binding OpenCompletionCommand}" />
-          <Button IsVisible="{Binding IsPausedSession}"
-                  Content="{DynamicResource Dashboard.Action.Completion}"
-                  Command="{Binding OpenCompletionCommand}" />
           <Button IsVisible="{Binding IsActiveSession}"
                   Content="{DynamicResource Dashboard.Action.Archive}"
                   Command="{Binding ArchiveCommand}" />

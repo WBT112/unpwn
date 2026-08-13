@@ -348,106 +348,108 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
-    public async Task AssistantPrimaryActionAdvancesCanonicalWizardAndOpensItsTarget()
+    public void ManualDetailNavigationDoesNotAdvanceTheCanonicalFlow()
     {
-        var accountId = Guid.NewGuid();
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        var inventory = new TestAccountInventoryService();
+        var flow = new TestRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new NextUserTask(
+                RecoveryWizardStepId.AccountInventory,
+                NextUserTaskState.ActionAvailable,
+                NextUserTaskCode.ImportAccounts,
+                NextUserTaskTarget.CsvImport));
+        var shell = CreateFlowShell(vault, session, inventory, flow);
+
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts);
+
+        Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
+        Assert.Equal(0, flow.AdvanceCalls);
+        Assert.Equal(RecoveryWizardStepId.AccountInventory, flow.Current.CurrentStep);
+    }
+
+    [Fact]
+    public void ImportWorkspaceContinuationAdvancesAndOpensCategoryReview()
+    {
         var sessionId = Guid.NewGuid();
         var vault = new TestVaultLifecycleService();
         vault.Unlock("Synthetic vault", "Synthetic recovery");
         var session = new TestRecoverySessionService();
         session.SetSession(RecoverySessionWorkspace.Create(
-                sessionId,
-                "Synthetic recovery",
-                RecoveryIncidentIntake.Empty,
-                DateTimeOffset.UnixEpoch)
-            .ReplaceAccounts(
-            [
-                DashboardAccount(accountId, "github.com", "change-password"),
-            ],
-            DateTimeOffset.UnixEpoch.AddMinutes(1)));
+            sessionId,
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
         var inventory = new TestAccountInventoryService();
         inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
             .ReplaceAccounts(
-            [
-                InventoryAccount(accountId, "github.com", "GitHub recovery"),
-            ],
-            DateTimeOffset.UnixEpoch.AddMinutes(1)));
-        var guided = new TestGuidedRecoveryWizardService(
-            WizardAt(RecoveryWizardStepId.RecoveryPlan),
-            new GuidedRecoveryDecision(
-                RecoveryWizardStepId.RecoveryPlan,
-                RecoveryWizardStepId.AccountRecovery,
-                GuidedRecoveryBlockCode.None,
-                accountId,
-                "change-password"));
-        var shell = CreateGuidedShell(vault, session, inventory, guided);
+            [InventoryAccount(Guid.NewGuid(), "example.test", "Synthetic account")],
+            DateTimeOffset.UnixEpoch));
+        var flow = new TestRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new NextUserTask(
+                RecoveryWizardStepId.AccountInventory,
+                NextUserTaskState.ActionAvailable,
+                NextUserTaskCode.ReviewAccountCategories,
+                NextUserTaskTarget.AccountTriage,
+                RecoveryWizardStepId.AccountTriage));
+        var shell = CreateFlowShell(vault, session, inventory, flow);
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
 
-        var outcome = await shell.GuidedPrimaryCommand.ExecuteAsync();
+        var import = Assert.IsType<CsvImportScreenViewModel>(shell.CurrentScreen);
+        import.ContinueToAccountReviewCommand.Execute(null);
 
-        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Equal(1, guided.AdvanceCalls);
-        Assert.Equal(RecoveryWizardStepId.AccountRecovery, guided.Current.CurrentStep);
-        Assert.Equal(AppRoute.Workflow, shell.CurrentScreen.Route);
-        Assert.Contains("GitHub recovery", shell.GuidedTargetText, StringComparison.Ordinal);
-        Assert.Contains("Change the password", shell.GuidedTargetText, StringComparison.Ordinal);
+        Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
+        Assert.Equal(1, flow.AdvanceCalls);
+        Assert.Equal(RecoveryWizardStepId.AccountTriage, flow.Current.CurrentStep);
     }
 
     [Fact]
-    public void ManualDetailNavigationDoesNotAdvanceTheCanonicalWizard()
+    public void CategoryWorkspaceContinuationAdvancesAndReturnsToRecoveryOverview()
     {
+        var sessionId = Guid.NewGuid();
+        var accountId = Guid.NewGuid();
         var vault = new TestVaultLifecycleService();
         vault.Unlock("Synthetic vault", "Synthetic recovery");
         var session = new TestRecoverySessionService();
         session.SetSession(RecoverySessionWorkspace.Create(
-            Guid.NewGuid(),
+            sessionId,
             "Synthetic recovery",
             RecoveryIncidentIntake.Empty,
             DateTimeOffset.UnixEpoch));
         var inventory = new TestAccountInventoryService();
-        var guided = new TestGuidedRecoveryWizardService(
-            WizardAt(RecoveryWizardStepId.AccountInventory),
-            new GuidedRecoveryDecision(
-                RecoveryWizardStepId.AccountInventory,
-                null,
-                GuidedRecoveryBlockCode.AccountsRequired));
-        var shell = CreateGuidedShell(vault, session, inventory, guided);
-
+        inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [InventoryAccount(accountId, "example.test", "Synthetic account")],
+            DateTimeOffset.UnixEpoch));
+        var flow = new TestRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.AccountTriage),
+            new NextUserTask(
+                RecoveryWizardStepId.AccountTriage,
+                NextUserTaskState.OptionalWorkMayContinue,
+                NextUserTaskCode.ContinueCategoryReviewOrRecovery,
+                NextUserTaskTarget.RecoveryOverview,
+                RecoveryWizardStepId.RecoveryOverview));
+        var shell = CreateFlowShell(vault, session, inventory, flow);
         shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Accounts);
 
-        Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
-        Assert.Equal(0, guided.AdvanceCalls);
-        Assert.Equal(RecoveryWizardStepId.AccountInventory, guided.Current.CurrentStep);
+        var accounts = Assert.IsType<AccountInventoryScreenViewModel>(shell.CurrentScreen);
+        accounts.ContinueRecoveryCommand.Execute(null);
+
+        Assert.Equal(AppRoute.Dashboard, shell.CurrentScreen.Route);
+        Assert.Equal(1, flow.AdvanceCalls);
+        Assert.Equal(RecoveryWizardStepId.RecoveryOverview, flow.Current.CurrentStep);
     }
 
     [Fact]
-    public async Task BlockedAssistantOpensCurrentTaskWithoutAdvancing()
-    {
-        var vault = new TestVaultLifecycleService();
-        vault.Unlock("Synthetic vault", "Synthetic recovery");
-        var session = new TestRecoverySessionService();
-        session.SetSession(RecoverySessionWorkspace.Create(
-            Guid.NewGuid(),
-            "Synthetic recovery",
-            RecoveryIncidentIntake.Empty,
-            DateTimeOffset.UnixEpoch));
-        var guided = new TestGuidedRecoveryWizardService(
-            WizardAt(RecoveryWizardStepId.AccountInventory),
-            new GuidedRecoveryDecision(
-                RecoveryWizardStepId.AccountInventory,
-                null,
-                GuidedRecoveryBlockCode.AccountsRequired));
-        var shell = CreateGuidedShell(vault, session, new TestAccountInventoryService(), guided);
-
-        await shell.GuidedPrimaryCommand.ExecuteAsync();
-
-        Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
-        Assert.Equal(0, guided.AdvanceCalls);
-        Assert.Equal("Open CSV import", shell.GuidedPrimaryActionText);
-        Assert.Contains("Import at least one account", shell.GuidedRecommendationText, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task PausedAssistantRequiresResumeAndKeepsMutationDetailsDisabled()
+    public void PausedSessionKeepsMutationWorkspacesDisabled()
     {
         var vault = new TestVaultLifecycleService();
         vault.Unlock("Synthetic vault", "Synthetic recovery");
@@ -458,36 +460,31 @@ public sealed class ShellViewModelTests
                 RecoveryIncidentIntake.Empty,
                 DateTimeOffset.UnixEpoch)
             .Pause(DateTimeOffset.UnixEpoch.AddMinutes(1)));
-        var guided = new TestGuidedRecoveryWizardService(
-            WizardAt(RecoveryWizardStepId.RecoveryPlan) with
+        var flow = new TestRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.RecoveryOverview) with
             {
                 Status = RecoveryWizardLifecycleStatus.Paused,
             },
-            new GuidedRecoveryDecision(
-                RecoveryWizardStepId.RecoveryPlan,
-                null,
-                GuidedRecoveryBlockCode.Paused));
-        var shell = CreateGuidedShell(vault, session, new TestAccountInventoryService(), guided);
+            new NextUserTask(
+                RecoveryWizardStepId.RecoveryOverview,
+                NextUserTaskState.Blocked,
+                NextUserTaskCode.ResumeSession,
+                NextUserTaskTarget.RecoveryOverview));
+        var shell = CreateFlowShell(vault, session, new TestAccountInventoryService(), flow);
 
         Assert.All(
             shell.NavigationItems.Where(item => item.Route is
                 AppRoute.Accounts or AppRoute.Workflow or AppRoute.CredentialsExport or
                 AppRoute.Completion or AppRoute.CsvImport),
             item => Assert.False(item.IsEnabled));
-        Assert.Equal("Resume recovery", shell.GuidedPrimaryActionText);
-
-        await shell.GuidedPrimaryCommand.ExecuteAsync();
-
-        Assert.Equal(1, session.ResumeCalls);
-        Assert.Equal(RecoveryWorkspaceLifecycleStatus.Active, session.CurrentSession?.Status);
-        Assert.Equal(0, guided.AdvanceCalls);
+        Assert.Equal(0, flow.AdvanceCalls);
     }
 
-    internal static ShellViewModel CreateGuidedShell(
+    internal static ShellViewModel CreateFlowShell(
         TestVaultLifecycleService vault,
         TestRecoverySessionService session,
         TestAccountInventoryService inventory,
-        IGuidedRecoveryWizardService guided)
+        IRecoveryFlowService flow)
     {
         var localization = CreateLocalization();
         var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
@@ -504,7 +501,7 @@ public sealed class ShellViewModelTests
             session,
             inventory,
             localization,
-            guided);
+            flow);
     }
 
     internal static RecoveryWizardState WizardAt(RecoveryWizardStepId step) => new(
@@ -731,70 +728,56 @@ public sealed class ShellViewModelTests
                 AccountInventoryFailureCode.Conflict));
     }
 
-    internal sealed class TestGuidedRecoveryWizardService(
+    internal sealed class TestRecoveryFlowService(
         RecoveryWizardState current,
-        GuidedRecoveryDecision next) : IGuidedRecoveryWizardService
+        NextUserTask next) : IRecoveryFlowService
     {
-        public event EventHandler? GuidanceChanged;
+        public event EventHandler? NextTaskChanged;
 
         public RecoveryWizardState Current { get; private set; } = current;
 
-        public GuidedRecoveryDecision NextDecision { get; private set; } = next;
-
-        public GuidedRecoveryDecision PreviousDecision => new(
-            Current.CurrentStep,
-            null,
-            GuidedRecoveryBlockCode.UnsupportedStep);
+        public NextUserTask NextTask { get; private set; } = next;
 
         public int AdvanceCalls { get; private set; }
 
-        public void SetGuidance(
+        public void SetTask(
             RecoveryWizardState state,
-            GuidedRecoveryDecision decision)
+            NextUserTask task)
         {
             Current = state;
-            NextDecision = decision;
-            GuidanceChanged?.Invoke(this, EventArgs.Empty);
+            NextTask = task;
+            NextTaskChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        public Task<GuidedRecoveryMoveResult> AdvanceAsync(CancellationToken cancellationToken)
+        public Task<RecoveryFlowMoveResult> AdvanceAsync(CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             AdvanceCalls++;
-            if (!NextDecision.CanMove || NextDecision.TargetStep is null)
+            if (!NextTask.RequiresTransition || NextTask.TransitionStep is null)
             {
-                return Task.FromResult(GuidedRecoveryMoveResult.Failure(
-                    GuidedRecoveryMoveFailureCode.Blocked,
-                    NextDecision));
+                return Task.FromResult(RecoveryFlowMoveResult.Failure(
+                    RecoveryFlowMoveFailureCode.Blocked,
+                    NextTask));
             }
 
-            var result = NextDecision;
+            var result = NextTask;
             Current = Current with
             {
-                CurrentStep = result.TargetStep,
-                ResumeStep = result.TargetStep,
+                CurrentStep = result.TransitionStep,
+                ResumeStep = result.TransitionStep,
                 Revision = Current.Revision + 1,
             };
-            GuidanceChanged?.Invoke(this, EventArgs.Empty);
-            return Task.FromResult(GuidedRecoveryMoveResult.Success(result));
+            NextTaskChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoveryFlowMoveResult.Success(result));
         }
 
-        public Task<GuidedRecoveryMoveResult> GoBackAsync(CancellationToken cancellationToken) =>
-            Task.FromResult(GuidedRecoveryMoveResult.Failure(
-                GuidedRecoveryMoveFailureCode.Blocked,
-                PreviousDecision));
-
-        public Task<GuidedRecoveryMoveResult> BeginCompletionReviewAsync(
+        public Task<RecoveryFlowMoveResult> BeginCompletionReviewAsync(
             CancellationToken cancellationToken) =>
-            Task.FromResult(GuidedRecoveryMoveResult.Failure(
-                GuidedRecoveryMoveFailureCode.Blocked,
-                NextDecision));
+            AdvanceAsync(cancellationToken);
 
-        public Task<GuidedRecoveryMoveResult> MarkCompletionReviewReadyAsync(
+        public Task<RecoveryFlowMoveResult> MarkCompletionReviewReadyAsync(
             CancellationToken cancellationToken) =>
-            Task.FromResult(GuidedRecoveryMoveResult.Failure(
-                GuidedRecoveryMoveFailureCode.Blocked,
-                NextDecision));
+            AdvanceAsync(cancellationToken);
     }
 
     private sealed class TestCompletionService(

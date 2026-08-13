@@ -91,7 +91,8 @@ public sealed class AppScreenFactory : IScreenFactory
         IGeneratedCredentialExportService credentialExportService,
         ICredentialClipboardService credentialClipboard,
         ILocalizationService localization,
-        IRecoveryBrowserSessionLifecycle? browserSessions = null)
+        IRecoveryBrowserSessionLifecycle? browserSessions = null,
+        IRecoveryFlowService? recoveryFlow = null)
         : this(
             confirmationDialog,
             vaultLifecycle,
@@ -107,7 +108,8 @@ public sealed class AppScreenFactory : IScreenFactory
             localization,
             functionalWorkflow: true,
             functionalCredentials: true,
-            browserSessions: browserSessions)
+            browserSessions: browserSessions,
+            recoveryFlow: recoveryFlow)
     {
     }
 
@@ -126,7 +128,8 @@ public sealed class AppScreenFactory : IScreenFactory
         ILocalizationService localization,
         bool functionalWorkflow = false,
         bool functionalCredentials = false,
-        IRecoveryBrowserSessionLifecycle? browserSessions = null)
+        IRecoveryBrowserSessionLifecycle? browserSessions = null,
+        IRecoveryFlowService? recoveryFlow = null)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
@@ -145,13 +148,13 @@ public sealed class AppScreenFactory : IScreenFactory
             [AppRoute.Dashboard] = new DashboardScreenViewModel(
                 recoverySession,
                 vaultLifecycle,
-                wizard,
                 confirmationDialog,
                 localization),
             [AppRoute.Accounts] = new AccountInventoryScreenViewModel(
                 accountInventory,
                 confirmationDialog,
-                localization),
+                localization,
+                recoveryFlow),
             [AppRoute.Workflow] = functionalWorkflow
                 ? new WorkflowExecutionScreenViewModel(
                     accountInventory,
@@ -179,7 +182,8 @@ public sealed class AppScreenFactory : IScreenFactory
                     vaultLifecycle,
                     credentialClipboard!,
                     confirmationDialog,
-                    localization)
+                    localization,
+                    recoveryFlow: recoveryFlow)
                 : new PlaceholderScreenViewModel(
                     AppRoute.CredentialsExport,
                     localization,
@@ -199,7 +203,10 @@ public sealed class AppScreenFactory : IScreenFactory
                 confirmationDialog,
                 vaultLifecycle,
                 localization),
-            [AppRoute.CsvImport] = new CsvImportScreenViewModel(accountInventory, localization),
+            [AppRoute.CsvImport] = new CsvImportScreenViewModel(
+                accountInventory,
+                localization,
+                recoveryFlow),
         };
     }
 

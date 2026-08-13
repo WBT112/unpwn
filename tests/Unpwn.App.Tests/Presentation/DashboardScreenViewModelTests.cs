@@ -75,6 +75,8 @@ public sealed class DashboardScreenViewModelTests
         var viewModel = CreateViewModel(sessionService);
         viewModel.SessionName = "Minimal recovery";
         viewModel.SecurityWarningAcknowledged = true;
+        DashboardNavigationRequest? navigation = null;
+        viewModel.NavigationRequested += (_, request) => navigation = request;
 
         var outcome = await viewModel.CreateSessionCommand.ExecuteAsync();
 
@@ -84,6 +86,7 @@ public sealed class DashboardScreenViewModelTests
         Assert.True(viewModel.IsDashboardState);
         Assert.False(viewModel.HasValidationMessage);
         Assert.Equal(StatusPresentation.TransientResult, viewModel.Status.Presentation);
+        Assert.Equal(AppRoute.CsvImport, Assert.IsType<DashboardNavigationRequest>(navigation).Route);
     }
 
     [Fact]
@@ -227,22 +230,22 @@ public sealed class DashboardScreenViewModelTests
     }
 
     [Fact]
-    public void CompletionEntryIsExplicitNavigationAndDoesNotMutateSession()
+    public void PausedRecommendationResumesWithoutACompetingNavigationAction()
     {
         var session = RecoverySessionWorkspace.Create(
             Guid.NewGuid(),
-            "Completion review",
+            "Paused recovery",
             RecoveryIncidentIntake.Empty,
-            DateTimeOffset.UnixEpoch);
+            DateTimeOffset.UnixEpoch)
+            .Pause(DateTimeOffset.UnixEpoch.AddMinutes(1));
         var sessionService = new TestRecoverySessionService(session);
         var viewModel = CreateViewModel(sessionService);
         DashboardNavigationRequest? request = null;
         viewModel.NavigationRequested += (_, eventArgs) => request = eventArgs;
 
-        viewModel.OpenCompletionCommand.Execute(null);
+        viewModel.OpenRecommendationCommand.Execute(null);
 
-        Assert.NotNull(request);
-        Assert.Equal(AppRoute.Completion, request.Route);
+        Assert.Null(request);
         Assert.Equal(RecoveryWorkspaceLifecycleStatus.Active, sessionService.CurrentSession?.Status);
         Assert.Equal(0, sessionService.ArchiveCalls);
     }
@@ -259,7 +262,6 @@ public sealed class DashboardScreenViewModelTests
         return new DashboardScreenViewModel(
             sessionService,
             new TestVaultLifecycleService(),
-            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
             new TestConfirmationDialogService(),
             localization,
             localUserName ?? (() => "SyntheticUser"));

@@ -59,7 +59,7 @@ The record contains only stable state such as:
 - lifecycle status;
 - revision and update timestamp.
 
-Before an explicit or inactivity lock, the state machine records a conservative resume point. For example, interruption during external account recovery returns to recovery-plan review, and interruption during final-report work returns to completion preflight. Unlocking never treats an external provider action as completed automatically.
+Before an explicit or inactivity lock, the state machine records a conservative resume point. For example, interruption during account recovery returns to the recovery overview, and interruption during final-report work returns to completion preflight. Unlocking never treats an external provider action as completed automatically.
 
 ## Locking and inactivity
 

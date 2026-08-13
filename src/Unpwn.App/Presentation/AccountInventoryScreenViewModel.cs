@@ -1,5 +1,6 @@
 using Unpwn.App.Localization;
 using Unpwn.App.Services;
+using Unpwn.Application;
 using Unpwn.Core;
 
 namespace Unpwn.App.Presentation;
@@ -34,6 +35,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 {
     private readonly IAccountInventoryService _inventory;
     private readonly IConfirmationDialogService _confirmationDialog;
+    private readonly IRecoveryFlowService? _recoveryFlow;
     private IReadOnlyList<AccountInventoryListItem> _accounts = [];
     private AccountInventoryListItem? _selectedAccount;
     private AccountInventoryOption<AccountRecoveryCategory>? _selectedCategory;
@@ -52,7 +54,8 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public AccountInventoryScreenViewModel(
         IAccountInventoryService inventory,
         IConfirmationDialogService confirmationDialog,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IRecoveryFlowService? recoveryFlow = null)
         : base(
             AppRoute.Accounts,
             localization,
@@ -64,6 +67,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
+        _recoveryFlow = recoveryFlow;
         NewAccountCommand = new RelayCommand(BeginNewAccount, () => CanMutate);
         SaveAccountCommand = new AsyncCommand(
             SaveAccountAsync,
@@ -77,7 +81,14 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             DeleteAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
             () => CanMutate && SelectedAccount is not null);
+        ContinueRecoveryCommand = new RelayCommand(
+            () => ContinueToRecoveryRequested?.Invoke(this, EventArgs.Empty),
+            () => CanContinueRecovery);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
+        if (_recoveryFlow is not null)
+        {
+            _recoveryFlow.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
+        }
         BuildStaticOptions();
         RefreshFromService();
     }
@@ -89,6 +100,10 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand SaveCategoryCommand { get; }
 
     public AsyncCommand DeleteAccountCommand { get; }
+
+    public RelayCommand ContinueRecoveryCommand { get; }
+
+    public event EventHandler? ContinueToRecoveryRequested;
 
     public IReadOnlyList<AccountInventoryListItem> Accounts
     {
@@ -226,8 +241,14 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public int RemainingCategoryCount =>
         _inventory.CurrentInventory?.Accounts.Count(account => !account.IsCategorized) ?? 0;
 
-    public bool CanContinueRecovery => HasConfirmedEmailCategory ||
-        (_inventory.CurrentInventory?.Accounts.Length > 0 && RemainingCategoryCount == 0);
+    public bool CanContinueRecovery =>
+        _inventory.CurrentInventory?.Accounts.Length > 0 &&
+        (_recoveryFlow is null ||
+         _recoveryFlow.NextTask.Target == NextUserTaskTarget.RecoveryOverview);
+
+    public bool HasRemainingCategoryReview => CanContinueRecovery && RemainingCategoryCount > 0;
+
+    public bool IsCategoryReviewComplete => CanContinueRecovery && RemainingCategoryCount == 0;
 
     public override void Activate() => RefreshFromService();
 
@@ -492,9 +513,13 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(HasConfirmedEmailCategory));
         OnPropertyChanged(nameof(RemainingCategoryCount));
         OnPropertyChanged(nameof(CanContinueRecovery));
+        OnPropertyChanged(nameof(HasRemainingCategoryReview));
+        OnPropertyChanged(nameof(IsCategoryReviewComplete));
     }
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs) => RefreshFromService();
+
+    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs) => RefreshFromService();
 
     private void RaiseCommandStates()
     {
@@ -502,5 +527,6 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         SaveAccountCommand.RaiseCanExecuteChanged();
         SaveCategoryCommand.RaiseCanExecuteChanged();
         DeleteAccountCommand.RaiseCanExecuteChanged();
+        ContinueRecoveryCommand.RaiseCanExecuteChanged();
     }
 }

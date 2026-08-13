@@ -38,10 +38,12 @@
   <data name="Accounts.Action.Delete" xml:space="preserve"><value>Remove account</value></data>
   <data name="Accounts.Triage.Title" xml:space="preserve"><value>Which accounts matter most?</value></data>
   <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Review remaining: {0} of {1}</value></data>
-  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Reviewing more accounts improves the order, but you can deliberately continue from the assistant. Suggestions are local and never replace your explicit choice.</value></data>
+  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Reviewing more accounts improves the order, but you can deliberately continue here. Suggestions are local and never replace your explicit choice.</value></data>
+  <data name="Accounts.Triage.Continue" xml:space="preserve"><value>Continue to recovery</value></data>
+  <data name="Accounts.Triage.ContinueEarly" xml:space="preserve"><value>Continue to recovery now</value></data>
   <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>An email account is confirmed. You can continue recovery now or review the remaining accounts.</value></data>
   <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>All accounts were reviewed without an email account. Continue if this is intentional.</value></data>
-  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Confirm an email account first when you have one. If you genuinely have none, you may deliberately continue from the assistant.</value></data>
+  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Confirm an email account first when you have one. If you genuinely have none, you may deliberately continue here.</value></data>
   <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Your choice</value></data>
   <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Local suggestion — not confirmed</value></data>
   <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Category review recommended</value></data>
@@ -71,4 +73,7 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>No new accounts were imported because all reviewed accounts already exist in the inventory.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
+  <data name="Import.Continue.Title" xml:space="preserve"><value>Accounts are ready for review</value></data>
+  <data name="Import.Continue.Message" xml:space="preserve"><value>Continue to confirm the simple recovery category for each imported account. You can return here later to import more accounts.</value></data>
+  <data name="Import.Continue.Action" xml:space="preserve"><value>Review account categories</value></data>
 </root>

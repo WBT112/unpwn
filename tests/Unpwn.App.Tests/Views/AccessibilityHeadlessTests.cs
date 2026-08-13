@@ -100,7 +100,23 @@ public sealed class AccessibilityHeadlessTests
             Assert.NotNull(FindByAutomationId(view, "accounts-triage-list"));
             Assert.NotNull(FindByAutomationId(view, "accounts-category"));
             Assert.NotNull(FindByAutomationId(view, "accounts-category-save"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-continue-recovery"));
+            Assert.NotNull(FindByAutomationId(view, "accounts-continue-recovery-early"));
             Assert.NotNull(FindByAutomationId(view, "accounts-new"));
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task ImportAndCredentialWorkspacesExposeTheirContinuationActions()
+    {
+        await Session.Dispatch(() =>
+        {
+            Assert.NotNull(FindByAutomationId(
+                new CsvImportView(),
+                "import-continue-account-review"));
+            Assert.NotNull(FindByAutomationId(
+                new CredentialExportView(),
+                "credentials-continue-completion"));
         }, CancellationToken.None);
     }
 
@@ -189,17 +205,18 @@ public sealed class AccessibilityHeadlessTests
                 "Synthetic recovery",
                 RecoveryIncidentIntake.Empty,
                 DateTimeOffset.UnixEpoch));
-            var guided = new ShellViewModelTests.TestGuidedRecoveryWizardService(
+            var flow = new ShellViewModelTests.TestRecoveryFlowService(
                 ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
-                new GuidedRecoveryDecision(
+                new NextUserTask(
                     RecoveryWizardStepId.AccountInventory,
-                    null,
-                    GuidedRecoveryBlockCode.AccountsRequired));
-            var shell = ShellViewModelTests.CreateGuidedShell(
+                    NextUserTaskState.ActionAvailable,
+                    NextUserTaskCode.ImportAccounts,
+                    NextUserTaskTarget.CsvImport));
+            var shell = ShellViewModelTests.CreateFlowShell(
                 vault,
                 session,
                 new ShellViewModelTests.TestAccountInventoryService(),
-                guided);
+                flow);
             var window = new global::Unpwn.App.MainWindow { DataContext = shell };
 
             window.Show();
@@ -247,17 +264,18 @@ public sealed class AccessibilityHeadlessTests
                 "Synthetic recovery",
                 RecoveryIncidentIntake.Empty,
                 DateTimeOffset.UnixEpoch));
-            var guided = new ShellViewModelTests.TestGuidedRecoveryWizardService(
+            var flow = new ShellViewModelTests.TestRecoveryFlowService(
                 ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
-                new GuidedRecoveryDecision(
+                new NextUserTask(
                     RecoveryWizardStepId.AccountInventory,
-                    null,
-                    GuidedRecoveryBlockCode.AccountsRequired));
-            var shell = ShellViewModelTests.CreateGuidedShell(
+                    NextUserTaskState.ActionAvailable,
+                    NextUserTaskCode.ImportAccounts,
+                    NextUserTaskTarget.CsvImport));
+            var shell = ShellViewModelTests.CreateFlowShell(
                 vault,
                 session,
                 new ShellViewModelTests.TestAccountInventoryService(),
-                guided);
+                flow);
             shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.Dashboard);
             var dashboard = new DashboardView { DataContext = shell.CurrentScreen };
             var window = new Window { Content = dashboard };

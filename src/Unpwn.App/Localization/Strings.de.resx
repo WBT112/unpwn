@@ -214,42 +214,8 @@
   <data name="Shell.Navigation.Vault.Label" xml:space="preserve"><value>Tresor</value></data>
   <data name="Shell.Navigation.Workflow.Description" xml:space="preserve"><value>Wiederherstellungsmaßnahmen</value></data>
   <data name="Shell.Navigation.Workflow.Label" xml:space="preserve"><value>Ablauf</value></data>
-  <data name="Shell.Guided.Heading" xml:space="preserve"><value>GEFÜHRTE WIEDERHERSTELLUNG</value></data>
-  <data name="Shell.Assistant.Heading" xml:space="preserve"><value>DEINE NÄCHSTE WIEDERHERSTELLUNGSAUFGABE</value></data>
-  <data name="Shell.Assistant.WhyHeading" xml:space="preserve"><value>WARUM DAS WICHTIG IST</value></data>
-  <data name="Shell.Assistant.OpenTask" xml:space="preserve"><value>Aktuelle Aufgabe öffnen</value></data>
-  <data name="Shell.Assistant.OpenCsvImport" xml:space="preserve"><value>CSV-Import öffnen</value></data>
-  <data name="Shell.Assistant.OpenReport" xml:space="preserve"><value>Bericht öffnen</value></data>
-  <data name="Shell.Assistant.Resume" xml:space="preserve"><value>Wiederherstellung fortsetzen</value></data>
-  <data name="Shell.Assistant.Pause" xml:space="preserve"><value>Pausieren</value></data>
-  <data name="Shell.Assistant.Target" xml:space="preserve"><value>Empfohlenes Konto: {0}</value></data>
-  <data name="Shell.Assistant.TargetWithAction" xml:space="preserve"><value>Empfohlenes Konto: {0} — aktuelle Aktion: {1}</value></data>
-  <data name="Shell.Assistant.Why.AccountInventory" xml:space="preserve"><value>Eine vollständige Kontenliste ist nötig, bevor unpwn eine verlässliche Wiederherstellungsreihenfolge berechnen kann.</value></data>
-  <data name="Shell.Assistant.Why.AccountTriage" xml:space="preserve"><value>Einfache Kontokategorien verbessern die Recovery-Reihenfolge, ohne dass du Kontenbeziehungen modellieren musst.</value></data>
-  <data name="Shell.Assistant.Why.RecoveryPlan" xml:space="preserve"><value>Der Wiederherstellungsplan erklärt, welches Konto als Nächstes bearbeitet werden sollte.</value></data>
-  <data name="Shell.Assistant.Why.AccountRecovery" xml:space="preserve"><value>Dieses Konto wird aktuell vom gespeicherten Wiederherstellungsplan empfohlen.</value></data>
-  <data name="Shell.Assistant.Why.CredentialExport" xml:space="preserve"><value>Erzeugte Zugangsdaten benötigen eine ausdrückliche Übergabe an einen Passwortmanager und eine Bereinigungsprüfung.</value></data>
-  <data name="Shell.Assistant.Why.Completion" xml:space="preserve"><value>Die Abschlussprüfung hält unvollständige Arbeit und ungeklärte Risiken sichtbar, statt vollständige Sicherheit zu behaupten.</value></data>
-  <data name="Shell.Assistant.Why.Paused" xml:space="preserve"><value>Beim Pausieren bleibt der verschlüsselte Wiederherstellungsstand erhalten; weitere Änderungen erfordern ein ausdrückliches Fortsetzen.</value></data>
-  <data name="Shell.Assistant.Why.General" xml:space="preserve"><value>Diese Aufgabe ist der aktuelle konservative Schritt der gespeicherten Wiederherstellung.</value></data>
-  <data name="Shell.Guided.Back" xml:space="preserve"><value>Zurück</value></data>
-  <data name="Shell.Guided.Open" xml:space="preserve"><value>Schritt öffnen</value></data>
-  <data name="Shell.Guided.Continue" xml:space="preserve"><value>Weiter</value></data>
-  <data name="Shell.Guided.OpenCurrent" xml:space="preserve"><value>Öffne diesen Schritt, um mit der Wiederherstellung fortzufahren.</value></data>
-  <data name="Shell.Guided.AccountsRequired" xml:space="preserve"><value>Importiere mindestens ein Konto aus einer CSV-Datei, bevor du fortfährst. Im nächsten Schritt kannst du die Konten prüfen und korrigieren.</value></data>
-  <data name="Shell.Guided.Paused" xml:space="preserve"><value>Setze die Wiederherstellungssitzung fort, bevor du weitergehst.</value></data>
-  <data name="Shell.Guided.Terminal" xml:space="preserve"><value>Diese Wiederherstellungssitzung ist beendet und bleibt als schreibgeschützter Bericht verfügbar.</value></data>
-  <data name="Shell.Guided.NextAccountTriage" xml:space="preserve"><value>Prüfe als Nächstes die Kontokategorien. Nach einem bestätigten E-Mail-Konto kannst du früh fortfahren – oder bewusst ohne E-Mail-Konto.</value></data>
-  <data name="Shell.Guided.RemainingCategoryReviewOptional" xml:space="preserve"><value>Ein E-Mail-Konto ist bestätigt. Setze die Recovery jetzt fort oder verbessere die Reihenfolge, indem du die übrigen Konten prüfst.</value></data>
-  <data name="Shell.Guided.ContinueWithoutEmailCategory" xml:space="preserve"><value>Kein E-Mail-Konto ist bestätigt. Prüfe nach Möglichkeit zuerst die Kategorien; wähle Fortfahren nur, wenn du bewusst ohne E-Mail-Konto fortfahren möchtest.</value></data>
-  <data name="Shell.Guided.NextRecoveryPlan" xml:space="preserve"><value>Gehe zum Wiederherstellungsplan weiter.</value></data>
-  <data name="Shell.Guided.NextAccountRecovery" xml:space="preserve"><value>Bearbeite das aktuell empfohlene Konto und seine erforderlichen Maßnahmen.</value></data>
-  <data name="Shell.Guided.NextCredentialExport" xml:space="preserve"><value>Erledige Export und Bereinigung erzeugter Zugangsdaten vor dem Abschluss.</value></data>
-  <data name="Shell.Guided.NextCompletion" xml:space="preserve"><value>Starte die Abschlussprüfung; offene Arbeit und Risiken bleiben sichtbar.</value></data>
-  <data name="Shell.Guided.NextFinalReport" xml:space="preserve"><value>Prüfe den Abschlussbericht und bestätige das Ergebnis ausdrücklich.</value></data>
-  <data name="Shell.Guided.Blocked.Title" xml:space="preserve"><value>Wiederherstellungsschritt noch nicht abgeschlossen</value></data>
-  <data name="Shell.Guided.Error.Title" xml:space="preserve"><value>Geführte Wiederherstellung konnte nicht aktualisiert werden</value></data>
-  <data name="Shell.Guided.Error" xml:space="preserve"><value>Der geführte Wiederherstellungsstand konnte nicht gespeichert werden. Kein Schritt wurde als abgeschlossen markiert.</value></data>
+  <data name="Shell.Flow.Error.Title" xml:space="preserve"><value>Wiederherstellung konnte nicht fortgesetzt werden</value></data>
+  <data name="Shell.Flow.Error" xml:space="preserve"><value>Der Recovery-Status konnte nicht gespeichert werden. Keine Aufgabe wurde als abgeschlossen markiert.</value></data>
   <data name="Shell.Persistence.Idle" xml:space="preserve"><value>Es ist kein Speichervorgang aktiv.</value></data>
   <data name="Shell.Persistence.Saving" xml:space="preserve"><value>Der verschlüsselte Wiederherstellungsbereich wird gespeichert…</value></data>
   <data name="Shell.Persistence.Retrying" xml:space="preserve"><value>Der verschlüsselte Speichervorgang wird nach deiner wiederholten Aktion erneut versucht…</value></data>

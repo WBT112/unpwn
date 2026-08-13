@@ -18,6 +18,17 @@
         <TextBlock FontWeight="SemiBold" Text="{Binding TriageProgress}" />
         <TextBlock Text="{Binding ContinuationGuidance}" TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Accounts.Triage.OptionalHelp}" TextWrapping="Wrap" />
+        <Button Classes="initial-focus"
+                IsVisible="{Binding IsCategoryReviewComplete}"
+                AutomationProperties.AutomationId="accounts-continue-recovery"
+                HorizontalAlignment="Left"
+                Command="{Binding ContinueRecoveryCommand}"
+                Content="{DynamicResource Accounts.Triage.Continue}" />
+        <Button IsVisible="{Binding HasRemainingCategoryReview}"
+                AutomationProperties.AutomationId="accounts-continue-recovery-early"
+                HorizontalAlignment="Left"
+                Command="{Binding ContinueRecoveryCommand}"
+                Content="{DynamicResource Accounts.Triage.ContinueEarly}" />
       </StackPanel>
     </Border>
 

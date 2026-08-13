@@ -53,6 +53,9 @@ this lets unpwn choose the recovery approach without changing the category order
 prioritization and does not prove that an account, device, or credential was compromised. unpwn does
 not collect a free-form incident narrative.
 
+After the session is created, unpwn opens CSV import directly. You do not need to choose the next
+navigation tab.
+
 ### 4. Add your accounts
 
 Add accounts manually or select a CSV file. unpwn detects a safe column mapping and creates the
@@ -63,11 +66,18 @@ Old-password columns are excluded automatically and cannot be selected as accoun
 preview and explicitly confirm the final import. Duplicate candidates remain conservative: the normal
 safe path keeps the first CSV occurrence and lets the existing inventory win.
 
+After at least one account is stored, select **Review account categories**. You can still return to
+CSV import later to add more accounts.
+
 ### 5. Categorize accounts
 
 unpwn suggests one simple local category for every account: **Email**, **Critical**, **Not critical**, or **Unknown**. The versioned catalog works offline and recognizes common email services and important account types. A suggestion is never your decision: choose a category explicitly and select **Save and review next**.
 
-After you confirm at least one email account, you can continue recovery immediately or review the remaining accounts to improve ordering. If you genuinely have no email account, review the accounts as such and deliberately continue. On resume, unpwn shows how many accounts remain.
+Select **Continue to recovery** after all categories are reviewed. If useful, you can deliberately
+select **Continue to recovery now** while reviews remain; unpwn keeps the remaining count visible and
+does not silently confirm any suggestion. If you genuinely have no email account, review the accounts
+as such or deliberately continue. On resume, the same workspace shows remaining review and its next
+action instead of requiring a separate assistant or guessed navigation tab.
 
 Categories decide when an account is considered; the reviewed provider workflow independently decides how it is recovered. The normal product does not ask you to maintain roles, dependency graphs, cycles, or scheduling overrides. Opening a view or leaving triage does not record an implicit category.
 
@@ -77,6 +87,9 @@ unpwn automatically orders outstanding accounts as **Email → Critical → Unkn
 explains which account is recommended next. Stable account identifiers resolve ties, so language and
 restart do not change the queue. A recommendation is guidance, not proof that an account is
 compromised.
+
+The recovery overview owns **Start recovery** for the current recommendation. Opening a detail tab
+does not advance the flow or complete work.
 
 For each account, unpwn also chooses the safest supported recovery approach. Confirmed usable access
 uses an authenticated password change where supported; otherwise unpwn prefers password reset and

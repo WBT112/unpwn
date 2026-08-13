@@ -3,7 +3,6 @@ using Unpwn.App.Localization;
 using Unpwn.App.Services;
 using Unpwn.Application;
 using Unpwn.Core;
-using Unpwn.Providers.Workflows;
 
 namespace Unpwn.App.Presentation;
 
@@ -14,7 +13,7 @@ public sealed class ShellViewModel : ObservableObject
     private readonly IRecoverySessionService? _recoverySession;
     private readonly IAccountInventoryService? _accountInventory;
     private readonly ILocalizationService _localization;
-    private readonly IGuidedRecoveryWizardService? _guidedWizard;
+    private readonly IRecoveryFlowService? _recoveryFlow;
     private readonly IWorkspacePersistenceStatus? _persistenceStatus;
     private readonly IRecoveryBrowserSessionLifecycle? _browserSessions;
     private readonly bool _enforceNavigationPrerequisites;
@@ -29,8 +28,6 @@ public sealed class ShellViewModel : ObservableObject
     private bool _hasStartupRecoveryWarning;
     private bool _isWorkspaceNavigationExpanded;
     private bool _hadRecoverySession;
-    private string? _guidanceFocusKey;
-    private long _assistantFocusRequest;
 
     public ShellViewModel(
         IScreenFactory screenFactory,
@@ -41,7 +38,7 @@ public sealed class ShellViewModel : ObservableObject
             vaultLifecycle,
             recoverySession: null,
             accountInventory: null,
-            guidedWizard: null,
+            recoveryFlow: null,
             persistenceStatus: null,
             runState: null,
             browserSessions: null,
@@ -56,7 +53,7 @@ public sealed class ShellViewModel : ObservableObject
         IRecoverySessionService recoverySession,
         IAccountInventoryService accountInventory,
         ILocalizationService localization,
-        IGuidedRecoveryWizardService? guidedWizard = null,
+        IRecoveryFlowService? recoveryFlow = null,
         IWorkspacePersistenceStatus? persistenceStatus = null,
         ApplicationRunState? runState = null,
         IRecoveryBrowserSessionLifecycle? browserSessions = null)
@@ -65,7 +62,7 @@ public sealed class ShellViewModel : ObservableObject
             vaultLifecycle,
             recoverySession ?? throw new ArgumentNullException(nameof(recoverySession)),
             accountInventory ?? throw new ArgumentNullException(nameof(accountInventory)),
-            guidedWizard,
+            recoveryFlow,
             persistenceStatus,
             runState,
             browserSessions,
@@ -79,7 +76,7 @@ public sealed class ShellViewModel : ObservableObject
         IVaultLifecycleService vaultLifecycle,
         IRecoverySessionService? recoverySession,
         IAccountInventoryService? accountInventory,
-        IGuidedRecoveryWizardService? guidedWizard,
+        IRecoveryFlowService? recoveryFlow,
         IWorkspacePersistenceStatus? persistenceStatus,
         ApplicationRunState? runState,
         IRecoveryBrowserSessionLifecycle? browserSessions,
@@ -94,7 +91,7 @@ public sealed class ShellViewModel : ObservableObject
         _vaultLifecycle = vaultLifecycle;
         _recoverySession = recoverySession;
         _accountInventory = accountInventory;
-        _guidedWizard = guidedWizard;
+        _recoveryFlow = recoveryFlow;
         _persistenceStatus = persistenceStatus;
         _browserSessions = browserSessions;
         _hasStartupRecoveryWarning = runState?.PreviousExitWasAbnormal == true;
@@ -116,23 +113,6 @@ public sealed class ShellViewModel : ObservableObject
             () => _localization.GetString("Shell.Lock.Error"),
             () => IsVaultUnlocked);
         LockCommand.PropertyChanged += LockCommand_OnPropertyChanged;
-        GuidedOpenCommand = new RelayCommand(OpenGuidedStep, () => IsGuidedWizardVisible);
-        GuidedAdvanceCommand = new AsyncCommand(
-            AdvanceGuidedStepAsync,
-            () => _localization.GetString("Shell.Guided.Error"),
-            () => IsGuidedWizardVisible && !_guidedWizard!.Current.IsTerminal);
-        GuidedBackCommand = new AsyncCommand(
-            GoBackGuidedStepAsync,
-            () => _localization.GetString("Shell.Guided.Error"),
-            () => IsGuidedWizardVisible && _guidedWizard!.PreviousDecision.CanMove);
-        GuidedPrimaryCommand = new AsyncCommand(
-            ExecuteGuidedPrimaryActionAsync,
-            () => _localization.GetString("Shell.Guided.Error"),
-            () => IsGuidedWizardVisible);
-        PauseSessionCommand = new AsyncCommand(
-            PauseSessionAsync,
-            () => _localization.GetString("Shell.Guided.Error"),
-            () => IsGuidedPauseAvailable);
         ToggleWorkspaceNavigationCommand = new RelayCommand(ToggleWorkspaceNavigation);
         DismissStartupRecoveryCommand = new RelayCommand(
             DismissStartupRecovery,
@@ -145,7 +125,7 @@ public sealed class ShellViewModel : ObservableObject
         _vaultLifecycle.VaultStateChanged += VaultLifecycle_OnStateChanged;
         _recoverySession?.SessionChanged += RecoverySession_OnSessionChanged;
         _accountInventory?.InventoryChanged += AccountInventory_OnInventoryChanged;
-        _guidedWizard?.GuidanceChanged += GuidedWizard_OnGuidanceChanged;
+        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
         _persistenceStatus?.StatusChanged += PersistenceStatus_OnStatusChanged;
         if (_browserSessions is { } activeBrowserSessions)
         {
@@ -251,16 +231,6 @@ public sealed class ShellViewModel : ObservableObject
 
     public AsyncCommand LockCommand { get; }
 
-    public RelayCommand GuidedOpenCommand { get; }
-
-    public AsyncCommand GuidedAdvanceCommand { get; }
-
-    public AsyncCommand GuidedBackCommand { get; }
-
-    public AsyncCommand GuidedPrimaryCommand { get; }
-
-    public AsyncCommand PauseSessionCommand { get; }
-
     public RelayCommand ToggleWorkspaceNavigationCommand { get; }
 
     public RelayCommand DismissStartupRecoveryCommand { get; }
@@ -314,94 +284,6 @@ public sealed class ShellViewModel : ObservableObject
         ? string.Empty
         : _localization.GetString(GetPersistenceStatusKey(_persistenceStatus.Current));
 
-    public bool IsGuidedWizardVisible =>
-        _guidedWizard is not null && IsVaultUnlocked && _recoverySession?.CurrentSession is not null;
-
-    public bool IsGuidedPauseAvailable =>
-        IsGuidedWizardVisible &&
-        _recoverySession?.CurrentSession?.Status == RecoveryWorkspaceLifecycleStatus.Active;
-
-    public long AssistantFocusRequest
-    {
-        get => _assistantFocusRequest;
-        private set => SetProperty(ref _assistantFocusRequest, value);
-    }
-
-    public string GuidedStepText => _guidedWizard is null
-        ? string.Empty
-        : _localization.GetString(GetWizardStepKey(_guidedWizard.Current.CurrentStep));
-
-    public string GuidedRecommendationText => _guidedWizard is null
-        ? string.Empty
-        : _localization.GetString(GetGuidanceKey(_guidedWizard.NextDecision));
-
-    public string GuidedWhyText
-    {
-        get
-        {
-            if (_guidedWizard is null)
-            {
-                return string.Empty;
-            }
-
-            var decision = _guidedWizard.NextDecision;
-            if (decision.BlockCode != GuidedRecoveryBlockCode.None)
-            {
-                return _localization.GetString(GetGuidedBlockWhyKey(decision.BlockCode));
-            }
-
-            var dashboardRecommendation = _recoverySession?.Dashboard?.Recommendation;
-            if ((decision.TargetStep == RecoveryWizardStepId.AccountRecovery ||
-                 decision.CurrentStep == RecoveryWizardStepId.AccountRecovery) &&
-                dashboardRecommendation is not null)
-            {
-                return _localization.GetString(
-                    $"Dashboard.Recommendation.{dashboardRecommendation.Code}");
-            }
-
-            return _localization.GetString(GetGuidedWhyKey(decision.TargetStep ?? decision.CurrentStep));
-        }
-    }
-
-    public bool HasGuidedTarget => !string.IsNullOrWhiteSpace(GuidedTargetText);
-
-    public string GuidedTargetText
-    {
-        get
-        {
-            var target = ResolveGuidedTarget();
-            return target switch
-            {
-                { Account: not null, Action: not null } => _localization.Format(
-                    "Shell.Assistant.TargetWithAction",
-                    target.Account,
-                    target.Action),
-                { Account: not null } => _localization.Format(
-                    "Shell.Assistant.Target",
-                    target.Account),
-                _ => string.Empty,
-            };
-        }
-    }
-
-    public string GuidedPrimaryActionText => _localization.GetString(
-        IsGuidedPaused
-            ? "Shell.Assistant.Resume"
-            : IsGuidedTerminal
-                ? "Shell.Assistant.OpenReport"
-                : _guidedWizard?.NextDecision.CanMove == true
-                    ? "Shell.Guided.Continue"
-                    : _guidedWizard?.NextDecision.BlockCode == GuidedRecoveryBlockCode.AccountsRequired
-                        ? "Shell.Assistant.OpenCsvImport"
-                        : "Shell.Assistant.OpenTask");
-
-    private bool IsGuidedPaused =>
-        _recoverySession?.CurrentSession?.Status == RecoveryWorkspaceLifecycleStatus.Paused;
-
-    private bool IsGuidedTerminal =>
-        _recoverySession?.CurrentSession?.IsReadOnly == true ||
-        _guidedWizard?.Current.IsTerminal == true;
-
     private async Task LockAsync(CancellationToken cancellationToken)
     {
         await _vaultLifecycle.LockAsync(cancellationToken);
@@ -414,107 +296,16 @@ public sealed class ShellViewModel : ObservableObject
             StatusPresentation.TransientResult);
     }
 
-    private async Task AdvanceGuidedStepAsync(CancellationToken cancellationToken)
-    {
-        if (_guidedWizard is null)
-        {
-            return;
-        }
-
-        var result = await _guidedWizard.AdvanceAsync(cancellationToken);
-        if (!result.Succeeded)
-        {
-            CurrentStatus = VisualStatusViewModel.Create(
-                AppVisualState.Warning,
-                _localization,
-                "Shell.Guided.Blocked.Title",
-                GetGuidanceKey(result.Decision),
-                StatusPresentation.GlobalWarning);
-            RefreshGuidance();
-            return;
-        }
-
-        NavigateToGuidedStep(result.Decision.TargetStep, result.Decision.AccountId, result.Decision.ActionId);
-    }
-
-    private async Task GoBackGuidedStepAsync(CancellationToken cancellationToken)
-    {
-        if (_guidedWizard is null)
-        {
-            return;
-        }
-
-        var result = await _guidedWizard.GoBackAsync(cancellationToken);
-        if (result.Succeeded)
-        {
-            NavigateToGuidedStep(result.Decision.TargetStep, null, null);
-        }
-    }
-
-    private async Task ExecuteGuidedPrimaryActionAsync(CancellationToken cancellationToken)
-    {
-        if (_guidedWizard is null)
-        {
-            return;
-        }
-
-        if (IsGuidedPaused)
-        {
-            if (_recoverySession is null)
-            {
-                return;
-            }
-
-            var resumed = await _recoverySession.ResumeAsync(cancellationToken);
-            if (!resumed.Succeeded)
-            {
-                ShowGuidedSessionFailure();
-            }
-
-            return;
-        }
-
-        if (_guidedWizard.NextDecision.CanMove)
-        {
-            await AdvanceGuidedStepAsync(cancellationToken);
-            return;
-        }
-
-        OpenGuidedStep();
-    }
-
-    private async Task PauseSessionAsync(CancellationToken cancellationToken)
-    {
-        if (_recoverySession is null)
-        {
-            return;
-        }
-
-        var paused = await _recoverySession.PauseAsync(cancellationToken);
-        if (!paused.Succeeded)
-        {
-            ShowGuidedSessionFailure();
-        }
-    }
-
-    private void ShowGuidedSessionFailure() =>
+    private void ShowRecoveryFlowFailure() =>
         CurrentStatus = VisualStatusViewModel.Create(
             AppVisualState.Error,
             _localization,
-            "Shell.Guided.Error.Title",
-            "Shell.Guided.Error",
+            "Shell.Flow.Error.Title",
+            "Shell.Flow.Error",
             StatusPresentation.GlobalWarning);
 
     private void ToggleWorkspaceNavigation() =>
         IsWorkspaceNavigationExpanded = !IsWorkspaceNavigationExpanded;
-
-    private void OpenGuidedStep()
-    {
-        if (_guidedWizard is not null)
-        {
-            NavigateToGuidedStep(_guidedWizard.Current.CurrentStep, null, null);
-        }
-    }
 
     private void NavigateTo(AppRoute route) =>
         SelectedNavigation = NavigationItems.Single(item => item.Route == route);
@@ -639,7 +430,6 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(BrowserSessionCleanupText));
         OnPropertyChanged(nameof(WorkspaceNavigationToggleText));
         LockCommand.RaiseCanExecuteChanged();
-        RefreshGuidance();
         RefreshNavigationAvailability();
         CurrentStatus = BuildContextualStatus();
 
@@ -699,7 +489,6 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(SessionContextLabel));
         OnPropertyChanged(nameof(PersistenceStatusText));
         OnPropertyChanged(nameof(WorkspaceNavigationToggleText));
-        RefreshGuidance();
 
         if (_vaultLifecycle.Snapshot is
             { IsInactivityWarningVisible: true, InactivityLocksAt: { } locksAt })
@@ -741,14 +530,12 @@ public sealed class ShellViewModel : ObservableObject
 
         _hadRecoverySession = hasRecoverySession;
         RefreshNavigationAvailability();
-        RefreshGuidance();
         CurrentStatus = BuildContextualStatus();
     }
 
     private void AccountInventory_OnInventoryChanged(object? sender, EventArgs eventArgs)
     {
         RefreshNavigationAvailability();
-        RefreshGuidance();
     }
 
     private void VaultEntry_OnContinueRequested(object? sender, EventArgs eventArgs) =>
@@ -758,19 +545,23 @@ public sealed class ShellViewModel : ObservableObject
         object? sender,
         DashboardNavigationRequest eventArgs)
     {
-        if (eventArgs.Route == AppRoute.Completion &&
-            _guidedWizard is not null &&
-            !_guidedWizard.Current.IsTerminal)
+        if (eventArgs.Route == AppRoute.Completion && _recoveryFlow is not null)
         {
-            var result = await _guidedWizard.BeginCompletionReviewAsync(CancellationToken.None);
+            var result = await _recoveryFlow.BeginCompletionReviewAsync(CancellationToken.None);
             if (!result.Succeeded)
             {
-                CurrentStatus = VisualStatusViewModel.Create(
-                    AppVisualState.Error,
-                    _localization,
-                    "Shell.Guided.Error.Title",
-                    "Shell.Guided.Error",
-                    StatusPresentation.GlobalWarning);
+                ShowRecoveryFlowFailure();
+                return;
+            }
+        }
+        else if (eventArgs.Route == AppRoute.CredentialsExport &&
+                 _recoveryFlow?.NextTask is
+                 { Target: NextUserTaskTarget.CredentialHandoff, RequiresTransition: true })
+        {
+            var result = await _recoveryFlow.AdvanceAsync(CancellationToken.None);
+            if (!result.Succeeded)
+            {
+                ShowRecoveryFlowFailure();
                 return;
             }
         }
@@ -780,15 +571,10 @@ public sealed class ShellViewModel : ObservableObject
         NavigateTo(eventArgs.Route);
     }
 
-    private async void Workflow_OnPlanReturnRequested(
+    private void Workflow_OnPlanReturnRequested(
         object? sender,
         WorkflowPlanReturnRequest eventArgs)
     {
-        if (_guidedWizard?.Current.CurrentStep == RecoveryWizardStepId.AccountRecovery)
-        {
-            await _guidedWizard.AdvanceAsync(CancellationToken.None);
-        }
-
         NavigationAccountId = null;
         NavigationActionId = null;
         NavigateTo(AppRoute.Dashboard);
@@ -810,6 +596,20 @@ public sealed class ShellViewModel : ObservableObject
             dashboard.NavigationRequested += Dashboard_OnNavigationRequested;
         }
 
+        if (screen is CsvImportScreenViewModel csvImport)
+        {
+            csvImport.ContinueRequested += CsvImport_OnContinueRequested;
+        }
+
+        if (screen is AccountInventoryScreenViewModel accounts)
+        {
+            accounts.ContinueToRecoveryRequested += Accounts_OnContinueToRecoveryRequested;
+        }
+
+        if (screen is CredentialExportScreenViewModel credentials)
+        {
+            credentials.ContinueToCompletionRequested += Credentials_OnContinueToCompletionRequested;
+        }
 
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
@@ -836,6 +636,20 @@ public sealed class ShellViewModel : ObservableObject
             dashboard.NavigationRequested -= Dashboard_OnNavigationRequested;
         }
 
+        if (screen is CsvImportScreenViewModel csvImport)
+        {
+            csvImport.ContinueRequested -= CsvImport_OnContinueRequested;
+        }
+
+        if (screen is AccountInventoryScreenViewModel accounts)
+        {
+            accounts.ContinueToRecoveryRequested -= Accounts_OnContinueToRecoveryRequested;
+        }
+
+        if (screen is CredentialExportScreenViewModel credentials)
+        {
+            credentials.ContinueToCompletionRequested -= Credentials_OnContinueToCompletionRequested;
+        }
 
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
@@ -861,25 +675,79 @@ public sealed class ShellViewModel : ObservableObject
 
     private async void Completion_OnReviewSucceeded(object? sender, EventArgs eventArgs)
     {
-        if (_guidedWizard is null)
+        if (_recoveryFlow is null)
         {
             return;
         }
 
-        var result = await _guidedWizard.MarkCompletionReviewReadyAsync(CancellationToken.None);
+        var result = await _recoveryFlow.MarkCompletionReviewReadyAsync(CancellationToken.None);
         if (!result.Succeeded)
         {
-            CurrentStatus = VisualStatusViewModel.Create(
-                AppVisualState.Error,
-                _localization,
-                "Shell.Guided.Error.Title",
-                "Shell.Guided.Error",
-                StatusPresentation.GlobalWarning);
+            ShowRecoveryFlowFailure();
         }
     }
 
-    private void GuidedWizard_OnGuidanceChanged(object? sender, EventArgs eventArgs) =>
-        RefreshGuidance();
+    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs) =>
+        RefreshNavigationAvailability();
+
+    private async void CsvImport_OnContinueRequested(object? sender, EventArgs eventArgs)
+    {
+        if (!await AdvanceWorkspaceTaskAsync(NextUserTaskTarget.AccountTriage))
+        {
+            return;
+        }
+
+        NavigateTo(AppRoute.Accounts);
+    }
+
+    private async void Accounts_OnContinueToRecoveryRequested(object? sender, EventArgs eventArgs)
+    {
+        if (!await AdvanceWorkspaceTaskAsync(NextUserTaskTarget.RecoveryOverview))
+        {
+            return;
+        }
+
+        NavigateTo(AppRoute.Dashboard);
+    }
+
+    private async void Credentials_OnContinueToCompletionRequested(object? sender, EventArgs eventArgs)
+    {
+        if (!await AdvanceWorkspaceTaskAsync(NextUserTaskTarget.CompletionReview))
+        {
+            return;
+        }
+
+        NavigateTo(AppRoute.Completion);
+    }
+
+    private async Task<bool> AdvanceWorkspaceTaskAsync(NextUserTaskTarget expectedTarget)
+    {
+        if (_recoveryFlow is null)
+        {
+            return true;
+        }
+
+        var task = _recoveryFlow.NextTask;
+        if (task.Target != expectedTarget)
+        {
+            ShowRecoveryFlowFailure();
+            return false;
+        }
+
+        if (!task.RequiresTransition)
+        {
+            return true;
+        }
+
+        var result = await _recoveryFlow.AdvanceAsync(CancellationToken.None);
+        if (result.Succeeded)
+        {
+            return true;
+        }
+
+        ShowRecoveryFlowFailure();
+        return false;
+    }
 
     private void PersistenceStatus_OnStatusChanged(object? sender, EventArgs eventArgs)
     {
@@ -929,164 +797,6 @@ public sealed class ShellViewModel : ObservableObject
         OnPropertyChanged(nameof(BrowserSessionCleanupText));
         RetryBrowserSessionCleanupCommand.RaiseCanExecuteChanged();
     }
-
-    private void RefreshGuidance()
-    {
-        OnPropertyChanged(nameof(IsGuidedWizardVisible));
-        OnPropertyChanged(nameof(IsGuidedPauseAvailable));
-        OnPropertyChanged(nameof(GuidedStepText));
-        OnPropertyChanged(nameof(GuidedRecommendationText));
-        OnPropertyChanged(nameof(GuidedWhyText));
-        OnPropertyChanged(nameof(HasGuidedTarget));
-        OnPropertyChanged(nameof(GuidedTargetText));
-        OnPropertyChanged(nameof(GuidedPrimaryActionText));
-        GuidedOpenCommand.RaiseCanExecuteChanged();
-        GuidedAdvanceCommand.RaiseCanExecuteChanged();
-        GuidedBackCommand.RaiseCanExecuteChanged();
-        GuidedPrimaryCommand.RaiseCanExecuteChanged();
-        PauseSessionCommand.RaiseCanExecuteChanged();
-
-        var focusKey = BuildGuidanceFocusKey();
-        if (IsGuidedWizardVisible &&
-            !string.Equals(_guidanceFocusKey, focusKey, StringComparison.Ordinal))
-        {
-            _guidanceFocusKey = focusKey;
-            AssistantFocusRequest++;
-        }
-    }
-
-    private string BuildGuidanceFocusKey()
-    {
-        if (_guidedWizard is null)
-        {
-            return string.Empty;
-        }
-
-        var decision = _guidedWizard.NextDecision;
-        return string.Join(
-            "|",
-            _guidedWizard.Current.CurrentStep.Value,
-            _guidedWizard.Current.Status,
-            decision.TargetStep?.Value,
-            decision.BlockCode,
-            decision.AccountId,
-            decision.ActionId);
-    }
-
-    private (string? Account, string? Action) ResolveGuidedTarget()
-    {
-        if (_guidedWizard is null)
-        {
-            return (null, null);
-        }
-
-        var decision = _guidedWizard.NextDecision;
-        var recommendation = _recoverySession?.Dashboard?.Recommendation;
-        var accountId = decision.AccountId ?? recommendation?.AccountId;
-        var actionId = decision.ActionId ?? recommendation?.ActionId;
-        var account = accountId is null
-            ? null
-            : _accountInventory?.CurrentInventory?.Accounts.SingleOrDefault(
-                candidate => candidate.Id == accountId.Value);
-        var providerId = account?.ProviderId ?? recommendation?.ProviderId;
-        var accountLabel = account?.AccountName ?? providerId;
-        if (string.IsNullOrWhiteSpace(actionId) || string.IsNullOrWhiteSpace(providerId))
-        {
-            return (accountLabel, null);
-        }
-
-        var accountHost = Uri.TryCreate(account?.AccountUrl, UriKind.Absolute, out var accountUri)
-            ? accountUri.Host
-            : null;
-        var workflow = RepositoryWorkflowCatalog.Workflows.SingleOrDefault(candidate =>
-            string.Equals(candidate.ProviderId, providerId, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(candidate.ProviderName, providerId, StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(candidate.ProviderId, accountHost, StringComparison.OrdinalIgnoreCase));
-        var action = workflow?.Actions.SingleOrDefault(candidate =>
-            string.Equals(candidate.Id, actionId, StringComparison.Ordinal));
-        return (accountLabel, action is null ? null : _localization.GetString(action.Guidance.TitleKey));
-    }
-
-    private void NavigateToGuidedStep(
-        RecoveryWizardStepId? step,
-        Guid? accountId,
-        string? actionId)
-    {
-        if (step is null)
-        {
-            return;
-        }
-
-        NavigationAccountId = accountId;
-        NavigationActionId = actionId;
-        NavigateTo(step.Value switch
-        {
-            "vault-entry" => AppRoute.VaultEntry,
-            "incident-intake" or "recovery-plan" => AppRoute.Dashboard,
-            "account-inventory" => AppRoute.CsvImport,
-            "account-triage" => AppRoute.Accounts,
-            "account-recovery" => AppRoute.Workflow,
-            "credential-export" => AppRoute.CredentialsExport,
-            "completion-preflight" or "final-report" => AppRoute.Completion,
-            _ => AppRoute.Dashboard,
-        });
-    }
-
-    private static string GetWizardStepKey(RecoveryWizardStepId step) => step.Value switch
-    {
-        "account-inventory" => "Dashboard.WizardStep.AccountInventory",
-        "account-triage" => "Dashboard.WizardStep.AccountTriage",
-        "recovery-plan" => "Dashboard.WizardStep.RecoveryPlan",
-        "account-recovery" => "Dashboard.WizardStep.AccountRecovery",
-        "credential-export" => "Dashboard.WizardStep.CredentialExport",
-        "completion-preflight" => "Dashboard.WizardStep.CompletionPreflight",
-        "final-report" => "Dashboard.WizardStep.FinalReport",
-        _ => "Dashboard.WizardStep.Unknown",
-    };
-
-    private static string GetGuidanceKey(GuidedRecoveryDecision decision) => decision.AdvisoryCode switch
-    {
-        GuidedRecoveryAdvisoryCode.RemainingCategoryReviewOptional =>
-            "Shell.Guided.RemainingCategoryReviewOptional",
-        GuidedRecoveryAdvisoryCode.ContinueWithoutEmailCategory =>
-            "Shell.Guided.ContinueWithoutEmailCategory",
-        _ => decision.BlockCode switch
-        {
-            GuidedRecoveryBlockCode.AccountsRequired => "Shell.Guided.AccountsRequired",
-            GuidedRecoveryBlockCode.Paused => "Shell.Guided.Paused",
-            GuidedRecoveryBlockCode.Terminal => "Shell.Guided.Terminal",
-            GuidedRecoveryBlockCode.UnsupportedStep => "Shell.Guided.OpenCurrent",
-            _ => decision.TargetStep?.Value switch
-            {
-                "account-triage" => "Shell.Guided.NextAccountTriage",
-                "recovery-plan" => "Shell.Guided.NextRecoveryPlan",
-                "account-recovery" => "Shell.Guided.NextAccountRecovery",
-                "credential-export" => "Shell.Guided.NextCredentialExport",
-                "completion-preflight" => "Shell.Guided.NextCompletion",
-                "final-report" => "Shell.Guided.NextFinalReport",
-                _ => "Shell.Guided.OpenCurrent",
-            },
-        },
-    };
-
-    private static string GetGuidedWhyKey(RecoveryWizardStepId step) => step.Value switch
-    {
-        "account-inventory" => "Shell.Assistant.Why.AccountInventory",
-        "account-triage" => "Shell.Assistant.Why.AccountTriage",
-        "recovery-plan" => "Shell.Assistant.Why.RecoveryPlan",
-        "account-recovery" => "Shell.Assistant.Why.AccountRecovery",
-        "credential-export" => "Shell.Assistant.Why.CredentialExport",
-        "completion-preflight" or "final-report" => "Shell.Assistant.Why.Completion",
-        _ => "Shell.Assistant.Why.General",
-    };
-
-    private static string GetGuidedBlockWhyKey(GuidedRecoveryBlockCode blockCode) => blockCode switch
-    {
-        GuidedRecoveryBlockCode.AccountsRequired => "Shell.Assistant.Why.AccountInventory",
-        GuidedRecoveryBlockCode.Paused => "Shell.Assistant.Why.Paused",
-        GuidedRecoveryBlockCode.Terminal => "Shell.Assistant.Why.Completion",
-        _ => "Shell.Assistant.Why.General",
-    };
 
     private static string GetPersistenceStatusKey(WorkspacePersistenceSnapshot snapshot) =>
         snapshot.State switch

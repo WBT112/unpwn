@@ -27,7 +27,6 @@
   <data name="Dashboard.Session.LastSaved" xml:space="preserve"><value>Zuletzt gespeichert: {0:g}</value></data>
   <data name="Dashboard.Session.LastSaved.None" xml:space="preserve"><value>Noch nicht gespeichert</value></data>
   <data name="Dashboard.Session.Vault" xml:space="preserve"><value>Tresor: {0}</value></data>
-  <data name="Dashboard.Session.WizardPhase" xml:space="preserve"><value>Aktuelle Phase: {0}</value></data>
   <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Wiederherstellungskanal zuerst prüfen</value></data>
   <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Deine Angaben deuten darauf hin, dass ein primärer Wiederherstellungskanal oder ein kritischer Zugriff sofortige Aufmerksamkeit benötigen könnte. Das ist eine beratende Priorisierung und kein automatisches Erkennungsergebnis.</value></data>
   <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Kritische Konten</value></data>
@@ -53,7 +52,12 @@
   <data name="Dashboard.Alert.Deletion.Count" xml:space="preserve"><value>{0} Zugangsdaten warten auf Löschung</value></data>
   <data name="Dashboard.Alert.Open" xml:space="preserve"><value>Betroffene Arbeit öffnen</value></data>
   <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Empfohlener nächster Schritt</value></data>
-  <data name="Dashboard.Recommendation.Open" xml:space="preserve"><value>Empfehlung öffnen</value></data>
+  <data name="Dashboard.Recommendation.Action.Import" xml:space="preserve"><value>Konten importieren</value></data>
+  <data name="Dashboard.Recommendation.Action.ReviewAccounts" xml:space="preserve"><value>Konten prüfen</value></data>
+  <data name="Dashboard.Recommendation.Action.Credentials" xml:space="preserve"><value>Zugangsdaten bearbeiten</value></data>
+  <data name="Dashboard.Recommendation.Action.Resume" xml:space="preserve"><value>Wiederherstellung fortsetzen</value></data>
+  <data name="Dashboard.Recommendation.Action.Report" xml:space="preserve"><value>Bericht öffnen</value></data>
+  <data name="Dashboard.Recommendation.Action.StartRecovery" xml:space="preserve"><value>Wiederherstellung starten</value></data>
   <data name="Dashboard.Recommendation.Unavailable" xml:space="preserve"><value>Keine Empfehlung verfügbar.</value></data>
   <data name="Dashboard.Recommendation.Target" xml:space="preserve"><value>Empfohlenes Konto oder Dienst: {0}</value></data>
   <data name="Dashboard.Recommendation.Category" xml:space="preserve"><value>Kategorie: {0}</value></data>
@@ -71,7 +75,6 @@
   <data name="Dashboard.Action.Pause" xml:space="preserve"><value>Sitzung pausieren</value></data>
   <data name="Dashboard.Action.Resume" xml:space="preserve"><value>Sitzung fortsetzen</value></data>
   <data name="Dashboard.Action.Archive" xml:space="preserve"><value>Sitzung archivieren</value></data>
-  <data name="Dashboard.Action.Completion" xml:space="preserve"><value>Abschlussprüfung öffnen</value></data>
   <data name="Dashboard.Archive.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungssitzung archivieren</value></data>
   <data name="Dashboard.Archive.Confirmation.Consequence" xml:space="preserve"><value>Die Sitzung bleibt verschlüsselt und lesbar, Änderungen am Wiederherstellungszustand werden jedoch beendet. Konten werden dadurch nicht als sicher oder abgeschlossen markiert.</value></data>
   <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Sitzung archivieren</value></data>
@@ -102,17 +105,4 @@
   <data name="Dashboard.Status.Created.Message" xml:space="preserve"><value>Die verschlüsselte Sitzung und die Vorfallhinweise wurden gespeichert. Nutze den unten empfohlenen nächsten Schritt.</value></data>
   <data name="Dashboard.Status.OperationFailed.Title" xml:space="preserve"><value>Sitzungsaktion fehlgeschlagen</value></data>
   <data name="Dashboard.Status.OperationFailed.Message" xml:space="preserve"><value>Es wurden weder eine Quellfehlermeldung noch geheime Werte angezeigt. Prüfe die sichere Validierungsmeldung.</value></data>
-  <data name="Dashboard.WizardStep.Welcome" xml:space="preserve"><value>Willkommen</value></data>
-  <data name="Dashboard.WizardStep.TrustedDeviceCheck" xml:space="preserve"><value>Prüfung des vertrauenswürdigen Geräts</value></data>
-  <data name="Dashboard.WizardStep.TrustedDeviceGuidance" xml:space="preserve"><value>Hinweise zum vertrauenswürdigen Gerät</value></data>
-  <data name="Dashboard.WizardStep.VaultEntry" xml:space="preserve"><value>Tresoreinstieg</value></data>
-  <data name="Dashboard.WizardStep.IncidentIntake" xml:space="preserve"><value>Vorfallaufnahme</value></data>
-  <data name="Dashboard.WizardStep.AccountInventory" xml:space="preserve"><value>Konten importieren</value></data>
-  <data name="Dashboard.WizardStep.AccountTriage" xml:space="preserve"><value>Kontokategorien</value></data>
-  <data name="Dashboard.WizardStep.RecoveryPlan" xml:space="preserve"><value>Wiederherstellungsplan</value></data>
-  <data name="Dashboard.WizardStep.AccountRecovery" xml:space="preserve"><value>Kontowiederherstellung</value></data>
-  <data name="Dashboard.WizardStep.CredentialExport" xml:space="preserve"><value>Export von Zugangsdaten</value></data>
-  <data name="Dashboard.WizardStep.CompletionPreflight" xml:space="preserve"><value>Vorprüfung des Abschlusses</value></data>
-  <data name="Dashboard.WizardStep.FinalReport" xml:space="preserve"><value>Abschlussbericht</value></data>
-  <data name="Dashboard.WizardStep.Unknown" xml:space="preserve"><value>Unbekannte Phase</value></data>
 </root>

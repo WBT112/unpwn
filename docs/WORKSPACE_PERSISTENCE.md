@@ -51,6 +51,11 @@ The following operations are committed as one encrypted batch:
 - account-inventory mutation together with the derived recovery-dashboard account projection
 - account-recovery execution creation or transition together with its derived recovery-dashboard account projection
 
+Workspace-owned continuation actions persist their language-neutral wizard transition before routing
+to the next workspace. Opening or closing a route alone performs no write. Import and category
+mutations remain separate explicit operations, so a user may review their result before choosing the
+continuation action; neither operation is inferred from navigation.
+
 Dashboard counters and recommendations are projections. The account inventory remains the canonical source for account metadata, the versioned local category suggestion, the user's explicit category decision and confirmation revision, and the fixed category queue. Account recovery execution remains canonical for automatic path selection, prior path attempts, actions, access, and outcomes.
 
 ## Concurrency and revisions

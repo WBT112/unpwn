@@ -14,7 +14,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 {
     private readonly IRecoverySessionService _sessionService;
     private readonly IVaultLifecycleService _vaultLifecycle;
-    private readonly RecoveryWizardSessionService _wizard;
     private readonly IConfirmationDialogService _confirmationDialog;
     private string _sessionName = string.Empty;
     private bool _compromisedRecoveryChannel;
@@ -24,7 +23,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     public DashboardScreenViewModel(
         IRecoverySessionService sessionService,
         IVaultLifecycleService vaultLifecycle,
-        RecoveryWizardSessionService wizard,
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
         Func<string?>? localUserName = null)
@@ -39,7 +37,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     {
         _sessionService = sessionService ?? throw new ArgumentNullException(nameof(sessionService));
         _vaultLifecycle = vaultLifecycle ?? throw new ArgumentNullException(nameof(vaultLifecycle));
-        _wizard = wizard ?? throw new ArgumentNullException(nameof(wizard));
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         _sessionName = localUserName is null
             ? RecoverySessionNameSuggestion.CreateForCurrentUser()
@@ -84,13 +81,9 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             () => NavigateToAlert(RecoveryDashboardAlertKind.CredentialDeletion),
             () => HasCredentialDeletions);
         OpenRecommendationCommand = new RelayCommand(OpenRecommendation, () => Dashboard is not null);
-        OpenCompletionCommand = new RelayCommand(
-            () => RequestNavigation(AppRoute.Completion, null, null),
-            () => IsActiveSession || IsPausedSession);
 
         _sessionService.SessionChanged += SessionService_OnSessionChanged;
         _vaultLifecycle.ContextChanged += VaultLifecycle_OnContextChanged;
-        _wizard.StateChanged += Wizard_OnStateChanged;
         RefreshState();
     }
 
@@ -184,10 +177,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             ? _vaultLifecycle.Current.VaultDisplayName
             : Localization.GetString("Shell.Context.NoVault"));
 
-    public string WizardPhaseText => Localization.Format(
-        "Dashboard.Session.WizardPhase",
-        Localization.GetString(GetWizardStepKey(_wizard.Current.CurrentStep)));
-
     public string CriticalReadinessText => Dashboard is null
         ? Localization.GetString("Dashboard.Metric.Unavailable")
         : Localization.Format(
@@ -233,6 +222,23 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             return Localization.GetString($"Dashboard.Recommendation.{recommendation.Code}");
         }
     }
+
+    public string RecommendationButtonText => Localization.GetString(
+        Dashboard?.Recommendation.Code switch
+        {
+            RecoveryDashboardRecommendationCode.ImportAccounts =>
+                "Dashboard.Recommendation.Action.Import",
+            RecoveryDashboardRecommendationCode.SecureRecoveryChannel or
+            RecoveryDashboardRecommendationCode.RestoreCriticalAccess =>
+                "Dashboard.Recommendation.Action.ReviewAccounts",
+            RecoveryDashboardRecommendationCode.ExportGeneratedCredentials =>
+                "Dashboard.Recommendation.Action.Credentials",
+            RecoveryDashboardRecommendationCode.ResumeSession =>
+                "Dashboard.Recommendation.Action.Resume",
+            RecoveryDashboardRecommendationCode.ArchivedSession =>
+                "Dashboard.Recommendation.Action.Report",
+            _ => "Dashboard.Recommendation.Action.StartRecovery",
+        });
 
     public bool HasRecommendationTarget =>
         !string.IsNullOrWhiteSpace(Dashboard?.Recommendation.ProviderId);
@@ -312,8 +318,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     public RelayCommand OpenRecommendationCommand { get; }
 
-    public RelayCommand OpenCompletionCommand { get; }
-
     public override void Activate() => _ = RefreshCommand.ExecuteAsync();
 
     private RecoverySessionWorkspace? Session => _sessionService.CurrentSession;
@@ -378,6 +382,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
                 ? "Dashboard.Status.Emergency.Message"
                 : "Dashboard.Status.Created.Message",
             StatusPresentation.TransientResult);
+        RequestNavigation(AppRoute.CsvImport, null, null);
     }
 
     private async Task PauseAsync(CancellationToken cancellationToken)
@@ -434,14 +439,19 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
+        if (recommendation.Code == RecoveryDashboardRecommendationCode.ResumeSession)
+        {
+            ResumeCommand.Execute(null);
+            return;
+        }
+
         var route = recommendation.Code switch
         {
             RecoveryDashboardRecommendationCode.ImportAccounts => AppRoute.CsvImport,
             RecoveryDashboardRecommendationCode.SecureRecoveryChannel or
             RecoveryDashboardRecommendationCode.RestoreCriticalAccess => AppRoute.Accounts,
             RecoveryDashboardRecommendationCode.ExportGeneratedCredentials => AppRoute.CredentialsExport,
-            RecoveryDashboardRecommendationCode.ResumeSession or
-            RecoveryDashboardRecommendationCode.ArchivedSession => AppRoute.Dashboard,
+            RecoveryDashboardRecommendationCode.ArchivedSession => AppRoute.Completion,
             _ => AppRoute.Workflow,
         };
         RequestNavigation(route, recommendation.AccountId, recommendation.ActionId);
@@ -500,7 +510,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(SessionStatusText));
         OnPropertyChanged(nameof(LastSavedText));
         OnPropertyChanged(nameof(VaultText));
-        OnPropertyChanged(nameof(WizardPhaseText));
         OnPropertyChanged(nameof(CriticalReadinessText));
         OnPropertyChanged(nameof(AccountCoverageText));
         OnPropertyChanged(nameof(WeightedProgressText));
@@ -511,6 +520,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CredentialExportsText));
         OnPropertyChanged(nameof(CredentialDeletionsText));
         OnPropertyChanged(nameof(RecommendationText));
+        OnPropertyChanged(nameof(RecommendationButtonText));
         OnPropertyChanged(nameof(HasRecommendationTarget));
         OnPropertyChanged(nameof(RecommendationTargetText));
         OnPropertyChanged(nameof(HasRecommendationCategory));
@@ -591,7 +601,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OpenCredentialExportCommand.RaiseCanExecuteChanged();
         OpenCredentialDeletionCommand.RaiseCanExecuteChanged();
         OpenRecommendationCommand.RaiseCanExecuteChanged();
-        OpenCompletionCommand.RaiseCanExecuteChanged();
     }
 
     private void ClearIntakeInputs()
@@ -641,29 +650,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             string.Equals(action.Id, recommendation.ActionId, StringComparison.Ordinal));
     }
 
-    private static string GetWizardStepKey(RecoveryWizardStepId step) => step.Value switch
-    {
-        "welcome" => "Dashboard.WizardStep.Welcome",
-        "trusted-device-check" => "Dashboard.WizardStep.TrustedDeviceCheck",
-        "trusted-device-guidance" => "Dashboard.WizardStep.TrustedDeviceGuidance",
-        "vault-entry" => "Dashboard.WizardStep.VaultEntry",
-        "incident-intake" => "Dashboard.WizardStep.IncidentIntake",
-        "account-inventory" => "Dashboard.WizardStep.AccountInventory",
-        "account-triage" => "Dashboard.WizardStep.AccountTriage",
-        "recovery-plan" => "Dashboard.WizardStep.RecoveryPlan",
-        "account-recovery" => "Dashboard.WizardStep.AccountRecovery",
-        "credential-export" => "Dashboard.WizardStep.CredentialExport",
-        "completion-preflight" => "Dashboard.WizardStep.CompletionPreflight",
-        "final-report" => "Dashboard.WizardStep.FinalReport",
-        _ => "Dashboard.WizardStep.Unknown",
-    };
-
     private void SessionService_OnSessionChanged(object? sender, EventArgs eventArgs) => RefreshState();
 
     private void VaultLifecycle_OnContextChanged(object? sender, EventArgs eventArgs) => RefreshState();
 
-    private void Wizard_OnStateChanged(object? sender, EventArgs eventArgs)
-    {
-        OnPropertyChanged(nameof(WizardPhaseText));
-    }
 }
