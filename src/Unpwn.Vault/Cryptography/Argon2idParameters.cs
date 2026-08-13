@@ -9,19 +9,27 @@ public sealed record Argon2idParameters(
 
     public void Validate()
     {
-        if (MemorySizeKiB < 19 * 1024)
+        if (MemorySizeKiB < 19 * 1024 ||
+            MemorySizeKiB > VaultResourceLimits.MaximumArgon2MemorySizeKiB)
         {
-            throw new ArgumentOutOfRangeException(nameof(MemorySizeKiB), "Argon2id memory must be at least 19 MiB.");
+            throw new ArgumentOutOfRangeException(
+                nameof(MemorySizeKiB),
+                $"Argon2id memory must be between 19 MiB and {VaultResourceLimits.MaximumArgon2MemorySizeKiB / 1024} MiB.");
         }
 
-        if (Iterations < 2)
+        if (Iterations < 2 || Iterations > VaultResourceLimits.MaximumArgon2Iterations)
         {
-            throw new ArgumentOutOfRangeException(nameof(Iterations), "Argon2id iterations must be at least 2.");
+            throw new ArgumentOutOfRangeException(
+                nameof(Iterations),
+                $"Argon2id iterations must be between 2 and {VaultResourceLimits.MaximumArgon2Iterations}.");
         }
 
-        if (DegreeOfParallelism < 1)
+        if (DegreeOfParallelism < 1 ||
+            DegreeOfParallelism > VaultResourceLimits.MaximumArgon2DegreeOfParallelism)
         {
-            throw new ArgumentOutOfRangeException(nameof(DegreeOfParallelism), "Argon2id parallelism must be positive.");
+            throw new ArgumentOutOfRangeException(
+                nameof(DegreeOfParallelism),
+                $"Argon2id parallelism must be between 1 and {VaultResourceLimits.MaximumArgon2DegreeOfParallelism}.");
         }
     }
 }
