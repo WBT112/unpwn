@@ -95,6 +95,48 @@ public sealed class RecoveryNetworkTargetPolicyTests
     }
 
     [Fact]
+    public async Task PublicDnsTargetReachesDiscoveryHandler()
+    {
+        var resolver = ResolverFor(("service.example", "93.184.216.34"));
+        var policy = new PublicRecoveryNetworkTargetPolicy(resolver);
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        using var service = CreateService(handler, policy);
+
+        var result = await service.DiscoverAsync(
+            new RecoveryLocationDiscoveryRequest(
+                CreateWorkflow([]),
+                ProviderLocationId: null,
+                new Uri("https://service.example/account")),
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(RecoveryLocationResolutionSource.WellKnownChangePassword, result.Handoff?.Source);
+        Assert.Equal(
+            new Uri("https://service.example/.well-known/change-password"),
+            Assert.Single(handler.Requests));
+    }
+
+    [Fact]
+    public async Task PrivateDnsTargetStopsBeforeDiscoveryHandler()
+    {
+        var resolver = ResolverFor(("service.example", "192.168.20.30"));
+        var policy = new PublicRecoveryNetworkTargetPolicy(resolver);
+        var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
+        using var service = CreateService(handler, policy);
+
+        var result = await service.DiscoverAsync(
+            new RecoveryLocationDiscoveryRequest(
+                CreateWorkflow([]),
+                ProviderLocationId: null,
+                new Uri("https://service.example/account")),
+            CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(RecoveryLocationDiscoveryFailureCode.NetworkFailure, result.FailureCode);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
     public async Task LiteralPrivateTargetStopsBeforeHttpHandler()
     {
         var handler = new RecordingHandler(_ => new HttpResponseMessage(HttpStatusCode.OK));
