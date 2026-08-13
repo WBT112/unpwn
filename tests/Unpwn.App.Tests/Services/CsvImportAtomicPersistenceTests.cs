@@ -89,8 +89,7 @@ public sealed class CsvImportAtomicPersistenceTests
     private sealed class TestSessionProjectionService(
         RecoverySessionWorkspace currentSession,
         Func<DateTimeOffset> clock) :
-        IRecoverySessionService,
-        IRecoverySessionProjectionCoordinator
+        IRecoverySessionWorkspaceCoordinator
     {
         public event EventHandler? SessionChanged;
 
@@ -116,10 +115,6 @@ public sealed class CsvImportAtomicPersistenceTests
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) =>
             throw new NotSupportedException();
-
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-            CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public void ClearForLock()
         {

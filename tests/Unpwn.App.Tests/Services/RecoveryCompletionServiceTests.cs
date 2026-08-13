@@ -23,7 +23,7 @@ public sealed class RecoveryCompletionServiceTests
         var sessionService = new TestSessionService(session);
         var service = new RecoveryCompletionService(
             sessionService,
-            new TestInventoryService(Inventory(session.Id, accountId), new AccountInventoryPlan([])),
+            new TestInventoryService(Inventory(session.Id, accountId), new AccountRecoveryOrder([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
 
@@ -63,7 +63,7 @@ public sealed class RecoveryCompletionServiceTests
         };
         var session = Session(deferredAccount);
         var inventory = Inventory(session.Id, accountId);
-        var plan = new AccountInventoryPlan([]);
+        var queue = new AccountRecoveryOrder([]);
         var notExported = GeneratedCredentialMetadata.Create(
             Guid.NewGuid(), accountId, Guid.NewGuid(), StartedAt);
         var exported = GeneratedCredentialMetadata.Create(
@@ -74,7 +74,7 @@ public sealed class RecoveryCompletionServiceTests
             .Delete(Guid.NewGuid(), StartedAt.AddMinutes(1));
         var service = new RecoveryCompletionService(
             new TestSessionService(session),
-            new TestInventoryService(inventory, plan),
+            new TestInventoryService(inventory, queue),
             new TestCredentialRepository([notExported, exported, deleted]),
             () => StartedAt.AddMinutes(5));
 
@@ -117,7 +117,7 @@ public sealed class RecoveryCompletionServiceTests
         var sessionService = new TestSessionService(session);
         var service = new RecoveryCompletionService(
             sessionService,
-            new TestInventoryService(Inventory(session.Id, accountId), new AccountInventoryPlan([])),
+            new TestInventoryService(Inventory(session.Id, accountId), new AccountRecoveryOrder([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
         var review = await service.ReviewAsync(CancellationToken.None);
@@ -155,7 +155,7 @@ public sealed class RecoveryCompletionServiceTests
             .ConfirmPlaintextExportCleanup(Guid.NewGuid(), StartedAt.AddMinutes(3));
         var service = new RecoveryCompletionService(
             new TestSessionService(session),
-            new TestInventoryService(Inventory(session.Id, accountId), new AccountInventoryPlan([])),
+            new TestInventoryService(Inventory(session.Id, accountId), new AccountRecoveryOrder([])),
             new TestCredentialRepository([credential]),
             () => StartedAt.AddMinutes(5));
 
@@ -185,7 +185,7 @@ public sealed class RecoveryCompletionServiceTests
         var sessionService = new TestSessionService(original);
         var service = new RecoveryCompletionService(
             sessionService,
-            new TestInventoryService(Inventory(original.Id, accountId), new AccountInventoryPlan([])),
+            new TestInventoryService(Inventory(original.Id, accountId), new AccountRecoveryOrder([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
         var review = await service.ReviewAsync(CancellationToken.None);
@@ -221,7 +221,7 @@ public sealed class RecoveryCompletionServiceTests
         var completed = active.Complete(record, StartedAt);
         var service = new RecoveryCompletionService(
             new TestSessionService(completed),
-            new TestInventoryService(Inventory(active.Id, accountId), new AccountInventoryPlan([])),
+            new TestInventoryService(Inventory(active.Id, accountId), new AccountRecoveryOrder([])),
             new TestCredentialRepository([]),
             () => StartedAt.AddMinutes(5));
 
@@ -402,10 +402,6 @@ public sealed class RecoveryCompletionServiceTests
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) => Unsupported();
 
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-            CancellationToken cancellationToken) => Unsupported();
-
         public void ClearForLock() => SessionChanged?.Invoke(this, EventArgs.Empty);
 
         private static Task<RecoverySessionOperationResult> Unsupported() =>
@@ -415,7 +411,7 @@ public sealed class RecoveryCompletionServiceTests
 
     private sealed class TestInventoryService(
         AccountInventoryState inventory,
-        AccountInventoryPlan plan) : IAccountInventoryService
+        AccountRecoveryOrder queue) : IAccountInventoryService
     {
         public event EventHandler? InventoryChanged;
 
@@ -423,7 +419,7 @@ public sealed class RecoveryCompletionServiceTests
 
         public AccountInventoryState? CurrentInventory => inventory;
 
-        public AccountInventoryPlan? CurrentPlan => plan;
+        public AccountRecoveryOrder? CurrentRecoveryOrder => queue;
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 

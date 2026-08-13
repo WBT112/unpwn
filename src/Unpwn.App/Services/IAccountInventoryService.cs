@@ -58,7 +58,7 @@ public interface IAccountInventoryService
 
     AccountInventoryState? CurrentInventory { get; }
 
-    AccountInventoryPlan? CurrentPlan { get; }
+    AccountRecoveryOrder? CurrentRecoveryOrder { get; }
 
     Task InitializeAsync(CancellationToken cancellationToken);
 

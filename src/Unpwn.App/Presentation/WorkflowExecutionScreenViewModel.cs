@@ -18,7 +18,7 @@ public sealed record WorkflowActionItemViewModel(
     bool IsRequired,
     bool HasUnresolvedRisk);
 
-public sealed record WorkflowPlanReturnRequest(string FeedbackResourceKey);
+public sealed record WorkflowOverviewReturnRequest(string FeedbackResourceKey);
 
 public sealed record RecoveryBrowserWorkspaceRequest(
     Guid AccountId,
@@ -92,11 +92,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private Guid? _requestedAccountId;
     private string? _requestedActionId;
     private AccountInventoryEntry? _account;
-    private AccountInventoryPlanItem? _planItem;
+    private AccountRecoveryOrderItem? _orderItem;
     private RecoveryWorkflowDefinition? _workflow;
     private AccountRecoveryExecutionState? _execution;
     private RecoveryNavigationHandoff? _preparedNavigation;
-    private bool _reviewedWorkflowAvailable;
     private RecoveryPathOptionViewModel? _selectedPath;
     private WorkflowActionItemViewModel[] _actions = [];
     private WorkflowActionItemViewModel? _selectedAction;
@@ -206,7 +205,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         RefreshProjection();
     }
 
-    public event EventHandler<WorkflowPlanReturnRequest>? PlanReturnRequested;
+    public event EventHandler<WorkflowOverviewReturnRequest>? OverviewReturnRequested;
 
     public event EventHandler<RecoveryBrowserWorkspaceRequest>? RecoveryBrowserRequested;
 
@@ -386,9 +385,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         : "Workflow.Trust.Reviewed.Title");
 
     public string WorkflowTrustMessage => Localization.GetString(IsGeneralManualWorkflow
-        ? _reviewedWorkflowAvailable
-            ? "Workflow.Trust.GeneralPreserved.Message"
-            : "Workflow.Trust.General.Message"
+        ? "Workflow.Trust.General.Message"
         : "Workflow.Trust.Reviewed.Message");
 
     public bool HasExecution => _execution is not null;
@@ -520,13 +517,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public string RecommendationReasonText => _planItem is null
+    public string RecommendationReasonText => _orderItem is null
         ? Localization.GetString("Workflow.Recommendation.Unavailable")
-        : Localization.GetString($"Accounts.Plan.Reason.{_planItem.ReasonCode}");
-
-    public string PlanStatusText => _planItem is null
-        ? Localization.GetString("Workflow.Plan.Status.Unavailable")
-        : Localization.GetString("Workflow.Plan.Status.ReadyNow");
+        : Localization.GetString($"Accounts.Queue.Reason.{_orderItem.ReasonCode}");
 
     public string AccessStateText => Localization.GetString(
         $"Workflow.Access.{_execution?.AccessState ?? RecoveryAccessState.Unknown}");
@@ -726,30 +719,13 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        _planItem = _inventory.CurrentPlan?.Items.SingleOrDefault(item => item.AccountId == _account.Id);
+        _orderItem = _inventory.CurrentRecoveryOrder?.Items.SingleOrDefault(item => item.AccountId == _account.Id);
         var reviewedWorkflow = ResolveReviewedWorkflow(_account);
-        _reviewedWorkflowAvailable = reviewedWorkflow is not null;
         _workflow = reviewedWorkflow ??
             RepositoryWorkflowCatalog.CreateGenericManualWorkflow(_account.ProviderId);
         _execution = null;
 
         var loaded = await _executionService.LoadAsync(_account.Id, _workflow, cancellationToken);
-        if (reviewedWorkflow is not null &&
-            loaded.FailureCode == AccountRecoveryExecutionFailureCode.Corrupted)
-        {
-            var genericWorkflow = RepositoryWorkflowCatalog.CreateGenericManualWorkflow(
-                _account.ProviderId);
-            var preserved = await _executionService.LoadAsync(
-                _account.Id,
-                genericWorkflow,
-                cancellationToken);
-            if (preserved.Succeeded)
-            {
-                _workflow = genericWorkflow;
-                loaded = preserved;
-            }
-        }
-
         if (loaded.Succeeded)
         {
             _execution = loaded.State;
@@ -1196,9 +1172,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         var currentRecommendation = _session.Dashboard?.Recommendation;
         var feedbackKey = Equals(previousRecommendation, currentRecommendation)
-            ? "Workflow.Plan.Unchanged"
-            : "Workflow.Plan.Changed";
-        PlanReturnRequested?.Invoke(this, new WorkflowPlanReturnRequest(feedbackKey));
+            ? "Workflow.Queue.Unchanged"
+            : "Workflow.Queue.Changed";
+        OverviewReturnRequested?.Invoke(this, new WorkflowOverviewReturnRequest(feedbackKey));
     }
 
     private void ApplyResult(
@@ -1243,7 +1219,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         }
 
         var recommendedId = _session.Dashboard?.Recommendation.AccountId ??
-            _inventory.CurrentPlan?.Recommended?.AccountId;
+            _inventory.CurrentRecoveryOrder?.Recommended?.AccountId;
         return recommendedId is { } accountId
             ? inventory.Accounts.SingleOrDefault(account => account.Id == accountId)
             : inventory.Accounts.FirstOrDefault();
@@ -1497,7 +1473,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private void SetUnavailable(string key)
     {
         _account = null;
-        _planItem = null;
+        _orderItem = null;
         _workflow = null;
         _execution = null;
         _validationKey = key;
@@ -1542,7 +1518,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(SelectedPathText));
         OnPropertyChanged(nameof(PathSelectionReasonText));
         OnPropertyChanged(nameof(RecommendationReasonText));
-        OnPropertyChanged(nameof(PlanStatusText));
         OnPropertyChanged(nameof(AccessStateText));
         OnPropertyChanged(nameof(HasAccessReason));
         OnPropertyChanged(nameof(AccessReasonText));

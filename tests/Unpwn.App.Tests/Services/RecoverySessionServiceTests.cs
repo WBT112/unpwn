@@ -80,9 +80,13 @@ public sealed class RecoverySessionServiceTests
             Category = AccountRecoveryCategory.Email,
         };
         currentTime = currentTime.AddMinutes(1);
-        Assert.True((await service.ReplaceAccountSummariesAsync(
-            [account],
-            CancellationToken.None)).Succeeded);
+        using (var update = await service.PrepareAccountSummaryUpdateAsync(
+                   [account],
+                   CancellationToken.None))
+        {
+            await store.WriteEncryptedRecordsAtomicallyAsync([update.ToWrite()], CancellationToken.None);
+            service.CommitPreparedUpdate(update);
+        }
         var expectedRevision = service.CurrentSession!.Revision;
         currentTime = currentTime.AddMinutes(1);
 
@@ -135,7 +139,7 @@ public sealed class RecoverySessionServiceTests
     }
 
     [Fact]
-    public async Task RemovedLegacyDescriptionFieldFailsClosedOnReload()
+    public async Task RemovedDescriptionFieldFailsClosedOnReload()
     {
         var store = new TestEncryptedRecordStore();
         var coordinator = new TestWizardCoordinator(DateTimeOffset.UnixEpoch);
@@ -150,7 +154,7 @@ public sealed class RecoverySessionServiceTests
         var currentJson = Encoding.UTF8.GetString(Assert.IsType<byte[]>(store.StoredRecord));
         store.StoredRecord = Encoding.UTF8.GetBytes(currentJson.Replace(
             "\"Indicators\":0",
-            "\"Indicators\":0,\"Description\":\"legacy\"",
+            "\"Indicators\":0,\"Description\":\"removed development field\"",
             StringComparison.Ordinal));
 
         using var reloaded = new RecoverySessionService(store, coordinator, () => DateTimeOffset.UnixEpoch);
@@ -296,7 +300,8 @@ public sealed class RecoverySessionServiceTests
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var write = Assert.Single(writes);
+            var write = Assert.Single(writes, candidate =>
+                candidate.Descriptor.RecordId == "8cf13bd9-2ccc-4b71-958a-439fefc90ac6");
             write.Validate();
             StoredRecord = write.Plaintext.ToArray();
             WriteCount++;
@@ -304,7 +309,7 @@ public sealed class RecoverySessionServiceTests
         }
     }
 
-    private sealed class TestWizardCoordinator : IRecoveryWizardVaultCoordinator
+    private sealed class TestWizardCoordinator : IRecoveryWizardPersistenceCoordinator
     {
         private DateTimeOffset _lastTransitionTime;
 
@@ -327,13 +332,12 @@ public sealed class RecoverySessionServiceTests
 
         public string? SessionDisplayName { get; private set; }
 
-        public Task ApplyWizardTransitionAsync(
+        public PreparedRecoveryWizardUpdate PrepareTransition(
             RecoverySessionWizardTransition transition,
-            CancellationToken cancellationToken)
+            DateTimeOffset occurredAt)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             _lastTransitionTime = _lastTransitionTime.AddSeconds(1);
-            CurrentWizard = transition switch
+            var next = transition switch
             {
                 RecoverySessionWizardTransition.CompleteIncidentIntake =>
                     RecoveryWizardStateMachine.Advance(
@@ -348,8 +352,18 @@ public sealed class RecoverySessionServiceTests
                     RecoveryWizardStateMachine.Archive(CurrentWizard, _lastTransitionTime),
                 _ => throw new ArgumentOutOfRangeException(nameof(transition)),
             };
-            return Task.CompletedTask;
+            return new PreparedRecoveryWizardUpdate(
+                next,
+                new VaultRecordDescriptor(
+                    "recovery-session",
+                    "0f654bae-1267-468a-bebf-90ee286e1d86",
+                    1),
+                Encoding.UTF8.GetBytes("wizard"),
+                CurrentWizard.Revision);
         }
+
+        public void CommitPreparedTransition(PreparedRecoveryWizardUpdate update) =>
+            CurrentWizard = update.State;
 
         public void SetSessionDisplayName(string? sessionDisplayName) =>
             SessionDisplayName = sessionDisplayName;

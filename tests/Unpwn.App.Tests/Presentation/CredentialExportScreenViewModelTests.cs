@@ -370,7 +370,7 @@ public sealed class CredentialExportScreenViewModelTests
         public AccountInventoryState? CurrentInventory { get; } = new(
             Guid.NewGuid(), 0, StartedAt, [account]);
 
-        public AccountInventoryPlan? CurrentPlan => null;
+        public AccountRecoveryOrder? CurrentRecoveryOrder => null;
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 

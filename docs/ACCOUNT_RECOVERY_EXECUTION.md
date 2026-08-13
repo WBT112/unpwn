@@ -8,8 +8,8 @@ The guided workflow screen needs one persisted source of truth for an account's 
 encrypted `account-execution` record with the opaque inventory account ID as its record identifier.
 Account inventory remains the source for account identity metadata, the local catalog suggestion, and
 the user's explicit recovery category. Category determines when an account is recommended; this
-execution aggregate and its provider workflow determine how the account is recovered. Dashboard
-entries and recovery-plan summaries are projections; they are not independent workflow state.
+execution aggregate and its provider workflow determine how the account is recovered. Overview
+entries and recovery-queue summaries are projections; they are not independent workflow state.
 
 ## Identity and versioning
 
@@ -24,11 +24,9 @@ An execution is bound to:
 
 Loading an execution against a different provider, workflow, version, or path fails closed. Repository workflow changes therefore cannot silently reinterpret persisted action state.
 
-If a reviewed provider workflow is added after an account has already recorded generic-workflow
-history, the application first detects the identity mismatch and then attempts the exact stable
-generic definition. A matching generic execution remains active and is visibly labelled as preserved
-general history. It is not migrated, replaced, or marked complete automatically; corrupted or
-otherwise mismatched state still fails closed.
+If the repository workflow identity, version, provider, or selected path no longer matches an
+existing execution, loading fails closed. The application does not retain a parallel historical
+workflow path, reinterpret old action state, migrate it, replace it, or mark it complete.
 
 ## Action state
 
@@ -118,7 +116,7 @@ summaries directly. It:
 - resolve provider guidance through localization resources
 - show the structured reason and affected prerequisites
 - require explicit completion acknowledgement
-- return to the recalculated dashboard/plan after each material transition
+- return to the recalculated recovery overview and queue after each material transition
 - restore focus and announce state changes according to the accessibility baseline in Issue #38
 
 The normal journey makes only the current recommended action visually dominant. It explains why the
@@ -146,7 +144,7 @@ answer to the existing canonical transition model:
 - a genuinely absent capability uses confirmed `MarkTrulyNotApplicable`;
 - deliberately unfinished required work uses confirmed `AcceptUnresolvedRisk`.
 
-All material answers require a non-secret reason and return to the recalculated plan. Technical access,
+All material answers require a non-secret reason and return to the recalculated recovery queue. Technical access,
 path, action-state, reason, note, and outcome controls remain inspectable behind **Details / advanced
 status**. Guided and advanced controls call the same `IAccountRecoveryExecutionService`; neither owns a
 second execution state.

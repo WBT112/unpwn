@@ -144,7 +144,7 @@ Translated text must never:
 
 A translation-only change therefore does not alter workflow semantics or provider verification metadata.
 
-Existing catalog strings that are intended for display should be migrated to resource keys while the provider set is small. Machine-readable completion rules remain canonical and should not require natural-language comparison.
+All catalog text intended for display uses stable resource keys. Machine-readable completion rules remain canonical and never require natural-language comparison.
 
 See [Localization and Multilingual GUI](LOCALIZATION.md).
 
@@ -234,7 +234,7 @@ Accounts without a matching reviewed provider definition use the repository-cont
 `generic/manual-account-recovery` workflow. The UI labels it as general, non-provider-specific
 guidance; it must never be presented with the same confidence as a reviewed provider workflow.
 Its stable authenticated-change, password-reset, and manual-recovery paths keep unsupported accounts
-inside the normal category plan, persisted action state, credential handoff, risk model, and
+inside the normal category queue, persisted action state, credential handoff, risk model, and
 completion review.
 
 The generic definition contains no provider recovery locations or trusted-origin metadata. Arbitrary

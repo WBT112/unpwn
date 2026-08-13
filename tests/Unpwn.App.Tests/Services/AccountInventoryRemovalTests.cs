@@ -1,6 +1,8 @@
+using System.Text;
 using Unpwn.App.Services;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
+using Unpwn.Vault.Storage;
 using Xunit;
 
 namespace Unpwn.App.Tests.Services;
@@ -63,9 +65,19 @@ public sealed class AccountInventoryRemovalTests
             StoredRecord = plaintext.ToArray();
             return Task.CompletedTask;
         }
+
+        public Task WriteEncryptedRecordsAtomicallyAsync(
+            IReadOnlyCollection<VaultRecordWrite> writes,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var inventory = writes.Single(write => write.Descriptor.RecordType == "account-state");
+            StoredRecord = inventory.Plaintext.ToArray();
+            return Task.CompletedTask;
+        }
     }
 
-    private sealed class TestRecoverySessionService : IRecoverySessionService
+    private sealed class TestRecoverySessionService : IRecoverySessionWorkspaceCoordinator
     {
         public event EventHandler? SessionChanged;
 
@@ -94,17 +106,28 @@ public sealed class AccountInventoryRemovalTests
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) => Conflict();
 
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
+        public Task<PreparedRecoverySessionUpdate> PrepareAccountSummaryUpdateAsync(
             IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            LastSummaries = [.. accounts];
-            CurrentSession = CurrentSession!.ReplaceAccounts(
-                accounts,
-                CurrentSession.UpdatedAt.AddSeconds(1));
+            var current = CurrentSession ?? throw new InvalidOperationException();
+            var updated = current.ReplaceAccounts(accounts, current.UpdatedAt.AddSeconds(1));
+            return Task.FromResult(new PreparedRecoverySessionUpdate(
+                updated,
+                new VaultRecordDescriptor(
+                    "recovery-session",
+                    "8cf13bd9-2ccc-4b71-958a-439fefc90ac6",
+                    1),
+                Encoding.UTF8.GetBytes("session"),
+                current.Revision));
+        }
+
+        public void CommitPreparedUpdate(PreparedRecoverySessionUpdate update)
+        {
+            LastSummaries = update.State.Accounts;
+            CurrentSession = update.State;
             SessionChanged?.Invoke(this, EventArgs.Empty);
-            return Task.FromResult(RecoverySessionOperationResult.Success);
         }
 
         public void ClearForLock()

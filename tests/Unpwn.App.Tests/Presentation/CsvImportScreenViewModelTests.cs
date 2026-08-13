@@ -123,7 +123,7 @@ public sealed class CsvImportScreenViewModelTests
 
         public AccountInventoryState? CurrentInventory => null;
 
-        public AccountInventoryPlan? CurrentPlan => null;
+        public AccountRecoveryOrder? CurrentRecoveryOrder => null;
 
         public int ImportCalls { get; private set; }
 

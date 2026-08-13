@@ -8,7 +8,7 @@ The repository now contains the main end-to-end foundations for the desktop MVP:
 
 - trusted-device gate and encrypted local Recovery Vault;
 - incident intake, recovery session, risk-first dashboard, pause/lock/resume, and final completion review;
-- account inventory, CSV import, simple account categories, and deterministic planning;
+- account inventory, CSV import, simple account categories, and a deterministic recovery queue;
 - reviewed provider workflows plus a clearly distinguished generic manual fallback;
 - canonical per-account/action recovery execution with explicit completion criteria and unresolved-risk handling;
 - generated-credential lifecycle, password-manager handoff, secure export, and cleanup tracking;

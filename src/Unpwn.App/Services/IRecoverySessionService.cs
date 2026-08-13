@@ -71,17 +71,6 @@ public interface IEncryptedVaultRecordStore
         throw new NotSupportedException("The encrypted record store does not support atomic batch writes.");
 }
 
-public interface IRecoveryWizardVaultCoordinator
-{
-    RecoveryWizardState CurrentWizard { get; }
-
-    Task ApplyWizardTransitionAsync(
-        RecoverySessionWizardTransition transition,
-        CancellationToken cancellationToken);
-
-    void SetSessionDisplayName(string? sessionDisplayName);
-}
-
 public interface IRecoverySessionService
 {
     event EventHandler? SessionChanged;
@@ -117,10 +106,6 @@ public interface IRecoverySessionService
         CancellationToken cancellationToken) =>
         Task.FromResult(RecoverySessionOperationResult.Failure(
             RecoverySessionOperationFailureCode.Conflict));
-
-    Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-        IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-        CancellationToken cancellationToken);
 
     void ClearForLock();
 

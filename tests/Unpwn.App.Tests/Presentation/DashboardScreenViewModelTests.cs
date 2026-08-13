@@ -386,18 +386,6 @@ public sealed class DashboardScreenViewModelTests
             return Task.FromResult(RecoverySessionOperationResult.Success);
         }
 
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-            CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            CurrentSession = CurrentSession?.ReplaceAccounts(
-                accounts,
-                CurrentSession.UpdatedAt.AddMinutes(1));
-            SessionChanged?.Invoke(this, EventArgs.Empty);
-            return Task.FromResult(RecoverySessionOperationResult.Success);
-        }
-
         public void ClearForLock()
         {
             LoadState = RecoverySessionLoadState.Locked;

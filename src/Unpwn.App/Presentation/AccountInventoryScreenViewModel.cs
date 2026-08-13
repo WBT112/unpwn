@@ -342,7 +342,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             AccountInventoryFilter.Unknown => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Unknown),
             _ => accounts,
         };
-        var order = _inventory.CurrentPlan?.Items.ToDictionary(item => item.AccountId, item => item.Order) ?? [];
+        var order = _inventory.CurrentRecoveryOrder?.Items.ToDictionary(item => item.AccountId, item => item.Order) ?? [];
         accounts = (SelectedSort?.Value ?? AccountInventorySort.RecoveryOrder) switch
         {
             AccountInventorySort.RecoveryOrder => accounts.OrderBy(account => order.GetValueOrDefault(account.Id, int.MaxValue)),

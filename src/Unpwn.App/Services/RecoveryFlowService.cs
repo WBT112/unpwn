@@ -196,7 +196,7 @@ public sealed class RecoveryFlowService : IRecoveryFlowService, IDisposable
             accounts.Count(account => !account.IsCategorized),
             hasOutstandingWork,
             hasPendingCredentials,
-            dashboard?.Recommendation.AccountId ?? _inventory.CurrentPlan?.Recommended?.AccountId,
+            dashboard?.Recommendation.AccountId ?? _inventory.CurrentRecoveryOrder?.Recommended?.AccountId,
             dashboard?.Recommendation.ActionId);
     }
 

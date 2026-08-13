@@ -508,8 +508,7 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
     }
 
     private sealed class ProjectionSessionService(RecoverySessionWorkspace currentSession) :
-        IRecoverySessionService,
-        IRecoverySessionProjectionCoordinator
+        IRecoverySessionWorkspaceCoordinator
     {
         public event EventHandler? SessionChanged;
 
@@ -535,11 +534,6 @@ public sealed class AccountRecoveryExecutionServiceTests : IDisposable
             throw new NotSupportedException();
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) =>
-            throw new NotSupportedException();
-
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
-            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
-            CancellationToken cancellationToken) =>
             throw new NotSupportedException();
 
         public void ClearForLock()

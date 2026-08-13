@@ -212,5 +212,11 @@ public sealed class RecoveryDomainTests
             importance,
             AutomationSupport.None,
             prerequisites ?? [],
-            ["User confirmed the synthetic recovery action is complete."]);
+            ["User confirmed the synthetic recovery action is complete."],
+            new RecoveryActionGuidanceKeys(
+                $"Workflow.Test.{id}.Title",
+                $"Workflow.Test.{id}.Instruction",
+                null,
+                $"Workflow.Test.{id}.Completion",
+                ["User confirmed the synthetic recovery action is complete."]));
 }

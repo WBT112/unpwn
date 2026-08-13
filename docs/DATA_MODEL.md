@@ -103,7 +103,7 @@ The repository-controlled classification catalog proposes an account category fr
 
 The removed priority, role, and account-dependency graph is not retained as compatibility state in current development vaults. Such obsolete serialized members fail closed at the inventory persistence boundary.
 
-Category planning and provider workflow selection are separate: category answers **when**, workflow answers **how**. The category queue is always `EMAIL`, `CRITICAL`, `UNKNOWN`, then `NON_CRITICAL`, with provider and opaque account IDs as stable tie-breakers. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
+Category ordering and provider workflow selection are separate: category answers **when**, workflow answers **how**. The category queue is always `EMAIL`, `CRITICAL`, `UNKNOWN`, then `NON_CRITICAL`, with provider and opaque account IDs as stable tie-breakers. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
 
 ### RecoveryWorkflowDefinition
 

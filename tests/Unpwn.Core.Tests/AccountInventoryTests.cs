@@ -73,12 +73,12 @@ public sealed class AccountInventoryTests
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([nonCritical, unknown, critical, email], DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        var plan = state.CreatePlan();
+        var queue = state.CreateRecoveryOrder();
 
         Assert.Equal(
             [email.Id, critical.Id, unknown.Id, nonCritical.Id],
-            plan.Items.Select(item => item.AccountId));
-        Assert.Equal(AccountInventoryPlanReasonCode.EmailCategory, plan.Recommended?.ReasonCode);
+            queue.Items.Select(item => item.AccountId));
+        Assert.Equal(AccountRecoveryOrderReasonCode.EmailCategory, queue.Recommended?.ReasonCode);
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public sealed class AccountInventoryTests
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([email, critical], DateTimeOffset.UnixEpoch.AddSeconds(1));
 
-        Assert.Equal(email.Id, state.CreatePlan().Recommended?.AccountId);
+        Assert.Equal(email.Id, state.CreateRecoveryOrder().Recommended?.AccountId);
     }
 
     [Fact]

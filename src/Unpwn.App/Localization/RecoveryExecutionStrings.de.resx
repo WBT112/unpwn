@@ -29,7 +29,7 @@
   <data name="Workflow.Path.Reason.ProviderFailureFallback" xml:space="preserve"><value>Nach deiner Meldung über den fehlgeschlagenen Anbieterweg ist unpwn zum nächsten sicheren unterstützten Wiederherstellungsweg gewechselt.</value></data>
   <data name="Workflow.Path.Reason.NoSafeSupportedPath" xml:space="preserve"><value>Der Workflow bietet für den aktuell bestätigten Kontozustand keinen sicheren Weg. Das Konto bleibt sichtbar blockiert; nutze geprüfte Anbieterhinweise.</value></data>
   <data name="Workflow.Access.Title" xml:space="preserve"><value>Kontozugriff</value></data>
-  <data name="Workflow.Access.Help" xml:space="preserve"><value>Erfasse den tatsächlichen Zugriffsstatus. Verlorener Zugriff und Anbieterprüfung benötigen eine nicht geheime Begründung und führen zum neu berechneten Plan zurück.</value></data>
+  <data name="Workflow.Access.Help" xml:space="preserve"><value>Erfasse den tatsächlichen Zugriffsstatus. Verlorener Zugriff und Anbieterprüfung benötigen eine nicht geheime Begründung und führen zur aktualisierten Wiederherstellungsreihenfolge zurück.</value></data>
   <data name="Workflow.Access.Unknown" xml:space="preserve"><value>Nicht erfasst</value></data>
   <data name="Workflow.Access.Available" xml:space="preserve"><value>Zugriff vorhanden</value></data>
   <data name="Workflow.Access.Lost" xml:space="preserve"><value>Zugriff verloren</value></data>
@@ -126,12 +126,10 @@
   <data name="Workflow.Status.Started.Title" xml:space="preserve"><value>Wiederherstellungspfad begonnen</value></data>
   <data name="Workflow.Status.Started.Message" xml:space="preserve"><value>Bearbeite jede erforderliche Aktion getrennt und erfasse das tatsächliche Ergebnis.</value></data>
   <data name="Workflow.Status.Active.Title" xml:space="preserve"><value>Kontowiederherstellung läuft</value></data>
-  <data name="Workflow.Status.Active.Message" xml:space="preserve"><value>Blockierte Arbeit, Fehlschläge, verlorener Zugriff und ungelöste Risiken bleiben im Wiederherstellungsplan sichtbar.</value></data>
-  <data name="Workflow.Plan.Recalculated.Title" xml:space="preserve"><value>Wiederherstellungsplan neu berechnet</value></data>
-  <data name="Workflow.Plan.Changed" xml:space="preserve"><value>Das empfohlene Konto oder die empfohlene Aktion hat sich nach dem erfassten Ergebnis geändert. Prüfe die aktuelle Empfehlung, bevor du fortfährst.</value></data>
-  <data name="Workflow.Plan.Unchanged" xml:space="preserve"><value>Der Plan wurde neu berechnet. Die aktuelle Empfehlung bleibt gleich und ungelöste Arbeit bleibt sichtbar.</value></data>
-  <data name="Workflow.Plan.Status.Unavailable" xml:space="preserve"><value>Planstatus nicht verfügbar</value></data>
-  <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Jetzt bereit</value></data>
+  <data name="Workflow.Status.Active.Message" xml:space="preserve"><value>Blockierte Arbeit, Fehlschläge, verlorener Zugriff und ungelöste Risiken bleiben in der Wiederherstellungsübersicht sichtbar.</value></data>
+  <data name="Workflow.Queue.Recalculated.Title" xml:space="preserve"><value>Wiederherstellungsreihenfolge aktualisiert</value></data>
+  <data name="Workflow.Queue.Changed" xml:space="preserve"><value>Das empfohlene Konto oder die empfohlene Aktion hat sich nach dem erfassten Ergebnis geändert. Prüfe die aktuelle Empfehlung, bevor du fortfährst.</value></data>
+  <data name="Workflow.Queue.Unchanged" xml:space="preserve"><value>Die Wiederherstellungsreihenfolge wurde aktualisiert. Die aktuelle Empfehlung bleibt gleich und ungelöste Arbeit bleibt sichtbar.</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Entsperre einen Vault und lade ein Kontoinventar, bevor du die Kontowiederherstellung beginnst.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>Das ausgewählte Konto ist im verschlüsselten Inventar nicht mehr verfügbar.</value></data>
   <data name="Workflow.Validation.NoSafeRecoveryPath" xml:space="preserve"><value>Für den aktuell bestätigten Kontozustand ist kein sicherer unterstützter Wiederherstellungsweg verfügbar. Das Konto bleibt sichtbar blockiert.</value></data>
@@ -157,7 +155,6 @@
   <data name="Workflow.Trust.Reviewed.Message" xml:space="preserve"><value>Diese dienstspezifischen Hinweise und Ziele wurden im unpwn-Repository geprüft. Anbieterseiten können sich dennoch ändern und Navigation beweist niemals Erfolg.</value></data>
   <data name="Workflow.Trust.General.Title" xml:space="preserve"><value>Allgemeine manuelle Hinweise – nicht anbieterspezifisch</value></data>
   <data name="Workflow.Trust.General.Message" xml:space="preserve"><value>Für diesen Dienst ist kein anbieterspezifisch geprüfter Workflow verfügbar. unpwn kann durch eine konservative manuelle Prüfliste führen, aber verfügbare Seiten und Sicherheitsfunktionen können abweichen.</value></data>
-  <data name="Workflow.Trust.GeneralPreserved.Message" xml:space="preserve"><value>Inzwischen ist ein geprüfter Anbieter-Workflow verfügbar, aber für dieses Konto besteht bereits Verlauf aus dem allgemeinen Workflow. unpwn bewahrt ihn und migriert oder vervollständigt ihn nicht automatisch.</value></data>
   <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Hat dieser Schritt wirklich funktioniert?</value></data>
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Erledigt</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>Ich kann nicht fortfahren</value></data>
@@ -167,19 +164,19 @@
   <data name="Workflow.Guided.Credential.PreChangeLogin" xml:space="preserve"><value>Wenn du dich vor der Passwortänderung anmelden musst, verwende deine aktuellen Anbieter-Zugangsdaten oder die bestehende Anbieter-Sitzung. Erzeuge das Ersatzpasswort nur für den Änderungs-/Zurücksetzungsschritt.</value></data>
   <data name="Workflow.Guided.Credential.ReplacementPending" xml:space="preserve"><value>Das erzeugte Ersatzpasswort ist noch kein aktives Anbieterpasswort. Verwende es nicht für die vorherige Anmeldung, sondern erst wenn der Anbieter nach dem neuen Passwort fragt, und bestätige danach ausdrücklich die Abschlusskriterien.</value></data>
   <data name="Workflow.Guided.Problem.Title" xml:space="preserve"><value>Was hält dich auf?</value></data>
-  <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Wähle die Antwort, die dem tatsächlichen Ergebnis am besten entspricht. unpwn hält die daraus entstehende Arbeit oder das Risiko im Recovery-Plan sichtbar.</value></data>
+  <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Wähle die Antwort, die dem tatsächlichen Ergebnis am besten entspricht. unpwn hält die daraus entstehende Arbeit oder das Risiko in der Wiederherstellungsübersicht sichtbar.</value></data>
   <data name="Workflow.Guided.Problem.ReasonPlaceholder" xml:space="preserve"><value>Kurze, nicht geheime Erklärung</value></data>
   <data name="Workflow.Guided.Problem.ReasonWarning" xml:space="preserve"><value>Trage keine Passwörter, Reset-Links, MFA-Geheimnisse, Recovery-Codes, Token, Cookies oder Identitätsdokumente ein.</value></data>
   <data name="Workflow.Guided.Problem.Apply" xml:space="preserve"><value>Dieses Ergebnis erfassen</value></data>
   <data name="Workflow.Guided.Problem.Cancel" xml:space="preserve"><value>An diesem Schritt weiterarbeiten</value></data>
   <data name="Workflow.Guided.Problem.LostAccess.Label" xml:space="preserve"><value>Ich habe keinen Zugriff mehr auf dieses Konto</value></data>
-  <data name="Workflow.Guided.Problem.LostAccess.Explanation" xml:space="preserve"><value>Erfasst den verlorenen Kontozugriff und kehrt zum neu berechneten Recovery-Plan zurück.</value></data>
+  <data name="Workflow.Guided.Problem.LostAccess.Explanation" xml:space="preserve"><value>Erfasst den verlorenen Kontozugriff und kehrt zur aktualisierten Wiederherstellungsreihenfolge zurück.</value></data>
   <data name="Workflow.Guided.Problem.WaitingForProvider.Label" xml:space="preserve"><value>Ich muss auf den Anbieter warten</value></data>
   <data name="Workflow.Guided.Problem.WaitingForProvider.Explanation" xml:space="preserve"><value>Erfasst, dass eine Anbieterprüfung oder Wartefrist noch läuft.</value></data>
   <data name="Workflow.Guided.Problem.MissingPrerequisite.Label" xml:space="preserve"><value>Ein anderes Konto oder eine Voraussetzung fehlt</value></data>
   <data name="Workflow.Guided.Problem.MissingPrerequisite.Explanation" xml:space="preserve"><value>Blockiert diesen Schritt, ohne ihn auszublenden, sodass die fehlende Voraussetzung sichtbar bleibt.</value></data>
   <data name="Workflow.Guided.Problem.ProviderStepFailed.Label" xml:space="preserve"><value>Der Anbieterschritt ist fehlgeschlagen</value></data>
-  <data name="Workflow.Guided.Problem.ProviderStepFailed.Explanation" xml:space="preserve"><value>Erfasst einen Anbieterfehler. Du kannst den Schritt später aus dem Plan erneut versuchen.</value></data>
+  <data name="Workflow.Guided.Problem.ProviderStepFailed.Explanation" xml:space="preserve"><value>Erfasst einen Anbieterfehler. Du kannst den Schritt später aus der Wiederherstellungsübersicht erneut versuchen.</value></data>
   <data name="Workflow.Guided.Problem.TrulyNotApplicable.Label" xml:space="preserve"><value>Diese Funktion existiert für mein Konto wirklich nicht</value></data>
   <data name="Workflow.Guided.Problem.TrulyNotApplicable.Explanation" xml:space="preserve"><value>Nur verwenden, wenn die Funktion tatsächlich fehlt, nicht wenn sie nicht verfügbar oder schwierig abzuschließen ist. Eine Bestätigung ist erforderlich.</value></data>
   <data name="Workflow.Guided.Problem.AcceptUnresolvedRisk.Label" xml:space="preserve"><value>Ich möchte dies ungelöst lassen und das Risiko akzeptieren</value></data>

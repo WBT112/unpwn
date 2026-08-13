@@ -24,10 +24,10 @@
   <data name="Accounts.Summary.Count.Zero" xml:space="preserve"><value>Keine Konten erfasst.</value></data>
   <data name="Accounts.Summary.Count.One" xml:space="preserve"><value>{0} Konto erfasst.</value></data>
   <data name="Accounts.Summary.Count.Other" xml:space="preserve"><value>{0} Konten erfasst.</value></data>
-  <data name="Accounts.Plan.Reason.EmailCategory" xml:space="preserve"><value>E-Mail-Konto zuerst</value></data>
-  <data name="Accounts.Plan.Reason.CriticalCategory" xml:space="preserve"><value>Kritisches Konto</value></data>
-  <data name="Accounts.Plan.Reason.UnknownCategory" xml:space="preserve"><value>Kategorie noch unbekannt</value></data>
-  <data name="Accounts.Plan.Reason.NonCriticalCategory" xml:space="preserve"><value>Nicht kritisches Konto</value></data>
+  <data name="Accounts.Queue.Reason.EmailCategory" xml:space="preserve"><value>E-Mail-Konto zuerst</value></data>
+  <data name="Accounts.Queue.Reason.CriticalCategory" xml:space="preserve"><value>Kritisches Konto</value></data>
+  <data name="Accounts.Queue.Reason.UnknownCategory" xml:space="preserve"><value>Kategorie noch unbekannt</value></data>
+  <data name="Accounts.Queue.Reason.NonCriticalCategory" xml:space="preserve"><value>Nicht kritisches Konto</value></data>
   <data name="Accounts.Action.New" xml:space="preserve"><value>Neues Konto</value></data>
   <data name="Accounts.List.Title" xml:space="preserve"><value>Konten</value></data>
   <data name="Accounts.Field.Provider" xml:space="preserve"><value>Anbieter oder Dienst</value></data>

@@ -52,7 +52,7 @@ public sealed class AccountInventoryAcceptanceTests
             Assert.Equal(AccountRecoveryCategory.Unknown, account.SuggestedCategory));
         Assert.Equal(
             ["unknown-a", "unknown-b"],
-            state.CreatePlan().Items.Select(item => item.ProviderId));
+            state.CreateRecoveryOrder().Items.Select(item => item.ProviderId));
     }
 
     [Fact]
@@ -71,16 +71,16 @@ public sealed class AccountInventoryAcceptanceTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("tr-TR");
-            var turkishOrder = state.CreatePlan().Items.Select(item => item.AccountId).ToArray();
+            var turkishOrder = state.CreateRecoveryOrder().Items.Select(item => item.AccountId).ToArray();
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
             var reloaded = JsonSerializer.Deserialize<AccountInventoryState>(JsonSerializer.Serialize(state))!;
-            var restartedOrder = reloaded.CreatePlan().Items.Select(item => item.AccountId).ToArray();
+            var restartedOrder = reloaded.CreateRecoveryOrder().Items.Select(item => item.AccountId).ToArray();
 
             Assert.Equal(turkishOrder, restartedOrder);
             Assert.Equal(
                 [AccountRecoveryCategory.Email, AccountRecoveryCategory.Critical,
                     AccountRecoveryCategory.Unknown, AccountRecoveryCategory.NonCritical],
-                reloaded.CreatePlan().Items.Select(item => item.Category));
+                reloaded.CreateRecoveryOrder().Items.Select(item => item.Category));
             Assert.Contains(reloaded.Accounts, account => !account.IsCategorized);
         }
         finally

@@ -228,7 +228,7 @@
   <data name="Shell.Persistence.Failed.Io" xml:space="preserve"><value>Saving failed because storage is unavailable or full. Your change was not claimed as saved; resolve the storage problem and retry the action.</value></data>
   <data name="Shell.Recovery.Title" xml:space="preserve"><value>Previous run ended unexpectedly</value></data>
   <data name="Shell.Recovery.Symbol" xml:space="preserve"><value>!</value></data>
-  <data name="Shell.Recovery.Message" xml:space="preserve"><value>The vault starts locked. Review the current plan after unlocking; no external provider action was marked complete automatically.</value></data>
+  <data name="Shell.Recovery.Message" xml:space="preserve"><value>The vault starts locked. Review the recovery overview after unlocking; no external provider action was marked complete automatically.</value></data>
   <data name="Shell.Recovery.Dismiss" xml:space="preserve"><value>Dismiss</value></data>
   <data name="Shell.WorkspaceHeading" xml:space="preserve"><value>RECOVERY WORKSPACE</value></data>
   <data name="Shell.Workspace.Show" xml:space="preserve"><value>Review details and workspace</value></data>

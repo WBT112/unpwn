@@ -3,6 +3,7 @@ using Unpwn.App.Services;
 using Unpwn.Core;
 using Unpwn.Import.Csv;
 using Unpwn.Vault.Cryptography;
+using Unpwn.Vault.Storage;
 using Xunit;
 
 namespace Unpwn.App.Tests.Services;
@@ -153,8 +154,8 @@ public sealed class AccountInventoryServiceTests
         Assert.Equal(AccountRecoveryCategory.NonCritical, categorized.EffectiveCategory);
         Assert.Equal(service.CurrentInventory.Revision, categorized.CategoryConfirmedRevision);
         Assert.Equal(
-            AccountInventoryPlanReasonCode.NonCriticalCategory,
-            service.CurrentPlan?.Recommended?.ReasonCode);
+            AccountRecoveryOrderReasonCode.NonCriticalCategory,
+            service.CurrentRecoveryOrder?.Recommended?.ReasonCode);
     }
 
     [Fact]
@@ -181,7 +182,7 @@ public sealed class AccountInventoryServiceTests
             AccountRecoveryCategory.Critical,
             CancellationToken.None)).Succeeded);
 
-        Assert.Equal(second.Id, service.CurrentPlan?.Recommended?.AccountId);
+        Assert.Equal(second.Id, service.CurrentRecoveryOrder?.Recommended?.AccountId);
         Assert.All(session.LastSummaries, summary =>
         {
             Assert.Equal(0, summary.BlockedRequiredActions);
@@ -218,9 +219,7 @@ public sealed class AccountInventoryServiceTests
         {
             Category = account.EffectiveCategory,
         };
-        Assert.True((await session.ReplaceAccountSummariesAsync(
-            [executionSummary],
-            CancellationToken.None)).Succeeded);
+        session.SeedAccountSummaries([executionSummary]);
 
         time = time.AddMinutes(1);
         var result = await service.CategorizeAsync(
@@ -332,10 +331,20 @@ public sealed class AccountInventoryServiceTests
             StoredRecord = plaintext.ToArray();
             return Task.CompletedTask;
         }
+
+        public Task WriteEncryptedRecordsAtomicallyAsync(
+            IReadOnlyCollection<VaultRecordWrite> writes,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var inventory = writes.Single(write => write.Descriptor.RecordType == "account-state");
+            StoredRecord = inventory.Plaintext.ToArray();
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestRecoverySessionService(
-        IncidentIndicator indicators = IncidentIndicator.None) : IRecoverySessionService
+        IncidentIndicator indicators = IncidentIndicator.None) : IRecoverySessionWorkspaceCoordinator
     {
         public event EventHandler? SessionChanged;
 
@@ -372,15 +381,36 @@ public sealed class AccountInventoryServiceTests
             Task.FromResult(RecoverySessionOperationResult.Failure(
                 RecoverySessionOperationFailureCode.Conflict));
 
-        public Task<RecoverySessionOperationResult> ReplaceAccountSummariesAsync(
+        public void SeedAccountSummaries(
+            IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts)
+        {
+            LastSummaries = [.. accounts];
+            CurrentSession = CurrentSession!.ReplaceAccounts(accounts, CurrentSession.UpdatedAt.AddSeconds(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public Task<PreparedRecoverySessionUpdate> PrepareAccountSummaryUpdateAsync(
             IReadOnlyCollection<RecoveryAccountDashboardEntry> accounts,
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            LastSummaries = [.. accounts];
-            CurrentSession = CurrentSession!.ReplaceAccounts(accounts, CurrentSession.UpdatedAt.AddSeconds(1));
+            var current = CurrentSession ?? throw new InvalidOperationException();
+            var updated = current.ReplaceAccounts(accounts, current.UpdatedAt.AddSeconds(1));
+            return Task.FromResult(new PreparedRecoverySessionUpdate(
+                updated,
+                new VaultRecordDescriptor(
+                    "recovery-session",
+                    "8cf13bd9-2ccc-4b71-958a-439fefc90ac6",
+                    1),
+                Encoding.UTF8.GetBytes("session"),
+                current.Revision));
+        }
+
+        public void CommitPreparedUpdate(PreparedRecoverySessionUpdate update)
+        {
+            LastSummaries = update.State.Accounts;
+            CurrentSession = update.State;
             SessionChanged?.Invoke(this, EventArgs.Empty);
-            return Task.FromResult(RecoverySessionOperationResult.Success);
         }
 
         public void ClearForLock()

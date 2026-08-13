@@ -24,7 +24,7 @@ This directory contains the canonical project documentation. Each topic has one 
 
 - [Guided Recovery Wizard](RECOVERY_WIZARD.md) — end-to-end wizard state and resume rules
 - [Recovery Session and Dashboard](RECOVERY_SESSION_DASHBOARD.md) — incident intake, dashboard, and session lifecycle
-- [Account Inventory and Recovery Planning](ACCOUNT_INVENTORY.md) — account categories, local suggestions, and ordering
+- [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md) — account categories, local suggestions, and ordering
 - [CSV Import](IMPORT.md) — import parsing, password exclusion, and duplicate handling
 - [Recovery Workflows](RECOVERY_WORKFLOWS.md) — provider workflow semantics and validation
 - [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md) — canonical per-account/action execution state
