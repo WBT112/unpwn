@@ -28,27 +28,20 @@ public sealed record CsvImportLimits(
 
     public void Validate()
     {
-        if (MaximumInputBytes <= 0 ||
-            MaximumInputCharacters <= 0 ||
-            MaximumHeaderCharacters <= 0 ||
-            MaximumRecordCharacters <= 0 ||
-            MaximumFieldCharacters <= 0 ||
-            MaximumColumns <= 0 ||
-            MaximumRows <= 0 ||
-            MaximumPreviewCandidates <= 0 ||
-            MaximumDiagnostics <= 0 ||
-            MaximumDiagnosticMessageCharacters <= 0)
-        {
-            throw new ArgumentOutOfRangeException(nameof(CsvImportLimits));
-        }
-
-        if (MaximumHeaderCharacters > MaximumInputCharacters ||
-            MaximumRecordCharacters > MaximumInputCharacters ||
-            MaximumFieldCharacters > MaximumRecordCharacters ||
-            MaximumPreviewCandidates > MaximumRows)
-        {
-            throw new ArgumentException("CSV import resource limits are inconsistent.", nameof(CsvImportLimits));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumInputBytes, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumInputCharacters, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumHeaderCharacters, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumRecordCharacters, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumFieldCharacters, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumColumns, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumRows, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumPreviewCandidates, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumDiagnostics, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(MaximumDiagnosticMessageCharacters, 0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(MaximumHeaderCharacters, MaximumInputCharacters);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(MaximumRecordCharacters, MaximumInputCharacters);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(MaximumFieldCharacters, MaximumRecordCharacters);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(MaximumPreviewCandidates, MaximumRows);
     }
 }
 
@@ -208,12 +201,7 @@ internal sealed class CsvBoundedReadStream(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var remaining = maximumBytes - _bytesRead;
-        var permitted = (int)Math.Min(buffer.Length, Math.Max(0, remaining) + 1);
-        if (permitted == 0)
-        {
-            return 0;
-        }
-
+        var permitted = (int)Math.Min(buffer.Length, remaining + 1);
         var read = inner.Read(buffer[..permitted]);
         if (read <= 0)
         {
@@ -227,12 +215,6 @@ internal sealed class CsvBoundedReadStream(
 
         _bytesRead += read;
         return read;
-    }
-
-    public override int ReadByte()
-    {
-        Span<byte> value = stackalloc byte[1];
-        return Read(value) == 0 ? -1 : value[0];
     }
 
     protected override void Dispose(bool disposing)
