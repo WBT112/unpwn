@@ -35,12 +35,22 @@ Account removal still requires the normal destructive confirmation, but there is
 
 ## Planning boundary
 
-Until the automatic queue work in issue #111, the simplified planner uses effective categories and preserves the material incident-input behavior introduced with session simplification: a lost-access or possibly compromised-recovery-channel indicator moves `Email` ahead of `Critical`; otherwise `Critical` remains ahead of `Email`. `Unknown` and `Not critical` follow, with provider and opaque account identifiers as deterministic tie-breakers.
+The normal recovery queue is derived automatically from effective categories in exactly this order:
+
+1. `Email`
+2. `Critical`
+3. `Unknown`
+4. `NonCritical`
+
+Within one category, the language-neutral provider identifier and then the opaque account identifier
+are deterministic tie-breakers. UI culture, display text, incident warnings, browser state, and
+incomplete category review never change this order. An unreviewed account keeps its conservative
+catalog suggestion, including `Unknown`, until the user explicitly overrides it.
 
 There are no dependency graph, cycle, missing-target, or override planning states. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
 
 ## Persistence and testing
 
-Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog aliases and types, unknown fallback, explicit override precedence, deterministic ordering, category revision persistence, early exit/resume guidance, fail-closed obsolete records, lock clearing, import integration, and language-independent semantics.
+Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog aliases and types, unknown fallback, explicit override precedence, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, early exit/resume guidance, fail-closed obsolete records, lock clearing, import integration, and language-independent semantics.
 
 See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Recovery Wizard](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).

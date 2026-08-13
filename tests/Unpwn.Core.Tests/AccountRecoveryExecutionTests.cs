@@ -16,8 +16,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
 
         state = state.StartAction(
             workflow,
@@ -42,8 +42,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
         state = state.StartAction(workflow, "identify-account", StartedAt.AddMinutes(1));
 
         Assert.Throws<InvalidOperationException>(() => state.CompleteAction(
@@ -75,8 +75,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
                 Guid.NewGuid(),
                 workflow,
-                RecoveryPath.AuthenticatedChange,
-                StartedAt)
+                StartedAt,
+                RecoveryAccessState.Available)
             .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1));
         var criterion = workflow.Actions.Single(action => action.Id == "identify-account")
             .Guidance.CompletionCriteriaKeys.Single();
@@ -106,8 +106,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
         const string note = "Contacted provider; case 123. No secrets included.";
 
         state = state.SetUserNotes("identify-account", note, StartedAt.AddMinutes(1));
@@ -126,8 +126,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             accountId,
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
         var reference = new GeneratedCredentialReference(Guid.NewGuid(), accountId);
 
         state = state.AttachCredentialReference(
@@ -148,8 +148,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt)
+                StartedAt,
+                RecoveryAccessState.Available)
             .SetUserNotes(
                 "identify-account",
                 "Non-secret note",
@@ -185,8 +185,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
         var json = JsonNode.Parse(JsonSerializer.Serialize(state))!.AsObject();
         foreach (var action in json["Actions"]!.AsArray())
         {
@@ -206,9 +206,10 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt)
+                StartedAt,
+                RecoveryAccessState.Available)
             .SetAccessState(
+                workflow,
                 RecoveryAccessState.Lost,
                 "Provider denied access",
                 StartedAt.AddMinutes(1));
@@ -227,10 +228,11 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt)
+                StartedAt,
+                RecoveryAccessState.Available)
             .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1))
             .SetAccessState(
+                workflow,
                 RecoveryAccessState.Lost,
                 "Provider denied access",
                 StartedAt.AddMinutes(2));
@@ -250,8 +252,8 @@ public sealed class AccountRecoveryExecutionTests
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt)
+                StartedAt,
+                RecoveryAccessState.Available)
             .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1))
             .CompleteAction(
                 workflow,
@@ -259,7 +261,7 @@ public sealed class AccountRecoveryExecutionTests
                 completionCriteriaAcknowledged: true,
                 StartedAt.AddMinutes(2));
 
-        var projection = state.CreateDashboardProjection(AccountCriticality.Critical);
+        var projection = state.CreateDashboardProjection(AccountRecoveryCategory.Critical);
 
         Assert.Equal(1, projection.RequiredActionsCompleted);
         Assert.Equal(2, projection.RequiredActionsTotal);
@@ -276,29 +278,33 @@ public sealed class AccountRecoveryExecutionTests
     }
 
     [Fact]
-    public void RecoveryPathCanChangeOnlyBeforeMaterialActionStateExists()
+    public void LostAuthenticatedAccessAutomaticallyFallsBackAndPreservesAttemptReason()
     {
         var workflow = CreateWorkflowWithManualPath();
         var state = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
 
-        state = state.ChangePath(
-            workflow,
-            RecoveryPath.ManualRecovery,
-            StartedAt.AddMinutes(1));
+        state = state
+            .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1))
+            .SetAccessState(
+                workflow,
+                RecoveryAccessState.Lost,
+                "The authenticated session is no longer usable.",
+                StartedAt.AddMinutes(2));
 
         Assert.Equal(RecoveryPath.ManualRecovery, state.SelectedPath);
         Assert.Equal(["manual-recovery"], state.Actions.Select(action => action.DefinitionId));
+        Assert.Equal(
+            RecoveryPathSelectionReasonCode.AuthenticatedAccessLostFallback,
+            state.PathSelectionReason);
+        var attempt = Assert.Single(state.PreviousPathAttempts);
+        Assert.Equal(RecoveryPath.AuthenticatedChange, attempt.Path);
+        Assert.Equal(RecoveryPathTransitionReasonCode.AuthenticatedAccessLost, attempt.TransitionReason);
+        Assert.Equal("The authenticated session is no longer usable.", attempt.UserReason);
         state.Validate(workflow);
-
-        state = state.StartAction(workflow, "manual-recovery", StartedAt.AddMinutes(2));
-        Assert.Throws<InvalidOperationException>(() => state.ChangePath(
-            workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt.AddMinutes(3)));
     }
 
     [Fact]
@@ -308,8 +314,8 @@ public sealed class AccountRecoveryExecutionTests
         var initial = AccountRecoveryExecutionState.Create(
                 Guid.NewGuid(),
                 workflow,
-                RecoveryPath.AuthenticatedChange,
-                StartedAt)
+                StartedAt,
+                RecoveryAccessState.Available)
             .StartAction(workflow, "identify-account", StartedAt.AddMinutes(1));
 
         Assert.Throws<ArgumentException>(() => initial.BlockAction(
@@ -352,8 +358,8 @@ public sealed class AccountRecoveryExecutionTests
         var initial = AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
         var trulyNotApplicable = initial.MarkNotApplicable(
             workflow,
             "identify-account",

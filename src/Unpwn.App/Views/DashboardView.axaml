@@ -66,8 +66,6 @@
                          Text="{DynamicResource Dashboard.Intake.Indicators.Title}" />
               <TextBlock Text="{DynamicResource Dashboard.Intake.Indicators.Help}"
                          TextWrapping="Wrap" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.LostAccess}"
-                        IsChecked="{Binding LostAccess, Mode=TwoWay}" />
               <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.CompromisedRecovery}"
                         IsChecked="{Binding CompromisedRecoveryChannel, Mode=TwoWay}" />
               <TextBlock Text="{DynamicResource Dashboard.Intake.SkipHint}"
@@ -139,6 +137,9 @@
               <TextBlock IsVisible="{Binding HasRecommendationTarget}"
                          Text="{Binding RecommendationTargetText}"
                          FontWeight="SemiBold"
+                         TextWrapping="Wrap" />
+              <TextBlock IsVisible="{Binding HasRecommendationCategory}"
+                         Text="{Binding RecommendationCategoryText}"
                          TextWrapping="Wrap" />
               <TextBlock IsVisible="{Binding HasRecommendationAction}"
                          Text="{Binding RecommendationActionText}"

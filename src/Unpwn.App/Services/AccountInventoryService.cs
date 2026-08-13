@@ -50,8 +50,7 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
 
     public AccountInventoryState? CurrentInventory { get; private set; }
 
-    public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan(
-        _recoverySession.CurrentSession?.Incident.Indicators ?? IncidentIndicator.None);
+    public AccountInventoryPlan? CurrentPlan => CurrentInventory?.CreatePlan();
 
     public Task InitializeAsync(CancellationToken cancellationToken) =>
         _mutationCoordinator.ExecuteAsync(
@@ -573,7 +572,10 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                 existing?.AccessLost ?? false,
                 existing?.CredentialsAwaitingExport ?? 0,
                 existing?.CredentialsAwaitingDeletion ?? 0,
-                existing?.RecommendedActionId);
+                existing?.RecommendedActionId)
+            {
+                Category = account.EffectiveCategory,
+            };
         }).ToArray();
     }
 

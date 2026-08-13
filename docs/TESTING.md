@@ -28,7 +28,7 @@ Semantic validation rejects unsafe or contradictory definitions such as duplicat
 
 Provider contract scenarios exercise the Recovery Engine without a browser. Representative scenarios include authenticated password change, password reset, blocked action prerequisites, lost MFA access, expired/unavailable recovery links, manual recovery, required-action failure, blocked work, unresolved-risk acceptance, and access that cannot be restored.
 
-Domain/state-machine tests cover valid and invalid transitions, deterministic planning, progress calculation, completion preflight, credential lifecycle, idempotency, and persistence revisions. Required actions cannot be silently skipped. `NOT_APPLICABLE` and risk acceptance retain their required reason/disposition.
+Domain/state-machine tests cover valid and invalid transitions, the exact category queue across culture/restart/incomplete triage, automatic authenticated-change/reset/manual selection, no-safe-path blocking, material fallback history, progress calculation, completion preflight, credential lifecycle, idempotency, and persistence revisions. Required actions cannot be silently skipped. `NOT_APPLICABLE` and risk acceptance retain their required reason/disposition. Selector-shape tests keep browser observations outside the canonical path decision.
 
 Representative domain and parsing tests run under multiple cultures to prove that UI culture does not change canonical behavior.
 

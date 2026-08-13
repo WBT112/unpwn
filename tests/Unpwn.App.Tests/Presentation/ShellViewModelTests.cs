@@ -550,7 +550,10 @@ public sealed class ShellViewModelTests
         AccessLost: false,
         CredentialsAwaitingExport: 0,
         CredentialsAwaitingDeletion: 0,
-        RecommendedActionId: actionId);
+        RecommendedActionId: actionId)
+        {
+            Category = AccountRecoveryCategory.Email,
+        };
 
     private static ResourceLocalizationService CreateLocalization() =>
         new(CultureInfo.GetCultureInfo("en"));

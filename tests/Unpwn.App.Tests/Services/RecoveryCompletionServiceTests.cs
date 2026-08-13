@@ -332,7 +332,12 @@ public sealed class RecoveryCompletionServiceTests
             accessLost,
             0,
             0,
-            "review-action");
+            "review-action")
+        {
+            Category = criticality == AccountCriticality.Critical
+                ? AccountRecoveryCategory.Critical
+                : AccountRecoveryCategory.NonCritical,
+        };
 
     private static AccountInventoryState Inventory(
         Guid sessionId,

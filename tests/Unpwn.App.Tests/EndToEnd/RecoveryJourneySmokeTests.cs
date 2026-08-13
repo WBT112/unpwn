@@ -66,18 +66,22 @@ public sealed class RecoveryJourneySmokeTests
                     Guid.NewGuid(),
                     account.Id,
                     workflow,
-                    RecoveryPath.AuthenticatedChange,
                     projection),
                 CancellationToken.None);
             Assert.True(
                 createdExecution.Succeeded,
                 $"{createdExecution.FailureCode}; diagnostics: " +
                 string.Join(", ", journey.Diagnostics.Snapshot().Select(item => item.ExceptionType)));
+            journey.Tick();
+            var execution = AssertSuccess(await journey.ApplyAsync(
+                createdExecution.State!,
+                workflow,
+                projection,
+                AccountRecoveryExecutionTransitionKind.SetAccessAvailable));
 
             Assert.True((await journey.Guided.AdvanceAsync(CancellationToken.None)).Succeeded);
             Assert.Equal(RecoveryWizardStepId.AccountRecovery, journey.Guided.Current.CurrentStep);
 
-            var execution = createdExecution.State!;
             GeneratedCredentialReference? credentialReference = null;
             foreach (var action in execution.Actions)
             {
@@ -276,9 +280,14 @@ public sealed class RecoveryJourneySmokeTests
                     Guid.NewGuid(),
                     account.Id,
                     workflow,
-                    RecoveryPath.AuthenticatedChange,
                     projection),
                 CancellationToken.None));
+            journey.Tick();
+            execution = AssertSuccess(await journey.ApplyAsync(
+                execution,
+                workflow,
+                projection,
+                AccountRecoveryExecutionTransitionKind.SetAccessAvailable));
             GeneratedCredentialReference? generatedReference = null;
 
             foreach (var action in execution.Actions)
@@ -524,7 +533,7 @@ public sealed class RecoveryJourneySmokeTests
 
         public static AccountRecoveryProjectionContext CreateProjection(AccountInventoryEntry account)
         {
-            return new AccountRecoveryProjectionContext(account.DashboardCriticality);
+            return new AccountRecoveryProjectionContext(account.EffectiveCategory);
         }
 
         public Task<AccountRecoveryExecutionResult> ApplyAsync(
@@ -532,7 +541,7 @@ public sealed class RecoveryJourneySmokeTests
             RecoveryWorkflowDefinition workflow,
             AccountRecoveryProjectionContext projection,
             AccountRecoveryExecutionTransitionKind transition,
-            string actionId,
+            string? actionId = null,
             bool completionCriteriaAcknowledged = false,
             GeneratedCredentialReference? credentialReference = null,
             string? userReason = null) =>

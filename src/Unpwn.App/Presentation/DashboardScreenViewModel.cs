@@ -17,7 +17,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private readonly RecoveryWizardSessionService _wizard;
     private readonly IConfirmationDialogService _confirmationDialog;
     private string _sessionName = string.Empty;
-    private bool _lostAccess;
     private bool _compromisedRecoveryChannel;
     private bool _securityWarningAcknowledged;
     private string? _validationKey;
@@ -108,12 +107,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
                 CreateSessionCommand.RaiseCanExecuteChanged();
             }
         }
-    }
-
-    public bool LostAccess
-    {
-        get => _lostAccess;
-        set => SetProperty(ref _lostAccess, value);
     }
 
     public bool CompromisedRecoveryChannel
@@ -261,6 +254,14 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         }
     }
 
+    public bool HasRecommendationCategory => RecommendedAccount is not null;
+
+    public string RecommendationCategoryText => RecommendedAccount is null
+        ? string.Empty
+        : Localization.Format(
+            "Dashboard.Recommendation.Category",
+            Localization.GetString($"Accounts.Category.{RecommendedAccount.Category}"));
+
     public bool HasRecommendationAction =>
         ResolveRecommendedAction() is not null;
 
@@ -318,6 +319,10 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private RecoverySessionWorkspace? Session => _sessionService.CurrentSession;
 
     private RecoveryDashboardSnapshot? Dashboard => _sessionService.Dashboard;
+
+    private RecoveryAccountDashboardEntry? RecommendedAccount =>
+        Session?.Accounts.SingleOrDefault(account =>
+            account.AccountId == Dashboard?.Recommendation.AccountId);
 
     private bool CanCreateSession() =>
         _sessionService.LoadState == RecoverySessionLoadState.Empty &&
@@ -461,7 +466,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private IncidentIndicator BuildIndicators()
     {
         var indicators = IncidentIndicator.None;
-        indicators = LostAccess ? indicators | IncidentIndicator.LostAccess : indicators;
         indicators = CompromisedRecoveryChannel
             ? indicators | IncidentIndicator.CompromisedRecoveryChannel
             : indicators;
@@ -509,6 +513,8 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(RecommendationText));
         OnPropertyChanged(nameof(HasRecommendationTarget));
         OnPropertyChanged(nameof(RecommendationTargetText));
+        OnPropertyChanged(nameof(HasRecommendationCategory));
+        OnPropertyChanged(nameof(RecommendationCategoryText));
         OnPropertyChanged(nameof(HasRecommendationAction));
         OnPropertyChanged(nameof(RecommendationActionText));
         OnPropertyChanged(nameof(ValidationMessage));
@@ -591,7 +597,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private void ClearIntakeInputs()
     {
         SessionName = string.Empty;
-        LostAccess = false;
         CompromisedRecoveryChannel = false;
         SecurityWarningAcknowledged = false;
         ClearValidation();

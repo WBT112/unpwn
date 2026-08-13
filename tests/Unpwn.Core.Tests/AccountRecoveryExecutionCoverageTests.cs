@@ -268,15 +268,24 @@ public sealed class AccountRecoveryExecutionCoverageTests
                 StartedAt.AddMinutes(1)).RecoveryStatus);
         Assert.Equal(
             RecoveryAccessState.Available,
-            initial.SetAccessState(RecoveryAccessState.Available, "ignored", StartedAt.AddMinutes(1)).AccessState);
+            initial.SetAccessState(
+                workflow,
+                RecoveryAccessState.Available,
+                "ignored",
+                StartedAt.AddMinutes(1)).AccessState);
         Assert.Equal(
             RecoveryAccessState.WaitingForProviderReview,
             initial.SetAccessState(
+                workflow,
                 RecoveryAccessState.WaitingForProviderReview,
                 " Synthetic provider review ",
                 StartedAt.AddMinutes(1)).AccessState);
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            initial.SetAccessState((RecoveryAccessState)int.MaxValue, null, StartedAt.AddMinutes(1)));
+            initial.SetAccessState(
+                workflow,
+                (RecoveryAccessState)int.MaxValue,
+                null,
+                StartedAt.AddMinutes(1)));
 
         var projected = initial with
         {
@@ -286,7 +295,7 @@ public sealed class AccountRecoveryExecutionCoverageTests
                 initial.Actions[1] with { Status = RecoveryActionStatus.NeedsUserAction },
             ],
         };
-        var dashboard = projected.CreateDashboardProjection(AccountCriticality.Critical);
+        var dashboard = projected.CreateDashboardProjection(AccountRecoveryCategory.Critical);
 
         Assert.Equal("identify-account", dashboard.RecommendedActionId);
         Assert.Equal(1, dashboard.FailedRequiredActions);
@@ -362,8 +371,8 @@ public sealed class AccountRecoveryExecutionCoverageTests
         AccountRecoveryExecutionState.Create(
             Guid.NewGuid(),
             workflow,
-            RecoveryPath.AuthenticatedChange,
-            StartedAt);
+            StartedAt,
+            RecoveryAccessState.Available);
 
     private static RecoveryWorkflowDefinition CreateWorkflow()
     {

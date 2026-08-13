@@ -47,7 +47,7 @@ The trusted-device decision is the first mandatory security gate:
 Generic navigation must not bypass the trusted-device gate, manufacture a vault context, or silently skip a required security step.
 
 Session creation completes incident intake with a locally suggested, editable display name and only
-the two optional recovery-channel guidance inputs documented in
+the optional compromised-recovery-channel warning documented in
 [Recovery Session and Dashboard](RECOVERY_SESSION_DASHBOARD.md). The active workspace owns the current
 instruction and primary action; persistent shell chrome does not duplicate them. Opening a detail
 route does not mark a step complete, and every guided transition is written to the encrypted vault
@@ -59,6 +59,8 @@ The post-intake gates are deterministic:
 - inventory cannot advance until at least one imported account exists, after which the assistant opens account-category triage;
 - category triage shows the next unreviewed account and remaining count; after an explicitly confirmed email account the user may continue early because further review is optional but improves ordering;
 - a user who genuinely has no email account can review all accounts or deliberately use the assistant's Continue action; leaving the step never records an implicit category;
+- account work is queued automatically as `Email`, `Critical`, `Unknown`, then `NonCritical`, with language-neutral identifiers as stable tie-breakers;
+- the recovery approach is selected automatically from explicit account access and the repository workflow; no UI or wizard step asks for an internal recovery-path enum;
 - recovery planning routes to outstanding account work first, then credential handoff, then completion preflight;
 - returning from material account work recalculates the plan from the latest persisted projections;
 - a successful completion preflight advances to final-report review, while the terminal outcome still requires explicit confirmation.

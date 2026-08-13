@@ -26,7 +26,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.True(viewModel.HasWorkflow);
         Assert.Contains("GitHub", viewModel.ProviderName, StringComparison.Ordinal);
         Assert.Contains("choice", viewModel.CategoryDecisionText, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(RecoveryPath.AuthenticatedChange, viewModel.SelectedPath?.Path);
+        Assert.Equal(RecoveryPath.PasswordReset, viewModel.SelectedPath?.Path);
+        Assert.Contains("password-reset", viewModel.PathSelectionReasonText, StringComparison.OrdinalIgnoreCase);
 
         await viewModel.BeginCommand.ExecuteAsync();
         var actionId = viewModel.SelectedAction!.DefinitionId;
@@ -40,7 +41,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
-    public async Task ResolvesGoogleAccountToReviewedSecurityWorkflow()
+    public async Task ResolvesGoogleAccountToReviewedAutomaticResetWorkflow()
     {
         var fixture = new Fixture(
             providerId: "Google",
@@ -50,18 +51,18 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "change-password");
+            action.DefinitionId == "reset-password");
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
 
         Assert.True(viewModel.HasWorkflow);
         Assert.Equal("Google", viewModel.ProviderName);
         Assert.Equal(
-            "https://myaccount.google.com/security",
+            "https://accounts.google.com/signin/recovery",
             fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
     }
 
     [Fact]
-    public async Task ResolvesMicrosoftAccountToReviewedPersonalAccountWorkflow()
+    public async Task ResolvesMicrosoftAccountToReviewedAutomaticResetWorkflow()
     {
         var fixture = new Fixture(
             providerId: "Microsoft",
@@ -71,13 +72,13 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "change-password");
+            action.DefinitionId == "reset-password");
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
 
         Assert.True(viewModel.HasWorkflow);
         Assert.Equal("Microsoft", viewModel.ProviderName);
         Assert.Equal(
-            "https://account.microsoft.com/security",
+            "https://account.live.com/password/reset",
             fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
     }
 
@@ -88,23 +89,23 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "change-password");
+        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "reset-password");
         var revision = fixture.Execution.State!.Revision;
         var applyCalls = fixture.Execution.ApplyCalls;
 
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
 
         Assert.Equal(1, fixture.ExternalNavigation.OpenCalls);
-        Assert.Equal("https://github.com/settings/security", fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
+        Assert.Equal("https://github.com/password_reset", fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
         Assert.Equal(applyCalls, fixture.Execution.ApplyCalls);
         Assert.Equal(revision, fixture.Execution.State.Revision);
-        Assert.Equal(RecoveryActionStatus.Open, fixture.Execution.State.GetAction("change-password").Status);
+        Assert.Equal(RecoveryActionStatus.Open, fixture.Execution.State.GetAction("reset-password").Status);
         Assert.Contains("remains unchanged", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
     [Theory]
-    [InlineData("review-api-tokens-auth", "https://github.com/settings/tokens")]
-    [InlineData("review-ssh-signing-keys-auth", "https://github.com/settings/keys")]
+    [InlineData("review-api-tokens-reset", "https://github.com/settings/tokens")]
+    [InlineData("review-ssh-signing-keys-reset", "https://github.com/settings/keys")]
     public async Task OpensTheReviewedLocationForCriticalDeveloperCredentials(
         string actionId,
         string expectedDestination)
@@ -134,7 +135,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         viewModel.PlanReturnRequested += (_, request) => returned.Add(request);
 
         Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
-        Assert.Equal(RecoveryActionStatus.InProgress, fixture.Execution.State!.GetAction("identify-account-auth").Status);
+        Assert.Equal(RecoveryActionStatus.InProgress, fixture.Execution.State!.GetAction("identify-account-reset").Status);
 
         foreach (var criterion in viewModel.CompletionCriteria)
         {
@@ -143,7 +144,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.True(viewModel.CompleteActionCommand.CanExecute(null));
         await viewModel.CompleteActionCommand.ExecuteAsync();
 
-        Assert.Equal(RecoveryActionStatus.Completed, fixture.Execution.State.GetAction("identify-account-auth").Status);
+        Assert.Equal(RecoveryActionStatus.Completed, fixture.Execution.State.GetAction("identify-account-reset").Status);
         Assert.Single(returned);
         Assert.Equal(1, fixture.ConfirmationCalls);
     }
@@ -222,21 +223,21 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
-    public async Task RecoveryPathCanChangeBeforeWorkButNotAfterAnActionStarts()
+    public async Task ExplicitAccessConfirmationAutomaticallySelectsAuthenticatedChange()
     {
         var fixture = new Fixture();
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedPath = viewModel.PathOptions.Single(option => option.Path == RecoveryPath.ManualRecovery);
+        Assert.Equal(RecoveryPath.PasswordReset, fixture.Execution.State!.SelectedPath);
 
-        Assert.True(viewModel.ChangePathCommand.CanExecute(null));
-        await viewModel.ChangePathCommand.ExecuteAsync();
-        Assert.Equal(RecoveryPath.ManualRecovery, fixture.Execution.State!.SelectedPath);
+        await viewModel.SetAccessAvailableCommand.ExecuteAsync();
 
-        await viewModel.StartActionCommand.ExecuteAsync();
-        viewModel.SelectedPath = viewModel.PathOptions.Single(option => option.Path == RecoveryPath.PasswordReset);
-        Assert.False(viewModel.ChangePathCommand.CanExecute(null));
+        Assert.Equal(RecoveryPath.AuthenticatedChange, fixture.Execution.State.SelectedPath);
+        Assert.Equal(
+            RecoveryPathSelectionReasonCode.ConfirmedAuthenticatedAccess,
+            fixture.Execution.State.PathSelectionReason);
+        Assert.Contains("explicitly confirmed", viewModel.PathSelectionReasonText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -250,7 +251,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "change-password");
+        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "reset-password");
         var revision = fixture.Execution.State!.Revision;
 
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
@@ -267,7 +268,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "change-password");
+        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "reset-password");
         var returned = false;
         viewModel.PlanReturnRequested += (_, _) => returned = true;
 
@@ -275,8 +276,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         Assert.True(returned);
         Assert.True(viewModel.HasRecordedReason);
-        Assert.Contains("Identify the affected account", viewModel.RecordedReasonText, StringComparison.Ordinal);
-        Assert.Equal(RecoveryActionStatus.Blocked, fixture.Execution.State!.GetAction("change-password").Status);
+        Assert.Contains("Identify the account and reset channel", viewModel.RecordedReasonText, StringComparison.Ordinal);
+        Assert.Equal(RecoveryActionStatus.Blocked, fixture.Execution.State!.GetAction("reset-password").Status);
     }
 
     [Fact]
@@ -310,6 +311,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.SetAccessAvailableCommand.ExecuteAsync();
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
         foreach (var criterion in viewModel.CompletionCriteria)
         {
@@ -385,13 +387,13 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         Assert.Equal(
             RecoveryActionStatus.Blocked,
-            fixture.Execution.State!.GetAction("identify-account-auth").Status);
+            fixture.Execution.State!.GetAction("identify-account-reset").Status);
         Assert.True(viewModel.GuidedPrimaryActionCommand.CanExecute(null));
 
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
         Assert.Equal(
             RecoveryActionStatus.InProgress,
-            fixture.Execution.State.GetAction("identify-account-auth").Status);
+            fixture.Execution.State.GetAction("identify-account-reset").Status);
 
         viewModel.ShowProblemReviewCommand.Execute(null);
         viewModel.SelectedProblem = viewModel.ProblemOptions.Single(option =>
@@ -399,16 +401,19 @@ public sealed class WorkflowExecutionScreenViewModelTests
         viewModel.Reason = "Synthetic provider rejected the step.";
         await viewModel.ApplyGuidedProblemCommand.ExecuteAsync();
 
+        Assert.Equal(RecoveryPath.ManualRecovery, fixture.Execution.State.SelectedPath);
         Assert.Equal(
-            RecoveryActionStatus.Failed,
-            fixture.Execution.State.GetAction("identify-account-auth").Status);
+            RecoveryPathSelectionReasonCode.ProviderFailureFallback,
+            fixture.Execution.State.PathSelectionReason);
+        Assert.Equal("identify-account-manual", viewModel.SelectedAction?.DefinitionId);
+        Assert.Single(fixture.Execution.State.PreviousPathAttempts);
         Assert.True(viewModel.GuidedPrimaryActionCommand.CanExecute(null));
 
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
 
         Assert.Equal(
             RecoveryActionStatus.InProgress,
-            fixture.Execution.State.GetAction("identify-account-auth").Status);
+            fixture.Execution.State.GetAction("identify-account-manual").Status);
     }
 
     [Fact]
@@ -427,7 +432,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         Assert.Equal(
             RecoveryActionStatus.NotApplicable,
-            notApplicableFixture.Execution.State!.GetAction("identify-account-auth").Status);
+            notApplicableFixture.Execution.State!.GetAction("identify-account-reset").Status);
         Assert.Equal(1, notApplicableFixture.ConfirmationCalls);
 
         var riskFixture = new Fixture { Confirm = true };
@@ -442,7 +447,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         await risk.ApplyGuidedProblemCommand.ExecuteAsync();
 
-        Assert.True(riskFixture.Execution.State!.GetAction("identify-account-auth").HasUnresolvedRisk);
+        Assert.True(riskFixture.Execution.State!.GetAction("identify-account-reset").HasUnresolvedRisk);
         Assert.Equal(AccountRecoveryStatus.NotFullySecured, riskFixture.Execution.State.RecoveryStatus);
         Assert.Equal(1, riskFixture.ConfirmationCalls);
     }
@@ -477,7 +482,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var previousRequest = viewModel.CurrentActionFocusRequest;
 
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "change-password");
+            action.DefinitionId == "reset-password");
 
         Assert.True(viewModel.CurrentActionFocusRequest > previousRequest);
     }
@@ -489,6 +494,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.SetAccessAvailableCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
             action.DefinitionId == "change-password");
 
@@ -517,7 +523,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.False(viewModel.IsReviewedProviderWorkflow);
         Assert.Contains("not provider-specific", viewModel.WorkflowTrustTitle, StringComparison.Ordinal);
         Assert.Contains("may differ", viewModel.WorkflowTrustMessage, StringComparison.Ordinal);
-        Assert.Equal(3, viewModel.PathOptions.Count);
+        Assert.Equal(RecoveryPath.PasswordReset, viewModel.SelectedPath?.Path);
+        Assert.Contains("password-reset", viewModel.PathSelectionReasonText, StringComparison.OrdinalIgnoreCase);
         Assert.False(viewModel.HasValidationMessage);
     }
 
@@ -533,6 +540,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.SetAccessAvailableCommand.ExecuteAsync();
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
         foreach (var criterion in viewModel.CompletionCriteria)
         {
@@ -573,6 +581,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
+        await viewModel.SetAccessAvailableCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
             action.DefinitionId == "change-password");
 
@@ -591,8 +600,13 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var state = AccountRecoveryExecutionState.Create(
             fixture.AccountId,
             generic,
-            RecoveryPath.ManualRecovery,
-            StartedAt.AddMinutes(1));
+            StartedAt)
+            .StartAction(generic, "identify-account-reset", StartedAt.AddSeconds(30))
+            .FailActionAndSelectFallback(
+                generic,
+                "identify-account-reset",
+                "The reset approach is unavailable for this synthetic account.",
+                StartedAt.AddMinutes(1));
         state = state.StartAction(generic, "identify-account-manual", StartedAt.AddMinutes(2));
         fixture.Execution.Seed(state);
         var viewModel = fixture.CreateViewModel();
@@ -715,7 +729,10 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 AccessLost: false,
                 CredentialsAwaitingExport: 0,
                 CredentialsAwaitingDeletion: 0,
-                RecommendedActionId: null);
+                RecommendedActionId: null)
+            {
+                Category = AccountRecoveryCategory.Critical,
+            };
     }
 
     private sealed class TestBrowserSessionLifecycle : IRecoveryBrowserSessionLifecycle
@@ -797,7 +814,6 @@ public sealed class WorkflowExecutionScreenViewModelTests
             State = AccountRecoveryExecutionState.Create(
                 request.AccountId,
                 request.Workflow,
-                request.SelectedPath,
                 NextTime());
             return Task.FromResult(AccountRecoveryExecutionResult.Success(State));
         }
@@ -825,14 +841,16 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 var time = NextTime();
                 State = request.Transition switch
                 {
-                    AccountRecoveryExecutionTransitionKind.ChangeRecoveryPath =>
-                        State.ChangePath(request.Workflow, request.SelectedPath!.Value, time),
                     AccountRecoveryExecutionTransitionKind.SetAccessAvailable =>
-                        State.SetAccessState(RecoveryAccessState.Available, null, time),
+                        State.SetAccessState(request.Workflow, RecoveryAccessState.Available, null, time),
                     AccountRecoveryExecutionTransitionKind.SetAccessLost =>
-                        State.SetAccessState(RecoveryAccessState.Lost, request.UserReason, time),
+                        State.SetAccessState(request.Workflow, RecoveryAccessState.Lost, request.UserReason, time),
                     AccountRecoveryExecutionTransitionKind.SetWaitingForProviderReview =>
-                        State.SetAccessState(RecoveryAccessState.WaitingForProviderReview, request.UserReason, time),
+                        State.SetAccessState(
+                            request.Workflow,
+                            RecoveryAccessState.WaitingForProviderReview,
+                            request.UserReason,
+                            time),
                     AccountRecoveryExecutionTransitionKind.StartAction =>
                         State.StartAction(request.Workflow, request.ActionDefinitionId!, time),
                     AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements =>
@@ -852,7 +870,11 @@ public sealed class WorkflowExecutionScreenViewModelTests
                     AccountRecoveryExecutionTransitionKind.BlockAction =>
                         State.BlockAction(request.Workflow, request.ActionDefinitionId!, request.UserReason!, time),
                     AccountRecoveryExecutionTransitionKind.FailAction =>
-                        State.FailAction(request.Workflow, request.ActionDefinitionId!, request.UserReason!, time),
+                        State.FailActionAndSelectFallback(
+                            request.Workflow,
+                            request.ActionDefinitionId!,
+                            request.UserReason!,
+                            time),
                     AccountRecoveryExecutionTransitionKind.MarkTrulyNotApplicable =>
                         State.MarkNotApplicable(
                             request.Workflow,

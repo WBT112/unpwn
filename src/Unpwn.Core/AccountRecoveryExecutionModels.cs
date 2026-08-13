@@ -8,6 +8,20 @@ public enum RecoveryAccessState
     WaitingForProviderReview,
 }
 
+public enum RecoveryPathTransitionReasonCode
+{
+    AuthenticatedAccessConfirmed,
+    AuthenticatedAccessLost,
+    ProviderFailure,
+}
+
+public sealed record RecoveryPathAttempt(
+    RecoveryPath Path,
+    RecoveryPathTransitionReasonCode TransitionReason,
+    string? TriggerActionDefinitionId,
+    string? UserReason,
+    DateTimeOffset EndedAt);
+
 public enum RecoveryActionReasonCode
 {
     None,
@@ -197,6 +211,10 @@ public sealed record AccountRecoveryExecutionState(
     long Revision,
     RecoveryActionExecutionState[] Actions)
 {
+    public RecoveryPathSelectionReasonCode PathSelectionReason { get; init; }
+
+    public RecoveryPathAttempt[] PreviousPathAttempts { get; init; } = [];
+
     public AccountRecoveryStatus RecoveryStatus
     {
         get
@@ -233,8 +251,8 @@ public sealed record AccountRecoveryExecutionState(
     public static AccountRecoveryExecutionState Create(
         Guid accountId,
         RecoveryWorkflowDefinition workflow,
-        RecoveryPath selectedPath,
-        DateTimeOffset occurredAt)
+        DateTimeOffset occurredAt,
+        RecoveryAccessState initialAccessState = RecoveryAccessState.Unknown)
     {
         if (accountId == Guid.Empty)
         {
@@ -242,6 +260,17 @@ public sealed record AccountRecoveryExecutionState(
         }
 
         ArgumentNullException.ThrowIfNull(workflow);
+        if (initialAccessState is not (RecoveryAccessState.Unknown or RecoveryAccessState.Available))
+        {
+            throw new ArgumentOutOfRangeException(nameof(initialAccessState));
+        }
+
+        var selection = RecoveryPathSelector.Select(workflow, initialAccessState);
+        if (selection.Path is not { } selectedPath)
+        {
+            throw new InvalidOperationException("The workflow has no safe recovery path for the current account state.");
+        }
+
         var definitions = workflow.Actions
             .Where(action => action.SupportsPath(selectedPath))
             .ToArray();
@@ -256,12 +285,15 @@ public sealed record AccountRecoveryExecutionState(
             workflow.WorkflowId,
             workflow.WorkflowVersion,
             selectedPath,
-            RecoveryAccessState.Unknown,
+            initialAccessState,
             AccessReason: null,
             occurredAt,
             occurredAt,
             Revision: 0,
-            Actions: [.. definitions.Select(RecoveryActionExecutionState.Create)]);
+            Actions: [.. definitions.Select(RecoveryActionExecutionState.Create)])
+        {
+            PathSelectionReason = selection.ReasonCode,
+        };
         state.Validate(workflow);
         return state;
     }
@@ -269,58 +301,8 @@ public sealed record AccountRecoveryExecutionState(
     public RecoveryActionExecutionState GetAction(string definitionId) =>
         Actions.Single(action => string.Equals(action.DefinitionId, definitionId, StringComparison.Ordinal));
 
-    public AccountRecoveryExecutionState ChangePath(
-        RecoveryWorkflowDefinition workflow,
-        RecoveryPath selectedPath,
-        DateTimeOffset occurredAt)
-    {
-        ArgumentNullException.ThrowIfNull(workflow);
-        ValidateWorkflowIdentity(workflow);
-        ValidateTimestamp(occurredAt);
-        if (!Enum.IsDefined(selectedPath))
-        {
-            throw new ArgumentOutOfRangeException(nameof(selectedPath));
-        }
-
-        if (selectedPath == SelectedPath)
-        {
-            throw new InvalidOperationException("The requested recovery path is already selected.");
-        }
-
-        var hasMaterialActionState = Actions.Any(action =>
-            action.Status != RecoveryActionStatus.Open ||
-            action.StartedAt is not null ||
-            action.CompletedAt is not null ||
-            action.UserReason is not null ||
-            action.UserNotes is not null ||
-            action.AcknowledgedCompletionCriteria.Length > 0 ||
-            action.CredentialReference is not null);
-        if (hasMaterialActionState)
-        {
-            throw new InvalidOperationException(
-                "A recovery path cannot change after action progress has been recorded.");
-        }
-
-        var definitions = workflow.Actions
-            .Where(action => action.SupportsPath(selectedPath))
-            .ToArray();
-        if (definitions.Length == 0)
-        {
-            throw new InvalidOperationException("The selected recovery path contains no actions.");
-        }
-
-        var changed = this with
-        {
-            SelectedPath = selectedPath,
-            Actions = [.. definitions.Select(RecoveryActionExecutionState.Create)],
-            UpdatedAt = occurredAt,
-            Revision = Revision + 1,
-        };
-        changed.Validate(workflow);
-        return changed;
-    }
-
     public AccountRecoveryExecutionState SetAccessState(
+        RecoveryWorkflowDefinition workflow,
         RecoveryAccessState accessState,
         string? userReason,
         DateTimeOffset occurredAt)
@@ -354,7 +336,7 @@ public sealed record AccountRecoveryExecutionState(
             }
         }
 
-        return this with
+        var changed = this with
         {
             AccessState = accessState,
             AccessReason = accessReason,
@@ -362,6 +344,83 @@ public sealed record AccountRecoveryExecutionState(
             UpdatedAt = occurredAt,
             Revision = Revision + 1,
         };
+        if (accessState == RecoveryAccessState.Available &&
+            changed.SelectedPath != RecoveryPath.AuthenticatedChange)
+        {
+            var selection = RecoveryPathSelector.Select(workflow, accessState);
+            return selection.Path is { } path && path != changed.SelectedPath
+                ? changed.SwitchPath(
+                    workflow,
+                    selection,
+                    RecoveryPathTransitionReasonCode.AuthenticatedAccessConfirmed,
+                    triggerActionDefinitionId: null,
+                    userReason: null,
+                    occurredAt)
+                : changed;
+        }
+
+        if (accessState == RecoveryAccessState.Lost &&
+            changed.SelectedPath == RecoveryPath.AuthenticatedChange)
+        {
+            var selection = RecoveryPathSelector.Select(
+                workflow,
+                accessState,
+                [RecoveryPath.AuthenticatedChange],
+                RecoveryPathSelectionReasonCode.AuthenticatedAccessLostFallback);
+            return selection.Path is { } path && path != changed.SelectedPath
+                ? changed.SwitchPath(
+                    workflow,
+                    selection,
+                    RecoveryPathTransitionReasonCode.AuthenticatedAccessLost,
+                    triggerActionDefinitionId: null,
+                    accessReason,
+                    occurredAt)
+                : changed with
+                {
+                    PathSelectionReason = RecoveryPathSelectionReasonCode.NoSafeSupportedPath,
+                };
+        }
+
+        return changed;
+    }
+
+    public AccountRecoveryExecutionState FailActionAndSelectFallback(
+        RecoveryWorkflowDefinition workflow,
+        string definitionId,
+        string userReason,
+        DateTimeOffset occurredAt)
+    {
+        var definition = GetDefinition(workflow, definitionId);
+        var failed = FailAction(workflow, definitionId, userReason, occurredAt);
+        if (definition.Type is not (RecoveryActionType.IdentifyAccount or
+            RecoveryActionType.ConfirmAccess or RecoveryActionType.ChangePassword or
+            RecoveryActionType.ResetPassword or RecoveryActionType.ManualRecovery))
+        {
+            return failed;
+        }
+
+        var excluded = failed.PreviousPathAttempts
+            .Select(attempt => attempt.Path)
+            .Append(failed.SelectedPath)
+            .Distinct()
+            .ToArray();
+        var selection = RecoveryPathSelector.Select(
+            workflow,
+            failed.AccessState,
+            excluded,
+            RecoveryPathSelectionReasonCode.ProviderFailureFallback);
+        return selection.Path is { } path && path != failed.SelectedPath
+            ? failed.SwitchPath(
+                workflow,
+                selection,
+                RecoveryPathTransitionReasonCode.ProviderFailure,
+                definitionId,
+                userReason,
+                occurredAt)
+            : failed with
+            {
+                PathSelectionReason = RecoveryPathSelectionReasonCode.NoSafeSupportedPath,
+            };
     }
 
     public AccountRecoveryExecutionState StartAction(
@@ -605,8 +664,15 @@ public sealed record AccountRecoveryExecutionState(
         }, occurredAt);
     }
 
-    public RecoveryAccountDashboardEntry CreateDashboardProjection(AccountCriticality criticality)
+    public RecoveryAccountDashboardEntry CreateDashboardProjection(AccountRecoveryCategory category)
     {
+        var criticality = category switch
+        {
+            AccountRecoveryCategory.Critical => AccountCriticality.Critical,
+            AccountRecoveryCategory.Email => AccountCriticality.Important,
+            AccountRecoveryCategory.Unknown or AccountRecoveryCategory.NonCritical => AccountCriticality.Routine,
+            _ => throw new ArgumentOutOfRangeException(nameof(category)),
+        };
         var allRequired = Actions.Where(action => action.IsRequired).ToArray();
         var required = allRequired
             .Where(action => action.Status != RecoveryActionStatus.NotApplicable ||
@@ -651,6 +717,7 @@ public sealed record AccountRecoveryExecutionState(
             CredentialsAwaitingDeletion: 0,
             recommended)
         {
+            Category = category,
             RequiredActionsOpen = allRequired.Count(action => action.Status == RecoveryActionStatus.Open),
             RequiredActionsInProgress = allRequired.Count(action => action.Status == RecoveryActionStatus.InProgress),
             RequiredActionsAwaitingUser = allRequired.Count(action => action.Status == RecoveryActionStatus.NeedsUserAction),
@@ -671,6 +738,27 @@ public sealed record AccountRecoveryExecutionState(
         ArgumentException.ThrowIfNullOrWhiteSpace(WorkflowId);
         ArgumentException.ThrowIfNullOrWhiteSpace(WorkflowVersion);
         ArgumentNullException.ThrowIfNull(Actions);
+        ArgumentNullException.ThrowIfNull(PreviousPathAttempts);
+        if (!Enum.IsDefined(SelectedPath) ||
+            !Enum.IsDefined(PathSelectionReason) ||
+            PathSelectionReason == RecoveryPathSelectionReasonCode.None ||
+            (PathSelectionReason == RecoveryPathSelectionReasonCode.NoSafeSupportedPath &&
+             AccessState != RecoveryAccessState.Lost &&
+             !Actions.Any(action => action.Status == RecoveryActionStatus.Failed)))
+        {
+            throw new InvalidOperationException("The persisted automatic recovery-path selection is invalid.");
+        }
+
+        foreach (var attempt in PreviousPathAttempts)
+        {
+            if (!Enum.IsDefined(attempt.Path) || !Enum.IsDefined(attempt.TransitionReason) ||
+                attempt.EndedAt < CreatedAt || attempt.EndedAt > UpdatedAt ||
+                attempt.TriggerActionDefinitionId?.Length > 200 || attempt.UserReason?.Length > 1000)
+            {
+                throw new InvalidOperationException("A persisted recovery-path attempt is invalid.");
+            }
+        }
+
         if (!string.Equals(ProviderId, workflow.ProviderId, StringComparison.Ordinal) ||
             !string.Equals(WorkflowId, workflow.WorkflowId, StringComparison.Ordinal) ||
             !string.Equals(WorkflowVersion, workflow.WorkflowVersion, StringComparison.Ordinal))
@@ -697,6 +785,51 @@ public sealed record AccountRecoveryExecutionState(
 
             action.Validate(definition, AccountId, CreatedAt);
         }
+    }
+
+    private AccountRecoveryExecutionState SwitchPath(
+        RecoveryWorkflowDefinition workflow,
+        RecoveryPathSelection selection,
+        RecoveryPathTransitionReasonCode transitionReason,
+        string? triggerActionDefinitionId,
+        string? userReason,
+        DateTimeOffset occurredAt)
+    {
+        ValidateWorkflowIdentity(workflow);
+        if (selection.Path is not { } selectedPath || selectedPath == SelectedPath ||
+            selection.ReasonCode is RecoveryPathSelectionReasonCode.None or
+                RecoveryPathSelectionReasonCode.NoSafeSupportedPath)
+        {
+            throw new InvalidOperationException("The automatic recovery-path transition is invalid.");
+        }
+
+        var definitions = workflow.Actions
+            .Where(action => action.SupportsPath(selectedPath))
+            .ToArray();
+        if (definitions.Length == 0)
+        {
+            throw new InvalidOperationException("The automatically selected recovery path contains no actions.");
+        }
+
+        var changed = this with
+        {
+            SelectedPath = selectedPath,
+            PathSelectionReason = selection.ReasonCode,
+            PreviousPathAttempts =
+            [
+                .. PreviousPathAttempts,
+                new RecoveryPathAttempt(
+                    SelectedPath,
+                    transitionReason,
+                    triggerActionDefinitionId,
+                    userReason,
+                    occurredAt),
+            ],
+            Actions = [.. definitions.Select(RecoveryActionExecutionState.Create)],
+            UpdatedAt = occurredAt,
+        };
+        changed.Validate(workflow);
+        return changed;
     }
 
     private AccountRecoveryExecutionState TransitionWithReason(

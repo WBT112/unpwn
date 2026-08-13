@@ -1,4 +1,6 @@
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Unpwn.App.Services;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
@@ -105,6 +107,53 @@ public sealed class RecoverySessionServiceTests
     }
 
     [Fact]
+    public async Task DashboardEntryWithoutCurrentCategoryFailsClosedOnReload()
+    {
+        var currentTime = DateTimeOffset.UnixEpoch;
+        var store = new TestEncryptedRecordStore();
+        var coordinator = new TestWizardCoordinator(currentTime);
+        using var service = new RecoverySessionService(store, coordinator, () => currentTime);
+        await service.InitializeAsync(CancellationToken.None);
+        Assert.True((await service.CreateAsync(
+            new RecoverySessionCreateRequest(
+                "Current category schema",
+                IncidentIndicator.None,
+                SecurityWarningAcknowledged: true),
+            CancellationToken.None)).Succeeded);
+        var account = new RecoveryAccountDashboardEntry(
+            Guid.NewGuid(),
+            "synthetic.example",
+            AccountCriticality.Important,
+            AccountRecoveryStatus.Open,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            false,
+            0,
+            0,
+            null)
+        {
+            Category = AccountRecoveryCategory.Email,
+        };
+        currentTime = currentTime.AddMinutes(1);
+        var updated = service.CurrentSession!.ReplaceAccounts([account], currentTime);
+        var json = JsonNode.Parse(JsonSerializer.SerializeToUtf8Bytes(updated))!.AsObject();
+        json[nameof(RecoverySessionWorkspace.Accounts)]![0]!.AsObject()
+            .Remove(nameof(RecoveryAccountDashboardEntry.Category));
+        store.StoredRecord = Encoding.UTF8.GetBytes(json.ToJsonString());
+
+        using var reloaded = new RecoverySessionService(store, coordinator, () => DateTimeOffset.UnixEpoch);
+        await reloaded.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(RecoverySessionLoadState.Corrupted, reloaded.LoadState);
+        Assert.Null(reloaded.CurrentSession);
+    }
+
+    [Fact]
     public async Task PauseResumeAndArchivePersistBothWorkspaceAndWizardLifecycle()
     {
         var currentTime = DateTimeOffset.UnixEpoch;
@@ -115,7 +164,7 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Lifecycle",
-                IncidentIndicator.LostAccess,
+                IncidentIndicator.CompromisedRecoveryChannel,
                 SecurityWarningAcknowledged: true),
             CancellationToken.None)).Succeeded);
 

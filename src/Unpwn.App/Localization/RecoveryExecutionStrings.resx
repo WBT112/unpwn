@@ -15,14 +15,19 @@
   <data name="Workflow.Account.CategoryIndependentWorkflow" xml:space="preserve"><value>The category decides when this account is handled; the provider workflow independently decides how.</value></data>
   <data name="Workflow.Recommendation.Title" xml:space="preserve"><value>Why this account now?</value></data>
   <data name="Workflow.Recommendation.Unavailable" xml:space="preserve"><value>No current plan reason is available.</value></data>
-  <data name="Workflow.Path.Title" xml:space="preserve"><value>Recovery path</value></data>
-  <data name="Workflow.Path.Help" xml:space="preserve"><value>Choose the path that matches your actual access. Authenticated change, password reset, and manual recovery have different requirements.</value></data>
+  <data name="Workflow.Path.Automatic.Title" xml:space="preserve"><value>Recovery approach selected by unpwn</value></data>
+  <data name="Workflow.Path.Automatic.Help" xml:space="preserve"><value>unpwn derives this approach only from your explicit account-access state and the reviewed workflow. Browser navigation never changes it.</value></data>
   <data name="Workflow.Path.AuthenticatedChange" xml:space="preserve"><value>Change the password in an authenticated account session</value></data>
   <data name="Workflow.Path.PasswordReset" xml:space="preserve"><value>Reset the password through a secured recovery channel</value></data>
   <data name="Workflow.Path.ManualRecovery" xml:space="preserve"><value>Use the provider's manual account-recovery process</value></data>
-  <data name="Workflow.Path.Begin" xml:space="preserve"><value>Begin this recovery path</value></data>
-  <data name="Workflow.Path.Change" xml:space="preserve"><value>Change recovery path</value></data>
-  <data name="Workflow.Path.ChangeHelp" xml:space="preserve"><value>The path can change only before action progress, notes, or a generated-credential reference have been recorded. This prevents required work from being silently discarded.</value></data>
+  <data name="Workflow.Path.Start" xml:space="preserve"><value>Start recovery</value></data>
+  <data name="Workflow.Path.Blocked" xml:space="preserve"><value>No safe recovery approach is available</value></data>
+  <data name="Workflow.Path.Reason.ConfirmedAuthenticatedAccess" xml:space="preserve"><value>You explicitly confirmed usable account access, so unpwn selected an authenticated password change.</value></data>
+  <data name="Workflow.Path.Reason.PasswordResetAvailable" xml:space="preserve"><value>No usable authenticated access is confirmed. The reviewed password-reset approach is available.</value></data>
+  <data name="Workflow.Path.Reason.ManualRecoveryAvailable" xml:space="preserve"><value>Neither authenticated change nor password reset is safely available, so unpwn selected the provider's manual recovery process.</value></data>
+  <data name="Workflow.Path.Reason.AuthenticatedAccessLostFallback" xml:space="preserve"><value>After you reported lost access, unpwn moved to the next safe supported recovery approach.</value></data>
+  <data name="Workflow.Path.Reason.ProviderFailureFallback" xml:space="preserve"><value>After you reported that the provider approach failed, unpwn moved to the next safe supported recovery approach.</value></data>
+  <data name="Workflow.Path.Reason.NoSafeSupportedPath" xml:space="preserve"><value>The workflow offers no safe approach for the currently confirmed account state. Keep this account visibly blocked and use reviewed provider guidance.</value></data>
   <data name="Workflow.Access.Title" xml:space="preserve"><value>Account access</value></data>
   <data name="Workflow.Access.Help" xml:space="preserve"><value>Record the real access state. Lost access and provider review require a non-secret reason and return you to the recalculated plan.</value></data>
   <data name="Workflow.Access.Unknown" xml:space="preserve"><value>Not recorded</value></data>
@@ -113,8 +118,10 @@
   <data name="Workflow.Status.FullyReviewed" xml:space="preserve"><value>Fully reviewed</value></data>
   <data name="Workflow.Status.NotFullySecured" xml:space="preserve"><value>Not fully secured</value></data>
   <data name="Workflow.Status.AccessNotRestored" xml:space="preserve"><value>Access not restored</value></data>
-  <data name="Workflow.Status.Ready.Title" xml:space="preserve"><value>Choose the recovery path</value></data>
-  <data name="Workflow.Status.Ready.Message" xml:space="preserve"><value>Review the account context and select the path that matches your real access.</value></data>
+  <data name="Workflow.Status.Ready.Title" xml:space="preserve"><value>Ready to start recovery</value></data>
+  <data name="Workflow.Status.Ready.Message" xml:space="preserve"><value>unpwn selected the safest supported approach from the confirmed account state.</value></data>
+  <data name="Workflow.Status.Blocked.Title" xml:space="preserve"><value>Recovery approach blocked</value></data>
+  <data name="Workflow.Status.Blocked.Message" xml:space="preserve"><value>No safe supported approach is currently available. Confirm account access or use the visible manual guidance when it becomes available.</value></data>
   <data name="Workflow.Status.Started.Title" xml:space="preserve"><value>Recovery path started</value></data>
   <data name="Workflow.Status.Started.Message" xml:space="preserve"><value>Work through each required action separately and record the actual outcome.</value></data>
   <data name="Workflow.Status.Active.Title" xml:space="preserve"><value>Account recovery in progress</value></data>
@@ -126,7 +133,7 @@
   <data name="Workflow.Plan.Status.ReadyNow" xml:space="preserve"><value>Ready now</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Unlock a vault and load an account inventory before starting account recovery.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>The selected account is no longer available in the encrypted inventory.</value></data>
-  <data name="Workflow.Validation.PathRequired" xml:space="preserve"><value>Select a recovery path before starting.</value></data>
+  <data name="Workflow.Validation.NoSafeRecoveryPath" xml:space="preserve"><value>No safe supported recovery approach is available for the currently confirmed account state. The account remains visibly blocked.</value></data>
   <data name="Workflow.Validation.CriteriaRequired" xml:space="preserve"><value>Explicitly acknowledge the completion criteria before recording completion.</value></data>
   <data name="Workflow.Validation.ReasonRequired" xml:space="preserve"><value>Enter a non-secret reason for this outcome.</value></data>
   <data name="Workflow.Validation.Locked" xml:space="preserve"><value>The recovery vault is locked.</value></data>
@@ -136,7 +143,6 @@
   <data name="Workflow.Validation.PersistenceFailure" xml:space="preserve"><value>The outcome could not be saved. The UI does not claim that it was recorded.</value></data>
   <data name="Workflow.Validation.InvalidInput" xml:space="preserve"><value>The requested recovery transition is invalid.</value></data>
   <data name="Workflow.Command.Error" xml:space="preserve"><value>The recovery operation failed without exposing provider or account data.</value></data>
-  <data name="Workflow.Guided.Path.Title" xml:space="preserve"><value>Choose how you can recover this account</value></data>
   <data name="Workflow.Guided.Warning.Title" xml:space="preserve"><value>Important before you continue</value></data>
   <data name="Workflow.Guided.Prerequisites.Title" xml:space="preserve"><value>What needs to be ready first</value></data>
   <data name="Workflow.Guided.Action.Why" xml:space="preserve"><value>Why this is next: {0}</value></data>

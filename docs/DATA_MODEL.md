@@ -103,7 +103,7 @@ The repository-controlled classification catalog proposes an account category fr
 
 The removed priority, role, and account-dependency graph is not retained as compatibility state in current development vaults. Such obsolete serialized members fail closed at the inventory persistence boundary.
 
-Category planning and provider workflow selection are separate: category answers **when**, workflow answers **how**. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
+Category planning and provider workflow selection are separate: category answers **when**, workflow answers **how**. The category queue is always `EMAIL`, `CRITICAL`, `UNKNOWN`, then `NON_CRITICAL`, with provider and opaque account IDs as stable tie-breakers. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
 
 ### RecoveryWorkflowDefinition
 
@@ -159,13 +159,18 @@ Suggested fields:
 - `AccountId`
 - `DefinitionId`
 - `Status`
-- `SelectedRecoveryPath`
 - `StartedAt`
 - `CompletedAt`
 - `StatusReason`
 - `NotApplicableDisposition`
 - `HasUnresolvedRisk`
 - `UserNotes`
+
+The containing `AccountRecoveryExecutionState` owns the automatically selected recovery path,
+structured selection reason, and previous path attempts. Confirmed authenticated access prefers an
+authenticated change; otherwise the selector tries password reset and then manual recovery. Failed
+or lost-access attempts retain their structured reason and do not disappear when a safe fallback is
+materialized. Browser observations are not stored as path-selection input.
 
 Status values:
 
