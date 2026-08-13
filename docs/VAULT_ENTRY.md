@@ -34,6 +34,12 @@ A new vault requires:
 
 Pasting from a password manager remains supported. Password fields are concealed by default, and temporary reveal automatically ends. The password is never written to recent-vault metadata, logs, audit events, error messages, or persisted application settings.
 
+Password input is cleared from the bound control and presentation state as soon as a vault operation
+has started. Returning to vault choice, selecting a different recent vault, choosing another vault
+path, or entering another vault-entry stage also clears the input and ends temporary reveal. Managed
+memory clearing is best effort as described in [Vault Security](VAULT_SECURITY.md); the UI and view
+model do not intentionally retain a reusable password value between vault selections.
+
 Creation uses the existing encrypted SQLite vault implementation with Argon2id key derivation and AES-256-GCM authenticated record encryption. The file is not overwritten when it already exists.
 
 ## Opening and unlocking
@@ -125,6 +131,7 @@ Automated tests cover:
 - refusal to create a vault without the trusted-device gate;
 - `NotTrusted` and `Unsure` terminal paths;
 - password validation, clearing, and reveal timeout;
+- immediate password clearing when authentication starts, vault choice is reopened, or the selected vault changes;
 - real vault creation, locking, inactivity warning, inactivity locking, and unlocking;
 - conservative wizard resume;
 - password re-wrapping and rejection of the old password;

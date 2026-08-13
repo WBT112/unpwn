@@ -290,6 +290,95 @@ public sealed class VaultEntryScreenViewModelTests
     }
 
     [Fact]
+    public async Task OpenPasswordIsClearedAsSoonAsAuthenticationBegins()
+    {
+        const string password = "synthetic-pending-vault-password";
+        var completion = new TaskCompletionSource<VaultOperationResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var vaultPath = Path.GetFullPath("pending-vault.db");
+        var lifecycle = new TestVaultLifecycleService
+        {
+            PendingResult = completion.Task,
+        };
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            vaultPathProvider: new TestVaultPathProvider(existingPaths: [vaultPath]));
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+        viewModel.ShowOpenVaultCommand.Execute(null);
+        viewModel.OpenPath = vaultPath;
+        viewModel.OpenPassword = password;
+        viewModel.IsOpenPasswordRevealed = true;
+
+        var operation = viewModel.OpenVaultCommand.ExecuteAsync();
+
+        Assert.Equal(password, lifecycle.LastPassword);
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+        Assert.False(viewModel.IsOpenPasswordRevealed);
+        completion.SetResult(VaultOperationResult.Failure(
+            VaultOperationFailureCode.AuthenticationOrIntegrity));
+        Assert.Equal(AsyncCommandOutcome.Completed, await operation);
+    }
+
+    [Fact]
+    public void ReturningToChoiceAndSelectingAnotherVaultClearsOpenPasswordState()
+    {
+        var firstPath = Path.GetFullPath("first-vault.db");
+        var secondPath = Path.GetFullPath("second-vault.db");
+        var lifecycle = new TestVaultLifecycleService
+        {
+            RecentVaults =
+            [
+                new RecentVaultReference(firstPath, "First recovery", DateTimeOffset.UnixEpoch.AddHours(1)),
+                new RecentVaultReference(secondPath, "Second recovery", DateTimeOffset.UnixEpoch),
+            ],
+        };
+        var viewModel = CreateViewModel(
+            lifecycle,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            vaultPathProvider: new TestVaultPathProvider(existingPaths: [firstPath, secondPath]));
+        viewModel.BeginCommand.Execute(null);
+        viewModel.TrustedDeviceYesCommand.Execute(null);
+        viewModel.SelectedRecentVault = viewModel.RecentVaults.Single(vault => vault.Path == firstPath);
+        viewModel.UseRecentVaultCommand.Execute(null);
+        viewModel.OpenPassword = "synthetic-first-wrong-password";
+        viewModel.IsOpenPasswordRevealed = true;
+
+        viewModel.BackToVaultChoiceCommand.Execute(null);
+
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+        Assert.False(viewModel.IsOpenPasswordRevealed);
+
+        // A hidden control must not be able to carry an old value into a new selection.
+        viewModel.OpenPassword = "synthetic-stale-ui-password";
+        viewModel.IsOpenPasswordRevealed = true;
+        viewModel.SelectedRecentVault = viewModel.RecentVaults.Single(vault => vault.Path == secondPath);
+
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+        Assert.False(viewModel.IsOpenPasswordRevealed);
+        viewModel.UseRecentVaultCommand.Execute(null);
+        Assert.Equal(secondPath, viewModel.OpenPath);
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+    }
+
+    [Fact]
+    public void SelectingAnotherVaultPathClearsOpenPasswordState()
+    {
+        var viewModel = CreateViewModel(
+            new TestVaultLifecycleService(),
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch));
+        viewModel.OpenPath = Path.GetFullPath("first-vault.db");
+        viewModel.OpenPassword = "synthetic-stale-path-password";
+        viewModel.IsOpenPasswordRevealed = true;
+
+        viewModel.OpenPath = Path.GetFullPath("second-vault.db");
+
+        Assert.Equal(string.Empty, viewModel.OpenPassword);
+        Assert.False(viewModel.IsOpenPasswordRevealed);
+    }
+
+    [Fact]
     public async Task PasswordRevealAutomaticallyEnds()
     {
         var delay = new TestPresentationDelay();
@@ -415,6 +504,8 @@ public sealed class VaultEntryScreenViewModelTests
 
         public VaultOperationResult NextResult { get; set; } = VaultOperationResult.Success;
 
+        public Task<VaultOperationResult>? PendingResult { get; set; }
+
         public int VaultOperationCalls { get; private set; }
 
         public int LockCalls { get; private set; }
@@ -532,6 +623,11 @@ public sealed class VaultEntryScreenViewModelTests
         {
             VaultOperationCalls++;
             LastPassword = vaultPassword;
+            if (PendingResult is not null)
+            {
+                return PendingResult;
+            }
+
             if (NextResult.Succeeded)
             {
                 var displayName = Path.GetFileNameWithoutExtension(path);

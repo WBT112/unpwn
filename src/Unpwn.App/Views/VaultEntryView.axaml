@@ -207,11 +207,11 @@
                    Text="{DynamicResource Vault.Create.DefaultPathHint}"
                    TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Vault.Create.Password}" />
-        <TextBox Text="{Binding CreatePassword, Mode=TwoWay}"
+        <TextBox Text="{Binding CreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding CreatePasswordCharacter}" />
         <TextBlock FontSize="12" Opacity="0.78" Text="{Binding CreatePasswordGuidance}" TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Vault.Create.ConfirmPassword}" />
-        <TextBox Text="{Binding ConfirmCreatePassword, Mode=TwoWay}"
+        <TextBox Text="{Binding ConfirmCreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding CreatePasswordCharacter}" />
         <CheckBox AutomationProperties.AutomationId="vault-create-reveal-passwords"
                   IsChecked="{Binding IsCreatePasswordRevealed, Mode=TwoWay}"
@@ -247,7 +247,7 @@
         <TextBlock Text="{DynamicResource Vault.Open.Password}" />
         <TextBox AutomationProperties.AutomationId="vault-unlock-password"
                  AutomationProperties.Name="{DynamicResource Vault.Locked.Password}"
-                 Text="{Binding OpenPassword, Mode=TwoWay}"
+                 Text="{Binding OpenPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding OpenPasswordCharacter}" />
         <CheckBox AutomationProperties.AutomationId="vault-open-reveal-password"
                   IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
@@ -273,7 +273,7 @@
         <TextBlock Text="{DynamicResource Vault.Locked.Password}" />
         <TextBox Classes="initial-focus"
                  AutomationProperties.AutomationId="vault-locked-password"
-                 Text="{Binding OpenPassword, Mode=TwoWay}"
+                 Text="{Binding OpenPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding OpenPasswordCharacter}" />
         <CheckBox AutomationProperties.AutomationId="vault-unlock-reveal-password"
                   IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
@@ -323,14 +323,14 @@
         <TextBox Classes="initial-focus"
                  AutomationProperties.AutomationId="vault-current-password"
                  AutomationProperties.Name="{DynamicResource Vault.Change.Current}"
-                 Text="{Binding CurrentPassword, Mode=TwoWay}"
+                 Text="{Binding CurrentPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding ChangePasswordCharacter}" />
         <TextBlock Text="{DynamicResource Vault.Change.New}" />
-        <TextBox Text="{Binding NewPassword, Mode=TwoWay}"
+        <TextBox Text="{Binding NewPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding ChangePasswordCharacter}" />
         <TextBlock FontSize="12" Opacity="0.78" Text="{Binding NewPasswordGuidance}" TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Vault.Change.Confirm}" />
-        <TextBox Text="{Binding ConfirmNewPassword, Mode=TwoWay}"
+        <TextBox Text="{Binding ConfirmNewPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding ChangePasswordCharacter}" />
         <CheckBox AutomationProperties.AutomationId="vault-change-reveal-passwords"
                   IsChecked="{Binding IsChangePasswordRevealed, Mode=TwoWay}"

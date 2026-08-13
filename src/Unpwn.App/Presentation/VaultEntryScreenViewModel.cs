@@ -194,7 +194,13 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         get => _openPath;
         set
         {
-            if (SetProperty(ref _openPath, value ?? string.Empty))
+            var normalized = value ?? string.Empty;
+            if (!string.Equals(_openPath, normalized, PathComparison))
+            {
+                ClearOpenPassword();
+            }
+
+            if (SetProperty(ref _openPath, normalized))
             {
                 ClearValidation();
                 OpenVaultCommand.RaiseCanExecuteChanged();
@@ -365,6 +371,11 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         get => _selectedRecentVault;
         set
         {
+            if (!string.Equals(_selectedRecentVault?.Path, value?.Path, PathComparison))
+            {
+                ClearOpenPassword();
+            }
+
             if (SetProperty(ref _selectedRecentVault, value))
             {
                 UseRecentVaultCommand.RaiseCanExecuteChanged();
@@ -547,8 +558,17 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var result = await _vaultLifecycle.CreateAsync(CreatePath, CreatePassword, cancellationToken);
-        ClearSensitiveInputs();
+        Task<VaultOperationResult> pendingOperation;
+        try
+        {
+            pendingOperation = _vaultLifecycle.CreateAsync(CreatePath, CreatePassword, cancellationToken);
+        }
+        finally
+        {
+            ClearSensitiveInputs();
+        }
+
+        var result = await pendingOperation;
         if (!result.Succeeded)
         {
             ShowFailure(result.FailureCode);
@@ -566,8 +586,17 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         }
 
         var attemptedPath = OpenPath;
-        var result = await _vaultLifecycle.OpenAsync(attemptedPath, OpenPassword, cancellationToken);
-        ClearSensitiveInputs();
+        Task<VaultOperationResult> pendingOperation;
+        try
+        {
+            pendingOperation = _vaultLifecycle.OpenAsync(attemptedPath, OpenPassword, cancellationToken);
+        }
+        finally
+        {
+            ClearSensitiveInputs();
+        }
+
+        var result = await pendingOperation;
         if (!result.Succeeded)
         {
             if (result.FailureCode == VaultOperationFailureCode.NotFound)
@@ -591,8 +620,17 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var result = await _vaultLifecycle.UnlockCurrentAsync(OpenPassword, cancellationToken);
-        ClearSensitiveInputs();
+        Task<VaultOperationResult> pendingOperation;
+        try
+        {
+            pendingOperation = _vaultLifecycle.UnlockCurrentAsync(OpenPassword, cancellationToken);
+        }
+        finally
+        {
+            ClearSensitiveInputs();
+        }
+
+        var result = await pendingOperation;
         if (!result.Succeeded)
         {
             ShowFailure(result.FailureCode);
@@ -624,11 +662,20 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var result = await _vaultLifecycle.ChangePasswordAsync(
-            CurrentPassword,
-            NewPassword,
-            cancellationToken);
-        ClearSensitiveInputs();
+        Task<VaultOperationResult> pendingOperation;
+        try
+        {
+            pendingOperation = _vaultLifecycle.ChangePasswordAsync(
+                CurrentPassword,
+                NewPassword,
+                cancellationToken);
+        }
+        finally
+        {
+            ClearSensitiveInputs();
+        }
+
+        var result = await pendingOperation;
         if (!result.Succeeded)
         {
             ShowFailure(result.FailureCode);
@@ -865,13 +912,18 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     {
         CreatePassword = string.Empty;
         ConfirmCreatePassword = string.Empty;
-        OpenPassword = string.Empty;
+        ClearOpenPassword();
         CurrentPassword = string.Empty;
         NewPassword = string.Empty;
         ConfirmNewPassword = string.Empty;
         IsCreatePasswordRevealed = false;
-        IsOpenPasswordRevealed = false;
         IsChangePasswordRevealed = false;
+    }
+
+    private void ClearOpenPassword()
+    {
+        OpenPassword = string.Empty;
+        IsOpenPasswordRevealed = false;
     }
 
     private void SetRevealState(
@@ -1005,6 +1057,11 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
 
     private void SetStage(VaultEntryStage stage)
     {
+        if (stage != Stage)
+        {
+            ClearSensitiveInputs();
+        }
+
         ClearValidation();
         Stage = stage;
     }
