@@ -338,7 +338,11 @@ public sealed class RecoveryLocationDiscoveryTests
     private static HttpRecoveryLocationDiscoveryService CreateService(
         HttpMessageHandler handler,
         int maxRedirects = 5) =>
-        new(new HttpMessageInvoker(handler, disposeHandler: true), maxRedirects, disposeInvoker: true);
+        new(
+            new HttpMessageInvoker(handler, disposeHandler: true),
+            maxRedirects,
+            disposeInvoker: true,
+            networkTargetPolicy: AllowAllNetworkTargetPolicy.Instance);
 
     private static RecoveryLocationDiscoveryRequest CreateRequest(
         RecoveryLocationSelectionPolicy selectionPolicy,
@@ -397,6 +401,20 @@ public sealed class RecoveryLocationDiscoveryTests
                 request.Headers.Referrer is not null,
                 request.Content is not null));
             return Task.FromResult(responder(request));
+        }
+    }
+
+    private sealed class AllowAllNetworkTargetPolicy : IRecoveryNetworkTargetPolicy
+    {
+        internal static AllowAllNetworkTargetPolicy Instance { get; } = new();
+
+        public ValueTask<bool> IsAllowedAsync(
+            Uri destination,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ValueTask<bool>(true);
         }
     }
 

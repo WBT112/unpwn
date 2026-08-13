@@ -9,7 +9,8 @@ public sealed class HttpRecoveryLocationDiscoveryService(
     HttpMessageInvoker http,
     int maxRedirects = 5,
     TimeSpan? requestTimeout = null,
-    bool disposeInvoker = false)
+    bool disposeInvoker = false,
+    IRecoveryNetworkTargetPolicy? networkTargetPolicy = null)
     : IRecoveryLocationDiscoveryService, IDisposable
 {
     private static readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(10);
@@ -17,22 +18,33 @@ public sealed class HttpRecoveryLocationDiscoveryService(
     private readonly int _maxRedirects = ValidateMaxRedirects(maxRedirects);
     private readonly TimeSpan _requestTimeout = ValidateTimeout(requestTimeout ?? DefaultRequestTimeout);
     private readonly bool _disposeInvoker = disposeInvoker;
+    private readonly IRecoveryNetworkTargetPolicy _networkTargetPolicy =
+        networkTargetPolicy ?? PublicRecoveryNetworkTargetPolicy.CreateDefault();
     private bool _disposed;
 
     public static HttpRecoveryLocationDiscoveryService CreateDefault()
     {
+        var resolver = new SystemRecoveryDnsResolver();
+        var networkTargetPolicy = new PublicRecoveryNetworkTargetPolicy(resolver);
         var handler = new SocketsHttpHandler
         {
             AllowAutoRedirect = false,
             UseCookies = false,
+            UseProxy = false,
             Credentials = null,
             PreAuthenticate = false,
             AutomaticDecompression = DecompressionMethods.None,
             ConnectTimeout = TimeSpan.FromSeconds(5),
+            ConnectCallback = (context, cancellationToken) =>
+                RecoveryDiscoveryPublicConnector.ConnectAsync(
+                    context,
+                    resolver,
+                    cancellationToken),
         };
         return new HttpRecoveryLocationDiscoveryService(
             new HttpMessageInvoker(handler, disposeHandler: true),
-            disposeInvoker: true);
+            disposeInvoker: true,
+            networkTargetPolicy: networkTargetPolicy);
     }
 
     public async Task<RecoveryLocationDiscoveryResult> DiscoverAsync(
@@ -136,6 +148,31 @@ public sealed class HttpRecoveryLocationDiscoveryService(
 
         for (var redirectCount = 0; ; redirectCount++)
         {
+            bool networkTargetAllowed;
+            try
+            {
+                networkTargetAllowed = await _networkTargetPolicy.IsAllowedAsync(
+                    current,
+                    timeout.Token);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                return Failure(
+                    RecoveryLocationDiscoveryFailureCode.NetworkFailure,
+                    redirectChain);
+            }
+
+            if (!networkTargetAllowed)
+            {
+                return Failure(
+                    RecoveryLocationDiscoveryFailureCode.NetworkFailure,
+                    redirectChain);
+            }
+
             using var request = CreateRequest(current);
             HttpResponseMessage response;
             try

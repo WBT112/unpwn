@@ -86,11 +86,11 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 
 ### Recovery-discovery network reachability
 
-**Risk:** standards-based recovery-location discovery is derived from an inventory URL and could be abused to contact a local, private, link-local, or otherwise disallowed network target.
+**Risk:** standards-based recovery-location discovery is derived from an inventory URL and could reach a local, private, link-local, or otherwise disallowed network destination.
 
-**Current controls:** production requests require HTTPS, omit credentials/cookies/referrers, bound redirects, validate every redirect origin, and retain reviewed-provider/manual fallback.
+**Mitigations:** production discovery requires HTTPS, omits credentials/cookies/referrers, bounds redirects, validates every redirect origin, and applies a public-network-only target policy before every request. Literal addresses and DNS answers are rejected when they are loopback, private/unique-local, link-local/site-local, unspecified, multicast, or another explicitly non-public range covered by the policy; mixed public/private DNS answers fail closed. The production socket connection resolves again inside `SocketsHttpHandler.ConnectCallback`, rejects changed/disallowed answers, and connects directly to the approved IP instead of performing another implicit hostname lookup. Automatic redirects and the system proxy are disabled for this narrow request. A reviewed provider location or manual guidance remains the fallback.
 
-**Pre-release gap:** the resolver does not yet bind a public-network-only policy to literal addresses, DNS resolution, and redirect connection targets. Exact-origin validation is not a substitute for that egress control.
+**Residual risk:** DNS and routing infrastructure outside the process can still fail or be manipulated, and a publicly routable destination can itself be malicious or compromised. The egress policy narrows local-network reachability; it is not a browser sandbox, host firewall, or proof that a public provider endpoint is trustworthy.
 
 ### Recovery Browser escape or cross-account state reuse
 
