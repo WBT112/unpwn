@@ -47,7 +47,7 @@ public sealed class RecoveryCompletionServiceTests
     public async Task PreflightDistinguishesIncompleteBlockedLostAndCredentialStates()
     {
         var accountId = Guid.NewGuid();
-        var session = Session(Account(
+        var deferredAccount = Account(
             accountId,
             AccountCriticality.Critical,
             AccountRecoveryStatus.NotFullySecured,
@@ -56,7 +56,12 @@ public sealed class RecoveryCompletionServiceTests
             blocked: 1,
             failed: 1,
             risks: 2,
-            accessLost: true));
+            accessLost: true) with
+        {
+            DeferralCount = 1,
+            DeferredAt = StartedAt,
+        };
+        var session = Session(deferredAccount);
         var inventory = Inventory(session.Id, accountId);
         var plan = new AccountInventoryPlan([]);
         var notExported = GeneratedCredentialMetadata.Create(
@@ -78,6 +83,7 @@ public sealed class RecoveryCompletionServiceTests
         Assert.True(review.Succeeded);
         RecoveryCompletionIssueKind[] expectedKinds =
         [
+            RecoveryCompletionIssueKind.DeferredAccount,
             RecoveryCompletionIssueKind.CriticalAccountNotFullyReviewed,
             RecoveryCompletionIssueKind.RequiredActionIncomplete,
             RecoveryCompletionIssueKind.RequiredActionBlocked,

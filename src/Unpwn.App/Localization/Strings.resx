@@ -55,6 +55,7 @@
   <data name="Completion.Issue.CredentialNotExported" xml:space="preserve"><value>Generated credential not exported</value></data>
   <data name="Completion.Issue.CredentialRetainedInVault" xml:space="preserve"><value>Generated credential retained in vault</value></data>
   <data name="Completion.Issue.CriticalAccountNotFullyReviewed" xml:space="preserve"><value>Critical account not fully reviewed</value></data>
+  <data name="Completion.Issue.DeferredAccount" xml:space="preserve"><value>Deferred account remains unresolved</value></data>
   <data name="Completion.Issue.Detail" xml:space="preserve"><value>{0}: {1} finding(s)</value></data>
   <data name="Completion.Issue.LostAccountAccess" xml:space="preserve"><value>Account access remains lost</value></data>
   <data name="Completion.Issue.Open" xml:space="preserve"><value>Open affected item</value></data>

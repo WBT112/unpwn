@@ -133,7 +133,7 @@ public sealed class DashboardScreenViewModelTests
     }
 
     [Fact]
-    public void RecommendationNamesReviewedProviderAndCurrentActionInSelectedLanguage()
+    public async Task RecommendationNamesReviewedProviderAndCurrentActionInSelectedLanguage()
     {
         var accountId = Guid.NewGuid();
         var session = RecoverySessionWorkspace.Create(
@@ -165,24 +165,45 @@ public sealed class DashboardScreenViewModelTests
             ],
             DateTimeOffset.UnixEpoch.AddMinutes(1));
         var localization = CreateLocalization();
-        var viewModel = CreateViewModel(new TestRecoverySessionService(session), localization);
+        var sessionService = new TestRecoverySessionService(session);
+        var viewModel = CreateViewModel(sessionService, localization);
+        DashboardNavigationRequest? request = null;
+        viewModel.NavigationRequested += (_, eventArgs) => request = eventArgs;
 
         Assert.True(viewModel.HasRecommendationTarget);
         Assert.True(viewModel.HasRecommendationCategory);
         Assert.True(viewModel.HasRecommendationAction);
+        Assert.True(viewModel.HasRecommendationApproach);
         Assert.Equal("Recommended account or service: GitHub", viewModel.RecommendationTargetText);
         Assert.Equal("Category: Email", viewModel.RecommendationCategoryText);
         Assert.Equal("Current action: Change the password", viewModel.RecommendationActionText);
+        Assert.Equal(
+            "Recovery approach: Change the password in an authenticated account session",
+            viewModel.RecommendationApproachText);
         Assert.Equal("0 of 0 critical accounts handled.", viewModel.CriticalReadinessText);
         Assert.Equal("Progress: 0%", viewModel.WeightedProgressText);
+
+        viewModel.OpenRecommendationCommand.Execute(null);
+
+        Assert.True(request?.StartRecovery);
+        Assert.Equal(AppRoute.Workflow, request?.Route);
+        Assert.True(viewModel.CanSkipRecommendation);
 
         localization.SetLanguage("de");
 
         Assert.Equal("Empfohlenes Konto oder Dienst: GitHub", viewModel.RecommendationTargetText);
         Assert.Equal("Kategorie: E-Mail", viewModel.RecommendationCategoryText);
         Assert.Equal("Aktuelle Aktion: Passwort ändern", viewModel.RecommendationActionText);
+        Assert.Equal(
+            "Wiederherstellungsweg: Passwort in einer authentifizierten Kontositzung ändern",
+            viewModel.RecommendationApproachText);
         Assert.Equal("0 von 0 kritischen Konten bearbeitet.", viewModel.CriticalReadinessText);
         Assert.Equal("Fortschritt: 0 %", viewModel.WeightedProgressText);
+
+        await viewModel.SkipRecommendationCommand.ExecuteAsync();
+
+        Assert.Equal(1, sessionService.CurrentSession?.Accounts.Single().DeferralCount);
+        Assert.Equal(AccountRecoveryStatus.Open, sessionService.CurrentSession?.Accounts.Single().RecoveryStatus);
     }
 
     [Fact]
@@ -333,6 +354,25 @@ public sealed class DashboardScreenViewModelTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             CurrentSession = CurrentSession?.Resume(CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
+
+        public Task<RecoverySessionOperationResult> DeferAccountAsync(
+            Guid accountId,
+            long expectedSessionRevision,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (CurrentSession?.Revision != expectedSessionRevision)
+            {
+                return Task.FromResult(RecoverySessionOperationResult.Failure(
+                    RecoverySessionOperationFailureCode.Conflict));
+            }
+
+            CurrentSession = CurrentSession.DeferAccount(
+                accountId,
+                CurrentSession.UpdatedAt.AddMinutes(1));
             SessionChanged?.Invoke(this, EventArgs.Empty);
             return Task.FromResult(RecoverySessionOperationResult.Success);
         }

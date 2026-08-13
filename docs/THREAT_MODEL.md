@@ -98,6 +98,10 @@ The repository currently enables automatic insertion only for the explicit synth
 
 **Mitigations:** critical readiness separated from aggregate progress, blocked/failed/lost-access/unresolved-risk states remain visible, completion preflight reads current persisted state, explicit completion is required, and browser observations never manufacture completion.
 
+Account deferral is canonical queue metadata rather than completion. A deferred account remains open,
+returns after the other current-pass work, and is listed as an unresolved blocking finding during
+completion preflight. Repeated deferral cannot make the session appear complete or secure.
+
 ### Localization changes security meaning
 
 **Risk:** translation changes warnings, authorization consequences, workflow meaning, parsing, or control decisions.

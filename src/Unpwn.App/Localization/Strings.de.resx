@@ -55,6 +55,7 @@
   <data name="Completion.Issue.CredentialNotExported" xml:space="preserve"><value>Erzeugte Zugangsdaten nicht exportiert</value></data>
   <data name="Completion.Issue.CredentialRetainedInVault" xml:space="preserve"><value>Erzeugte Zugangsdaten im Tresor aufbewahrt</value></data>
   <data name="Completion.Issue.CriticalAccountNotFullyReviewed" xml:space="preserve"><value>Kritisches Konto nicht vollständig geprüft</value></data>
+  <data name="Completion.Issue.DeferredAccount" xml:space="preserve"><value>Zurückgestelltes Konto bleibt ungelöst</value></data>
   <data name="Completion.Issue.Detail" xml:space="preserve"><value>{0}: {1} Befund(e)</value></data>
   <data name="Completion.Issue.LostAccountAccess" xml:space="preserve"><value>Kontozugriff bleibt verloren</value></data>
   <data name="Completion.Issue.Open" xml:space="preserve"><value>Betroffenen Punkt öffnen</value></data>

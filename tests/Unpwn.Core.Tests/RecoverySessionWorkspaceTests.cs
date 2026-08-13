@@ -344,6 +344,69 @@ public sealed class RecoverySessionWorkspaceTests
         Assert.Equal(unknown.AccountId, workspace.CreateDashboardSnapshot().Recommendation.AccountId);
     }
 
+    [Fact]
+    public void DeferringAnAccountMovesItBehindTheCurrentPassWithoutResolvingIt()
+    {
+        var first = CreateAccount(
+            Guid.Parse("10000000-0000-0000-0000-000000000000"),
+            "first-email",
+            AccountCriticality.Important,
+            AccountRecoveryStatus.Open,
+            0, 1, 0, 1, 0, 0, 0, false, 0, 0, "reset") with
+        {
+            Category = AccountRecoveryCategory.Email,
+        };
+        var second = first with
+        {
+            AccountId = Guid.Parse("20000000-0000-0000-0000-000000000000"),
+            ProviderId = "second-email",
+        };
+        var workspace = RecoverySessionWorkspace.Create(
+                Guid.NewGuid(), "Deferral", RecoveryIncidentIntake.Empty, DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts([first, second], DateTimeOffset.UnixEpoch.AddSeconds(1));
+
+        var deferred = workspace.DeferAccount(
+            first.AccountId,
+            DateTimeOffset.UnixEpoch.AddSeconds(2));
+
+        Assert.Equal(second.AccountId, deferred.CreateDashboardSnapshot().Recommendation.AccountId);
+        var persisted = deferred.Accounts.Single(account => account.AccountId == first.AccountId);
+        Assert.Equal(AccountRecoveryStatus.Open, persisted.RecoveryStatus);
+        Assert.Equal(1, persisted.DeferralCount);
+        Assert.Equal(DateTimeOffset.UnixEpoch.AddSeconds(2), persisted.DeferredAt);
+
+        var refreshed = deferred.ReplaceAccounts(
+            [first, second with { RecoveryStatus = AccountRecoveryStatus.FullyReviewed }],
+            DateTimeOffset.UnixEpoch.AddSeconds(3));
+        Assert.Equal(1, refreshed.Accounts.Single(account => account.AccountId == first.AccountId).DeferralCount);
+        Assert.Equal(first.AccountId, refreshed.CreateDashboardSnapshot().Recommendation.AccountId);
+    }
+
+    [Fact]
+    public void CompletedOrInactiveAccountWorkCannotBeDeferred()
+    {
+        var account = CreateAccount(
+            Guid.NewGuid(), "done", AccountCriticality.Routine, AccountRecoveryStatus.FullyReviewed,
+            1, 1, 1, 1, 0, 0, 0, false, 0, 0, "done") with
+        {
+            Category = AccountRecoveryCategory.NonCritical,
+        };
+        var active = RecoverySessionWorkspace.Create(
+                Guid.NewGuid(), "Deferral", RecoveryIncidentIntake.Empty, DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts([account], DateTimeOffset.UnixEpoch.AddSeconds(1));
+
+        Assert.Throws<InvalidOperationException>(() => active.DeferAccount(
+            account.AccountId,
+            DateTimeOffset.UnixEpoch.AddSeconds(2)));
+        var paused = active.ReplaceAccounts(
+                [account with { RecoveryStatus = AccountRecoveryStatus.Open }],
+                DateTimeOffset.UnixEpoch.AddSeconds(2))
+            .Pause(DateTimeOffset.UnixEpoch.AddSeconds(3));
+        Assert.Throws<InvalidOperationException>(() => paused.DeferAccount(
+            account.AccountId,
+            DateTimeOffset.UnixEpoch.AddSeconds(4)));
+    }
+
     private static RecoveryAccountDashboardEntry CreateAccount(
         Guid accountId,
         string providerId,

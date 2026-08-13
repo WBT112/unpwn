@@ -56,7 +56,7 @@
                 Classes="initial-focus"
                 AutomationProperties.AutomationId="workflow-begin"
                 Content="{DynamicResource Workflow.Path.Start}"
-                Command="{Binding BeginCommand}" />
+                Command="{Binding StartRecoveryCommand}" />
       </StackPanel>
     </Border>
 
@@ -93,6 +93,19 @@
             <TextBlock FontSize="24" FontWeight="SemiBold" Text="{Binding CurrentActionTitle}" TextWrapping="Wrap" />
             <TextBlock FontWeight="SemiBold" Text="{Binding CurrentActionWhyText}" TextWrapping="Wrap" />
             <TextBlock FontSize="16" Text="{Binding CurrentActionInstruction}" TextWrapping="Wrap" />
+
+            <Border Padding="12" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="5">
+                <TextBlock FontWeight="SemiBold"
+                           Text="{DynamicResource Workflow.Guided.Authentication.Title}" />
+                <TextBlock Text="{Binding AuthenticationGuidanceText}"
+                           TextWrapping="Wrap" />
+                <TextBlock IsVisible="{Binding IsPasswordCredentialAction}"
+                           Text="{Binding ReplacementCredentialGuidanceText}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
 
             <Border IsVisible="{Binding HasCurrentActionWarning}"
                     Padding="12" CornerRadius="8"

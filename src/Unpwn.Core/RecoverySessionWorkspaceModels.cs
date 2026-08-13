@@ -89,6 +89,10 @@ public sealed record RecoveryAccountDashboardEntry(
 
     public int AcceptedRiskActions { get; init; }
 
+    public int DeferralCount { get; init; }
+
+    public DateTimeOffset? DeferredAt { get; init; }
+
     public bool IsFullyReviewed => RecoveryStatus == AccountRecoveryStatus.FullyReviewed;
 
     public bool IsCriticalReady =>
@@ -126,6 +130,12 @@ public sealed record RecoveryAccountDashboardEntry(
         ValidateNonNegative(RequiredActionsAwaitingUser, nameof(RequiredActionsAwaitingUser));
         ValidateNonNegative(RequiredActionsNotApplicable, nameof(RequiredActionsNotApplicable));
         ValidateNonNegative(AcceptedRiskActions, nameof(AcceptedRiskActions));
+        ValidateNonNegative(DeferralCount, nameof(DeferralCount));
+
+        if ((DeferralCount == 0) != (DeferredAt is null))
+        {
+            throw new ArgumentException("A deferred dashboard account requires matching defer metadata.");
+        }
 
         if (RequiredActionsCompleted > RequiredActionsTotal)
         {
@@ -270,7 +280,16 @@ public sealed record RecoverySessionWorkspace(
         EnsureMutable();
         ArgumentNullException.ThrowIfNull(accounts);
         ValidateTimestamp(occurredAt);
-        var materialized = accounts.ToArray();
+        var previous = Accounts.ToDictionary(account => account.AccountId);
+        var materialized = accounts
+            .Select(account => previous.TryGetValue(account.AccountId, out var existing)
+                ? account with
+                {
+                    DeferralCount = existing.DeferralCount,
+                    DeferredAt = existing.DeferredAt,
+                }
+                : account)
+            .ToArray();
         foreach (var account in materialized)
         {
             account.Validate();
@@ -289,11 +308,51 @@ public sealed record RecoverySessionWorkspace(
         };
     }
 
+    public RecoverySessionWorkspace DeferAccount(
+        Guid accountId,
+        DateTimeOffset occurredAt)
+    {
+        EnsureMutable();
+        ValidateTimestamp(occurredAt);
+        if (Status != RecoveryWorkspaceLifecycleStatus.Active)
+        {
+            throw new InvalidOperationException("Only an active recovery session may defer account work.");
+        }
+
+        var account = Accounts.SingleOrDefault(candidate => candidate.AccountId == accountId)
+            ?? throw new InvalidOperationException("The recovery account does not exist in this session.");
+        if (account.IsFullyReviewed)
+        {
+            throw new InvalidOperationException("Completed account work cannot be deferred.");
+        }
+
+        return this with
+        {
+            Accounts =
+            [
+                .. Accounts.Select(candidate => candidate.AccountId == accountId
+                    ? candidate with
+                    {
+                        DeferralCount = checked(candidate.DeferralCount + 1),
+                        DeferredAt = occurredAt,
+                    }
+                    : candidate),
+            ],
+            UpdatedAt = occurredAt,
+            Revision = Revision + 1,
+        };
+    }
+
     public RecoveryDashboardSnapshot CreateDashboardSnapshot()
     {
         foreach (var account in Accounts)
         {
             account.Validate();
+            if (account.DeferredAt is { } deferredAt &&
+                (deferredAt < CreatedAt || deferredAt > UpdatedAt))
+            {
+                throw new InvalidOperationException("Account defer metadata is outside the recovery-session lifetime.");
+            }
         }
 
         var criticalAccounts = Accounts
@@ -414,7 +473,8 @@ public sealed record RecoverySessionWorkspace(
 
         var candidates = Accounts
             .Where(account => !account.IsFullyReviewed || account.AccessLost || account.UnresolvedRisks > 0)
-            .OrderBy(account => CategoryOrder(account.Category))
+            .OrderBy(account => account.DeferralCount)
+            .ThenBy(account => CategoryOrder(account.Category))
             .ThenBy(account => account.ProviderId, StringComparer.Ordinal)
             .ThenBy(account => account.AccountId)
             .ToArray();

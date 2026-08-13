@@ -42,6 +42,11 @@ The normal credential UI keeps secrets concealed and offers explicit short-lived
 
 When an active password-change/reset action has an attached credential, the Recovery Browser assistant reuses the same repository/lifecycle services for Reveal, Hide, Copy, Mark used, and Confirm working. Browser close clears materialized reveal state and requests owned-clipboard cleanup. Browser close itself does not mark the credential used or confirmed.
 
+The in-browser guidance distinguishes the user's current provider credential from the generated
+replacement. A generated password is not presented as valid for a required pre-change login and does
+not become confirmed merely because it was revealed, copied, inserted, or submitted. Only the
+existing explicit lifecycle confirmation after the provider change may confirm it.
+
 Detailed browser/session/origin rules live in [Recovery Browser Security Boundary](RECOVERY_BROWSER.md) rather than being duplicated here.
 
 ## Provider-reviewed insertion

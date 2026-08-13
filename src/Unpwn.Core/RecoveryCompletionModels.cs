@@ -2,6 +2,7 @@ namespace Unpwn.Core;
 
 public enum RecoveryCompletionIssueKind
 {
+    DeferredAccount,
     CriticalAccountNotFullyReviewed,
     RequiredActionIncomplete,
     RequiredActionBlocked,

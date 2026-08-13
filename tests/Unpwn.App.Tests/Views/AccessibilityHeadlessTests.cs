@@ -252,7 +252,7 @@ public sealed class AccessibilityHeadlessTests
     }
 
     [Fact]
-    public async Task DashboardOwnsItsSingleContinuationAction()
+    public async Task DashboardOwnsAccountStartAndDeferActionsWithoutShellDuplication()
     {
         await Session.Dispatch(() =>
         {
@@ -284,6 +284,7 @@ public sealed class AccessibilityHeadlessTests
             Dispatcher.UIThread.RunJobs();
 
             Assert.NotNull(FindByAutomationId(dashboard, "dashboard-recommendation-open"));
+            Assert.NotNull(FindByAutomationId(dashboard, "dashboard-recommendation-skip"));
             var mainWindow = new global::Unpwn.App.MainWindow { DataContext = shell };
             mainWindow.Show();
             Dispatcher.UIThread.RunJobs();

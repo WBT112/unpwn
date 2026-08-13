@@ -80,6 +80,7 @@
   <data name="Workflow.Browser.Opening" xml:space="preserve"><value>Das geprüfte Ziel wird im isolierten Recovery Browser geöffnet.</value></data>
   <data name="Workflow.Browser.Opened" xml:space="preserve"><value>Recovery Browser und Anleitung sind gemeinsam sichtbar. Aktivitäten auf der Anbieterseite ändern den Recovery-Fortschritt nicht.</value></data>
   <data name="Workflow.Browser.Unavailable" xml:space="preserve"><value>Der isolierte Recovery Browser ist nicht verfügbar. Du kannst bewusst auf den externen Browser ausweichen; Sicherheitskontrollen werden nicht stillschweigend abgeschwächt.</value></data>
+  <data name="Workflow.Browser.ManualGuidance" xml:space="preserve"><value>Für diese Anbieteraktion gibt es kein geprüftes Browserziel. Fahre anhand der hier gezeigten Anleitung manuell fort; unpwn errät weder Webseite noch Formular.</value></data>
   <data name="Workflow.Browser.ClosedConfirmed" xml:space="preserve"><value>Die Browser-Sitzung wurde geschlossen und bereinigt. Deine ausdrücklichen Checklist-Bestätigungen bleiben gespeichert; die Aktion bleibt offen, bis du „Erledigt“ wählst.</value></data>
   <data name="Workflow.Browser.ClosedIncomplete" xml:space="preserve"><value>Die Browser-Sitzung wurde geschlossen und bereinigt. Unbestätigte Abschlusskriterien bleiben offen und die Aktion wurde nicht abgeschlossen.</value></data>
   <data name="Workflow.Browser.CriteriaPersistedHelp" xml:space="preserve"><value>Jeder Haken wird im verschlüsselten Arbeitsbereich gespeichert, bevor er ausgewählt erscheint. Browsernavigation oder Schließen können ihn nicht setzen.</value></data>
@@ -161,6 +162,10 @@
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Erledigt</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>Ich kann nicht fortfahren</value></data>
   <data name="Workflow.Guided.Credential.Generate" xml:space="preserve"><value>Neues Passwort für diesen Schritt erzeugen</value></data>
+  <data name="Workflow.Guided.Authentication.Title" xml:space="preserve"><value>Anmeldung und Prüfung beim Anbieter</value></data>
+  <data name="Workflow.Guided.AuthenticationGuidance" xml:space="preserve"><value>Der Anbieter kann deine aktuelle Anmeldung, MFA, einen Passkey, Sicherheitsschlüssel, Wiederherstellungscode, ein CAPTCHA, einen E-Mail-Link oder eine Identitätsprüfung verlangen. Führe diese Prüfungen selbst durch. unpwn speichert oder umgeht sie nicht und leitet keinen Erfolg aus der Seite ab.</value></data>
+  <data name="Workflow.Guided.Credential.PreChangeLogin" xml:space="preserve"><value>Wenn du dich vor der Passwortänderung anmelden musst, verwende deine aktuellen Anbieter-Zugangsdaten oder die bestehende Anbieter-Sitzung. Erzeuge das Ersatzpasswort nur für den Änderungs-/Zurücksetzungsschritt.</value></data>
+  <data name="Workflow.Guided.Credential.ReplacementPending" xml:space="preserve"><value>Das erzeugte Ersatzpasswort ist noch kein aktives Anbieterpasswort. Verwende es nicht für die vorherige Anmeldung, sondern erst wenn der Anbieter nach dem neuen Passwort fragt, und bestätige danach ausdrücklich die Abschlusskriterien.</value></data>
   <data name="Workflow.Guided.Problem.Title" xml:space="preserve"><value>Was hält dich auf?</value></data>
   <data name="Workflow.Guided.Problem.Help" xml:space="preserve"><value>Wähle die Antwort, die dem tatsächlichen Ergebnis am besten entspricht. unpwn hält die daraus entstehende Arbeit oder das Risiko im Recovery-Plan sichtbar.</value></data>
   <data name="Workflow.Guided.Problem.ReasonPlaceholder" xml:space="preserve"><value>Kurze, nicht geheime Erklärung</value></data>

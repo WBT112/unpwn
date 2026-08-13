@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Unpwn.App.Services;
 using Unpwn.Core;
 using Unpwn.Vault.Cryptography;
+using Unpwn.Vault.Storage;
 using Xunit;
 
 namespace Unpwn.App.Tests.Services;
@@ -52,6 +53,59 @@ public sealed class RecoverySessionServiceTests
         Assert.Equal(expected.UpdatedAt, actual.UpdatedAt);
         Assert.Equal(expected.Revision, actual.Revision);
         Assert.Equal(expected.Accounts, actual.Accounts);
+    }
+
+    [Fact]
+    public async Task AccountDeferralIsRevisionBoundEncryptedAndReloadable()
+    {
+        var currentTime = DateTimeOffset.UnixEpoch;
+        var store = new TestEncryptedRecordStore();
+        var coordinator = new TestWizardCoordinator(currentTime);
+        using var service = new RecoverySessionService(store, coordinator, () => currentTime);
+        await service.InitializeAsync(CancellationToken.None);
+        Assert.True((await service.CreateAsync(
+            new RecoverySessionCreateRequest(
+                "Deferred work",
+                IncidentIndicator.None,
+                SecurityWarningAcknowledged: true),
+            CancellationToken.None)).Succeeded);
+        var accountId = Guid.NewGuid();
+        var account = new RecoveryAccountDashboardEntry(
+            accountId,
+            "synthetic.example",
+            AccountCriticality.Important,
+            AccountRecoveryStatus.Open,
+            0, 1, 0, 1, 0, 0, 0, false, 0, 0, "reset-password")
+        {
+            Category = AccountRecoveryCategory.Email,
+        };
+        currentTime = currentTime.AddMinutes(1);
+        Assert.True((await service.ReplaceAccountSummariesAsync(
+            [account],
+            CancellationToken.None)).Succeeded);
+        var expectedRevision = service.CurrentSession!.Revision;
+        currentTime = currentTime.AddMinutes(1);
+
+        var stale = await service.DeferAccountAsync(
+            accountId,
+            expectedRevision - 1,
+            CancellationToken.None);
+        var deferred = await service.DeferAccountAsync(
+            accountId,
+            expectedRevision,
+            CancellationToken.None);
+
+        Assert.Equal(RecoverySessionOperationFailureCode.Conflict, stale.FailureCode);
+        Assert.True(deferred.Succeeded);
+        Assert.Equal(1, service.CurrentSession!.Accounts.Single().DeferralCount);
+        Assert.Equal(currentTime, service.CurrentSession.Accounts.Single().DeferredAt);
+
+        using var reloaded = new RecoverySessionService(store, coordinator, () => currentTime);
+        await reloaded.InitializeAsync(CancellationToken.None);
+
+        Assert.Equal(1, reloaded.CurrentSession!.Accounts.Single().DeferralCount);
+        Assert.Equal(currentTime, reloaded.CurrentSession.Accounts.Single().DeferredAt);
+        Assert.Equal(AccountRecoveryStatus.Open, reloaded.CurrentSession.Accounts.Single().RecoveryStatus);
     }
 
     [Fact]
@@ -233,6 +287,18 @@ public sealed class RecoverySessionServiceTests
             cancellationToken.ThrowIfCancellationRequested();
             descriptor.Validate();
             StoredRecord = plaintext.ToArray();
+            WriteCount++;
+            return Task.CompletedTask;
+        }
+
+        public Task WriteEncryptedRecordsAtomicallyAsync(
+            IReadOnlyCollection<VaultRecordWrite> writes,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var write = Assert.Single(writes);
+            write.Validate();
+            StoredRecord = write.Plaintext.ToArray();
             WriteCount++;
             return Task.CompletedTask;
         }

@@ -144,13 +144,22 @@
                          Text="{Binding RecommendationActionText}"
                          FontWeight="SemiBold"
                          TextWrapping="Wrap" />
+              <TextBlock IsVisible="{Binding HasRecommendationApproach}"
+                         Text="{Binding RecommendationApproachText}"
+                         TextWrapping="Wrap" />
             </StackPanel>
-            <Button Grid.Column="1"
-                    Classes="initial-focus"
-                    VerticalAlignment="Center"
-                    AutomationProperties.AutomationId="dashboard-recommendation-open"
-                    Content="{Binding RecommendationButtonText}"
-                    Command="{Binding OpenRecommendationCommand}" />
+            <StackPanel Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Spacing="10">
+              <Button Classes="initial-focus"
+                      AutomationProperties.AutomationId="dashboard-recommendation-open"
+                      Content="{Binding RecommendationButtonText}"
+                      Command="{Binding OpenRecommendationCommand}" />
+              <Button IsVisible="{Binding CanSkipRecommendation}"
+                      AutomationProperties.AutomationId="dashboard-recommendation-skip"
+                      Content="{DynamicResource Dashboard.Recommendation.Action.Skip}"
+                      Command="{Binding SkipRecommendationCommand}" />
+            </StackPanel>
           </Grid>
         </Border>
 

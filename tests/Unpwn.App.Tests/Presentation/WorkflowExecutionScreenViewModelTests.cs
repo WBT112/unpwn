@@ -337,6 +337,27 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task StartRecoveryCreatesExecutionAndStartsCurrentProviderActionInOneCommand()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+
+        Assert.NotNull(fixture.Execution.State);
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State.GetAction(viewModel.SelectedAction!.DefinitionId).Status);
+        Assert.Empty(requests);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
+        Assert.Contains("manually", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task GuidedLostAccessAndWaitingAnswersMapToCanonicalAccessStates()
     {
         var lostFixture = new Fixture();
@@ -583,12 +604,13 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.BeginCommand.ExecuteAsync();
         await viewModel.SetAccessAvailableCommand.ExecuteAsync();
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "change-password");
+            action.DefinitionId == "identify-account-auth");
 
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
 
         Assert.False(viewModel.HasPreparedNavigation);
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        Assert.Contains("manually", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("unsupported.example.test/account", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
