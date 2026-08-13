@@ -127,6 +127,10 @@ public sealed class VaultCryptoPrototype : IDisposable
         ValidateDataKey(dataKey);
         ArgumentNullException.ThrowIfNull(descriptor);
         descriptor.Validate();
+        if (plaintext.Length > VaultResourceLimits.MaximumRecordBytes)
+        {
+            throw new ArgumentOutOfRangeException(nameof(plaintext));
+        }
 
         var nonce = RandomBytes(NonceSizeBytes);
         var ciphertext = new byte[plaintext.Length];
