@@ -14,7 +14,7 @@ public static class VaultResourceLimits
     {
         if (length < 0 || length > MaximumRecordBytes)
         {
-            throw new InvalidDataException("The recovery vault record exceeds the supported size limit.");
+            throw new VaultFormatException("The recovery vault record exceeds the supported size limit.");
         }
     }
 
@@ -22,7 +22,7 @@ public static class VaultResourceLimits
     {
         if (length != expectedLength)
         {
-            throw new InvalidDataException("The recovery vault contains invalid cryptographic metadata.");
+            throw new VaultFormatException("The recovery vault contains invalid cryptographic metadata.");
         }
     }
 
@@ -30,7 +30,7 @@ public static class VaultResourceLimits
     {
         if (count < 0 || count > MaximumRecordCount)
         {
-            throw new InvalidDataException("The recovery vault contains too many records.");
+            throw new VaultFormatException("The recovery vault contains too many records.");
         }
     }
 
@@ -41,7 +41,7 @@ public static class VaultResourceLimits
             recordIdUtf8Bytes < 0 ||
             recordIdUtf8Bytes > MaximumRecordIdUtf8Bytes)
         {
-            throw new InvalidDataException("The recovery vault contains invalid record metadata.");
+            throw new VaultFormatException("The recovery vault contains invalid record metadata.");
         }
     }
 }
