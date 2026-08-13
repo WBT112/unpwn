@@ -1,17 +1,22 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace Unpwn.Import.Csv;
 
 internal static class CsvStreamParser
 {
+    [SuppressMessage(
+        "Design",
+        "CA1068:CancellationToken parameters must come last",
+        Justification = "The internal parser carries a shared read budget after cancellation so header and row parsing use one input budget.")]
     internal static IEnumerable<CsvRecord> Parse(
         TextReader reader,
         char delimiter,
         ISet<int>? excludedColumns = null,
         int firstRowNumber = 1,
         CsvImportLimits? limits = null,
-        CsvCharacterReadBudget? readBudget = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        CsvCharacterReadBudget? readBudget = null)
     {
         ArgumentNullException.ThrowIfNull(reader);
         limits ??= CsvImportLimits.Default;
