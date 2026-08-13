@@ -42,6 +42,9 @@ public sealed class ResourceLocalizationService : ILocalizationService
         new(
             "Unpwn.App.Localization.SettingsStrings",
             typeof(ResourceLocalizationService).Assembly),
+        new(
+            "Unpwn.App.Localization.ImportLimitStrings",
+            typeof(ResourceLocalizationService).Assembly),
     ];
     private static readonly IReadOnlyList<LocalizationLanguage> Languages =
         new ReadOnlyCollection<LocalizationLanguage>(
