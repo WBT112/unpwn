@@ -126,6 +126,11 @@ public sealed class RecoveryVault : IDisposable
             throw new ArgumentException("At least one recovery vault record is required.", nameof(writes));
         }
 
+        if (writes.Count > VaultResourceLimits.MaximumRecordCount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(writes));
+        }
+
         foreach (var write in writes)
         {
             ArgumentNullException.ThrowIfNull(write);
@@ -164,25 +169,71 @@ public sealed class RecoveryVault : IDisposable
         descriptor.Validate();
 
         using var connection = OpenConnection(_path, SqliteOpenMode.ReadOnly);
+        using var transaction = connection.BeginTransaction();
+        int schemaVersion;
+        long nonceLength;
+        long ciphertextLength;
+        long tagLength;
+        using (var metadataCommand = connection.CreateCommand())
+        {
+            metadataCommand.Transaction = transaction;
+            metadataCommand.CommandText = """
+                SELECT schema_version, length(nonce), length(ciphertext), length(tag)
+                FROM vault_records
+                WHERE record_type = $record_type AND record_id = $record_id;
+                """;
+            metadataCommand.Parameters.AddWithValue("$record_type", recordType);
+            metadataCommand.Parameters.AddWithValue("$record_id", recordId);
+
+            using var reader = metadataCommand.ExecuteReader();
+            if (!reader.Read())
+            {
+                return null;
+            }
+
+            schemaVersion = ReadStoredInt32(reader, 0);
+            nonceLength = ReadStoredLength(reader, 1);
+            ciphertextLength = ReadStoredLength(reader, 2);
+            tagLength = ReadStoredLength(reader, 3);
+        }
+
+        var storedDescriptor = ValidateStoredDescriptor(
+            new VaultRecordDescriptor(recordType, recordId, schemaVersion));
+        VaultResourceLimits.ValidateStoredFixedLength(nonceLength, VaultCryptoPrototype.NonceSizeBytes);
+        VaultResourceLimits.ValidateStoredRecordLength(ciphertextLength);
+        VaultResourceLimits.ValidateStoredFixedLength(tagLength, VaultCryptoPrototype.TagSizeBytes);
+
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
-            SELECT schema_version, nonce, ciphertext, tag
+            SELECT nonce, ciphertext, tag
             FROM vault_records
-            WHERE record_type = $record_type AND record_id = $record_id;
+            WHERE record_type = $record_type
+              AND record_id = $record_id
+              AND length(nonce) = $nonce_length
+              AND length(ciphertext) <= $max_ciphertext_length
+              AND length(tag) = $tag_length;
             """;
         command.Parameters.AddWithValue("$record_type", recordType);
         command.Parameters.AddWithValue("$record_id", recordId);
+        command.Parameters.AddWithValue("$nonce_length", VaultCryptoPrototype.NonceSizeBytes);
+        command.Parameters.AddWithValue("$max_ciphertext_length", VaultResourceLimits.MaximumRecordBytes);
+        command.Parameters.AddWithValue("$tag_length", VaultCryptoPrototype.TagSizeBytes);
 
-        using var reader = command.ExecuteReader();
-        if (!reader.Read())
+        using var encryptedReader = command.ExecuteReader();
+        if (!encryptedReader.Read())
         {
-            return null;
+            throw new InvalidDataException("Recovery vault record metadata changed during validation.");
         }
 
-        var storedDescriptor = new VaultRecordDescriptor(recordType, recordId, reader.GetInt32(0));
-        storedDescriptor.Validate();
-        var encrypted = new EncryptedVaultRecord(storedDescriptor, (byte[])reader[1], (byte[])reader[2], (byte[])reader[3]);
+        var encrypted = new EncryptedVaultRecord(
+            storedDescriptor,
+            (byte[])encryptedReader[0],
+            (byte[])encryptedReader[1],
+            (byte[])encryptedReader[2]);
+        encrypted.Validate();
         var plaintext = VaultCryptoPrototype.DecryptRecord(dataKey, encrypted);
+        transaction.Commit();
         return new VaultRecord(storedDescriptor, plaintext);
     }
 
@@ -191,17 +242,43 @@ public sealed class RecoveryVault : IDisposable
         ThrowIfDisposed();
         _ = GetDataKey();
         using var connection = OpenConnection(_path, SqliteOpenMode.ReadOnly);
+        using var transaction = connection.BeginTransaction();
+        using (var limitsCommand = connection.CreateCommand())
+        {
+            limitsCommand.Transaction = transaction;
+            limitsCommand.CommandText = """
+                SELECT COUNT(*),
+                       COALESCE(MAX(length(CAST(record_type AS BLOB))), 0),
+                       COALESCE(MAX(length(CAST(record_id AS BLOB))), 0)
+                FROM vault_records;
+                """;
+            using var limitsReader = limitsCommand.ExecuteReader();
+            if (!limitsReader.Read())
+            {
+                throw new InvalidDataException("Recovery vault record metadata is unavailable.");
+            }
+
+            VaultResourceLimits.ValidateRecordCount(ReadStoredLength(limitsReader, 0));
+            VaultResourceLimits.ValidateRecordMetadataLength(
+                ReadStoredLength(limitsReader, 1),
+                ReadStoredLength(limitsReader, 2));
+        }
+
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = "SELECT record_type, record_id, schema_version FROM vault_records ORDER BY record_type, record_id;";
         using var reader = command.ExecuteReader();
         var descriptors = new List<VaultRecordDescriptor>();
         while (reader.Read())
         {
-            var descriptor = new VaultRecordDescriptor(reader.GetString(0), reader.GetString(1), reader.GetInt32(2));
-            descriptor.Validate();
+            var descriptor = ValidateStoredDescriptor(new VaultRecordDescriptor(
+                reader.GetString(0),
+                reader.GetString(1),
+                ReadStoredInt32(reader, 2)));
             descriptors.Add(descriptor);
         }
 
+        transaction.Commit();
         return descriptors;
     }
 
@@ -335,6 +412,7 @@ public sealed class RecoveryVault : IDisposable
         EncryptedVaultRecord encrypted,
         string updatedAt)
     {
+        encrypted.Validate();
         using var command = connection.CreateCommand();
         command.Transaction = transaction;
         command.CommandText = """
@@ -359,6 +437,7 @@ public sealed class RecoveryVault : IDisposable
 
     private static void AddEnvelopeParameters(SqliteCommand command, VaultKeyEnvelope envelope)
     {
+        envelope.Validate();
         command.Parameters.AddWithValue("$schema_version", VaultSchemaVersion);
         command.Parameters.AddWithValue("$memory", envelope.Parameters.MemorySizeKiB);
         command.Parameters.AddWithValue("$iterations", envelope.Parameters.Iterations);
@@ -371,28 +450,150 @@ public sealed class RecoveryVault : IDisposable
 
     private static VaultKeyEnvelope ReadEnvelope(SqliteConnection connection)
     {
+        using var transaction = connection.BeginTransaction();
+        int schemaVersion;
+        Argon2idParameters parameters;
+        long saltLength;
+        long nonceLength;
+        long encryptedDataKeyLength;
+        long tagLength;
+        using (var metadataCommand = connection.CreateCommand())
+        {
+            metadataCommand.Transaction = transaction;
+            metadataCommand.CommandText = """
+                SELECT schema_version,
+                       argon2_memory_kib,
+                       argon2_iterations,
+                       argon2_parallelism,
+                       length(salt),
+                       length(nonce),
+                       length(encrypted_data_key),
+                       length(tag)
+                FROM vault_key_envelope WHERE id = 1;
+                """;
+            using var reader = metadataCommand.ExecuteReader();
+            if (!reader.Read())
+            {
+                throw new InvalidOperationException("Recovery vault key envelope is missing.");
+            }
+
+            schemaVersion = ReadStoredInt32(reader, 0);
+            if (schemaVersion != VaultSchemaVersion)
+            {
+                throw new NotSupportedException("Recovery vault schema version is not supported.");
+            }
+
+            parameters = ValidateStoredParameters(new Argon2idParameters(
+                ReadStoredInt32(reader, 1),
+                ReadStoredInt32(reader, 2),
+                ReadStoredInt32(reader, 3)));
+            saltLength = ReadStoredLength(reader, 4);
+            nonceLength = ReadStoredLength(reader, 5);
+            encryptedDataKeyLength = ReadStoredLength(reader, 6);
+            tagLength = ReadStoredLength(reader, 7);
+        }
+
+        VaultResourceLimits.ValidateStoredFixedLength(saltLength, VaultCryptoPrototype.SaltSizeBytes);
+        VaultResourceLimits.ValidateStoredFixedLength(nonceLength, VaultCryptoPrototype.NonceSizeBytes);
+        VaultResourceLimits.ValidateStoredFixedLength(encryptedDataKeyLength, VaultCryptoPrototype.DataKeySizeBytes);
+        VaultResourceLimits.ValidateStoredFixedLength(tagLength, VaultCryptoPrototype.TagSizeBytes);
+
         using var command = connection.CreateCommand();
+        command.Transaction = transaction;
         command.CommandText = """
-            SELECT schema_version, argon2_memory_kib, argon2_iterations, argon2_parallelism, salt, nonce, encrypted_data_key, tag
-            FROM vault_key_envelope WHERE id = 1;
+            SELECT salt, nonce, encrypted_data_key, tag
+            FROM vault_key_envelope
+            WHERE id = 1
+              AND length(salt) = $salt_length
+              AND length(nonce) = $nonce_length
+              AND length(encrypted_data_key) = $data_key_length
+              AND length(tag) = $tag_length;
             """;
-        using var reader = command.ExecuteReader();
-        if (!reader.Read())
+        command.Parameters.AddWithValue("$salt_length", VaultCryptoPrototype.SaltSizeBytes);
+        command.Parameters.AddWithValue("$nonce_length", VaultCryptoPrototype.NonceSizeBytes);
+        command.Parameters.AddWithValue("$data_key_length", VaultCryptoPrototype.DataKeySizeBytes);
+        command.Parameters.AddWithValue("$tag_length", VaultCryptoPrototype.TagSizeBytes);
+        using var envelopeReader = command.ExecuteReader();
+        if (!envelopeReader.Read())
         {
-            throw new InvalidOperationException("Recovery vault key envelope is missing.");
+            throw new InvalidDataException("Recovery vault key metadata changed during validation.");
         }
 
-        if (reader.GetInt32(0) != VaultSchemaVersion)
+        var envelope = new VaultKeyEnvelope(
+            parameters,
+            (byte[])envelopeReader[0],
+            (byte[])envelopeReader[1],
+            (byte[])envelopeReader[2],
+            (byte[])envelopeReader[3]);
+        try
         {
-            throw new NotSupportedException("Recovery vault schema version is not supported.");
+            envelope.Validate();
+        }
+        catch (ArgumentException exception)
+        {
+            throw new InvalidDataException("Recovery vault key metadata is outside the supported format.", exception);
         }
 
-        return new VaultKeyEnvelope(
-            new Argon2idParameters(reader.GetInt32(1), reader.GetInt32(2), reader.GetInt32(3)),
-            (byte[])reader[4],
-            (byte[])reader[5],
-            (byte[])reader[6],
-            (byte[])reader[7]);
+        transaction.Commit();
+        return envelope;
+    }
+
+    private static int ReadStoredInt32(SqliteDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+        {
+            throw new InvalidDataException("Recovery vault numeric metadata is missing.");
+        }
+
+        var value = reader.GetInt64(ordinal);
+        if (value < int.MinValue || value > int.MaxValue)
+        {
+            throw new InvalidDataException("Recovery vault numeric metadata is outside the supported range.");
+        }
+
+        return (int)value;
+    }
+
+    private static long ReadStoredLength(SqliteDataReader reader, int ordinal)
+    {
+        if (reader.IsDBNull(ordinal))
+        {
+            throw new InvalidDataException("Recovery vault length metadata is missing.");
+        }
+
+        var value = reader.GetInt64(ordinal);
+        if (value < 0)
+        {
+            throw new InvalidDataException("Recovery vault length metadata is invalid.");
+        }
+
+        return value;
+    }
+
+    private static Argon2idParameters ValidateStoredParameters(Argon2idParameters parameters)
+    {
+        try
+        {
+            parameters.Validate();
+            return parameters;
+        }
+        catch (ArgumentOutOfRangeException exception)
+        {
+            throw new InvalidDataException("Recovery vault key-derivation metadata is outside the supported range.", exception);
+        }
+    }
+
+    private static VaultRecordDescriptor ValidateStoredDescriptor(VaultRecordDescriptor descriptor)
+    {
+        try
+        {
+            descriptor.Validate();
+            return descriptor;
+        }
+        catch (ArgumentException exception)
+        {
+            throw new InvalidDataException("Recovery vault record metadata is invalid.", exception);
+        }
     }
 
     private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
