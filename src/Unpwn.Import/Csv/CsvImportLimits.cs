@@ -58,7 +58,7 @@ public static class CsvImportFailureCodes
     public const string InputTooComplex = "InputTooComplex";
 }
 
-internal sealed class CsvImportLimitException : InvalidDataException
+internal sealed class CsvImportLimitException : InvalidOperationException
 {
     internal CsvImportLimitException(string code)
         : base("The CSV input exceeded a supported resource limit.")
