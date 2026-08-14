@@ -21,7 +21,7 @@ public sealed partial class CsvSampleFixtureTests
         Assert.Equal(16, preview.Candidates.Count);
         Assert.DoesNotContain(preview.Diagnostics, diagnostic =>
             diagnostic.Severity == CsvImportDiagnosticSeverity.Error);
-        Assert.Contains(preview.Candidates, candidate => candidate.AccountName == "Marketplace, account");
+        Assert.Contains(preview.Candidates, candidate => candidate.AccountName == "example-marketplace.test");
         Assert.Contains(preview.Candidates, candidate => candidate.AccountName == "Müller – 测试konto");
         Assert.Contains(preview.Candidates, candidate =>
             candidate.ServiceName is null && candidate.AccountUrl == "https://url-only.example.test/account");
@@ -130,17 +130,17 @@ public sealed partial class CsvSampleFixtureTests
         {
             foreach (RecoveryPath path in Enum.GetValues<RecoveryPath>())
             {
-                string pathName = path switch
+                int pathIndex = path switch
                 {
-                    RecoveryPath.AuthenticatedChange => "authenticated-change",
-                    RecoveryPath.PasswordReset => "password-reset",
-                    RecoveryPath.ManualRecovery => "manual-recovery",
+                    RecoveryPath.AuthenticatedChange => 1,
+                    RecoveryPath.PasswordReset => 2,
+                    RecoveryPath.ManualRecovery => 3,
                     _ => throw new ArgumentOutOfRangeException(nameof(path), path, null),
                 };
 
                 Assert.Contains(preview.Candidates, candidate =>
                     candidate.ServiceName == workflow.ProviderId &&
-                    candidate.AccountName == $"{workflow.ProviderName} / {pathName}");
+                    candidate.AccountName == $"{workflow.ProviderName} {pathIndex}");
             }
         }
     }
