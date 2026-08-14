@@ -807,7 +807,17 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             AccountRecoveryExecutionTransitionKind.CompleteAction,
             cancellationToken,
             completionCriteriaAcknowledged: true,
-            returnToPlan: true);
+            returnToPlan: false);
+
+        if (_execution is not null && HasRemainingRecoveryAction())
+        {
+            CurrentActionFocusRequest++;
+            return;
+        }
+
+        OverviewReturnRequested?.Invoke(
+            this,
+            new WorkflowOverviewReturnRequest("Workflow.Queue.Changed"));
     }
 
     private async Task MarkNotApplicableAsync(CancellationToken cancellationToken)
@@ -925,17 +935,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                 returnToPlan: false);
         }
 
-        if (CurrentActionState?.Status == RecoveryActionStatus.InProgress && HasNavigationOpportunity)
-        {
-            await OpenRecoveryBrowserAsync(cancellationToken);
-            return;
-        }
-
         if (CurrentActionState?.Status == RecoveryActionStatus.InProgress)
         {
-            _navigationStatusKey = "Workflow.Browser.ManualGuidance";
-            NotifyNavigationStatus();
-            CurrentActionFocusRequest++;
+            await OpenRecoveryBrowserAsync(
+                cancellationToken,
+                allowBrowserEntryFallback: true);
         }
     }
 
@@ -968,13 +972,21 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             preserveNavigation: true);
     }
 
-    private async Task OpenRecoveryBrowserAsync(CancellationToken cancellationToken)
+    private Task OpenRecoveryBrowserAsync(CancellationToken cancellationToken) =>
+        OpenRecoveryBrowserAsync(cancellationToken, allowBrowserEntryFallback: false);
+
+    private async Task OpenRecoveryBrowserAsync(
+        CancellationToken cancellationToken,
+        bool allowBrowserEntryFallback)
     {
-        var handoff = await PrepareNavigationAsync(cancellationToken);
+        var handoff = await PrepareNavigationAsync(
+            cancellationToken,
+            allowBrowserEntryFallback);
         if (handoff is null || _account is null || _browserSessions is null)
         {
             if (_browserSessions is null)
             {
+                _navigationFailureCode = ExternalNavigationFailureCode.None;
                 _navigationStatusKey = "Workflow.Browser.Unavailable";
                 NotifyNavigationStatus();
             }
@@ -1067,8 +1079,13 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         NotifyNavigationStatus();
     }
 
+    private Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
+        CancellationToken cancellationToken) =>
+        PrepareNavigationAsync(cancellationToken, allowBrowserEntryFallback: false);
+
     private async Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allowBrowserEntryFallback)
     {
         if (_workflow is null || CurrentDefinition is null)
         {
@@ -1083,21 +1100,48 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         var accountUri = Uri.TryCreate(_account?.AccountUrl, UriKind.Absolute, out var parsed)
             ? parsed
             : null;
-        var location = CurrentLocation;
+        var providerLocationId = CurrentDefinition.RecoveryLocationId;
+        var selectionPolicy = providerLocationId is null
+            ? RecoveryLocationSelectionPolicy.WellKnownFirst
+            : RecoveryLocationSelectionPolicy.ProviderDefinedOnly;
+
+        if (allowBrowserEntryFallback && providerLocationId is null)
+        {
+            providerLocationId = ResolveBrowserEntryLocationId();
+            if (providerLocationId is not null)
+            {
+                selectionPolicy = RecoveryLocationSelectionPolicy.ProviderDefinedOnly;
+            }
+            else if (_workflow.AllowsAccountOriginDiscovery && accountUri is not null)
+            {
+                selectionPolicy = RecoveryLocationSelectionPolicy.AccountOriginOnly;
+            }
+            else
+            {
+                SetBrowserEntryFailure(RecoveryLocationDiscoveryFailureCode.InvalidRequest);
+                return null;
+            }
+        }
+
         var discovery = await _locationDiscovery.DiscoverAsync(
             new RecoveryLocationDiscoveryRequest(
                 _workflow,
-                CurrentDefinition.RecoveryLocationId,
+                providerLocationId,
                 accountUri,
-                location is null
-                    ? RecoveryLocationSelectionPolicy.WellKnownFirst
-                    : RecoveryLocationSelectionPolicy.ProviderDefinedOnly),
+                selectionPolicy),
             cancellationToken);
         if (!discovery.Succeeded || discovery.Handoff is not { RequiresVisibleConfirmation: true } handoff)
         {
-            _navigationFailureCode = ExternalNavigationFailureCode.Unavailable;
-            _navigationStatusKey = null;
-            NotifyNavigationStatus();
+            if (allowBrowserEntryFallback)
+            {
+                SetBrowserEntryFailure(discovery.FailureCode);
+            }
+            else
+            {
+                _navigationFailureCode = ExternalNavigationFailureCode.Unavailable;
+                _navigationStatusKey = null;
+                NotifyNavigationStatus();
+            }
             return null;
         }
 
@@ -1108,6 +1152,37 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         NotifyNavigationStatus();
         RaiseCommandStates();
         return handoff;
+    }
+
+    private string? ResolveBrowserEntryLocationId()
+    {
+        if (_workflow is null || SelectedPath is null)
+        {
+            return null;
+        }
+
+        return _workflow.Actions
+            .Where(action => action.SupportsPath(SelectedPath.Path))
+            .Select(action => action.RecoveryLocationId)
+            .FirstOrDefault(locationId => !string.IsNullOrWhiteSpace(locationId));
+    }
+
+    private void SetBrowserEntryFailure(RecoveryLocationDiscoveryFailureCode failureCode)
+    {
+        _navigationFailureCode = ExternalNavigationFailureCode.None;
+        _navigationStatusKey = failureCode switch
+        {
+            RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin =>
+                "Workflow.Browser.LocationInsecure",
+            RecoveryLocationDiscoveryFailureCode.UnsafeNetworkTarget =>
+                "Workflow.Browser.LocationRejected",
+            RecoveryLocationDiscoveryFailureCode.InvalidRequest or
+            RecoveryLocationDiscoveryFailureCode.ProviderLocationNotFound =>
+                "Workflow.Browser.LocationMissing",
+            _ => "Workflow.Browser.LocationUnavailable",
+        };
+        NotifyNavigationStatus();
+        CurrentActionFocusRequest++;
     }
 
     private async Task ApplyFromInputAsync(
@@ -1393,6 +1468,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private bool CanCompleteCurrentAction() =>
         CurrentActionState?.Status == RecoveryActionStatus.InProgress && CompletionCriteriaAcknowledged;
+
+    private bool HasRemainingRecoveryAction() =>
+        _execution is not null &&
+        _execution.Actions.Any(action => action.Status is not
+            (RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable));
 
     private void RefreshCompletionCriteria()
     {
