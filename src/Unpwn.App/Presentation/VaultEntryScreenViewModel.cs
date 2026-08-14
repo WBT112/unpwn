@@ -90,7 +90,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
         BeginCommand = new RelayCommand(Begin);
         TrustedDeviceYesCommand = new RelayCommand(() => RecordTrustedDeviceDecision(TrustedDeviceDecision.Trusted));
         TrustedDeviceNoCommand = new RelayCommand(() => RecordTrustedDeviceDecision(TrustedDeviceDecision.NotTrusted));
-        TrustedDeviceUnsureCommand = new RelayCommand(() => RecordTrustedDeviceDecision(TrustedDeviceDecision.Unsure));
         BackToWelcomeCommand = new RelayCommand(() => SetStage(VaultEntryStage.Welcome));
         BackToTrustedDeviceCommand = new RelayCommand(ReturnToTrustedDeviceCheck);
         EndForDeviceSafetyCommand = new RelayCommand(EndForDeviceSafety);
@@ -394,8 +393,6 @@ public sealed class VaultEntryScreenViewModel : LocalizedScreenViewModel
     public RelayCommand TrustedDeviceYesCommand { get; }
 
     public RelayCommand TrustedDeviceNoCommand { get; }
-
-    public RelayCommand TrustedDeviceUnsureCommand { get; }
 
     public RelayCommand BackToWelcomeCommand { get; }
 
