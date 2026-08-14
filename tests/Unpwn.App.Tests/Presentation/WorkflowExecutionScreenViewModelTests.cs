@@ -124,7 +124,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
-    public async Task CompletionRequiresCriteriaAndConfirmationThenReturnsToRecalculatedPlan()
+    public async Task CompletionRequiresCriteriaAndConfirmationThenAdvancesWithinRecoveryWorkspace()
     {
         var fixture = new Fixture { Confirm = true };
         var viewModel = fixture.CreateViewModel();
@@ -145,7 +145,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.CompleteActionCommand.ExecuteAsync();
 
         Assert.Equal(RecoveryActionStatus.Completed, fixture.Execution.State.GetAction("identify-account-reset").Status);
-        Assert.Single(returned);
+        Assert.Empty(returned);
+        Assert.Equal("reset-password", viewModel.SelectedAction?.DefinitionId);
         Assert.Equal(1, fixture.ConfirmationCalls);
     }
 
@@ -337,7 +338,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
-    public async Task StartRecoveryCreatesExecutionAndStartsCurrentProviderActionInOneCommand()
+    public async Task StartRecoveryOpensReviewedBrowserEntryEvenWhenFirstActionHasNoLocation()
     {
         var fixture = new Fixture();
         var viewModel = fixture.CreateViewModel();
@@ -350,11 +351,16 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.NotNull(fixture.Execution.State);
         Assert.Equal(
             RecoveryActionStatus.InProgress,
-            fixture.Execution.State.GetAction(viewModel.SelectedAction!.DefinitionId).Status);
-        Assert.Empty(requests);
+            fixture.Execution.State.GetAction("identify-account-reset").Status);
+        var request = Assert.Single(requests);
+        Assert.Equal("https://github.com/password_reset", request.Handoff.Destination.AbsoluteUri);
+        Assert.Equal(RecoveryLocationResolutionSource.ProviderDefined, request.Handoff.Source);
+        Assert.Equal(RecoveryLocationSelectionPolicy.ProviderDefinedOnly,
+            fixture.LocationDiscovery.LastRequest?.SelectionPolicy);
+        Assert.Equal("password-reset", fixture.LocationDiscovery.LastRequest?.ProviderLocationId);
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
         Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
-        Assert.Contains("manually", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("isolated Recovery Browser", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -550,6 +556,30 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task GenericStartRecoveryUsesValidatedAccountOriginForInitialBrowserEntry()
+    {
+        var fixture = new Fixture(
+            providerId: "unsupported.example",
+            accountUrl: "https://unsupported.example.test/account");
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+
+        var request = Assert.Single(requests);
+        Assert.Equal("https://unsupported.example.test/account", request.Handoff.Destination.AbsoluteUri);
+        Assert.Equal(RecoveryLocationResolutionSource.AccountOrigin, request.Handoff.Source);
+        Assert.Equal(RecoveryLocationSelectionPolicy.AccountOriginOnly,
+            fixture.LocationDiscovery.LastRequest?.SelectionPolicy);
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State!.GetAction("identify-account-reset").Status);
+        Assert.False(viewModel.CompleteActionCommand.CanExecute(null));
+    }
+
+    [Fact]
     public async Task GenericPasswordDiscoveryRequiresReviewBeforeOpeningAndNeverCompletesAction()
     {
         var fixture = new Fixture(
@@ -573,7 +603,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
 
-        Assert.Equal(1, fixture.LocationDiscovery.Calls);
+        Assert.Equal(2, fixture.LocationDiscovery.Calls);
         Assert.Equal(RecoveryLocationSelectionPolicy.WellKnownFirst,
             fixture.LocationDiscovery.LastRequest?.SelectionPolicy);
         Assert.True(viewModel.HasPreparedNavigation);
@@ -590,28 +620,60 @@ public sealed class WorkflowExecutionScreenViewModelTests
             fixture.Execution.State.GetAction("change-password").Status);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("http://unsupported.example.test/account")]
-    public async Task GenericWorkflowProvidesManualGuidanceWhenSafeNavigationIsUnavailable(
-        string accountUrl)
+    [Fact]
+    public async Task GenericWorkflowExplainsMissingBrowserLocationWhenAccountUrlIsMissing()
     {
-        var fixture = new Fixture("unsupported.example", accountUrl);
-        fixture.LocationDiscovery.Result = RecoveryLocationDiscoveryResult.Failure(
-            RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin);
+        var fixture = new Fixture("unsupported.example", "");
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.BeginCommand.ExecuteAsync();
-        await viewModel.SetAccessAvailableCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "identify-account-auth");
 
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
 
         Assert.False(viewModel.HasPreparedNavigation);
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
-        Assert.Contains("manually", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("no usable URL", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, fixture.LocationDiscovery.Calls);
+    }
+
+    [Fact]
+    public async Task GenericWorkflowExplainsInsecureBrowserLocation()
+    {
+        var fixture = new Fixture(
+            "unsupported.example",
+            "http://unsupported.example.test/account");
+        fixture.LocationDiscovery.Result = RecoveryLocationDiscoveryResult.Failure(
+            RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin);
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.False(viewModel.HasPreparedNavigation);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        Assert.Contains("not HTTPS", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("unsupported.example.test/account", viewModel.NavigationStatus, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GenericWorkflowExplainsRejectedPrivateBrowserLocation()
+    {
+        var fixture = new Fixture(
+            "unsupported.example",
+            "https://private.example.test/account");
+        fixture.LocationDiscovery.Result = RecoveryLocationDiscoveryResult.Failure(
+            RecoveryLocationDiscoveryFailureCode.UnsafeNetworkTarget);
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.False(viewModel.HasPreparedNavigation);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        Assert.Contains("local, private", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("private.example.test/account", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -957,12 +1019,18 @@ public sealed class WorkflowExecutionScreenViewModelTests
             if (request.ProviderLocationId is null && request.AccountUri is { } accountUri)
             {
                 var origin = accountUri.GetLeftPart(UriPartial.Authority);
+                var destination = request.SelectionPolicy == RecoveryLocationSelectionPolicy.AccountOriginOnly
+                    ? accountUri
+                    : new Uri($"{origin}/.well-known/change-password");
+                var source = request.SelectionPolicy == RecoveryLocationSelectionPolicy.AccountOriginOnly
+                    ? RecoveryLocationResolutionSource.AccountOrigin
+                    : RecoveryLocationResolutionSource.WellKnownChangePassword;
                 return Task.FromResult(RecoveryLocationDiscoveryResult.Success(
                     new RecoveryNavigationHandoff(
-                        new Uri($"{origin}/.well-known/change-password"),
+                        destination,
                         origin,
                         [origin],
-                        RecoveryLocationResolutionSource.WellKnownChangePassword,
+                        source,
                         RequiresVisibleConfirmation: true)));
             }
 
