@@ -8,6 +8,9 @@ namespace Unpwn.Export.Credentials;
 public sealed class GeneratedCredentialExportService(
     IGeneratedCredentialRepository repository) : IGeneratedCredentialExportService
 {
+    private const UnixFileMode PrivateUnixFileMode =
+        UnixFileMode.UserRead | UnixFileMode.UserWrite;
+
     private readonly IGeneratedCredentialRepository _repository =
         repository ?? throw new ArgumentNullException(nameof(repository));
 
@@ -172,13 +175,7 @@ public sealed class GeneratedCredentialExportService(
         IReadOnlyList<CredentialExportMaterial> materials,
         CancellationToken cancellationToken)
     {
-        await using var stream = new FileStream(
-            path,
-            FileMode.CreateNew,
-            FileAccess.Write,
-            FileShare.None,
-            bufferSize: 4096,
-            FileOptions.Asynchronous | FileOptions.WriteThrough);
+        await using var stream = CreatePlaintextExportFile(path);
         var writer = new Utf8CsvWriter(stream);
         switch (format)
         {
@@ -194,6 +191,50 @@ public sealed class GeneratedCredentialExportService(
 
         await stream.FlushAsync(cancellationToken);
         stream.Flush(flushToDisk: true);
+    }
+
+    private static FileStream CreatePlaintextExportFile(string path)
+    {
+        var requirePrivateUnixMode = !OperatingSystem.IsWindows();
+        FileStream? stream = null;
+        try
+        {
+            var options = new FileStreamOptions
+            {
+                Mode = FileMode.CreateNew,
+                Access = FileAccess.Write,
+                Share = FileShare.None,
+                BufferSize = 4096,
+                Options = FileOptions.Asynchronous | FileOptions.WriteThrough,
+            };
+            if (requirePrivateUnixMode)
+            {
+                options.UnixCreateMode = PrivateUnixFileMode;
+            }
+
+            stream = new FileStream(path, options);
+            if (requirePrivateUnixMode && File.GetUnixFileMode(path) != PrivateUnixFileMode)
+            {
+                throw new UnauthorizedAccessException(
+                    "Could not establish owner-only permissions for the plaintext credential export.");
+            }
+
+            return stream;
+        }
+        catch (NotSupportedException exception) when (requirePrivateUnixMode)
+        {
+            stream?.Dispose();
+            TryDelete(path);
+            throw new UnauthorizedAccessException(
+                "Could not establish owner-only permissions for the plaintext credential export.",
+                exception);
+        }
+        catch
+        {
+            stream?.Dispose();
+            TryDelete(path);
+            throw;
+        }
     }
 
     private static async Task WriteGenericCsvAsync(
