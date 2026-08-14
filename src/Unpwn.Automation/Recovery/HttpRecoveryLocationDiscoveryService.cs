@@ -101,6 +101,13 @@ public sealed class HttpRecoveryLocationDiscoveryService(
                 []);
         }
 
+        if (request.SelectionPolicy == RecoveryLocationSelectionPolicy.AccountOriginOnly)
+        {
+            return await CreateAccountOriginHandoffAsync(
+                normalizedAccountUri,
+                cancellationToken);
+        }
+
         var allowedOrigins = CreateAllowedOrigins(
             normalizedAccountUri,
             providerHandoffAvailable ? providerHandoff.ExpectedOrigins : []);
@@ -134,6 +141,46 @@ public sealed class HttpRecoveryLocationDiscoveryService(
         }
 
         _disposed = true;
+    }
+
+    private async Task<RecoveryLocationDiscoveryResult> CreateAccountOriginHandoffAsync(
+        Uri accountUri,
+        CancellationToken cancellationToken)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(_requestTimeout);
+
+        bool networkTargetAllowed;
+        try
+        {
+            networkTargetAllowed = await _networkTargetPolicy.IsAllowedAsync(
+                accountUri,
+                timeout.Token);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            return RecoveryLocationDiscoveryResult.Failure(
+                RecoveryLocationDiscoveryFailureCode.NetworkFailure);
+        }
+
+        if (!networkTargetAllowed)
+        {
+            return RecoveryLocationDiscoveryResult.Failure(
+                RecoveryLocationDiscoveryFailureCode.UnsafeNetworkTarget);
+        }
+
+        var origin = RecoveryLocationUriNormalizer.GetOrigin(accountUri);
+        return RecoveryLocationDiscoveryResult.Success(
+            new RecoveryNavigationHandoff(
+                accountUri,
+                origin,
+                [origin],
+                RecoveryLocationResolutionSource.AccountOrigin,
+                RequiresVisibleConfirmation: true));
     }
 
     private async Task<RecoveryLocationDiscoveryResult> DiscoverWellKnownAsync(
