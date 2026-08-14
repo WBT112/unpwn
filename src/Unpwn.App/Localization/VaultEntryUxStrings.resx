@@ -4,6 +4,11 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Screen.Vault.Description" xml:space="preserve"><value>Create or unlock a local recovery vault.</value></data>
+  <data name="Shell.Recovery.Message" xml:space="preserve"><value>The vault starts locked. Review the recovery overview after unlocking.</value></data>
+  <data name="Vault.Welcome.Begin" xml:space="preserve"><value>Begin or resume recovery</value></data>
+  <data name="Vault.Trusted.No" xml:space="preserve"><value>No, or I am not sure</value></data>
+  <data name="Vault.Guidance.Description" xml:space="preserve"><value>Do not enter account or vault credentials on this device. Continue unpwn on another updated computer you have good reason to trust. If you do not have one, use a trusted device to create official Windows installation media from Microsoft or installation media from your Linux distribution's official source, then consider a clean installation of the affected computer. Prefer creating the installation USB on the trusted device. A clean reinstall is a recovery measure, not proof that the device is forensically or cryptographically safe.</value></data>
   <data name="Vault.Choice.OpenLast" xml:space="preserve"><value>Open last vault</value></data>
   <data name="Vault.Choice.OpenAnother" xml:space="preserve"><value>Open another vault</value></data>
   <data name="Vault.Choice.LastUsedHeading" xml:space="preserve"><value>Last used vault</value></data>
