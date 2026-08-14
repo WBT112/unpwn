@@ -6,9 +6,6 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Screen.Vault.Description" xml:space="preserve"><value>Erstelle oder entsperre einen lokalen Wiederherstellungstresor.</value></data>
   <data name="Shell.Recovery.Message" xml:space="preserve"><value>Der Tresor startet gesperrt. Prüfe nach dem Entsperren die Wiederherstellungsübersicht.</value></data>
-  <data name="Vault.Welcome.Begin" xml:space="preserve"><value>Wiederherstellung beginnen oder fortsetzen</value></data>
-  <data name="Vault.Trusted.No" xml:space="preserve"><value>Nein oder ich bin mir nicht sicher</value></data>
-  <data name="Vault.Guidance.Description" xml:space="preserve"><value>Gib auf diesem Gerät keine Anmeldedaten ein. Setze unpwn auf einem anderen, aktualisierten Computer fort, dem du aus gutem Grund vertraust. Wenn kein geeignetes System vorhanden ist, erstelle auf einem vertrauenswürdigen Gerät offizielle Installationsmedien von Microsoft oder deiner Linux-Distribution und erwäge eine saubere Neuinstallation des betroffenen Computers. Erstelle den Installations-USB-Stick möglichst ebenfalls dort. Eine Neuinstallation ist eine Wiederherstellungsmaßnahme und kein Beweis dafür, dass das Gerät forensisch sicher ist.</value></data>
   <data name="Vault.Choice.OpenLast" xml:space="preserve"><value>Letzten Tresor öffnen</value></data>
   <data name="Vault.Choice.OpenAnother" xml:space="preserve"><value>Anderen Tresor öffnen</value></data>
   <data name="Vault.Choice.LastUsedHeading" xml:space="preserve"><value>Zuletzt verwendeter Tresor</value></data>
