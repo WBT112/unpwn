@@ -132,7 +132,7 @@
                 <TextBlock Text="{DynamicResource Workflow.Navigation.ExpectedOrigins}" />
                 <TextBlock Text="{Binding ExpectedOriginsText}" TextWrapping="Wrap" />
                 <TextBlock Text="{DynamicResource Workflow.Navigation.Disclaimer}" TextWrapping="Wrap" />
-                <Button IsVisible="{Binding HasPreparedNavigation}"
+                <Button IsVisible="{Binding HasOfficialLocation}"
                         HorizontalAlignment="Left"
                         AutomationProperties.AutomationId="workflow-open-discovered-page"
                         Content="{DynamicResource Workflow.Browser.OpenPrepared}"
