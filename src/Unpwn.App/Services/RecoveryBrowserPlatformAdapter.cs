@@ -214,18 +214,18 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         switch (args)
         {
             case LinuxWpeWebViewEnvironmentRequestedEventArgs wpe:
-            {
-                var dataDirectory = Path.Combine(ProfileDataPath, "data");
-                var cacheDirectory = Path.Combine(ProfileDataPath, "cache");
-                Directory.CreateDirectory(dataDirectory);
-                Directory.CreateDirectory(cacheDirectory);
-                wpe.DataDirectory = dataDirectory;
-                wpe.CacheDirectory = cacheDirectory;
-                // Prefer WPE when it is available. Avalonia falls through to WebKitGTK when
-                // WPE is unavailable, and the GTK path below is hardened separately.
-                wpe.PreferWebKitGtkInstead = false;
-                break;
-            }
+                {
+                    var dataDirectory = Path.Combine(ProfileDataPath, "data");
+                    var cacheDirectory = Path.Combine(ProfileDataPath, "cache");
+                    Directory.CreateDirectory(dataDirectory);
+                    Directory.CreateDirectory(cacheDirectory);
+                    wpe.DataDirectory = dataDirectory;
+                    wpe.CacheDirectory = cacheDirectory;
+                    // Prefer WPE when it is available. Avalonia falls through to WebKitGTK when
+                    // WPE is unavailable, and the GTK path below is hardened separately.
+                    wpe.PreferWebKitGtkInstead = false;
+                    break;
+                }
             case GtkWebViewEnvironmentRequestedEventArgs gtk:
                 // Keep all provider website state in memory. The Recovery Browser owns one
                 // web view for the account-bound session, so cookies remain usable within the
