@@ -1107,7 +1107,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             ? RecoveryLocationSelectionPolicy.WellKnownFirst
             : RecoveryLocationSelectionPolicy.ProviderDefinedOnly;
 
-        if (allowBrowserEntryFallback && providerLocationId is null)
+        if (allowBrowserEntryFallback &&
+            providerLocationId is null &&
+            !CanDiscoverCurrentLocation)
         {
             providerLocationId = ResolveBrowserEntryLocationId();
             if (providerLocationId is not null)
