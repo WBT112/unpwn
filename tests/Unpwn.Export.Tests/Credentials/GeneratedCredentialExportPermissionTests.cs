@@ -70,6 +70,29 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
         Assert.Empty(Directory.GetFiles(_directory, ".unpwn-export-*.tmp"));
     }
 
+    [Fact]
+    public async Task CancellationAfterTemporaryCreationRemovesPlaintextAndDoesNotMarkExported()
+    {
+        Directory.CreateDirectory(_directory);
+        using var cancellation = new CancellationTokenSource();
+        var repository = new TestCredentialRepository
+        {
+            AfterSecretRead = cancellation.Cancel,
+        };
+        var selection = repository.Add("cancelled-write-secret");
+        var destination = Path.Combine(_directory, "cancelled.csv");
+        var service = new GeneratedCredentialExportService(repository);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            service.ExportAsync(
+                Request(selection, destination),
+                cancellation.Token));
+
+        Assert.False(File.Exists(destination));
+        Assert.Equal(0, repository.ExportCount);
+        Assert.Empty(Directory.GetFiles(_directory, ".unpwn-export-*.tmp"));
+    }
+
     public void Dispose()
     {
         if (!Directory.Exists(_directory))
@@ -101,6 +124,8 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
     {
         private byte[]? _secret;
         private GeneratedCredentialMetadata? _metadata;
+
+        public Action? AfterSecretRead { get; init; }
 
         public int ExportCount { get; private set; }
 
@@ -140,12 +165,14 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            return Task.FromResult(
+            var lease =
                 _metadata?.CredentialId == reference.CredentialId &&
                 _metadata.AccountId == reference.AccountId &&
                 _secret is not null
                     ? new CredentialSecretLease(_secret.ToArray())
-                    : null);
+                    : null;
+            AfterSecretRead?.Invoke();
+            return Task.FromResult(lease);
         }
 
         public Task<GeneratedCredentialBatchResult> MarkExportedAsync(
