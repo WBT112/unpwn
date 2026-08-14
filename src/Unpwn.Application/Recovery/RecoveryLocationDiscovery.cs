@@ -7,6 +7,7 @@ public enum RecoveryLocationSelectionPolicy
     WellKnownFirst,
     ProviderDefinedFirst,
     ProviderDefinedOnly,
+    AccountOriginOnly,
 }
 
 public enum RecoveryLocationResolutionSource
@@ -14,6 +15,7 @@ public enum RecoveryLocationResolutionSource
     WellKnownChangePassword,
     ProviderDefined,
     ProviderFallback,
+    AccountOrigin,
 }
 
 public enum RecoveryLocationDiscoveryFailureCode
@@ -23,6 +25,7 @@ public enum RecoveryLocationDiscoveryFailureCode
     ProviderLocationNotFound,
     ProviderLocationInvalid,
     InsecureAccountOrigin,
+    UnsafeNetworkTarget,
     NetworkFailure,
     UnsupportedResponse,
     MissingRedirectLocation,

@@ -28,6 +28,70 @@ public sealed class RecoveryLocationDiscoveryTests
     }
 
     [Fact]
+    public async Task AccountOriginOnlyReturnsExactValidatedHttpsDestinationWithoutHttpRequest()
+    {
+        var handler = new RecordingHandler(_ => throw new InvalidOperationException("HTTP discovery was not expected."));
+        using var service = CreateService(handler);
+        var accountUri = new Uri("https://provider.example.test/account/security?view=recovery");
+        var request = new RecoveryLocationDiscoveryRequest(
+            CreateWorkflow([]),
+            ProviderLocationId: null,
+            accountUri,
+            RecoveryLocationSelectionPolicy.AccountOriginOnly);
+
+        var result = await service.DiscoverAsync(request, CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(RecoveryLocationResolutionSource.AccountOrigin, result.Handoff?.Source);
+        Assert.Equal(accountUri, result.Handoff?.Destination);
+        Assert.Equal("https://provider.example.test", result.Handoff?.ExpectedOrigin);
+        Assert.Equal(["https://provider.example.test"], result.Handoff?.ExpectedOrigins);
+        Assert.True(result.Handoff?.RequiresVisibleConfirmation);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    public async Task AccountOriginOnlyRejectsNonPublicTargetWithoutHttpRequest()
+    {
+        var handler = new RecordingHandler(_ => throw new InvalidOperationException("HTTP discovery was not expected."));
+        using var service = CreateService(
+            handler,
+            networkTargetPolicy: DenyAllNetworkTargetPolicy.Instance);
+        var request = new RecoveryLocationDiscoveryRequest(
+            CreateWorkflow([]),
+            ProviderLocationId: null,
+            new Uri("https://private.example.test/account"),
+            RecoveryLocationSelectionPolicy.AccountOriginOnly);
+
+        var result = await service.DiscoverAsync(request, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Null(result.Handoff);
+        Assert.Equal(RecoveryLocationDiscoveryFailureCode.UnsafeNetworkTarget, result.FailureCode);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    public async Task AccountOriginOnlyRejectsInsecureUrlBeforeNetworkValidation()
+    {
+        var handler = new RecordingHandler(_ => throw new InvalidOperationException("HTTP discovery was not expected."));
+        var policy = new RecordingNetworkTargetPolicy(allowed: true);
+        using var service = CreateService(handler, networkTargetPolicy: policy);
+        var request = new RecoveryLocationDiscoveryRequest(
+            CreateWorkflow([]),
+            ProviderLocationId: null,
+            new Uri("http://provider.example.test/account"),
+            RecoveryLocationSelectionPolicy.AccountOriginOnly);
+
+        var result = await service.DiscoverAsync(request, CancellationToken.None);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(RecoveryLocationDiscoveryFailureCode.InsecureAccountOrigin, result.FailureCode);
+        Assert.Equal(0, policy.Calls);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
     public async Task WellKnownRedirectWithinExpectedOriginIsAcceptedWithSanitizedTrace()
     {
         var handler = new RecordingHandler(request => request.RequestUri?.AbsolutePath switch
@@ -337,12 +401,13 @@ public sealed class RecoveryLocationDiscoveryTests
 
     private static HttpRecoveryLocationDiscoveryService CreateService(
         HttpMessageHandler handler,
-        int maxRedirects = 5) =>
+        int maxRedirects = 5,
+        IRecoveryNetworkTargetPolicy? networkTargetPolicy = null) =>
         new(
             new HttpMessageInvoker(handler, disposeHandler: true),
             maxRedirects,
             disposeInvoker: true,
-            networkTargetPolicy: AllowAllNetworkTargetPolicy.Instance);
+            networkTargetPolicy: networkTargetPolicy ?? AllowAllNetworkTargetPolicy.Instance);
 
     private static RecoveryLocationDiscoveryRequest CreateRequest(
         RecoveryLocationSelectionPolicy selectionPolicy,
@@ -415,6 +480,35 @@ public sealed class RecoveryLocationDiscoveryTests
             ArgumentNullException.ThrowIfNull(destination);
             cancellationToken.ThrowIfCancellationRequested();
             return new ValueTask<bool>(true);
+        }
+    }
+
+    private sealed class DenyAllNetworkTargetPolicy : IRecoveryNetworkTargetPolicy
+    {
+        internal static DenyAllNetworkTargetPolicy Instance { get; } = new();
+
+        public ValueTask<bool> IsAllowedAsync(
+            Uri destination,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            cancellationToken.ThrowIfCancellationRequested();
+            return new ValueTask<bool>(false);
+        }
+    }
+
+    private sealed class RecordingNetworkTargetPolicy(bool allowed) : IRecoveryNetworkTargetPolicy
+    {
+        public int Calls { get; private set; }
+
+        public ValueTask<bool> IsAllowedAsync(
+            Uri destination,
+            CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(destination);
+            cancellationToken.ThrowIfCancellationRequested();
+            Calls++;
+            return new ValueTask<bool>(allowed);
         }
     }
 
