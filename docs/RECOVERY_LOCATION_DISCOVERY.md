@@ -13,8 +13,26 @@ A request chooses one explicit policy:
 - `WellKnownFirst`: try `/.well-known/change-password`, then fall back to a reviewed provider location
 - `ProviderDefinedFirst`: use the reviewed provider location when it is valid; otherwise try the standard endpoint
 - `ProviderDefinedOnly`: do not make a network request and use only the reviewed provider location
+- `AccountOriginOnly`: use the exact imported HTTPS account URL as a browser entry point only after the public-network target policy approves it; this policy does not perform HTTP discovery
 
 This keeps provider-specific exceptions explicit. A workflow can prefer a repository-reviewed URL where the standard endpoint is unsuitable, while generic sites can use standards-based discovery first.
+
+`AccountOriginOnly` exists for browser-first entry when the current recovery action itself has no dedicated location. It is not a replacement for `WellKnownFirst`: a generic password-change action still uses standards-based change-password discovery first. The account-origin fallback is used only when a safe browser entry is needed and no action/provider location is available.
+
+## Browser-first recovery entry
+
+Starting an account recovery should open the managed Recovery Browser whenever unpwn can establish a safe destination. A non-navigation action such as `IdentifyAccount` must not prevent browser startup merely because that action has no dedicated URL.
+
+The workflow presentation resolves the initial browser entry in this order:
+
+1. the current action's reviewed recovery location, when present;
+2. otherwise the first reviewed recovery location on the selected provider recovery path;
+3. for a generic password-change action, `/.well-known/change-password` derived from the account HTTPS origin;
+4. for a URL-less generic entry action, the exact imported account URL through `AccountOriginOnly`.
+
+No provider URL is guessed. If no candidate exists or the candidate fails HTTPS/network validation, the workflow remains open and shows a specific user-facing reason instead of pretending that browser startup succeeded.
+
+Browser startup, navigation, redirects, closing, or any page content remain contextual only. They never complete or advance canonical recovery state. Explicit user confirmation of repository-defined completion criteria remains required.
 
 ## `/.well-known/change-password`
 
@@ -43,7 +61,7 @@ Opening or resolving this endpoint never marks a recovery action complete.
 
 Every candidate destination must be an absolute HTTPS URL without embedded user information.
 
-The production discovery path also applies a public-network-only egress policy before every HTTP request. It rejects:
+The production discovery path also applies a public-network-only egress policy before every HTTP request. The same policy is applied to an `AccountOriginOnly` handoff before that imported URL may be offered to the managed Recovery Browser. It rejects:
 
 - localhost and local-name destinations;
 - loopback and unspecified addresses;
@@ -82,6 +100,8 @@ When standards-based discovery fails and a valid reviewed provider location exis
 
 The generic unsupported-provider workflow deliberately has no provider fallback and no trusted-origin metadata. For its authenticated password-change action, discovery may derive only the standard endpoint from the validated HTTPS origin of the account URL. A successful handoff remains visible as part of the guided start transaction. Password-reset and manual-recovery destinations are never inferred from an unknown provider ID, name, or arbitrary path.
 
+For a URL-less preliminary action in that same generic workflow, the exact imported HTTPS account URL may be used as a browser entry only through `AccountOriginOnly` and only after the public-network target policy accepts it. That handoff does not upgrade the generic workflow to reviewed-provider status and does not authorize provider-specific DOM automation.
+
 ## Visible navigation handoff
 
 A successful result contains:
@@ -96,7 +116,7 @@ The workflow UI must display the destination and expected origin before navigati
 
 The final destination is transient navigation data. It must not be copied into audit events or general diagnostics. Redirect diagnostics contain only normalized origins and a hop count; paths, queries, fragments, reset tokens, and other URL values are not retained.
 
-The discovery egress policy protects only the narrow HTTP request used to resolve `/.well-known/change-password`. It is not a general host firewall, malware defense, or browser sandbox, and it does not make arbitrary provider page content trusted.
+The discovery egress policy protects the narrow HTTP request used to resolve `/.well-known/change-password` and validates an imported account-origin browser entry. It is not a general host firewall, malware defense, or browser sandbox, and it does not make arbitrary provider page content trusted.
 
 ## Known standard limitation
 
@@ -107,6 +127,8 @@ The current resolver handles HTTP redirects and direct `200 OK` responses. It do
 Tests live in `Unpwn.Automation.Tests` and use injected synthetic HTTP/DNS boundaries. They cover:
 
 - provider-first and provider-only selection;
+- safe account-origin browser entry;
+- rejection of insecure and non-public account-origin entries;
 - same-origin and explicitly allowed cross-origin redirects;
 - insecure, malformed, and unexpected redirects;
 - literal local/private/link-local/multicast target rejection;
@@ -120,5 +142,7 @@ Tests live in `Unpwn.Automation.Tests` and use injected synthetic HTTP/DNS bound
 - provider fallback;
 - sanitized redirect-origin diagnostics;
 - absence of credentials and account-path data in requests.
+
+Presentation regressions additionally cover reviewed-provider startup when the first action has no URL, generic account-origin startup, preserved `/.well-known/change-password` priority for generic password changes, explicit missing/unsafe-location messages, and the invariant that browser activity does not complete an action.
 
 No live provider or real private-network dependency is used in the normal test suite.
