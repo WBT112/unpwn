@@ -67,15 +67,16 @@ The export core supports generic CSV and Bitwarden-compatible login CSV for expl
 
 Plaintext export requires an explicit acknowledgement and destination. The parent directory must exist and an existing destination is not overwritten.
 
-The current pre-release writer relies on the operating system/process defaults when creating its
-temporary file. It does not yet claim an owner-only Unix mode from the first byte written. A supported
-Unix release requires atomic user-only creation for both temporary and final plaintext files while
-preserving no-overwrite and cleanup behavior.
+On Unix-like platforms, the temporary plaintext file is created atomically with owner read/write permissions only (`0600`) as part of the initial `CreateNew` open. unpwn verifies that mode before writing the first CSV byte. If the platform or filesystem cannot establish the required mode, the temporary file is removed and the export fails without marking the credential exported. unpwn does not widen or otherwise modify the selected parent directory permissions.
+
+The temporary file is created in the destination directory and moved atomically to the final name without overwrite, so the same file and its restrictive Unix mode cross the final placement boundary. Linux regression tests assert the final export remains `0600`.
+
+On Windows, the writer retains the standard .NET/Windows file-creation path and therefore uses the ACL semantics inherited from the user-selected destination directory. unpwn does not install a custom Windows ACL and does not claim that an arbitrary user-selected directory is accessible only by the current user; users should choose an appropriately protected local destination.
 
 The write lifecycle is:
 
 1. validate selected metadata and secret leases;
-2. create a temporary file in the destination directory;
+2. create a temporary file in the destination directory with the platform permission boundary above;
 3. write and flush the complete export;
 4. atomically move it to the final destination without overwrite;
 5. update encrypted credential lifecycle state.
@@ -90,6 +91,6 @@ Deleting a generated credential removes revealable plaintext from the active enc
 
 ## Testing
 
-Tests cover generation policy, encrypted persistence/reopen, lifecycle ordering/idempotency, deletion, reveal/clipboard timers, lock/session clearing, clipboard cleanup failure, export commit boundaries, password-manager handoff, selected-only CSV output, existing-destination protection, missing-credential failure, synthetic reviewed browser insertion, late vault retrieval, browser stop conditions, no automatic submission/completion, and secret-artifact scanning.
+Tests cover generation policy, encrypted persistence/reopen, lifecycle ordering/idempotency, deletion, reveal/clipboard timers, lock/session clearing, clipboard cleanup failure, export commit boundaries, Unix owner-only plaintext-export permissions, password-manager handoff, selected-only CSV output, existing-destination protection, missing-credential failure, synthetic reviewed browser insertion, late vault retrieval, browser stop conditions, no automatic submission/completion, and secret-artifact scanning.
 
 See [Vault Security](VAULT_SECURITY.md), [Recovery Browser Security Boundary](RECOVERY_BROWSER.md), and [Testing Strategy](TESTING.md) for their canonical boundaries.

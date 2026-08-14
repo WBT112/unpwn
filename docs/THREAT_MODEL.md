@@ -62,13 +62,13 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 
 ### Unsafe plaintext exports
 
-**Risk:** exported credentials are synchronized, backed up, shared, or forgotten.
+**Risk:** exported credentials are synchronized, backed up, shared, forgotten, or exposed to another local user through overly broad file permissions.
 
-**Mitigations:** explicit plaintext warning/destination choice, no overwrite, synchronized-location warning, prompt password-manager import, separate import confirmation and cleanup state, and clear reporting when a plaintext file may exist after a later persistence failure.
+**Mitigations:** explicit plaintext warning/destination choice, no overwrite, synchronized-location warning, prompt password-manager import, separate import confirmation and cleanup state, and clear reporting when a plaintext file may exist after a later persistence failure. On Unix-like platforms the temporary export file is created with owner read/write permissions only (`0600`) in the initial exclusive open and that mode is verified before plaintext is written; the same file is then atomically moved to the final name. unpwn does not widen parent-directory permissions.
 
-**Residual risk:** deleting a file is not forensic erasure on modern storage.
+**Residual risk:** deleting a file is not forensic erasure on modern storage. On Windows, access to a user-selected export destination continues to follow the ACL semantics inherited from that directory; unpwn does not claim a custom owner-only Windows ACL for arbitrary destinations.
 
-**Pre-release gap:** Unix plaintext-export files and Linux Recovery Browser profile storage do not yet have a complete owner-only-from-creation permission invariant. Default process permissions must not be treated as that guarantee.
+**Pre-release gap:** Linux Recovery Browser profile storage still needs a complete owner-only-from-creation permission invariant. Default process permissions must not be treated as that guarantee.
 
 ### Secret leakage through diagnostics or presentation
 
