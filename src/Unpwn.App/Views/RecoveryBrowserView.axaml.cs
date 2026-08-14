@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml.MarkupExtensions;
 using Unpwn.App.Services;
 
 namespace Unpwn.App.Views;
@@ -280,7 +279,7 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
     private static void BindDynamicResource(TextBlock textBlock, string key) =>
         textBlock.Bind(
             TextBlock.TextProperty,
-            new DynamicResourceExtension(key).ProvideValue(null!));
+            textBlock.GetResourceObservable(key));
 
     private void UpdateSessionSnapshot(RecoveryBrowserSessionLifecycleSnapshot snapshot)
     {
@@ -312,12 +311,12 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
             BindDynamicResource(SessionStatusText, key);
         }
 
+        var closeResourceKey = snapshot.CanRetryCleanup
+            ? "RecoveryBrowser.Session.RetryCleanup"
+            : "RecoveryBrowser.Close";
         CloseButton.Bind(
             ContentControl.ContentProperty,
-            new DynamicResourceExtension(
-                snapshot.CanRetryCleanup
-                    ? "RecoveryBrowser.Session.RetryCleanup"
-                    : "RecoveryBrowser.Close").ProvideValue(null!));
+            CloseButton.GetResourceObservable(closeResourceKey));
     }
 
     private void Back_OnClick(object? sender, RoutedEventArgs args) => _host?.GoBack();

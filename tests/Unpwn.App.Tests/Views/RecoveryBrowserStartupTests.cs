@@ -11,6 +11,32 @@ namespace Unpwn.App.Tests.Views;
 public sealed class RecoveryBrowserStartupTests
 {
     [Fact]
+    public async Task ConstructingManagedBrowserDoesNotRequireXamlServiceProviderForDynamicResources()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            var root = CreateRoot();
+            try
+            {
+                using var lifecycle = new RecoveryBrowserSessionLifecycle(root);
+                var platform = new StartupPlatformAdapter(configureOnAttach: true);
+                using var view = new RecoveryBrowserView(lifecycle, _ => platform);
+
+                Assert.NotNull(view);
+                Assert.Equal(
+                    RecoveryBrowserSessionLifecycleState.Idle,
+                    view.SessionSnapshot.State);
+            }
+            finally
+            {
+                DeleteRoot(root);
+            }
+
+            await Task.CompletedTask;
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task AttachedManagedBrowserReportsSuccessOnlyAfterPlatformHardeningIsReady()
     {
         await AccessibilityHeadlessTests.Session.Dispatch(async () =>
