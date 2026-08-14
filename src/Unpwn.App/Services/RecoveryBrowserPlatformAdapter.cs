@@ -177,9 +177,12 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     : RecoveryBrowserPlatformAdapter
 {
     private const string WpeWebKitLibrary = "libWPEWebKit-2.0.so.1";
+    private const string GtkWebKitLibrary = "libwebkit2gtk-4.1.so.0";
     private const uint AllWebsiteDataTypes = 0x7FFF;
-    private static readonly AsyncReadyCallback WebsiteDataClearedCallback =
-        CompleteWebsiteDataClear;
+    private static readonly AsyncReadyCallback WpeWebsiteDataClearedCallback =
+        CompleteWpeWebsiteDataClear;
+    private static readonly AsyncReadyCallback GtkWebsiteDataClearedCallback =
+        CompleteGtkWebsiteDataClear;
     private readonly PermissionSignalCallback _permissionCallback;
     private readonly DownloadSignalCallback _downloadCallback;
     private readonly TlsSignalCallback _tlsCallback;
@@ -187,6 +190,9 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     private ulong _downloadHandler;
     private ulong _tlsHandler;
     private IntPtr _webView;
+    private IntPtr _downloadSignalOwner;
+    private IntPtr _websiteDataManager;
+    private LinuxRecoveryBrowserBackend _backend;
 
     private bool _isConfigured;
 
@@ -200,51 +206,54 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
 
     public override bool IsConfigured => _isConfigured;
 
+    internal LinuxRecoveryBrowserBackend Backend => _backend;
+
     public override void ConfigureEnvironment(WebViewEnvironmentRequestedEventArgs args)
     {
         args.EnableDevTools = false;
-        if (args is not LinuxWpeWebViewEnvironmentRequestedEventArgs wpe)
+        switch (args)
         {
-            return;
+            case LinuxWpeWebViewEnvironmentRequestedEventArgs wpe:
+            {
+                var dataDirectory = Path.Combine(ProfileDataPath, "data");
+                var cacheDirectory = Path.Combine(ProfileDataPath, "cache");
+                Directory.CreateDirectory(dataDirectory);
+                Directory.CreateDirectory(cacheDirectory);
+                wpe.DataDirectory = dataDirectory;
+                wpe.CacheDirectory = cacheDirectory;
+                // Prefer WPE when it is available. Avalonia falls through to WebKitGTK when
+                // WPE is unavailable, and the GTK path below is hardened separately.
+                wpe.PreferWebKitGtkInstead = false;
+                break;
+            }
+            case GtkWebViewEnvironmentRequestedEventArgs gtk:
+                // Keep all provider website state in memory. The Recovery Browser owns one
+                // web view for the account-bound session, so cookies remain usable within the
+                // session without writing browser state into a normal or persistent GTK profile.
+                gtk.EphemeralDataManager = true;
+                gtk.DisableCache = true;
+                break;
         }
-
-        var dataDirectory = Path.Combine(ProfileDataPath, "data");
-        var cacheDirectory = Path.Combine(ProfileDataPath, "cache");
-        Directory.CreateDirectory(dataDirectory);
-        Directory.CreateDirectory(cacheDirectory);
-        wpe.DataDirectory = dataDirectory;
-        wpe.CacheDirectory = cacheDirectory;
-        wpe.PreferWebKitGtkInstead = false;
     }
 
     public override void Attach(IPlatformHandle? platformHandle)
     {
         Detach();
         _isConfigured = false;
-        if (platformHandle is not ILinuxWpePlatformHandle wpeHandle ||
-            wpeHandle.WebKitWebView == IntPtr.Zero)
-        {
-            return;
-        }
-
         try
         {
-            _webView = wpeHandle.WebKitWebView;
-            var session = webkit_web_view_get_network_session(_webView);
-            if (session == IntPtr.Zero)
+            switch (platformHandle)
             {
-                Detach();
-                return;
+                case ILinuxWpePlatformHandle wpeHandle when wpeHandle.WebKitWebView != IntPtr.Zero:
+                    AttachWpe(wpeHandle.WebKitWebView);
+                    break;
+                case IGtkWebViewPlatformHandle gtkHandle when gtkHandle.WebKitWebView != IntPtr.Zero:
+                    AttachGtk(gtkHandle.WebKitWebView);
+                    break;
             }
-
-            webkit_network_session_set_persistent_credential_storage_enabled(session, false);
-            _permissionHandler = Connect(_webView, "permission-request", _permissionCallback);
-            _tlsHandler = Connect(_webView, "load-failed-with-tls-errors", _tlsCallback);
-            _downloadHandler = Connect(session, "download-started", _downloadCallback);
-            _isConfigured = _permissionHandler != 0 && _tlsHandler != 0 && _downloadHandler != 0;
         }
         catch (Exception exception) when (
-            exception is DllNotFoundException or EntryPointNotFoundException)
+            exception is DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
             Detach();
         }
@@ -258,16 +267,9 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
 
     public override async Task ClearBrowsingDataAsync(CancellationToken cancellationToken)
     {
-        if (_webView == IntPtr.Zero)
+        if (_websiteDataManager == IntPtr.Zero || _backend == LinuxRecoveryBrowserBackend.None)
         {
             return;
-        }
-
-        var manager = webkit_web_view_get_website_data_manager(_webView);
-        if (manager == IntPtr.Zero)
-        {
-            throw new InvalidOperationException(
-                "The WPE WebKit website-data manager is unavailable.");
         }
 
         var completion = new TaskCompletionSource(
@@ -275,13 +277,30 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         var handle = GCHandle.Alloc(completion);
         try
         {
-            webkit_website_data_manager_clear(
-                manager,
-                AllWebsiteDataTypes,
-                timespan: 0,
-                IntPtr.Zero,
-                Marshal.GetFunctionPointerForDelegate(WebsiteDataClearedCallback),
-                GCHandle.ToIntPtr(handle));
+            var callback = _backend == LinuxRecoveryBrowserBackend.Wpe
+                ? WpeWebsiteDataClearedCallback
+                : GtkWebsiteDataClearedCallback;
+            var callbackPointer = Marshal.GetFunctionPointerForDelegate(callback);
+            if (_backend == LinuxRecoveryBrowserBackend.Wpe)
+            {
+                wpe_webkit_website_data_manager_clear(
+                    _websiteDataManager,
+                    AllWebsiteDataTypes,
+                    timespan: 0,
+                    IntPtr.Zero,
+                    callbackPointer,
+                    GCHandle.ToIntPtr(handle));
+            }
+            else
+            {
+                gtk_webkit_website_data_manager_clear(
+                    _websiteDataManager,
+                    AllWebsiteDataTypes,
+                    timespan: 0,
+                    IntPtr.Zero,
+                    callbackPointer,
+                    GCHandle.ToIntPtr(handle));
+            }
         }
         catch
         {
@@ -292,34 +311,83 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         await completion.Task.WaitAsync(cancellationToken);
     }
 
-    private static ulong Connect(IntPtr instance, string signal, Delegate callback) =>
-        g_signal_connect_data(
-            instance,
-            signal,
-            Marshal.GetFunctionPointerForDelegate(callback),
-            IntPtr.Zero,
-            IntPtr.Zero,
-            0);
-
-    private void Detach()
+    private void AttachWpe(IntPtr webView)
     {
-        if (_webView == IntPtr.Zero)
+        _webView = webView;
+        _backend = LinuxRecoveryBrowserBackend.Wpe;
+        var session = wpe_webkit_web_view_get_network_session(_webView);
+        _websiteDataManager = wpe_webkit_web_view_get_website_data_manager(_webView);
+        if (session == IntPtr.Zero || _websiteDataManager == IntPtr.Zero)
         {
+            Detach();
             return;
         }
 
+        wpe_webkit_network_session_set_persistent_credential_storage_enabled(session, false);
+        _downloadSignalOwner = session;
+        AttachSecuritySignals();
+    }
+
+    private void AttachGtk(IntPtr webView)
+    {
+        _webView = webView;
+        _backend = LinuxRecoveryBrowserBackend.Gtk;
+        var context = gtk_webkit_web_view_get_context(_webView);
+        _websiteDataManager = context == IntPtr.Zero
+            ? IntPtr.Zero
+            : gtk_webkit_web_context_get_website_data_manager(context);
+        if (context == IntPtr.Zero ||
+            _websiteDataManager == IntPtr.Zero ||
+            !gtk_webkit_website_data_manager_is_ephemeral(_websiteDataManager))
+        {
+            Detach();
+            return;
+        }
+
+        gtk_webkit_website_data_manager_set_persistent_credential_storage_enabled(
+            _websiteDataManager,
+            false);
+        _downloadSignalOwner = context;
+        AttachSecuritySignals();
+    }
+
+    private void AttachSecuritySignals()
+    {
+        _permissionHandler = Connect(_webView, "permission-request", _permissionCallback);
+        _tlsHandler = Connect(_webView, "load-failed-with-tls-errors", _tlsCallback);
+        _downloadHandler = Connect(_downloadSignalOwner, "download-started", _downloadCallback);
+        _isConfigured = _permissionHandler != 0 && _tlsHandler != 0 && _downloadHandler != 0;
+        if (!_isConfigured)
+        {
+            Detach();
+        }
+    }
+
+    private static ulong Connect(IntPtr instance, string signal, Delegate callback) =>
+        instance == IntPtr.Zero
+            ? 0
+            : g_signal_connect_data(
+                instance,
+                signal,
+                Marshal.GetFunctionPointerForDelegate(callback),
+                IntPtr.Zero,
+                IntPtr.Zero,
+                0);
+
+    private void Detach()
+    {
         Disconnect(_webView, _permissionHandler);
         Disconnect(_webView, _tlsHandler);
-        var session = webkit_web_view_get_network_session(_webView);
-        if (session != IntPtr.Zero)
-        {
-            Disconnect(session, _downloadHandler);
-        }
+        Disconnect(_downloadSignalOwner, _downloadHandler);
 
         _permissionHandler = 0;
         _downloadHandler = 0;
         _tlsHandler = 0;
         _webView = IntPtr.Zero;
+        _downloadSignalOwner = IntPtr.Zero;
+        _websiteDataManager = IntPtr.Zero;
+        _backend = LinuxRecoveryBrowserBackend.None;
+        _isConfigured = false;
     }
 
     private static void Disconnect(IntPtr instance, ulong handlerId)
@@ -332,14 +400,34 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
 
     private int DenyPermission(IntPtr sender, IntPtr request, IntPtr userData)
     {
-        webkit_permission_request_deny(request);
+        if (_backend == LinuxRecoveryBrowserBackend.Wpe)
+        {
+            wpe_webkit_permission_request_deny(request);
+        }
+        else if (_backend == LinuxRecoveryBrowserBackend.Gtk)
+        {
+            gtk_webkit_permission_request_deny(request);
+        }
+        else
+        {
+            return 1;
+        }
+
         PublishSecurityEvent(RecoveryBrowserSecurityEventCode.PermissionBlocked);
         return 1;
     }
 
     private void CancelDownload(IntPtr sender, IntPtr download, IntPtr userData)
     {
-        webkit_download_cancel(download);
+        if (_backend == LinuxRecoveryBrowserBackend.Wpe)
+        {
+            wpe_webkit_download_cancel(download);
+        }
+        else if (_backend == LinuxRecoveryBrowserBackend.Gtk)
+        {
+            gtk_webkit_download_cancel(download);
+        }
+
         PublishSecurityEvent(RecoveryBrowserSecurityEventCode.DownloadBlocked);
     }
 
@@ -351,22 +439,45 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         IntPtr userData)
     {
         PublishSecurityEvent(RecoveryBrowserSecurityEventCode.TlsErrorBlocked);
+        // Returning false preserves WebKit's default TLS failure behavior. unpwn never creates
+        // a certificate exception for the Recovery Browser.
         return 0;
     }
+
+    private static void CompleteWpeWebsiteDataClear(
+        IntPtr sourceObject,
+        IntPtr result,
+        IntPtr userData) =>
+        CompleteWebsiteDataClear(
+            sourceObject,
+            result,
+            userData,
+            wpe_webkit_website_data_manager_clear_finish,
+            "WPE WebKit did not clear the Recovery Browser profile data.");
+
+    private static void CompleteGtkWebsiteDataClear(
+        IntPtr sourceObject,
+        IntPtr result,
+        IntPtr userData) =>
+        CompleteWebsiteDataClear(
+            sourceObject,
+            result,
+            userData,
+            gtk_webkit_website_data_manager_clear_finish,
+            "WebKitGTK did not clear the Recovery Browser session data.");
 
     private static void CompleteWebsiteDataClear(
         IntPtr sourceObject,
         IntPtr result,
-        IntPtr userData)
+        IntPtr userData,
+        WebsiteDataClearFinish finish,
+        string failureMessage)
     {
         var handle = GCHandle.FromIntPtr(userData);
         var completion = (TaskCompletionSource)handle.Target!;
         handle.Free();
         IntPtr error = IntPtr.Zero;
-        if (webkit_website_data_manager_clear_finish(
-                sourceObject,
-                result,
-                ref error))
+        if (finish(sourceObject, result, ref error))
         {
             completion.TrySetResult();
             return;
@@ -377,8 +488,7 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
             g_error_free(error);
         }
 
-        completion.TrySetException(new IOException(
-            "WPE WebKit did not clear the Recovery Browser profile data."));
+        completion.TrySetException(new IOException(failureMessage));
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -401,6 +511,11 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         IntPtr result,
         IntPtr userData);
 
+    private delegate bool WebsiteDataClearFinish(
+        IntPtr manager,
+        IntPtr result,
+        ref IntPtr error);
+
     [LibraryImport("libgobject-2.0.so.0", StringMarshalling = StringMarshalling.Utf8)]
     private static partial ulong g_signal_connect_data(
         IntPtr instance,
@@ -416,14 +531,14 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     [LibraryImport("libglib-2.0.so.0")]
     private static partial void g_error_free(IntPtr error);
 
-    [LibraryImport(WpeWebKitLibrary)]
-    private static partial IntPtr webkit_web_view_get_network_session(IntPtr webView);
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_web_view_get_network_session")]
+    private static partial IntPtr wpe_webkit_web_view_get_network_session(IntPtr webView);
 
-    [LibraryImport(WpeWebKitLibrary)]
-    private static partial IntPtr webkit_web_view_get_website_data_manager(IntPtr webView);
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_web_view_get_website_data_manager")]
+    private static partial IntPtr wpe_webkit_web_view_get_website_data_manager(IntPtr webView);
 
-    [LibraryImport(WpeWebKitLibrary)]
-    private static partial void webkit_website_data_manager_clear(
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_website_data_manager_clear")]
+    private static partial void wpe_webkit_website_data_manager_clear(
         IntPtr manager,
         uint types,
         long timespan,
@@ -431,23 +546,67 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         IntPtr callback,
         IntPtr userData);
 
-    [LibraryImport(WpeWebKitLibrary)]
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_website_data_manager_clear_finish")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool webkit_website_data_manager_clear_finish(
+    private static partial bool wpe_webkit_website_data_manager_clear_finish(
         IntPtr manager,
         IntPtr result,
         ref IntPtr error);
 
-    [LibraryImport(WpeWebKitLibrary)]
-    private static partial void webkit_network_session_set_persistent_credential_storage_enabled(
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_network_session_set_persistent_credential_storage_enabled")]
+    private static partial void wpe_webkit_network_session_set_persistent_credential_storage_enabled(
         IntPtr session,
         [MarshalAs(UnmanagedType.Bool)] bool enabled);
 
-    [LibraryImport(WpeWebKitLibrary)]
-    private static partial void webkit_permission_request_deny(IntPtr request);
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_permission_request_deny")]
+    private static partial void wpe_webkit_permission_request_deny(IntPtr request);
 
-    [LibraryImport(WpeWebKitLibrary)]
-    private static partial void webkit_download_cancel(IntPtr download);
+    [LibraryImport(WpeWebKitLibrary, EntryPoint = "webkit_download_cancel")]
+    private static partial void wpe_webkit_download_cancel(IntPtr download);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_web_view_get_context")]
+    private static partial IntPtr gtk_webkit_web_view_get_context(IntPtr webView);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_web_context_get_website_data_manager")]
+    private static partial IntPtr gtk_webkit_web_context_get_website_data_manager(IntPtr context);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_website_data_manager_is_ephemeral")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool gtk_webkit_website_data_manager_is_ephemeral(IntPtr manager);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_website_data_manager_set_persistent_credential_storage_enabled")]
+    private static partial void gtk_webkit_website_data_manager_set_persistent_credential_storage_enabled(
+        IntPtr manager,
+        [MarshalAs(UnmanagedType.Bool)] bool enabled);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_website_data_manager_clear")]
+    private static partial void gtk_webkit_website_data_manager_clear(
+        IntPtr manager,
+        uint types,
+        long timespan,
+        IntPtr cancellable,
+        IntPtr callback,
+        IntPtr userData);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_website_data_manager_clear_finish")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool gtk_webkit_website_data_manager_clear_finish(
+        IntPtr manager,
+        IntPtr result,
+        ref IntPtr error);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_permission_request_deny")]
+    private static partial void gtk_webkit_permission_request_deny(IntPtr request);
+
+    [LibraryImport(GtkWebKitLibrary, EntryPoint = "webkit_download_cancel")]
+    private static partial void gtk_webkit_download_cancel(IntPtr download);
+}
+
+internal enum LinuxRecoveryBrowserBackend
+{
+    None,
+    Wpe,
+    Gtk,
 }
 
 internal sealed class UnsupportedRecoveryBrowserPlatformAdapter(string profileDataPath)
