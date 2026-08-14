@@ -5,7 +5,6 @@ public enum TrustedDeviceDecision
     NotAnswered,
     Trusted,
     NotTrusted,
-    Unsure,
 }
 
 public enum RecoveryWizardLifecycleStatus
