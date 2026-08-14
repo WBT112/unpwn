@@ -39,6 +39,55 @@ public sealed class ResourceLocalizationServiceTests
     }
 
     [Fact]
+    public void StartupUxUsesStartOrResumeAndOneNegativeDeviceChoice()
+    {
+        var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
+
+        Assert.Equal("Begin or resume recovery", localization.GetString("Vault.Welcome.Begin"));
+        Assert.Equal("No, or I am not sure", localization.GetString("Vault.Trusted.No"));
+        Assert.Equal(
+            "Create or unlock a local recovery vault.",
+            localization.GetString("Screen.Vault.Description"));
+        Assert.Equal(
+            "The vault starts locked. Review the recovery overview after unlocking.",
+            localization.GetString("Shell.Recovery.Message"));
+        Assert.DoesNotContain("Vault.Trusted.Unsure", localization.GetResourceKeys("en"));
+
+        localization.SetLanguage("de");
+
+        Assert.Equal(
+            "Wiederherstellung beginnen oder fortsetzen",
+            localization.GetString("Vault.Welcome.Begin"));
+        Assert.Equal("Nein oder ich bin mir nicht sicher", localization.GetString("Vault.Trusted.No"));
+        Assert.Equal(
+            "Erstelle oder entsperre einen lokalen Wiederherstellungstresor.",
+            localization.GetString("Screen.Vault.Description"));
+        Assert.Equal(
+            "Der Tresor startet gesperrt. Prüfe nach dem Entsperren die Wiederherstellungsübersicht.",
+            localization.GetString("Shell.Recovery.Message"));
+        Assert.DoesNotContain("Vault.Trusted.Unsure", localization.GetResourceKeys("de"));
+    }
+
+    [Fact]
+    public void StartupSafetyGuidanceIsConcreteAndPseudoLocalizable()
+    {
+        var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
+        var guidance = localization.GetString("Vault.Guidance.Description");
+
+        Assert.Contains("Do not enter account or vault credentials", guidance, StringComparison.Ordinal);
+        Assert.Contains("official Windows installation media", guidance, StringComparison.Ordinal);
+        Assert.Contains("Linux distribution's official source", guidance, StringComparison.Ordinal);
+        Assert.Contains("not proof", guidance, StringComparison.OrdinalIgnoreCase);
+
+        localization.SetLanguage(ResourceLocalizationService.PseudoLanguageCode);
+        var pseudo = localization.GetString("Vault.Guidance.Description");
+
+        Assert.StartsWith("⟦", pseudo, StringComparison.Ordinal);
+        Assert.EndsWith("···⟧", pseudo, StringComparison.Ordinal);
+        Assert.NotEqual(guidance, pseudo);
+    }
+
+    [Fact]
     public void PseudoSystemCultureDoesNotSelectPseudoLocalization()
     {
         var localization = new ResourceLocalizationService(

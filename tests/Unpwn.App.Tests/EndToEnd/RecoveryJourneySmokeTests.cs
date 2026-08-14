@@ -384,18 +384,15 @@ public sealed class RecoveryJourneySmokeTests
             loaded.State.GetAction("review-connected-access-auth").NotApplicableDisposition);
     }
 
-    [Theory]
-    [InlineData(TrustedDeviceDecision.NotTrusted)]
-    [InlineData(TrustedDeviceDecision.Unsure)]
+    [Fact]
     [Trait("Category", "EndToEndSmoke")]
-    public async Task UntrustedDeviceDecisionStopsBeforeVaultPersistence(
-        TrustedDeviceDecision decision)
+    public async Task UntrustedDeviceDecisionStopsBeforeVaultPersistence()
     {
         using var directory = new TemporaryDirectory();
         var vaultPath = Path.Combine(directory.Path, "must-not-exist.sqlite");
         var wizard = new RecoveryWizardSessionService(StartedAt);
         wizard.BeginTrustedDeviceCheck(StartedAt);
-        wizard.RecordTrustedDeviceDecision(decision, StartedAt);
+        wizard.RecordTrustedDeviceDecision(TrustedDeviceDecision.NotTrusted, StartedAt);
         using var vault = new RecoveryVaultLifecycleService(
             new JsonRecentVaultStore(Path.Combine(directory.Path, "recent.json")),
             wizard,

@@ -4,6 +4,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Screen.Vault.Description" xml:space="preserve"><value>Create or unlock a local recovery vault.</value></data>
+  <data name="Shell.Recovery.Message" xml:space="preserve"><value>The vault starts locked. Review the recovery overview after unlocking.</value></data>
   <data name="Vault.Choice.OpenLast" xml:space="preserve"><value>Open last vault</value></data>
   <data name="Vault.Choice.OpenAnother" xml:space="preserve"><value>Open another vault</value></data>
   <data name="Vault.Choice.LastUsedHeading" xml:space="preserve"><value>Last used vault</value></data>

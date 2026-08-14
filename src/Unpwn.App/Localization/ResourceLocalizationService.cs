@@ -16,13 +16,13 @@ public sealed class ResourceLocalizationService : ILocalizationService
     private static readonly ResourceManager[] ResourceManagers =
     [
         new(
+            "Unpwn.App.Localization.VaultEntryUxStrings",
+            typeof(ResourceLocalizationService).Assembly),
+        new(
             "Unpwn.App.Localization.Strings",
             typeof(ResourceLocalizationService).Assembly),
         new(
             "Unpwn.App.Localization.VaultStrings",
-            typeof(ResourceLocalizationService).Assembly),
-        new(
-            "Unpwn.App.Localization.VaultEntryUxStrings",
             typeof(ResourceLocalizationService).Assembly),
         new(
             "Unpwn.App.Localization.DashboardStrings",

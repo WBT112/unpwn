@@ -4,6 +4,8 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
+  <data name="Screen.Vault.Description" xml:space="preserve"><value>Erstelle oder entsperre einen lokalen Wiederherstellungstresor.</value></data>
+  <data name="Shell.Recovery.Message" xml:space="preserve"><value>Der Tresor startet gesperrt. Prüfe nach dem Entsperren die Wiederherstellungsübersicht.</value></data>
   <data name="Vault.Choice.OpenLast" xml:space="preserve"><value>Letzten Tresor öffnen</value></data>
   <data name="Vault.Choice.OpenAnother" xml:space="preserve"><value>Anderen Tresor öffnen</value></data>
   <data name="Vault.Choice.LastUsedHeading" xml:space="preserve"><value>Zuletzt verwendeter Tresor</value></data>

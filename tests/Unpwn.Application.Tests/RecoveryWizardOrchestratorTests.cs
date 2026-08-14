@@ -50,15 +50,13 @@ public sealed class RecoveryWizardOrchestratorTests
         Assert.False(state.HasVaultContext);
     }
 
-    [Theory]
-    [InlineData(TrustedDeviceDecision.NotTrusted)]
-    [InlineData(TrustedDeviceDecision.Unsure)]
-    public void UntrustedOrUnsureDeviceStopsBeforeVaultAccess(TrustedDeviceDecision decision)
+    [Fact]
+    public void UntrustedOrUncertainDeviceStopsBeforeVaultAccess()
     {
         var state = StartAtTrustedDeviceCheck();
         state = RecoveryWizardOrchestrator.RecordTrustedDeviceDecision(
             state,
-            decision,
+            TrustedDeviceDecision.NotTrusted,
             StartTime.AddMinutes(2));
 
         Assert.Equal(RecoveryWizardStepId.TrustedDeviceGuidance, state.CurrentStep);

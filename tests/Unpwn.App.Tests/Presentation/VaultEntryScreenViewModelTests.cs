@@ -9,17 +9,15 @@ namespace Unpwn.App.Tests.Presentation;
 
 public sealed class VaultEntryScreenViewModelTests
 {
-    [Theory]
-    [InlineData(TrustedDeviceDecision.NotTrusted)]
-    [InlineData(TrustedDeviceDecision.Unsure)]
-    public void UnsafeDeviceChoicesStopBeforeVaultAccess(TrustedDeviceDecision decision)
+    [Fact]
+    public void UnsafeDeviceChoiceStopsBeforeVaultAccess()
     {
         var lifecycle = new TestVaultLifecycleService();
         var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
         var viewModel = CreateViewModel(lifecycle, wizard);
 
         viewModel.BeginCommand.Execute(null);
-        GetDecisionCommand(viewModel, decision).Execute(null);
+        viewModel.TrustedDeviceNoCommand.Execute(null);
 
         Assert.True(viewModel.IsTrustedDeviceGuidanceVisible);
         Assert.Equal(0, lifecycle.VaultOperationCalls);
@@ -423,15 +421,6 @@ public sealed class VaultEntryScreenViewModelTests
         Assert.Equal(TrustedDeviceDecision.NotAnswered, wizard.Current.TrustedDeviceDecision);
         Assert.Equal(RecoveryWizardStepId.TrustedDeviceCheck, wizard.Current.CurrentStep);
     }
-
-    private static RelayCommand GetDecisionCommand(
-        VaultEntryScreenViewModel viewModel,
-        TrustedDeviceDecision decision) => decision switch
-        {
-            TrustedDeviceDecision.NotTrusted => viewModel.TrustedDeviceNoCommand,
-            TrustedDeviceDecision.Unsure => viewModel.TrustedDeviceUnsureCommand,
-            _ => throw new ArgumentOutOfRangeException(nameof(decision)),
-        };
 
     private static ResourceLocalizationService CreateLocalization() =>
         new(CultureInfo.GetCultureInfo("en"));

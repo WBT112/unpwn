@@ -54,14 +54,11 @@
                   HorizontalContentAlignment="Left"
                   Command="{Binding TrustedDeviceYesCommand}"
                   Content="{DynamicResource Vault.Trusted.Yes}" />
-          <Button HorizontalAlignment="Stretch"
+          <Button AutomationProperties.AutomationId="vault-trusted-no-or-unsure"
+                  HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Left"
                   Command="{Binding TrustedDeviceNoCommand}"
                   Content="{DynamicResource Vault.Trusted.No}" />
-          <Button HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Left"
-                  Command="{Binding TrustedDeviceUnsureCommand}"
-                  Content="{DynamicResource Vault.Trusted.Unsure}" />
         </StackPanel>
         <Button HorizontalAlignment="Left"
                 Command="{Binding BackToWelcomeCommand}"
