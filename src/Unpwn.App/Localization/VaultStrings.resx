@@ -6,15 +6,14 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Vault.Welcome.Title" xml:space="preserve"><value>Regain control step by step</value></data>
   <data name="Vault.Welcome.Description" xml:space="preserve"><value>unpwn guides you through account recovery. It does not detect malware and cannot prove that a device or account is secure.</value></data>
-  <data name="Vault.Welcome.Begin" xml:space="preserve"><value>Begin recovery</value></data>
+  <data name="Vault.Welcome.Begin" xml:space="preserve"><value>Begin or resume recovery</value></data>
   <data name="Vault.Trusted.Title" xml:space="preserve"><value>Are you using a device you trust?</value></data>
   <data name="Vault.Trusted.Description" xml:space="preserve"><value>Use a different, updated device if this computer may still be controlled by an attacker. Your answer is a safety decision, not a malware scan.</value></data>
   <data name="Vault.Trusted.Yes" xml:space="preserve"><value>Yes, continue on this device</value></data>
-  <data name="Vault.Trusted.No" xml:space="preserve"><value>No, this device is not trusted</value></data>
-  <data name="Vault.Trusted.Unsure" xml:space="preserve"><value>I am unsure</value></data>
+  <data name="Vault.Trusted.No" xml:space="preserve"><value>No, or I am not sure</value></data>
   <data name="Vault.Trusted.Back" xml:space="preserve"><value>Back</value></data>
   <data name="Vault.Guidance.Title" xml:space="preserve"><value>Move to a safer device first</value></data>
-  <data name="Vault.Guidance.Description" xml:space="preserve"><value>Do not enter account or vault credentials here. Use another device you trust, install operating-system and browser updates, and avoid suspicious browser extensions. Then start unpwn again on that device.</value></data>
+  <data name="Vault.Guidance.Description" xml:space="preserve"><value>Do not enter account or vault credentials on this device. Continue unpwn on another updated computer you have good reason to trust. If you do not have one, use a trusted device to create official Windows installation media from Microsoft or installation media from your Linux distribution's official source, then consider a clean installation of the affected computer. Prefer creating the installation USB on the trusted device. A clean reinstall is a recovery measure, not proof that the device is forensically or cryptographically safe.</value></data>
   <data name="Vault.Guidance.End" xml:space="preserve"><value>End safely</value></data>
   <data name="Vault.Guidance.Reconsider" xml:space="preserve"><value>Review my answer</value></data>
   <data name="Vault.SafetyStopped.Title" xml:space="preserve"><value>No recovery data was collected</value></data>
