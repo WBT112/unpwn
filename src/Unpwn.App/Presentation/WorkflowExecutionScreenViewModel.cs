@@ -811,7 +811,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         if (_execution is not null && HasRemainingRecoveryAction())
         {
-            CurrentActionFocusRequest++;
+            SelectedAction = Actions.FirstOrDefault(action =>
+                _execution.GetAction(action.DefinitionId).Status is not
+                    (RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable));
             return;
         }
 
@@ -938,8 +940,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         if (CurrentActionState?.Status == RecoveryActionStatus.InProgress)
         {
             await OpenRecoveryBrowserAsync(
-                cancellationToken,
-                allowBrowserEntryFallback: true);
+                allowBrowserEntryFallback: true,
+                cancellationToken);
         }
     }
 
@@ -973,15 +975,15 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     }
 
     private Task OpenRecoveryBrowserAsync(CancellationToken cancellationToken) =>
-        OpenRecoveryBrowserAsync(cancellationToken, allowBrowserEntryFallback: false);
+        OpenRecoveryBrowserAsync(allowBrowserEntryFallback: false, cancellationToken);
 
     private async Task OpenRecoveryBrowserAsync(
-        CancellationToken cancellationToken,
-        bool allowBrowserEntryFallback)
+        bool allowBrowserEntryFallback,
+        CancellationToken cancellationToken)
     {
         var handoff = await PrepareNavigationAsync(
-            cancellationToken,
-            allowBrowserEntryFallback);
+            allowBrowserEntryFallback,
+            cancellationToken);
         if (handoff is null || _account is null || _browserSessions is null)
         {
             if (_browserSessions is null)
@@ -1081,11 +1083,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
         CancellationToken cancellationToken) =>
-        PrepareNavigationAsync(cancellationToken, allowBrowserEntryFallback: false);
+        PrepareNavigationAsync(allowBrowserEntryFallback: false, cancellationToken);
 
     private async Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
-        CancellationToken cancellationToken,
-        bool allowBrowserEntryFallback)
+        bool allowBrowserEntryFallback,
+        CancellationToken cancellationToken)
     {
         if (_workflow is null || CurrentDefinition is null)
         {
