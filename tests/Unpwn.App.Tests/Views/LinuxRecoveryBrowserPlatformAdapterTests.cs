@@ -32,7 +32,7 @@ public sealed class LinuxRecoveryBrowserPlatformAdapterTests
     }
 
     [Fact]
-    public void GtkEnvironmentIsEphemeralAndDisablesDiskCacheAndDeveloperTools()
+    public void GtkEnvironmentIsEphemeralCompositorHostedAndDisablesDiskCacheAndDeveloperTools()
     {
         var profilePath = CreateProfilePath();
         try
@@ -45,6 +45,7 @@ public sealed class LinuxRecoveryBrowserPlatformAdapterTests
             adapter.ConfigureEnvironment(args);
 
             Assert.True(args.EphemeralDataManager);
+            Assert.True(args.ExperimentalOffscreen);
             Assert.True(args.DisableCache);
             Assert.False(args.EnableDevTools);
             Assert.Null(args.BaseDataDirectory);
