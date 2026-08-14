@@ -25,16 +25,17 @@ The detailed security assumptions and mitigations are documented in [Threat Mode
 
 Recovery data is local-first. Old passwords are not stored. Credentials, vault keys, reset data, MFA secrets, cookies, browser state, and other sensitive values must not appear in logs, telemetry, crash reports, audit summaries, localization diagnostics, or public test artifacts.
 
+Plaintext generated-credential exports are an explicit escape from encrypted vault storage. On Unix-like platforms unpwn creates the temporary export with owner read/write permissions only (`0600`) from the initial exclusive open, verifies that mode before writing plaintext, and atomically moves the same file to its final name without overwrite. Parent-directory permissions are not modified. On Windows the export uses the normal ACL semantics inherited from the user-selected destination directory; unpwn does not claim a custom owner-only Windows ACL for arbitrary destinations.
+
 ## Known pre-release hardening gaps
 
-The current source tree is not a supported security release. In particular, release hardening still needs to establish and test:
+The current source tree is not a supported security release. Remaining hardening work includes:
 
-- upper resource bounds for untrusted vault metadata/records and CSV input;
-- owner-only Unix creation permissions for plaintext credential exports and Recovery Browser profile data;
-- a public-network-only egress policy for standards-based recovery-location discovery, including DNS and redirects;
+- owner-only creation permissions for Linux Recovery Browser profile data;
+- cancellation/resource-safety hardening for the Linux WPE browsing-data cleanup callback boundary;
 - dedicated code-security analysis, stricter dependency gating, and review guards around native interop.
 
-These gaps are availability, local confidentiality, network-boundary, and regression-detection risks. Existing encryption, no-overwrite behavior, exact-origin validation, secret-safe diagnostics, and normal CI remain useful controls, but they must not be presented as covering the missing boundaries.
+These are local-confidentiality, native-resource-lifetime, and regression-detection risks. Existing encryption, plaintext-export permissions, no-overwrite behavior, public-network-only recovery discovery, exact-origin validation, secret-safe diagnostics, and normal CI remain useful controls, but they must not be presented as covering the remaining boundaries.
 
 ## Reporting a vulnerability
 
