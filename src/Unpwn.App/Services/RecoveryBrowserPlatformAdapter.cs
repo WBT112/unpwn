@@ -232,6 +232,9 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
                 // session without writing browser state into a normal or persistent GTK profile.
                 gtk.EphemeralDataManager = true;
                 gtk.DisableCache = true;
+                // Avalonia's normal GTK host is X11/XID-only. Use the compositor-backed GTK
+                // adapter so the Recovery Browser also works when the Avalonia window is Wayland.
+                gtk.ExperimentalOffscreen = true;
                 break;
         }
     }
