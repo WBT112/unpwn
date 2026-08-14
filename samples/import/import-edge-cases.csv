@@ -1,11 +1,11 @@
 service,account,username,url,extra,password
-duplicate.example,Duplicate baseline,synthetic-duplicate@duplicate.example.test,https://duplicate.example.test/login,first,UNPWN_TEST_SECRET_EDGE_DUPLICATE_FIRST
-DUPLICATE.EXAMPLE,Duplicate later,SYNTHETIC-DUPLICATE@DUPLICATE.EXAMPLE.TEST,https://duplicate.example.test/other,duplicate,UNPWN_TEST_SECRET_EDGE_DUPLICATE_LATER
-quoted.example,"Quoted, marketplace",synthetic-quoted@quoted.example.test,https://quoted.example.test/login,unknown-column,UNPWN_TEST_SECRET_EDGE_QUOTED
-bad-url.example,Bad URL,synthetic-bad-url@bad-url.example.test,javascript:alert(1),invalid-url,UNPWN_TEST_SECRET_EDGE_BAD_URL
+duplicate.example,duplicate.example A,synthetic-duplicate@duplicate.example.test,https://duplicate.example.test/login,first,UNPWN_TEST_SECRET_EDGE_DUPLICATE_FIRST
+DUPLICATE.EXAMPLE,duplicate.example B,SYNTHETIC-DUPLICATE@DUPLICATE.EXAMPLE.TEST,https://duplicate.example.test/other,duplicate,UNPWN_TEST_SECRET_EDGE_DUPLICATE_LATER
+quoted.example,"quoted.example, A",synthetic-quoted@quoted.example.test,https://quoted.example.test/login,unknown-column,UNPWN_TEST_SECRET_EDGE_QUOTED
+bad-url.example,bad-url.example,synthetic-bad-url@bad-url.example.test,javascript:alert(1),invalid-url,UNPWN_TEST_SECRET_EDGE_BAD_URL
 missing.example,,,,missing-account,UNPWN_TEST_SECRET_EDGE_MISSING_ACCOUNT
 
-broken.example,Malformed,synthetic-broken@broken.example.test
-unsupported.example,Manual fallback account,,,unknown-provider,UNPWN_TEST_SECRET_EDGE_UNSUPPORTED
-,URL-only account,synthetic-url-only@url-only.example.test,https://url-only.example.test/account,url-only,UNPWN_TEST_SECRET_EDGE_URL_ONLY
+broken.example,broken.example,synthetic-broken@broken.example.test
+unsupported.example,unsupported.example,,,unknown-provider,UNPWN_TEST_SECRET_EDGE_UNSUPPORTED
+,url-only.example,synthetic-url-only@url-only.example.test,https://url-only.example.test/account,url-only,UNPWN_TEST_SECRET_EDGE_URL_ONLY
 login-only.example,,synthetic-login-only@login-only.example.test,,login-only,UNPWN_TEST_SECRET_EDGE_LOGIN_ONLY
