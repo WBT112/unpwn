@@ -153,10 +153,12 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var metadata = _metadata;
             return Task.FromResult(
-                _metadata?.CredentialId == reference.CredentialId &&
-                _metadata.AccountId == reference.AccountId
-                    ? _metadata
+                metadata is not null &&
+                metadata.CredentialId == reference.CredentialId &&
+                metadata.AccountId == reference.AccountId
+                    ? metadata
                     : null);
         }
 
@@ -165,11 +167,14 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var metadata = _metadata;
+            var secret = _secret;
             var lease =
-                _metadata?.CredentialId == reference.CredentialId &&
-                _metadata.AccountId == reference.AccountId &&
-                _secret is not null
-                    ? new CredentialSecretLease(_secret.ToArray())
+                metadata is not null &&
+                metadata.CredentialId == reference.CredentialId &&
+                metadata.AccountId == reference.AccountId &&
+                secret is not null
+                    ? new CredentialSecretLease(secret.ToArray())
                     : null;
             AfterSecretRead?.Invoke();
             return Task.FromResult(lease);
@@ -196,9 +201,12 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
             throw new NotSupportedException();
 
         public Task<IReadOnlyList<GeneratedCredentialMetadata>> ListAsync(
-            CancellationToken cancellationToken) =>
-            Task.FromResult<IReadOnlyList<GeneratedCredentialMetadata>>(
-                _metadata is null ? [] : [_metadata]);
+            CancellationToken cancellationToken)
+        {
+            var metadata = _metadata;
+            return Task.FromResult<IReadOnlyList<GeneratedCredentialMetadata>>(
+                metadata is null ? [] : [metadata]);
+        }
 
         public Task<GeneratedCredentialOperationResult> MarkUsedAsync(
             GeneratedCredentialReference reference,
