@@ -89,9 +89,9 @@ public static class RecoveryWizardStateMachine
         ValidateCurrentStep(state, RecoveryWizardStepId.TrustedDeviceGuidance);
         ValidateTimestamp(state, occurredAt);
 
-        if (state.TrustedDeviceDecision is not TrustedDeviceDecision.NotTrusted and not TrustedDeviceDecision.Unsure)
+        if (state.TrustedDeviceDecision != TrustedDeviceDecision.NotTrusted)
         {
-            throw new InvalidOperationException("Device-safety guidance requires a not-trusted or unsure decision.");
+            throw new InvalidOperationException("Device-safety guidance requires a not-trusted decision.");
         }
 
         return state with
