@@ -174,7 +174,7 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
                 metadata.CredentialId == reference.CredentialId &&
                 metadata.AccountId == reference.AccountId &&
                 secret is not null
-                    ? new CredentialSecretLease(secret.ToArray())
+                    ? new CredentialSecretLease([.. secret])
                     : null;
             AfterSecretRead?.Invoke();
             return Task.FromResult(lease);
