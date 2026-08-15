@@ -71,6 +71,11 @@ public interface IAccountInventoryService
         AccountRecoveryCategory category,
         CancellationToken cancellationToken);
 
+    Task<AccountInventoryOperationResult> ClearCategoryOverrideAsync(
+        Guid accountId,
+        CancellationToken cancellationToken) => Task.FromResult(
+            AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.InvalidInput));
+
     Task<AccountInventoryOperationResult> RemoveAccountAsync(
         Guid accountId,
         CancellationToken cancellationToken);
