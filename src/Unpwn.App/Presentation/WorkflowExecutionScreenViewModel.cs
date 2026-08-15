@@ -721,8 +721,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         _orderItem = _inventory.CurrentRecoveryOrder?.Items.SingleOrDefault(item => item.AccountId == _account.Id);
         var reviewedWorkflow = ResolveReviewedWorkflow(_account);
-        _workflow = reviewedWorkflow ??
+        var fullWorkflow = reviewedWorkflow ??
             RepositoryWorkflowCatalog.CreateGenericManualWorkflow(_account.ProviderId);
+        _workflow = AccountRecoveryWorkflowScope.Project(
+            fullWorkflow,
+            _account.EffectiveCategory);
         _execution = null;
 
         var loaded = await _executionService.LoadAsync(_account.Id, _workflow, cancellationToken);
