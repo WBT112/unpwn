@@ -48,6 +48,8 @@
   <data name="Accounts.Triage.NeedsReview" xml:space="preserve"><value>Prüfung erforderlich</value></data>
   <data name="Accounts.Triage.AutomaticallyCategorized" xml:space="preserve"><value>Automatisch kategorisiert</value></data>
   <data name="Accounts.Triage.ChangedByYou" xml:space="preserve"><value>Von dir geändert</value></data>
+  <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Deine Auswahl — von dir geändert</value></data>
+  <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Automatisch kategorisiert</value></data>
   <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Prüfung empfohlen</value></data>
   <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Prüfe Konten mit „Prüfung erforderlich“, besonders wenn eines dein E-Mail-Konto sein könnte. Bekannte automatische Kategorien müssen nicht bestätigt werden.</value></data>
   <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Erkennbares Konto</value></data>
