@@ -10,10 +10,11 @@
   <data name="Accounts.Category.NonCritical" xml:space="preserve"><value>Not critical</value></data>
   <data name="Accounts.Category.Unknown" xml:space="preserve"><value>Unknown</value></data>
   <data name="Accounts.Filter.All" xml:space="preserve"><value>All accounts</value></data>
-  <data name="Accounts.Filter.Unreviewed" xml:space="preserve"><value>Not reviewed</value></data>
+  <data name="Accounts.Filter.NeedsReview" xml:space="preserve"><value>Needs review</value></data>
   <data name="Accounts.Filter.Email" xml:space="preserve"><value>Email</value></data>
   <data name="Accounts.Filter.Critical" xml:space="preserve"><value>Critical</value></data>
   <data name="Accounts.Filter.Unknown" xml:space="preserve"><value>Unknown</value></data>
+  <data name="Accounts.Sort.ReviewPriority" xml:space="preserve"><value>Review priority</value></data>
   <data name="Accounts.Sort.RecoveryOrder" xml:space="preserve"><value>Recovery order</value></data>
   <data name="Accounts.Sort.Provider" xml:space="preserve"><value>Provider</value></data>
   <data name="Accounts.Sort.Updated" xml:space="preserve"><value>Last updated</value></data>
@@ -36,23 +37,23 @@
   <data name="Accounts.Field.Url" xml:space="preserve"><value>Account URL</value></data>
   <data name="Accounts.Action.Save" xml:space="preserve"><value>Save account</value></data>
   <data name="Accounts.Action.Delete" xml:space="preserve"><value>Remove account</value></data>
-  <data name="Accounts.Triage.Title" xml:space="preserve"><value>Which accounts matter most?</value></data>
-  <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Review remaining: {0} of {1}</value></data>
-  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Reviewing more accounts improves the order, but you can deliberately continue here. Suggestions are local and never replace your explicit choice.</value></data>
-  <data name="Accounts.Triage.Continue" xml:space="preserve"><value>Continue to recovery</value></data>
-  <data name="Accounts.Triage.ContinueEarly" xml:space="preserve"><value>Continue to recovery now</value></data>
-  <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>An email account is confirmed. You can continue recovery now or review the remaining accounts.</value></data>
-  <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>All accounts were reviewed without an email account. Continue if this is intentional.</value></data>
-  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Confirm an email account first when you have one. If you genuinely have none, you may deliberately continue here.</value></data>
-  <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Your choice</value></data>
-  <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Local suggestion — not confirmed</value></data>
-  <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Category review recommended</value></data>
-  <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Review the suggested categories, especially an email account, to improve the recovery order.</value></data>
+  <data name="Accounts.Triage.Title" xml:space="preserve"><value>Which accounts need your attention?</value></data>
+  <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Needs review: {0} of {1}</value></data>
+  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Only accounts marked Needs review require a category decision. Automatic categories are already used for recovery order and can be changed at any time.</value></data>
+  <data name="Accounts.Triage.Continue" xml:space="preserve"><value>Continue to recovery now</value></data>
+  <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>An email account was identified. You can continue recovery now or review and correct any account category.</value></data>
+  <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>No email account was identified. Continue if this is intentional; you can return and change categories later.</value></data>
+  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Some accounts still need review and no email account is identified yet. Check those first if one may be your email account, or continue if your inventory genuinely has none.</value></data>
+  <data name="Accounts.Triage.NeedsReview" xml:space="preserve"><value>Needs review</value></data>
+  <data name="Accounts.Triage.AutomaticallyCategorized" xml:space="preserve"><value>Automatically categorized</value></data>
+  <data name="Accounts.Triage.ChangedByYou" xml:space="preserve"><value>Changed by you</value></data>
+  <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Review recommended</value></data>
+  <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Review accounts marked Needs review, especially if one may be your email account. Known automatic categories do not require confirmation.</value></data>
   <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Recognizable account</value></data>
   <data name="Accounts.Triage.AccountHelp" xml:space="preserve"><value>Keep only enough information to recognize the account. Never enter a password, recovery code, MFA secret, or reset link.</value></data>
-  <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Choose one category</value></data>
-  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Email accounts come first, then critical, unknown, and not-critical accounts. This choice never decides how a provider recovery works.</value></data>
-  <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Save and review next</value></data>
+  <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Recovery category</value></data>
+  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Automatic suggestions are used unless you change them. Email accounts come first in recovery, then critical, unknown, and not-critical accounts. This never decides how provider recovery works.</value></data>
+  <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Save category</value></data>
   <data name="Accounts.Delete.Action" xml:space="preserve"><value>Remove this account from the recovery session</value></data>
   <data name="Accounts.Triage.DeleteConsequence" xml:space="preserve"><value>The account and its category choice will be removed from this recovery session.</value></data>
   <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Remove account</value></data>
@@ -73,7 +74,7 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>No new accounts were imported because all reviewed accounts already exist in the inventory.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
-  <data name="Import.Continue.Title" xml:space="preserve"><value>Accounts are ready for review</value></data>
-  <data name="Import.Continue.Message" xml:space="preserve"><value>Continue to confirm the simple recovery category for each imported account. You can return here later to import more accounts.</value></data>
-  <data name="Import.Continue.Action" xml:space="preserve"><value>Review account categories</value></data>
+  <data name="Import.Continue.Title" xml:space="preserve"><value>Accounts are ready</value></data>
+  <data name="Import.Continue.Message" xml:space="preserve"><value>Continue to review only accounts that could not be categorized automatically. Known suggestions are already usable and do not require confirmation.</value></data>
+  <data name="Import.Continue.Action" xml:space="preserve"><value>Review account priorities</value></data>
 </root>
