@@ -8,7 +8,7 @@ namespace Unpwn.App.Presentation;
 public enum AccountInventoryFilter
 {
     All,
-    Unreviewed,
+    NeedsReview,
     Email,
     Critical,
     Unknown,
@@ -16,6 +16,7 @@ public enum AccountInventoryFilter
 
 public enum AccountInventorySort
 {
+    ReviewPriority,
     RecoveryOrder,
     Provider,
     Updated,
@@ -234,17 +235,18 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         _editingAccountId is { } accountId &&
         _currentInventory?.Accounts.Any(account => account.Id == accountId) == true;
 
-    public bool HasConfirmedEmailCategory =>
+    public bool HasEmailCategory =>
         _currentInventory?.Accounts.Any(account =>
-            account.ConfirmedCategory == AccountRecoveryCategory.Email) == true;
+            account.EffectiveCategory == AccountRecoveryCategory.Email) == true;
 
     public int RemainingCategoryCount =>
-        _currentInventory?.Accounts.Count(account => !account.IsCategorized) ?? 0;
+        _currentInventory?.Accounts.Count(account => account.RequiresCategoryReview) ?? 0;
 
     public bool CanContinueRecovery =>
         _currentInventory?.Accounts.Length > 0 &&
         (_recoveryFlow is null ||
-         _recoveryFlow.NextTask.Target == NextUserTaskTarget.RecoveryOverview);
+         _recoveryFlow.NextTask.Target is
+             NextUserTaskTarget.AccountTriage or NextUserTaskTarget.RecoveryOverview);
 
     public bool HasRemainingCategoryReview => CanContinueRecovery && RemainingCategoryCount > 0;
 
@@ -256,7 +258,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         var category = SelectedCategory?.Value;
         var filter = SelectedFilter?.Value ?? AccountInventoryFilter.All;
-        var sort = SelectedSort?.Value ?? AccountInventorySort.RecoveryOrder;
+        var sort = SelectedSort?.Value ?? AccountInventorySort.ReviewPriority;
         base.RefreshLocalization();
         BuildStaticOptions();
         SelectedCategory = category is null
@@ -317,20 +319,25 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         var remaining = RemainingCategoryCount;
         var total = inventory?.Accounts.Length ?? 0;
         TriageProgress = Localization.Format("Accounts.Triage.Progress", remaining, total);
-        ContinuationGuidance = Localization.GetString(HasConfirmedEmailCategory
+        ContinuationGuidance = Localization.GetString(HasEmailCategory
             ? "Accounts.Triage.EmailReady"
-            : remaining == 0 && total > 0
-                ? "Accounts.Triage.NoEmailReviewed"
-                : "Accounts.Triage.EmailRecommended");
+            : remaining > 0
+                ? "Accounts.Triage.EmailRecommended"
+                : "Accounts.Triage.NoEmailReviewed");
+        var needsAttention = remaining > 0 || (total > 0 && !HasEmailCategory);
         SetLocalizedStatus(
-            CanContinueRecovery ? AppVisualState.Normal : AppVisualState.Warning,
-            CanContinueRecovery ? "Screen.Accounts.StatusTitle" : "Accounts.Triage.Status.Title",
-            CanContinueRecovery ? "Screen.Accounts.StatusMessage" : "Accounts.Triage.Status.Message");
+            needsAttention ? AppVisualState.Warning : AppVisualState.Normal,
+            needsAttention ? "Accounts.Triage.Status.Title" : "Screen.Accounts.StatusTitle",
+            needsAttention ? "Accounts.Triage.Status.Message" : "Screen.Accounts.StatusMessage");
         RefreshAccountList();
         var first = Accounts.Count == 0 ? null : Accounts[0];
-        SelectedAccount = selectedId is null
-            ? Accounts.FirstOrDefault(item => !item.Account.IsCategorized) ?? first
-            : Accounts.FirstOrDefault(item => item.Id == selectedId) ?? first;
+        var requiredReview = Accounts.FirstOrDefault(item => item.Account.RequiresCategoryReview);
+        var previous = selectedId is null
+            ? null
+            : Accounts.FirstOrDefault(item => item.Id == selectedId);
+        SelectedAccount = previous?.Account.RequiresCategoryReview == true
+            ? previous
+            : requiredReview ?? previous ?? first;
         NotifyState();
         RaiseCommandStates();
     }
@@ -340,15 +347,18 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         IEnumerable<AccountInventoryEntry> accounts = _currentInventory?.Accounts ?? [];
         accounts = (SelectedFilter?.Value ?? AccountInventoryFilter.All) switch
         {
-            AccountInventoryFilter.Unreviewed => accounts.Where(account => !account.IsCategorized),
+            AccountInventoryFilter.NeedsReview => accounts.Where(account => account.RequiresCategoryReview),
             AccountInventoryFilter.Email => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Email),
             AccountInventoryFilter.Critical => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Critical),
             AccountInventoryFilter.Unknown => accounts.Where(account => account.EffectiveCategory == AccountRecoveryCategory.Unknown),
             _ => accounts,
         };
         var order = _currentRecoveryOrder?.Items.ToDictionary(item => item.AccountId, item => item.Order) ?? [];
-        accounts = (SelectedSort?.Value ?? AccountInventorySort.RecoveryOrder) switch
+        accounts = (SelectedSort?.Value ?? AccountInventorySort.ReviewPriority) switch
         {
+            AccountInventorySort.ReviewPriority => accounts
+                .OrderBy(account => account.RequiresCategoryReview ? 0 : 1)
+                .ThenBy(account => order.GetValueOrDefault(account.Id, int.MaxValue)),
             AccountInventorySort.RecoveryOrder => accounts.OrderBy(account => order.GetValueOrDefault(account.Id, int.MaxValue)),
             AccountInventorySort.Provider => accounts.OrderBy(account => account.ProviderId, StringComparer.OrdinalIgnoreCase),
             AccountInventorySort.Updated => accounts.OrderByDescending(account => account.UpdatedAt),
@@ -361,9 +371,11 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                 account.AccountName ?? account.LoginIdentifier ?? account.ProviderId,
                 account.ProviderId,
                 Localization.GetString($"Accounts.Category.{account.EffectiveCategory}"),
-                Localization.GetString(account.IsCategorized
-                    ? "Accounts.Triage.Explicit"
-                    : "Accounts.Triage.Suggested"),
+                Localization.GetString(account.RequiresCategoryReview
+                    ? "Accounts.Triage.NeedsReview"
+                    : account.ConfirmedCategory.HasValue
+                        ? "Accounts.Triage.ChangedByYou"
+                        : "Accounts.Triage.AutomaticallyCategorized"),
                 account)),
         ];
     }
@@ -459,21 +471,11 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        var categorizedId = _editingAccountId.Value;
         var result = await _inventory.CategorizeAsync(
-            categorizedId,
+            _editingAccountId.Value,
             SelectedCategory.Value,
             cancellationToken);
         ApplyResult(result);
-        if (result.Succeeded)
-        {
-            var next = Accounts.FirstOrDefault(item =>
-                item.Id != categorizedId && !item.Account.IsCategorized);
-            if (next is not null)
-            {
-                SelectedAccount = next;
-            }
-        }
     }
 
     private async Task DeleteAccountAsync(CancellationToken cancellationToken)
@@ -544,7 +546,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         OnPropertyChanged(nameof(IsEditingAccount));
         OnPropertyChanged(nameof(HasPersistedAccount));
-        OnPropertyChanged(nameof(HasConfirmedEmailCategory));
+        OnPropertyChanged(nameof(HasEmailCategory));
         OnPropertyChanged(nameof(RemainingCategoryCount));
         OnPropertyChanged(nameof(CanContinueRecovery));
         OnPropertyChanged(nameof(HasRemainingCategoryReview));
