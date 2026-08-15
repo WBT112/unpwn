@@ -91,7 +91,7 @@ public sealed class AccessibilityHeadlessTests
     }
 
     [Fact]
-    public async Task AccountReviewExposesSingleCategoryDecisionAndSaveNextAction()
+    public async Task AccountReviewExposesSingleCategoryDecisionAndContinuationAction()
     {
         await Session.Dispatch(() =>
         {
@@ -101,7 +101,6 @@ public sealed class AccessibilityHeadlessTests
             Assert.NotNull(FindByAutomationId(view, "accounts-category"));
             Assert.NotNull(FindByAutomationId(view, "accounts-category-save"));
             Assert.NotNull(FindByAutomationId(view, "accounts-continue-recovery"));
-            Assert.NotNull(FindByAutomationId(view, "accounts-continue-recovery-early"));
             Assert.NotNull(FindByAutomationId(view, "accounts-new"));
         }, CancellationToken.None);
     }
@@ -179,7 +178,27 @@ public sealed class AccessibilityHeadlessTests
             var viewModel = Assert.IsType<AccountInventoryScreenViewModel>(shell.CurrentScreen);
             Assert.True(list.Items.Count == accountCount);
             Assert.True(viewModel.Accounts.Count == accountCount);
-            Assert.Equal(importedAccounts.Select(account => account.Id), viewModel.Accounts.Select(account => account.Id));
+            Assert.Equal(
+                importedAccounts.Select(account => account.Id).OrderBy(id => id),
+                viewModel.Accounts.Select(account => account.Id).OrderBy(id => id));
+            var automaticCategorySeen = false;
+            foreach (var item in viewModel.Accounts)
+            {
+                if (item.Account.RequiresCategoryReview)
+                {
+                    Assert.False(automaticCategorySeen);
+                }
+                else
+                {
+                    automaticCategorySeen = true;
+                }
+            }
+
+            if (viewModel.Accounts.Any(item => item.Account.RequiresCategoryReview))
+            {
+                Assert.True(viewModel.Accounts[0].Account.RequiresCategoryReview);
+            }
+
             workspaceWindow.Close();
             window.Close();
         }, CancellationToken.None);
