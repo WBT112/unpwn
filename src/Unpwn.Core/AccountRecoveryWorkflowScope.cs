@@ -109,7 +109,7 @@ public static class AccountRecoveryWorkflowScope
     }
 
     private static void AddSinglePasswordAction(
-        ICollection<RecoveryActionDefinition> destination,
+        List<RecoveryActionDefinition> destination,
         RecoveryWorkflowDefinition workflow,
         RecoveryPath path,
         RecoveryActionType type)
