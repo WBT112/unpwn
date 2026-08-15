@@ -29,6 +29,10 @@ internal sealed class UnavailableAccountInventoryService : IAccountInventoryServ
         AccountRecoveryCategory category,
         CancellationToken cancellationToken) => Failure(cancellationToken);
 
+    public Task<AccountInventoryOperationResult> ClearCategoryOverrideAsync(
+        Guid accountId,
+        CancellationToken cancellationToken) => Failure(cancellationToken);
+
     public Task<AccountInventoryOperationResult> RemoveAccountAsync(
         Guid accountId,
         CancellationToken cancellationToken) => Failure(cancellationToken);
