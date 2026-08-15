@@ -62,6 +62,15 @@ public static class AccountRecoveryWorkflowScope
         var projectedActions = state.Actions
             .Where(action => activeIds.Contains(action.DefinitionId))
             .ToArray();
+        if (activeIds.Count == 0)
+        {
+            return state with
+            {
+                Actions = [],
+                PathSelectionReason = RecoveryPathSelectionReasonCode.NoSafeSupportedPath,
+            };
+        }
+
         return projectedActions.Length == state.Actions.Length
             ? state
             : state with { Actions = projectedActions };
