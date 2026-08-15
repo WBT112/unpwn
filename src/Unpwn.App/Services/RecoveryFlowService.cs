@@ -202,7 +202,7 @@ public sealed class RecoveryFlowService : IRecoveryFlowService, IDisposable
 
         return new RecoveryFlowContext(
             accounts.Length,
-            accounts.Count(account => !account.IsCategorized),
+            accounts.Count(account => account.RequiresCategoryReview),
             hasOutstandingWork,
             hasPendingCredentials,
             dashboard?.Recommendation.AccountId ?? _inventory.CurrentRecoveryOrder?.Recommended?.AccountId,

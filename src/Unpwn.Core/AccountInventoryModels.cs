@@ -36,6 +36,9 @@ public sealed record AccountInventoryEntry(
 
     public bool IsCategorized => ConfirmedCategory.HasValue;
 
+    public bool RequiresCategoryReview =>
+        !ConfirmedCategory.HasValue && SuggestedCategory == AccountRecoveryCategory.Unknown;
+
     public AccountCriticality DashboardCriticality => EffectiveCategory switch
     {
         AccountRecoveryCategory.Critical => AccountCriticality.Critical,

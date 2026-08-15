@@ -5,15 +5,17 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Accounts.Error.Command" xml:space="preserve"><value>Die Kontoaktion konnte nicht sicher abgeschlossen werden.</value></data>
+  <data name="Accounts.Error.Flow" xml:space="preserve"><value>Der Wiederherstellungsschritt konnte nicht sicher fortgesetzt werden. Prüfe den aktuellen Arbeitsbereich und versuche es erneut.</value></data>
   <data name="Accounts.Category.Email" xml:space="preserve"><value>E-Mail</value></data>
   <data name="Accounts.Category.Critical" xml:space="preserve"><value>Kritisch</value></data>
   <data name="Accounts.Category.NonCritical" xml:space="preserve"><value>Nicht kritisch</value></data>
   <data name="Accounts.Category.Unknown" xml:space="preserve"><value>Unbekannt</value></data>
   <data name="Accounts.Filter.All" xml:space="preserve"><value>Alle Konten</value></data>
-  <data name="Accounts.Filter.Unreviewed" xml:space="preserve"><value>Nicht geprüft</value></data>
+  <data name="Accounts.Filter.NeedsReview" xml:space="preserve"><value>Prüfung erforderlich</value></data>
   <data name="Accounts.Filter.Email" xml:space="preserve"><value>E-Mail</value></data>
   <data name="Accounts.Filter.Critical" xml:space="preserve"><value>Kritisch</value></data>
   <data name="Accounts.Filter.Unknown" xml:space="preserve"><value>Unbekannt</value></data>
+  <data name="Accounts.Sort.ReviewPriority" xml:space="preserve"><value>Prüfpriorität</value></data>
   <data name="Accounts.Sort.RecoveryOrder" xml:space="preserve"><value>Wiederherstellungsreihenfolge</value></data>
   <data name="Accounts.Sort.Provider" xml:space="preserve"><value>Anbieter</value></data>
   <data name="Accounts.Sort.Updated" xml:space="preserve"><value>Zuletzt geändert</value></data>
@@ -36,23 +38,25 @@
   <data name="Accounts.Field.Url" xml:space="preserve"><value>Konto-URL</value></data>
   <data name="Accounts.Action.Save" xml:space="preserve"><value>Konto speichern</value></data>
   <data name="Accounts.Action.Delete" xml:space="preserve"><value>Konto entfernen</value></data>
-  <data name="Accounts.Triage.Title" xml:space="preserve"><value>Welche Konten sind am wichtigsten?</value></data>
-  <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Noch zu prüfen: {0} von {1}</value></data>
-  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Mehr geprüfte Konten verbessern die Reihenfolge; du kannst hier trotzdem bewusst fortfahren. Lokale Vorschläge ersetzen nie deine ausdrückliche Auswahl.</value></data>
-  <data name="Accounts.Triage.Continue" xml:space="preserve"><value>Weiter zur Wiederherstellung</value></data>
-  <data name="Accounts.Triage.ContinueEarly" xml:space="preserve"><value>Jetzt zur Wiederherstellung</value></data>
-  <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>Ein E-Mail-Konto ist bestätigt. Du kannst die Recovery jetzt fortsetzen oder die übrigen Konten prüfen.</value></data>
-  <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>Alle Konten wurden ohne E-Mail-Konto geprüft. Fahre fort, wenn das beabsichtigt ist.</value></data>
-  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Bestätige zuerst ein E-Mail-Konto, sofern du eines hast. Falls du wirklich keines hast, kannst du hier bewusst fortfahren.</value></data>
-  <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Deine Auswahl</value></data>
-  <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Lokaler Vorschlag – nicht bestätigt</value></data>
-  <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Kategorieprüfung empfohlen</value></data>
-  <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Prüfe die vorgeschlagenen Kategorien, besonders ein E-Mail-Konto, um die Recovery-Reihenfolge zu verbessern.</value></data>
+  <data name="Accounts.Triage.Title" xml:space="preserve"><value>Welche Konten brauchen deine Aufmerksamkeit?</value></data>
+  <data name="Accounts.Triage.Progress" xml:space="preserve"><value>Prüfung erforderlich: {0} von {1}</value></data>
+  <data name="Accounts.Triage.OptionalHelp" xml:space="preserve"><value>Nur Konten mit „Prüfung erforderlich“ brauchen eine Kategorieentscheidung. Automatische Kategorien werden bereits für die Wiederherstellungsreihenfolge verwendet und können jederzeit geändert werden.</value></data>
+  <data name="Accounts.Triage.Continue" xml:space="preserve"><value>Jetzt zur Wiederherstellung</value></data>
+  <data name="Accounts.Triage.EmailReady" xml:space="preserve"><value>Ein E-Mail-Konto wurde erkannt. Du kannst die Wiederherstellung jetzt fortsetzen oder Kategorien prüfen und korrigieren.</value></data>
+  <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>Es wurde kein E-Mail-Konto erkannt. Fahre fort, wenn das beabsichtigt ist; du kannst später zurückkehren und Kategorien ändern.</value></data>
+  <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Einige Konten müssen noch geprüft werden und bisher wurde kein E-Mail-Konto erkannt. Prüfe diese zuerst, falls eines davon dein E-Mail-Konto sein könnte, oder fahre fort, wenn dein Inventar tatsächlich keines enthält.</value></data>
+  <data name="Accounts.Triage.NeedsReview" xml:space="preserve"><value>Prüfung erforderlich</value></data>
+  <data name="Accounts.Triage.AutomaticallyCategorized" xml:space="preserve"><value>Automatisch kategorisiert</value></data>
+  <data name="Accounts.Triage.ChangedByYou" xml:space="preserve"><value>Von dir geändert</value></data>
+  <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Deine Auswahl — von dir geändert</value></data>
+  <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Automatisch kategorisiert</value></data>
+  <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Prüfung empfohlen</value></data>
+  <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Prüfe Konten mit „Prüfung erforderlich“, besonders wenn eines dein E-Mail-Konto sein könnte. Bekannte automatische Kategorien müssen nicht bestätigt werden.</value></data>
   <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Erkennbares Konto</value></data>
   <data name="Accounts.Triage.AccountHelp" xml:space="preserve"><value>Erfasse nur genug Angaben, um das Konto zu erkennen. Gib niemals Passwort, Recovery-Code, MFA-Geheimnis oder Reset-Link ein.</value></data>
-  <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Eine Kategorie wählen</value></data>
-  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Zuerst kommen E-Mail-Konten, dann kritische, unbekannte und nicht kritische Konten. Diese Auswahl bestimmt niemals, wie eine Provider-Recovery funktioniert.</value></data>
-  <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Speichern und nächstes prüfen</value></data>
+  <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Wiederherstellungskategorie</value></data>
+  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Automatische Vorschläge gelten, solange du sie nicht änderst. Bei der Wiederherstellung kommen E-Mail-Konten zuerst, dann kritische, unbekannte und nicht kritische Konten. Das bestimmt niemals, wie die Wiederherstellung beim Anbieter funktioniert.</value></data>
+  <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Kategorie speichern</value></data>
   <data name="Accounts.Delete.Action" xml:space="preserve"><value>Dieses Konto aus der Recovery-Session entfernen</value></data>
   <data name="Accounts.Triage.DeleteConsequence" xml:space="preserve"><value>Das Konto und seine Kategorieauswahl werden aus dieser Recovery-Session entfernt.</value></data>
   <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Konto entfernen</value></data>
@@ -73,7 +77,7 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>Es wurden keine neuen Konten importiert, weil alle geprüften Konten bereits im Inventar vorhanden sind.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Kläre die Duplikatwahl oder prüfe den Inventarstatus.</value></data>
-  <data name="Import.Continue.Title" xml:space="preserve"><value>Konten können geprüft werden</value></data>
-  <data name="Import.Continue.Message" xml:space="preserve"><value>Bestätige als Nächstes für jedes importierte Konto die einfache Recovery-Kategorie. Du kannst später zurückkehren und weitere Konten importieren.</value></data>
-  <data name="Import.Continue.Action" xml:space="preserve"><value>Kontokategorien prüfen</value></data>
+  <data name="Import.Continue.Title" xml:space="preserve"><value>Konten sind bereit</value></data>
+  <data name="Import.Continue.Message" xml:space="preserve"><value>Prüfe als Nächstes nur Konten, die nicht automatisch kategorisiert werden konnten. Bekannte Vorschläge sind bereits verwendbar und müssen nicht bestätigt werden.</value></data>
+  <data name="Import.Continue.Action" xml:space="preserve"><value>Kontoprioritäten prüfen</value></data>
 </root>

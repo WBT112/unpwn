@@ -45,7 +45,7 @@ public enum NextUserTaskTarget
 
 public sealed record RecoveryFlowContext(
     int AccountCount,
-    int UncategorizedAccountCount,
+    int CategoryReviewRequiredCount,
     bool HasOutstandingAccountWork,
     bool HasPendingCredentialHandoff,
     Guid? RecommendedAccountId = null,
@@ -149,7 +149,7 @@ public static class RecoveryNextUserTask
                 NextUserTaskCode.ReviewAccountCategories,
                 NextUserTaskTarget.AccountTriage,
                 RecoveryWizardStepId.AccountTriage),
-            "account-triage" when context.UncategorizedAccountCount > 0 => Task(
+            "account-triage" when context.CategoryReviewRequiredCount > 0 => Task(
                 state,
                 NextUserTaskState.OptionalWorkMayContinue,
                 NextUserTaskCode.ContinueCategoryReviewOrRecovery,
@@ -230,12 +230,12 @@ public static class RecoveryNextUserTask
     private static void Validate(RecoveryFlowContext context)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(context.AccountCount);
-        ArgumentOutOfRangeException.ThrowIfNegative(context.UncategorizedAccountCount);
-        if (context.UncategorizedAccountCount > context.AccountCount)
+        ArgumentOutOfRangeException.ThrowIfNegative(context.CategoryReviewRequiredCount);
+        if (context.CategoryReviewRequiredCount > context.AccountCount)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(context),
-                "Uncategorized accounts cannot exceed all accounts.");
+                "Accounts requiring category review cannot exceed all accounts.");
         }
     }
 }

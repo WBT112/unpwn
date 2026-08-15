@@ -2,6 +2,7 @@ using System.Globalization;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.Application;
 using Unpwn.Core;
 using Unpwn.Import.Csv;
 using Xunit;
@@ -15,7 +16,7 @@ public sealed class AccountInventoryScreenViewModelTests
     {
         var service = new TestAccountInventoryService([]);
         var viewModel = CreateViewModel(service);
-        var imported = CreateAccount("Imported Mail");
+        var imported = CreateAccount("mystery.example");
         service.ReplaceWithoutNotification([imported]);
 
         Assert.Empty(viewModel.Accounts);
@@ -52,10 +53,10 @@ public sealed class AccountInventoryScreenViewModelTests
     }
 
     [Fact]
-    public void CategoryFiltersUseCanonicalValuesInsteadOfDisplayText()
+    public void NeedsReviewFilterExcludesKnownAutomaticSuggestions()
     {
-        var email = CreateAccount("Gmail", confirmed: AccountRecoveryCategory.Email);
-        var unknown = CreateAccount("Synthetic");
+        var email = CreateAccount("gmail");
+        var unknown = CreateAccount("mystery.example");
         var viewModel = CreateViewModel(new TestAccountInventoryService([unknown, email]));
 
         viewModel.SelectedFilter = viewModel.Filters.Single(option =>
@@ -63,14 +64,54 @@ public sealed class AccountInventoryScreenViewModelTests
 
         Assert.Equal(email.Id, Assert.Single(viewModel.Accounts).Id);
         viewModel.SelectedFilter = viewModel.Filters.Single(option =>
-            option.Value == AccountInventoryFilter.Unreviewed);
+            option.Value == AccountInventoryFilter.NeedsReview);
         Assert.Equal(unknown.Id, Assert.Single(viewModel.Accounts).Id);
     }
 
     [Fact]
-    public void RuntimeLanguageChangeRelocalizesLabelsWithoutChangingCanonicalState()
+    public void UnknownAccountsAreSelectedAndOrderedBeforeKnownSuggestions()
     {
-        var account = CreateAccount("Banking", confirmed: AccountRecoveryCategory.Critical);
+        var email = CreateAccount("gmail");
+        var critical = CreateAccount("bitwarden");
+        var unknown = CreateAccount("mystery.example");
+        var viewModel = CreateViewModel(new TestAccountInventoryService([email, critical, unknown]));
+
+        Assert.Equal(unknown.Id, viewModel.Accounts[0].Id);
+        Assert.Equal(unknown.Id, viewModel.SelectedAccount?.Id);
+        Assert.Equal("Needs review", viewModel.Accounts[0].ReviewText);
+        Assert.Equal(1, viewModel.RemainingCategoryCount);
+        Assert.Equal(
+            "Automatically categorized",
+            viewModel.Accounts.Single(item => item.Id == email.Id).ReviewText);
+        Assert.Equal(
+            "Automatically categorized",
+            viewModel.Accounts.Single(item => item.Id == critical.Id).ReviewText);
+    }
+
+    [Fact]
+    public void AllKnownSuggestionsRequireNoConfirmationAndKeepProvenance()
+    {
+        var email = CreateAccount("gmail");
+        var critical = CreateAccount("bitwarden");
+        var routine = CreateAccount("streaming");
+        var service = new TestAccountInventoryService([critical, routine, email]);
+        var viewModel = CreateViewModel(service);
+
+        Assert.Equal(0, viewModel.RemainingCategoryCount);
+        Assert.True(viewModel.IsCategoryReviewComplete);
+        Assert.True(viewModel.CanContinueRecovery);
+        Assert.True(viewModel.HasEmailCategory);
+        Assert.All(viewModel.Accounts, item =>
+            Assert.Equal("Automatically categorized", item.ReviewText));
+        Assert.All(service.CurrentInventory!.Accounts, account =>
+            Assert.Null(account.ConfirmedCategory));
+        Assert.Contains("email account was identified", viewModel.ContinuationGuidance, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RuntimeLanguageChangeRelocalizesReviewStateWithoutChangingCanonicalState()
+    {
+        var account = CreateAccount("bitwarden");
         var service = new TestAccountInventoryService([account]);
         var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
         var viewModel = CreateViewModel(service, localization);
@@ -79,51 +120,85 @@ public sealed class AccountInventoryScreenViewModelTests
 
         Assert.Equal(account.Id, Assert.Single(viewModel.Accounts).Id);
         Assert.Equal("Kritisch", Assert.Single(viewModel.Accounts).CategoryText);
-        Assert.Equal(AccountRecoveryCategory.Critical, Assert.Single(service.CurrentInventory!.Accounts).ConfirmedCategory);
+        Assert.Equal("Automatisch kategorisiert", Assert.Single(viewModel.Accounts).ReviewText);
+        Assert.Null(Assert.Single(service.CurrentInventory!.Accounts).ConfirmedCategory);
     }
 
     [Fact]
-    public async Task SavingCategoryPersistsStableEnumAndSelectsNextUnreviewedAccount()
+    public async Task SavingUnknownCategoryCreatesExplicitOverrideAndMovesToNextRequiredReview()
     {
-        var first = CreateAccount("Gmail");
-        var second = CreateAccount("Banking");
-        var service = new TestAccountInventoryService([first, second]);
+        var first = CreateAccount("first-unknown.example");
+        var second = CreateAccount("second-unknown.example");
+        var known = CreateAccount("gmail");
+        var service = new TestAccountInventoryService([known, first, second]);
         var viewModel = CreateViewModel(service);
         viewModel.SelectedAccount = viewModel.Accounts.Single(item => item.Id == first.Id);
         viewModel.SelectedCategory = viewModel.Categories.Single(option =>
-            option.Value == AccountRecoveryCategory.Email);
+            option.Value == AccountRecoveryCategory.NonCritical);
 
         var outcome = await viewModel.SaveCategoryCommand.ExecuteAsync();
 
         Assert.Equal(AsyncCommandOutcome.Completed, outcome);
-        Assert.Equal((first.Id, AccountRecoveryCategory.Email), service.LastCategoryDecision);
+        Assert.Equal((first.Id, AccountRecoveryCategory.NonCritical), service.LastCategoryDecision);
         Assert.Equal(second.Id, viewModel.SelectedAccount?.Id);
-        Assert.True(viewModel.CanContinueRecovery);
         Assert.Equal(1, viewModel.RemainingCategoryCount);
+        Assert.Equal(
+            "Changed by you",
+            viewModel.Accounts.Single(item => item.Id == first.Id).ReviewText);
+        Assert.Null(service.CurrentInventory!.Accounts.Single(account => account.Id == known.Id).ConfirmedCategory);
     }
 
     [Fact]
-    public void ResumeShowsRemainingReviewAndAllowsCompletionWithoutAnEmailAccount()
+    public async Task DirectContinueAdvancesCanonicalTriageWithoutConfirmingAutomaticCategories()
     {
-        var reviewed = CreateAccount("Banking", confirmed: AccountRecoveryCategory.Critical);
-        var remaining = CreateAccount("Unknown service");
-        var service = new TestAccountInventoryService([reviewed, remaining]);
+        var email = CreateAccount("gmail");
+        var inventory = new TestAccountInventoryService([email]);
+        var flow = new TestRecoveryFlowService(StartAtAccountInventory());
+        var viewModel = CreateViewModel(inventory, recoveryFlow: flow);
+        var continuationRequested = false;
+        viewModel.ContinueToRecoveryRequested += (_, _) => continuationRequested = true;
+
+        Assert.True(viewModel.CanContinueRecovery);
+        var outcome = await viewModel.ContinueRecoveryCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(1, flow.AdvanceCalls);
+        Assert.True(continuationRequested);
+        Assert.Equal(NextUserTaskTarget.RecoveryOverview, flow.NextTask.Target);
+        Assert.Null(Assert.Single(inventory.CurrentInventory!.Accounts).ConfirmedCategory);
+        Assert.Null(inventory.LastCategoryDecision);
+    }
+
+    [Fact]
+    public void ResumeReturnsToFirstAccountThatActuallyNeedsReview()
+    {
+        var known = CreateAccount("gmail");
+        var firstUnknown = CreateAccount("first-unknown.example");
+        var secondUnknown = CreateAccount("second-unknown.example");
+        var service = new TestAccountInventoryService([known, firstUnknown, secondUnknown]);
+        var viewModel = CreateViewModel(service);
+        viewModel.SelectedAccount = viewModel.Accounts.Single(item => item.Id == known.Id);
+
+        viewModel.Activate();
+
+        Assert.Equal(firstUnknown.Id, viewModel.SelectedAccount?.Id);
+        Assert.True(viewModel.SelectedAccount?.Account.RequiresCategoryReview);
+    }
+
+    [Fact]
+    public void ReviewedInventoryWithoutEmailCanStillContinueAfterWarning()
+    {
+        var critical = CreateAccount("banking", confirmed: AccountRecoveryCategory.Critical);
+        var routine = CreateAccount("mystery.example", confirmed: AccountRecoveryCategory.NonCritical);
+        var service = new TestAccountInventoryService([critical, routine]);
         var viewModel = CreateViewModel(service);
 
         Assert.True(viewModel.CanContinueRecovery);
-        Assert.True(viewModel.HasRemainingCategoryReview);
-        Assert.False(viewModel.IsCategoryReviewComplete);
-        Assert.Equal(1, viewModel.RemainingCategoryCount);
-        Assert.Contains("1", viewModel.TriageProgress, StringComparison.Ordinal);
-
-        service.ReplaceWithoutNotification(
-            [reviewed, remaining with { ConfirmedCategory = AccountRecoveryCategory.Unknown, CategoryConfirmedRevision = 2 }]);
-        viewModel.Activate();
-
-        Assert.True(viewModel.CanContinueRecovery);
         Assert.True(viewModel.IsCategoryReviewComplete);
-        Assert.False(viewModel.HasConfirmedEmailCategory);
-        Assert.Contains("without an email", viewModel.ContinuationGuidance, StringComparison.OrdinalIgnoreCase);
+        Assert.False(viewModel.HasEmailCategory);
+        Assert.Equal(0, viewModel.RemainingCategoryCount);
+        Assert.Contains("No email account", viewModel.ContinuationGuidance, StringComparison.OrdinalIgnoreCase);
+        Assert.True(viewModel.ContinueRecoveryCommand.CanExecute(null));
     }
 
     [Fact]
@@ -154,11 +229,13 @@ public sealed class AccountInventoryScreenViewModelTests
 
     private static AccountInventoryScreenViewModel CreateViewModel(
         TestAccountInventoryService service,
-        ResourceLocalizationService? localization = null) =>
+        ResourceLocalizationService? localization = null,
+        IRecoveryFlowService? recoveryFlow = null) =>
         new(
             service,
             new TestConfirmationDialogService(),
-            localization ?? new ResourceLocalizationService(CultureInfo.GetCultureInfo("en")));
+            localization ?? new ResourceLocalizationService(CultureInfo.GetCultureInfo("en")),
+            recoveryFlow);
 
     private static AccountInventoryEntry CreateAccount(
         string provider,
@@ -175,6 +252,14 @@ public sealed class AccountInventoryScreenViewModelTests
             confirmed.HasValue ? 1 : null,
             DateTimeOffset.UnixEpoch);
 
+    private static NextUserTask StartAtAccountInventory() =>
+        new(
+            RecoveryWizardStepId.AccountInventory,
+            NextUserTaskState.ActionAvailable,
+            NextUserTaskCode.ReviewAccountCategories,
+            NextUserTaskTarget.AccountTriage,
+            RecoveryWizardStepId.AccountTriage);
+
     private sealed class TestConfirmationDialogService : IConfirmationDialogService
     {
         public Task<bool> ConfirmAsync(
@@ -184,6 +269,54 @@ public sealed class AccountInventoryScreenViewModelTests
             cancellationToken.ThrowIfCancellationRequested();
             return Task.FromResult(false);
         }
+    }
+
+    private sealed class TestRecoveryFlowService(NextUserTask nextTask) : IRecoveryFlowService
+    {
+        public event EventHandler? NextTaskChanged;
+
+        public int AdvanceCalls { get; private set; }
+
+        public RecoveryWizardState Current { get; } = RecoveryWizardState.Create(
+            Guid.NewGuid(),
+            DateTimeOffset.UnixEpoch);
+
+        public NextUserTask NextTask { get; private set; } = nextTask;
+
+        public Task<RecoveryFlowMoveResult> AdvanceAsync(CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            AdvanceCalls++;
+            var previous = NextTask;
+            if (previous.Target != NextUserTaskTarget.AccountTriage || !previous.RequiresTransition)
+            {
+                return Task.FromResult(RecoveryFlowMoveResult.Failure(
+                    RecoveryFlowMoveFailureCode.Blocked,
+                    previous));
+            }
+
+            NextUserTask advanced = new(
+                RecoveryWizardStepId.AccountTriage,
+                NextUserTaskState.ActionAvailable,
+                NextUserTaskCode.ContinueToRecovery,
+                NextUserTaskTarget.RecoveryOverview,
+                RecoveryWizardStepId.RecoveryOverview);
+            NextTask = advanced;
+            NextTaskChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoveryFlowMoveResult.Success(advanced));
+        }
+
+        public Task<RecoveryFlowMoveResult> BeginCompletionReviewAsync(
+            CancellationToken cancellationToken) =>
+            Task.FromResult(RecoveryFlowMoveResult.Failure(
+                RecoveryFlowMoveFailureCode.Blocked,
+                NextTask));
+
+        public Task<RecoveryFlowMoveResult> MarkCompletionReviewReadyAsync(
+            CancellationToken cancellationToken) =>
+            Task.FromResult(RecoveryFlowMoveResult.Failure(
+                RecoveryFlowMoveFailureCode.Blocked,
+                NextTask));
     }
 
     private sealed class InvalidCurrentModelInventoryService(AccountInventoryState invalidState)
