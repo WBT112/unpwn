@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Accounts.Error.Command" xml:space="preserve"><value>The account operation could not be completed safely.</value></data>
+  <data name="Accounts.Error.Flow" xml:space="preserve"><value>The recovery step could not be advanced safely. Review the current workspace state and try again.</value></data>
   <data name="Accounts.Category.Email" xml:space="preserve"><value>Email</value></data>
   <data name="Accounts.Category.Critical" xml:space="preserve"><value>Critical</value></data>
   <data name="Accounts.Category.NonCritical" xml:space="preserve"><value>Not critical</value></data>
