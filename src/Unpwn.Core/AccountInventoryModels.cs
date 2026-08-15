@@ -12,6 +12,14 @@ public enum AccountRecoveryCategory
     Unknown = 3,
 }
 
+public static class AccountRecoveryCategoryRules
+{
+    public static bool IsUserSelectable(AccountRecoveryCategory category) => category is
+        AccountRecoveryCategory.Email or
+        AccountRecoveryCategory.Critical or
+        AccountRecoveryCategory.NonCritical;
+}
+
 public enum AccountRecoveryOrderReasonCode
 {
     EmailCategory,
@@ -68,10 +76,16 @@ public sealed record AccountInventoryEntry(
             throw new InvalidOperationException("An inventory account requires a name or login identifier.");
         }
 
-        if (!Enum.IsDefined(SuggestedCategory) ||
-            (ConfirmedCategory.HasValue && !Enum.IsDefined(ConfirmedCategory.Value)))
+        if (!Enum.IsDefined(SuggestedCategory))
         {
             throw new InvalidOperationException("An inventory account contains an unknown recovery category.");
+        }
+
+        if (ConfirmedCategory is { } confirmedCategory &&
+            !AccountRecoveryCategoryRules.IsUserSelectable(confirmedCategory))
+        {
+            throw new InvalidOperationException(
+                "An explicit account category must be a user-selectable recovery category.");
         }
 
         if (!string.IsNullOrWhiteSpace(AccountUrl) &&
