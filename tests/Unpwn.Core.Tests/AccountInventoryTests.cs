@@ -67,7 +67,7 @@ public sealed class AccountInventoryTests
     public void PlanUsesCategoryOrderAndExplicitOverrides()
     {
         var nonCritical = CreateAccount("Streaming", AccountRecoveryCategory.NonCritical);
-        var unknown = CreateAccount("Unknown", AccountRecoveryCategory.Unknown);
+        var unknown = CreateAccount("Unknown");
         var critical = CreateAccount("Banking", AccountRecoveryCategory.Critical);
         var email = CreateAccount("Gmail", AccountRecoveryCategory.Email);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
