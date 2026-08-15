@@ -44,6 +44,28 @@ Every action instance is identified by its repository definition ID and stores:
 
 The aggregate never stores translated labels, provider-page content, browser state, reset links, MFA secrets, recovery codes, cookies, or generated secret values. Completion acknowledgements reference only repository-controlled criterion keys from the matching action definition.
 
+## Category-scoped recovery
+
+The repository provider workflow remains the complete canonical definition. The current account
+category may narrow the active checklist without deleting, completing, or marking omitted actions as
+not applicable.
+
+`NonCritical` is the low-risk category. Its active recovery scope contains only the single
+`ChangePassword` action for an authenticated-change path or the single `ResetPassword` action for a
+password-reset path. MFA, session, recovery-option, connected-application, API-token, SSH/signing-key,
+and provider-specific hardening actions are outside that low-risk scope. `Email`, `Critical`, and
+`Unknown` continue to use the complete provider workflow.
+
+The full action state remains encrypted as the canonical execution record. Presentation and dashboard
+state receive only the category-scoped projection. Omitted low-risk actions therefore do not count as
+open, blocked, failed, incomplete, or unresolved risk. If the account is later reclassified to a
+higher-risk category, the complete workflow is projected again and its previously omitted actions
+become active without a migration or fabricated completion state.
+
+A low-risk projection is fail-closed. If the selected provider workflow has no unique safe password
+change or reset action for a supported path, unpwn reports no safe supported path rather than falling
+back to a broader manual recovery checklist. Scope changes never derive from browser observations.
+
 ## Structured reasons
 
 Prerequisite failures use:
