@@ -86,7 +86,10 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
 
         var loaded = await ReadAsync(accountId, workflow, cancellationToken);
         return loaded.FailureCode == AccountRecoveryExecutionFailureCode.None
-            ? AccountRecoveryExecutionResult.Success(loaded.Execution!.State)
+            ? AccountRecoveryExecutionResult.Success(
+                AccountRecoveryWorkflowScope.ProjectStateForView(
+                    loaded.Execution!.State,
+                    workflow))
             : AccountRecoveryExecutionResult.Failure(loaded.FailureCode);
     }
 
@@ -113,11 +116,18 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
             return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.InvalidInput);
         }
 
-        var loaded = await ReadAsync(request.AccountId, request.Workflow, cancellationToken);
+        var scopedWorkflow = AccountRecoveryWorkflowScope.Project(
+            request.Workflow,
+            request.ProjectionContext.Category);
+        var fullWorkflow = AccountRecoveryWorkflowScope.Expand(scopedWorkflow);
+        var loaded = await ReadAsync(request.AccountId, scopedWorkflow, cancellationToken);
         if (loaded.FailureCode == AccountRecoveryExecutionFailureCode.None)
         {
             return loaded.Execution!.HasOperation(request.OperationId)
-                ? AccountRecoveryExecutionResult.Success(loaded.Execution.State)
+                ? AccountRecoveryExecutionResult.Success(
+                    AccountRecoveryWorkflowScope.ProjectStateForView(
+                        loaded.Execution.State,
+                        scopedWorkflow))
                 : AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
         }
 
@@ -129,7 +139,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         AccountRecoveryExecutionState state;
         try
         {
-            if (!RecoveryPathSelector.Select(request.Workflow).HasSafePath)
+            if (!RecoveryPathSelector.Select(scopedWorkflow).HasSafePath)
             {
                 return AccountRecoveryExecutionResult.Failure(
                     AccountRecoveryExecutionFailureCode.NoSafeRecoveryPath);
@@ -137,7 +147,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
 
             state = AccountRecoveryExecutionState.Create(
                 request.AccountId,
-                request.Workflow,
+                fullWorkflow,
                 _clock());
         }
         catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
@@ -150,6 +160,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
             [request.OperationId]);
         return await PersistWithProjectionAsync(
             persisted,
+            scopedWorkflow,
             request.ProjectionContext,
             cancellationToken);
     }
@@ -177,7 +188,11 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
             return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.InvalidInput);
         }
 
-        var loaded = await ReadAsync(request.AccountId, request.Workflow, cancellationToken);
+        var scopedWorkflow = AccountRecoveryWorkflowScope.Project(
+            request.Workflow,
+            request.ProjectionContext.Category);
+        var fullWorkflow = AccountRecoveryWorkflowScope.Expand(scopedWorkflow);
+        var loaded = await ReadAsync(request.AccountId, scopedWorkflow, cancellationToken);
         if (loaded.FailureCode != AccountRecoveryExecutionFailureCode.None)
         {
             return AccountRecoveryExecutionResult.Failure(loaded.FailureCode);
@@ -186,7 +201,10 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         var current = loaded.Execution!;
         if (current.HasOperation(request.OperationId))
         {
-            return AccountRecoveryExecutionResult.Success(current.State);
+            return AccountRecoveryExecutionResult.Success(
+                AccountRecoveryWorkflowScope.ProjectStateForView(
+                    current.State,
+                    scopedWorkflow));
         }
 
         if (current.State.Revision != request.ExpectedRevision)
@@ -194,11 +212,21 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
             return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
         }
 
+        if (TransitionTargetsAction(request.Transition) &&
+            !IsActionAvailableForCurrentScope(
+                scopedWorkflow,
+                current.State.SelectedPath,
+                request.ActionDefinitionId))
+        {
+            return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
+        }
+
         AccountRecoveryExecutionState updated;
         try
         {
-            updated = ApplyTransition(current.State, request, _clock());
-            updated.Validate(request.Workflow);
+            updated = ApplyTransition(current.State, request, scopedWorkflow, _clock());
+            updated = AccountRecoveryWorkflowScope.RehydrateFullPathActions(updated, fullWorkflow);
+            updated.Validate(fullWorkflow);
         }
         catch (Exception exception) when (
             exception is ArgumentException or InvalidOperationException or KeyNotFoundException)
@@ -213,12 +241,14 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         };
         return await PersistWithProjectionAsync(
             persisted,
+            scopedWorkflow,
             request.ProjectionContext,
             cancellationToken);
     }
 
     private async Task<AccountRecoveryExecutionResult> PersistWithProjectionAsync(
         PersistedAccountRecoveryExecution execution,
+        RecoveryWorkflowDefinition scopedWorkflow,
         AccountRecoveryProjectionContext context,
         CancellationToken cancellationToken)
     {
@@ -234,7 +264,10 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 return AccountRecoveryExecutionResult.Failure(AccountRecoveryExecutionFailureCode.Conflict);
             }
 
-            var projectedAccount = execution.State.CreateDashboardProjection(context.Category);
+            var projectedState = AccountRecoveryWorkflowScope.ProjectStateForView(
+                execution.State,
+                scopedWorkflow);
+            var projectedAccount = projectedState.CreateDashboardProjection(context.Category);
             var summaries = session.Accounts
                 .Where(account => account.AccountId != execution.State.AccountId)
                 .Append(projectedAccount)
@@ -251,7 +284,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 ],
                 cancellationToken);
             _sessionService.CommitPreparedUpdate(projection);
-            return AccountRecoveryExecutionResult.Success(execution.State);
+            return AccountRecoveryExecutionResult.Success(projectedState);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -296,7 +329,7 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                 SerializerOptions)
                 ?? throw new JsonException("The account recovery execution record is empty.");
             persisted.Validate();
-            persisted.State.Validate(workflow);
+            persisted.State.Validate(AccountRecoveryWorkflowScope.Expand(workflow));
             if (persisted.State.AccountId != accountId)
             {
                 throw new InvalidOperationException("The account recovery execution identifier does not match its record.");
@@ -328,25 +361,26 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
     private static AccountRecoveryExecutionState ApplyTransition(
         AccountRecoveryExecutionState state,
         AccountRecoveryExecutionTransitionRequest request,
+        RecoveryWorkflowDefinition scopedWorkflow,
         DateTimeOffset occurredAt)
     {
         return request.Transition switch
         {
             AccountRecoveryExecutionTransitionKind.SetAccessAvailable =>
-                state.SetAccessState(request.Workflow, RecoveryAccessState.Available, null, occurredAt),
+                state.SetAccessState(scopedWorkflow, RecoveryAccessState.Available, null, occurredAt),
             AccountRecoveryExecutionTransitionKind.SetAccessLost =>
-                state.SetAccessState(request.Workflow, RecoveryAccessState.Lost, request.UserReason, occurredAt),
+                state.SetAccessState(scopedWorkflow, RecoveryAccessState.Lost, request.UserReason, occurredAt),
             AccountRecoveryExecutionTransitionKind.SetWaitingForProviderReview =>
                 state.SetAccessState(
-                    request.Workflow,
+                    scopedWorkflow,
                     RecoveryAccessState.WaitingForProviderReview,
                     request.UserReason,
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.StartAction =>
-                state.StartAction(request.Workflow, RequireActionId(request), occurredAt),
+                state.StartAction(scopedWorkflow, RequireActionId(request), occurredAt),
             AccountRecoveryExecutionTransitionKind.SetCompletionCriteriaAcknowledgements =>
                 state.SetCompletionCriteriaAcknowledgements(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     request.AcknowledgedCompletionCriteria
                         ?? throw new InvalidOperationException(
@@ -354,45 +388,45 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.CompleteAction =>
                 state.CompleteAction(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     request.CompletionCriteriaAcknowledged,
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.RequireUserAction =>
                 state.RequireUserAction(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     RequireReason(request),
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.BlockAction =>
                 state.BlockAction(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     RequireReason(request),
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.FailAction =>
                 state.FailActionAndSelectFallback(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     RequireReason(request),
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.MarkTrulyNotApplicable =>
                 state.MarkNotApplicable(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     RequireReason(request),
                     NotApplicableDisposition.TrulyNotApplicable,
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.AcceptNotApplicableRisk =>
                 state.MarkNotApplicable(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     RequireReason(request),
                     NotApplicableDisposition.UnresolvedRisk,
                     occurredAt),
             AccountRecoveryExecutionTransitionKind.AcceptUnresolvedRisk =>
                 state.AcceptUnresolvedRisk(
-                    request.Workflow,
+                    scopedWorkflow,
                     RequireActionId(request),
                     RequireReason(request),
                     occurredAt),
@@ -432,6 +466,20 @@ public sealed class AccountRecoveryExecutionService : IAccountRecoveryExecutionS
         ArgumentNullException.ThrowIfNull(request.ProjectionContext);
         request.ProjectionContext.Validate();
     }
+
+    private static bool TransitionTargetsAction(AccountRecoveryExecutionTransitionKind transition) => transition is not
+        (AccountRecoveryExecutionTransitionKind.SetAccessAvailable or
+         AccountRecoveryExecutionTransitionKind.SetAccessLost or
+         AccountRecoveryExecutionTransitionKind.SetWaitingForProviderReview);
+
+    private static bool IsActionAvailableForCurrentScope(
+        RecoveryWorkflowDefinition workflow,
+        RecoveryPath path,
+        string? actionDefinitionId) =>
+        !string.IsNullOrWhiteSpace(actionDefinitionId) &&
+        workflow.Actions.Any(action =>
+            action.SupportsPath(path) &&
+            string.Equals(action.Id, actionDefinitionId, StringComparison.Ordinal));
 
     private static string RequireActionId(AccountRecoveryExecutionTransitionRequest request) =>
         string.IsNullOrWhiteSpace(request.ActionDefinitionId)

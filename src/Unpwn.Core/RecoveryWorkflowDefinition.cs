@@ -14,6 +14,13 @@ public sealed record RecoveryWorkflowDefinition(
         RecoveryWorkflowTrustLevel.ReviewedProvider;
 
     public bool AllowsAccountOriginDiscovery { get; init; }
+
+    /// <summary>
+    /// When a workflow is projected to a category-specific active action set,
+    /// this retains the complete repository-controlled action definition set.
+    /// It is runtime projection metadata and is not recovery progress.
+    /// </summary>
+    public IReadOnlyList<RecoveryActionDefinition>? UnscopedActions { get; init; }
 }
 
 public enum RecoveryWorkflowTrustLevel
