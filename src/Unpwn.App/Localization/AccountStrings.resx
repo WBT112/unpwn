@@ -48,6 +48,8 @@
   <data name="Accounts.Triage.NeedsReview" xml:space="preserve"><value>Needs review</value></data>
   <data name="Accounts.Triage.AutomaticallyCategorized" xml:space="preserve"><value>Automatically categorized</value></data>
   <data name="Accounts.Triage.ChangedByYou" xml:space="preserve"><value>Changed by you</value></data>
+  <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Your choice — changed by you</value></data>
+  <data name="Accounts.Triage.Suggested" xml:space="preserve"><value>Automatically categorized</value></data>
   <data name="Accounts.Triage.Status.Title" xml:space="preserve"><value>Review recommended</value></data>
   <data name="Accounts.Triage.Status.Message" xml:space="preserve"><value>Review accounts marked Needs review, especially if one may be your email account. Known automatic categories do not require confirmation.</value></data>
   <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Recognizable account</value></data>
