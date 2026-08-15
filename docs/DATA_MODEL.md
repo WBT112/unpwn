@@ -95,13 +95,13 @@ Account status values:
 - `REVIEWED_WITH_UNRESOLVED_RISK`
 - `ACCESS_LOST`
 
-Provider IDs, category values, catalog versions, confirmation revisions, and statuses are language-neutral. Display names and login identifiers are user data and are never treated as translation keys. The explicit category wins over the persisted local suggestion; explicit `UNKNOWN` is distinct from an unreviewed account.
+Provider IDs, category values, catalog versions, confirmation revisions, and statuses are language-neutral. Display names and login identifiers are user data and are never treated as translation keys. The explicit category wins over the persisted local suggestion. `UNKNOWN` is a system-only unresolved suggestion and is never a valid explicit user confirmation; an unresolved account keeps `ConfirmedCategory = null` until the user chooses `EMAIL`, `CRITICAL`, or `NON_CRITICAL`.
 
 ### Account classification catalog
 
 The repository-controlled classification catalog proposes an account category from stable provider identifiers and safe URL host names. It is versioned, deterministic, local-only, and separate from provider workflow definitions. Unknown services stay `UNKNOWN`, and catalog observations never become recovery truth.
 
-The inventory accepts only its current category schema. Unsupported serialized members fail closed at the inventory persistence boundary rather than being interpreted as recovery state.
+The inventory accepts only its current category schema. Unsupported serialized members or an explicit `ConfirmedCategory = UNKNOWN` fail closed at the inventory persistence boundary rather than being interpreted as recovery state.
 
 Category ordering and provider workflow selection are separate: category answers **when**, workflow answers **how**. The category queue is always `EMAIL`, `CRITICAL`, `UNKNOWN`, then `NON_CRITICAL`, with provider and opaque account IDs as stable tie-breakers. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
 
