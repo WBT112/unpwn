@@ -1,6 +1,7 @@
 using System.Text;
 using Unpwn.App.Services;
 using Unpwn.Core;
+using Unpwn.Vault.Cryptography;
 using Unpwn.Vault.Storage;
 using Xunit;
 
