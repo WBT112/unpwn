@@ -85,8 +85,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             DeleteAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
             () => CanMutate && SelectedAccount is not null);
-        ContinueRecoveryCommand = new RelayCommand(
-            () => ContinueToRecoveryRequested?.Invoke(this, EventArgs.Empty),
+        ContinueRecoveryCommand = new AsyncCommand(
+            ContinueRecoveryAsync,
+            () => Localization.GetString("Accounts.Error.Command"),
             () => CanContinueRecovery);
         _inventory.InventoryChanged += Inventory_OnInventoryChanged;
         _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
@@ -102,7 +103,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand DeleteAccountCommand { get; }
 
-    public RelayCommand ContinueRecoveryCommand { get; }
+    public AsyncCommand ContinueRecoveryCommand { get; }
 
     public event EventHandler? ContinueToRecoveryRequested;
 
@@ -476,6 +477,29 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
             SelectedCategory.Value,
             cancellationToken);
         ApplyResult(result);
+    }
+
+    private async Task ContinueRecoveryAsync(CancellationToken cancellationToken)
+    {
+        if (_recoveryFlow is not null &&
+            _recoveryFlow.NextTask.Target == NextUserTaskTarget.AccountTriage)
+        {
+            var transition = await _recoveryFlow.AdvanceAsync(cancellationToken);
+            if (!transition.Succeeded)
+            {
+                ValidationMessage = Localization.GetString("Accounts.Error.Flow");
+                return;
+            }
+        }
+
+        if (_recoveryFlow is not null &&
+            _recoveryFlow.NextTask.Target != NextUserTaskTarget.RecoveryOverview)
+        {
+            ValidationMessage = Localization.GetString("Accounts.Error.Flow");
+            return;
+        }
+
+        ContinueToRecoveryRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private async Task DeleteAccountAsync(CancellationToken cancellationToken)
