@@ -46,6 +46,7 @@
   <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>Es wurde kein E-Mail-Konto erkannt. Fahre fort, wenn das beabsichtigt ist; du kannst später zurückkehren und Kategorien ändern.</value></data>
   <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Einige Konten müssen noch geprüft werden und bisher wurde kein E-Mail-Konto erkannt. Prüfe diese zuerst, falls eines davon dein E-Mail-Konto sein könnte, oder fahre fort, wenn dein Inventar tatsächlich keines enthält.</value></data>
   <data name="Accounts.Triage.NeedsReview" xml:space="preserve"><value>Prüfung erforderlich</value></data>
+  <data name="Accounts.Triage.NotAutomaticallyRecognized" xml:space="preserve"><value>Nicht automatisch erkannt — wähle eine Wiederherstellungskategorie</value></data>
   <data name="Accounts.Triage.AutomaticallyCategorized" xml:space="preserve"><value>Automatisch kategorisiert</value></data>
   <data name="Accounts.Triage.ChangedByYou" xml:space="preserve"><value>Von dir geändert</value></data>
   <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Deine Auswahl — von dir geändert</value></data>
@@ -55,14 +56,16 @@
   <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Erkennbares Konto</value></data>
   <data name="Accounts.Triage.AccountHelp" xml:space="preserve"><value>Erfasse nur genug Angaben, um das Konto zu erkennen. Gib niemals Passwort, Recovery-Code, MFA-Geheimnis oder Reset-Link ein.</value></data>
   <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Wiederherstellungskategorie</value></data>
-  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Automatische Vorschläge gelten, solange du sie nicht änderst. Bei der Wiederherstellung kommen E-Mail-Konten zuerst, dann kritische, unbekannte und nicht kritische Konten. Das bestimmt niemals, wie die Wiederherstellung beim Anbieter funktioniert.</value></data>
+  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Automatische Vorschläge gelten, solange du sie nicht änderst. „Unbekannt“ ist nur ein Systemstatus für Konten, die unpwn nicht einordnen konnte, und kann nicht ausgewählt oder bestätigt werden. Für ein zu prüfendes Konto wählst du E-Mail, Kritisch oder Nicht kritisch. Das bestimmt niemals, wie die Wiederherstellung beim Anbieter funktioniert.</value></data>
+  <data name="Accounts.Triage.CategoryRequired" xml:space="preserve"><value>Wähle E-Mail, Kritisch oder Nicht kritisch</value></data>
   <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Kategorie speichern</value></data>
+  <data name="Accounts.Triage.UseAutomatic" xml:space="preserve"><value>Automatische Kategorie verwenden</value></data>
   <data name="Accounts.Delete.Action" xml:space="preserve"><value>Dieses Konto aus der Recovery-Session entfernen</value></data>
   <data name="Accounts.Triage.DeleteConsequence" xml:space="preserve"><value>Das Konto und seine Kategorieauswahl werden aus dieser Recovery-Session entfernt.</value></data>
   <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Konto entfernen</value></data>
   <data name="Accounts.Operation.Saved" xml:space="preserve"><value>Das verschlüsselte Kontoinventar wurde aktualisiert.</value></data>
   <data name="Accounts.Error.Locked" xml:space="preserve"><value>Entsperre den Vault, bevor du das Kontoinventar änderst.</value></data>
-  <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Prüfe die Kontofelder. Anbieter sowie Kontoname oder Login sind erforderlich; URLs müssen HTTP oder HTTPS verwenden.</value></data>
+  <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Prüfe die Kontofelder. Anbieter sowie Kontoname oder Login sind erforderlich, URLs müssen HTTP oder HTTPS verwenden und eine explizite Kategorie muss E-Mail, Kritisch oder Nicht kritisch sein.</value></data>
   <data name="Accounts.Error.NotFound" xml:space="preserve"><value>Das ausgewählte Konto existiert nicht mehr.</value></data>
   <data name="Accounts.Error.Conflict" xml:space="preserve"><value>Die gewünschte Änderung steht in Konflikt mit dem aktuellen Inventar.</value></data>
   <data name="Accounts.Error.RequiresConfirmation" xml:space="preserve"><value>Wähle vor dem Fortfahren, wie doppelte Konten behandelt werden sollen.</value></data>

@@ -101,7 +101,7 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
         AccountRecoveryCategory category,
         CancellationToken cancellationToken)
     {
-        if (accountId == Guid.Empty || !Enum.IsDefined(category))
+        if (accountId == Guid.Empty || !AccountRecoveryCategoryRules.IsUserSelectable(category))
         {
             return Task.FromResult(AccountInventoryOperationResult.Failure(
                 AccountInventoryFailureCode.InvalidInput));
@@ -122,6 +122,42 @@ public sealed class AccountInventoryService : IAccountInventoryService, IDisposa
                 {
                     ConfirmedCategory = category,
                     CategoryConfirmedRevision = inventory.Revision + 1,
+                };
+                return inventory.ReplaceAccounts(accounts, _clock());
+            },
+            cancellationToken);
+    }
+
+    public Task<AccountInventoryOperationResult> ClearCategoryOverrideAsync(
+        Guid accountId,
+        CancellationToken cancellationToken)
+    {
+        if (accountId == Guid.Empty)
+        {
+            return Task.FromResult(AccountInventoryOperationResult.Failure(
+                AccountInventoryFailureCode.InvalidInput));
+        }
+
+        return MutateAsync(
+            inventory =>
+            {
+                var accounts = inventory.Accounts.ToList();
+                var index = accounts.FindIndex(account => account.Id == accountId);
+                if (index < 0)
+                {
+                    throw new AccountInventoryMutationException(AccountInventoryFailureCode.NotFound);
+                }
+
+                var account = accounts[index];
+                if (!account.ConfirmedCategory.HasValue)
+                {
+                    throw new AccountInventoryMutationException(AccountInventoryFailureCode.Conflict);
+                }
+
+                accounts[index] = account with
+                {
+                    ConfirmedCategory = null,
+                    CategoryConfirmedRevision = null,
                 };
                 return inventory.ReplaceAccounts(accounts, _clock());
             },

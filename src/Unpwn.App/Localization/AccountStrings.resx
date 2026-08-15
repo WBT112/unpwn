@@ -46,6 +46,7 @@
   <data name="Accounts.Triage.NoEmailReviewed" xml:space="preserve"><value>No email account was identified. Continue if this is intentional; you can return and change categories later.</value></data>
   <data name="Accounts.Triage.EmailRecommended" xml:space="preserve"><value>Some accounts still need review and no email account is identified yet. Check those first if one may be your email account, or continue if your inventory genuinely has none.</value></data>
   <data name="Accounts.Triage.NeedsReview" xml:space="preserve"><value>Needs review</value></data>
+  <data name="Accounts.Triage.NotAutomaticallyRecognized" xml:space="preserve"><value>Not automatically recognized — choose a recovery category</value></data>
   <data name="Accounts.Triage.AutomaticallyCategorized" xml:space="preserve"><value>Automatically categorized</value></data>
   <data name="Accounts.Triage.ChangedByYou" xml:space="preserve"><value>Changed by you</value></data>
   <data name="Accounts.Triage.Explicit" xml:space="preserve"><value>Your choice — changed by you</value></data>
@@ -55,14 +56,16 @@
   <data name="Accounts.Triage.AccountTitle" xml:space="preserve"><value>Recognizable account</value></data>
   <data name="Accounts.Triage.AccountHelp" xml:space="preserve"><value>Keep only enough information to recognize the account. Never enter a password, recovery code, MFA secret, or reset link.</value></data>
   <data name="Accounts.Triage.CategoryTitle" xml:space="preserve"><value>Recovery category</value></data>
-  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Automatic suggestions are used unless you change them. Email accounts come first in recovery, then critical, unknown, and not-critical accounts. This never decides how provider recovery works.</value></data>
+  <data name="Accounts.Triage.CategoryHelp" xml:space="preserve"><value>Automatic suggestions are used unless you change them. Unknown is only a system status for accounts unpwn could not classify; it cannot be chosen or confirmed. For an account that needs review, choose Email, Critical, or Not critical. This never decides how provider recovery works.</value></data>
+  <data name="Accounts.Triage.CategoryRequired" xml:space="preserve"><value>Choose Email, Critical, or Not critical</value></data>
   <data name="Accounts.Triage.SaveNext" xml:space="preserve"><value>Save category</value></data>
+  <data name="Accounts.Triage.UseAutomatic" xml:space="preserve"><value>Use automatic category</value></data>
   <data name="Accounts.Delete.Action" xml:space="preserve"><value>Remove this account from the recovery session</value></data>
   <data name="Accounts.Triage.DeleteConsequence" xml:space="preserve"><value>The account and its category choice will be removed from this recovery session.</value></data>
   <data name="Accounts.Delete.Confirm" xml:space="preserve"><value>Remove account</value></data>
   <data name="Accounts.Operation.Saved" xml:space="preserve"><value>The encrypted account inventory was updated.</value></data>
   <data name="Accounts.Error.Locked" xml:space="preserve"><value>Unlock the vault before changing the account inventory.</value></data>
-  <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Review the account fields. A provider and an account name or login are required, and URLs must use HTTP or HTTPS.</value></data>
+  <data name="Accounts.Error.InvalidInput" xml:space="preserve"><value>Review the account fields. A provider and an account name or login are required, URLs must use HTTP or HTTPS, and an explicit category must be Email, Critical, or Not critical.</value></data>
   <data name="Accounts.Error.NotFound" xml:space="preserve"><value>The selected account no longer exists.</value></data>
   <data name="Accounts.Error.Conflict" xml:space="preserve"><value>The requested change conflicts with the current inventory.</value></data>
   <data name="Accounts.Error.RequiresConfirmation" xml:space="preserve"><value>Choose how duplicate accounts should be handled before continuing.</value></data>

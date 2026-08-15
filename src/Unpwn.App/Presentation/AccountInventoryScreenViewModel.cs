@@ -80,7 +80,13 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         SaveCategoryCommand = new AsyncCommand(
             SaveCategoryAsync,
             () => Localization.GetString("Accounts.Error.Command"),
-            () => HasPersistedAccount && SelectedCategory is not null);
+            () => HasPersistedAccount &&
+                SelectedCategory is { } selected &&
+                AccountRecoveryCategoryRules.IsUserSelectable(selected.Value));
+        ClearCategoryOverrideCommand = new AsyncCommand(
+            ClearCategoryOverrideAsync,
+            () => Localization.GetString("Accounts.Error.Command"),
+            () => HasCategoryOverride);
         DeleteAccountCommand = new AsyncCommand(
             DeleteAccountAsync,
             () => Localization.GetString("Accounts.Error.Command"),
@@ -100,6 +106,8 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand SaveAccountCommand { get; }
 
     public AsyncCommand SaveCategoryCommand { get; }
+
+    public AsyncCommand ClearCategoryOverrideCommand { get; }
 
     public AsyncCommand DeleteAccountCommand { get; }
 
@@ -236,6 +244,10 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         _editingAccountId is { } accountId &&
         _currentInventory?.Accounts.Any(account => account.Id == accountId) == true;
 
+    public bool HasCategoryOverride => HasPersistedAccount &&
+        _editingAccountId is { } accountId &&
+        _currentInventory?.Accounts.Single(account => account.Id == accountId).ConfirmedCategory.HasValue == true;
+
     public bool HasEmailCategory =>
         _currentInventory?.Accounts.Any(account =>
             account.EffectiveCategory == AccountRecoveryCategory.Email) == true;
@@ -262,9 +274,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         var sort = SelectedSort?.Value ?? AccountInventorySort.ReviewPriority;
         base.RefreshLocalization();
         BuildStaticOptions();
-        SelectedCategory = category is null
-            ? null
-            : Categories.Single(option => option.Value == category);
+        SelectedCategory = category is { } selected && AccountRecoveryCategoryRules.IsUserSelectable(selected)
+            ? Categories.Single(option => option.Value == selected)
+            : null;
         SelectedFilter = Filters.Single(option => option.Value == filter);
         SelectedSort = Sorts.Single(option => option.Value == sort);
         RefreshFromService();
@@ -274,8 +286,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         Categories =
         [
-            .. Enum.GetValues<AccountRecoveryCategory>().Select(value =>
-                new AccountInventoryOption<AccountRecoveryCategory>(
+            .. Enum.GetValues<AccountRecoveryCategory>()
+                .Where(AccountRecoveryCategoryRules.IsUserSelectable)
+                .Select(value => new AccountInventoryOption<AccountRecoveryCategory>(
                     value,
                     Localization.GetString($"Accounts.Category.{value}"))),
         ];
@@ -371,9 +384,11 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
                 account.Id,
                 account.AccountName ?? account.LoginIdentifier ?? account.ProviderId,
                 account.ProviderId,
-                Localization.GetString($"Accounts.Category.{account.EffectiveCategory}"),
                 Localization.GetString(account.RequiresCategoryReview
                     ? "Accounts.Triage.NeedsReview"
+                    : $"Accounts.Category.{account.EffectiveCategory}"),
+                Localization.GetString(account.RequiresCategoryReview
+                    ? "Accounts.Triage.NotAutomaticallyRecognized"
                     : account.ConfirmedCategory.HasValue
                         ? "Accounts.Triage.ChangedByYou"
                         : "Accounts.Triage.AutomaticallyCategorized"),
@@ -427,7 +442,9 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         AccountName = account.AccountName ?? string.Empty;
         LoginIdentifier = account.LoginIdentifier ?? string.Empty;
         AccountUrl = account.AccountUrl ?? string.Empty;
-        SelectedCategory = Categories.Single(option => option.Value == account.EffectiveCategory);
+        SelectedCategory = AccountRecoveryCategoryRules.IsUserSelectable(account.EffectiveCategory)
+            ? Categories.Single(option => option.Value == account.EffectiveCategory)
+            : null;
         ValidationMessage = null;
         NotifyState();
     }
@@ -441,7 +458,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         AccountName = string.Empty;
         LoginIdentifier = string.Empty;
         AccountUrl = string.Empty;
-        SelectedCategory = Categories.Single(option => option.Value == AccountRecoveryCategory.Unknown);
+        SelectedCategory = null;
         ValidationMessage = null;
         NotifyState();
         RaiseCommandStates();
@@ -467,14 +484,29 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     private async Task SaveCategoryAsync(CancellationToken cancellationToken)
     {
-        if (_editingAccountId is null || SelectedCategory is null)
+        if (_editingAccountId is null ||
+            SelectedCategory is not { } selected ||
+            !AccountRecoveryCategoryRules.IsUserSelectable(selected.Value))
         {
             return;
         }
 
         var result = await _inventory.CategorizeAsync(
             _editingAccountId.Value,
-            SelectedCategory.Value,
+            selected.Value,
+            cancellationToken);
+        ApplyResult(result);
+    }
+
+    private async Task ClearCategoryOverrideAsync(CancellationToken cancellationToken)
+    {
+        if (_editingAccountId is null || !HasCategoryOverride)
+        {
+            return;
+        }
+
+        var result = await _inventory.ClearCategoryOverrideAsync(
+            _editingAccountId.Value,
             cancellationToken);
         ApplyResult(result);
     }
@@ -570,6 +602,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     {
         OnPropertyChanged(nameof(IsEditingAccount));
         OnPropertyChanged(nameof(HasPersistedAccount));
+        OnPropertyChanged(nameof(HasCategoryOverride));
         OnPropertyChanged(nameof(HasEmailCategory));
         OnPropertyChanged(nameof(RemainingCategoryCount));
         OnPropertyChanged(nameof(CanContinueRecovery));
@@ -586,6 +619,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         NewAccountCommand.RaiseCanExecuteChanged();
         SaveAccountCommand.RaiseCanExecuteChanged();
         SaveCategoryCommand.RaiseCanExecuteChanged();
+        ClearCategoryOverrideCommand.RaiseCanExecuteChanged();
         DeleteAccountCommand.RaiseCanExecuteChanged();
         ContinueRecoveryCommand.RaiseCanExecuteChanged();
     }

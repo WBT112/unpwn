@@ -103,14 +103,20 @@
             <TextBlock Text="{DynamicResource Accounts.Triage.CategoryHelp}" TextWrapping="Wrap" />
             <ComboBox AutomationProperties.AutomationId="accounts-category"
                       ItemsSource="{Binding Categories}"
-                      SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
+                      SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                      PlaceholderText="{DynamicResource Accounts.Triage.CategoryRequired}">
               <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
-            <Button HorizontalAlignment="Left"
-                    Classes="initial-focus"
-                    AutomationProperties.AutomationId="accounts-category-save"
-                    Content="{DynamicResource Accounts.Triage.SaveNext}"
-                    Command="{Binding SaveCategoryCommand}" />
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Classes="initial-focus"
+                      AutomationProperties.AutomationId="accounts-category-save"
+                      Content="{DynamicResource Accounts.Triage.SaveNext}"
+                      Command="{Binding SaveCategoryCommand}" />
+              <Button IsVisible="{Binding HasCategoryOverride}"
+                      AutomationProperties.AutomationId="accounts-category-reset"
+                      Content="{DynamicResource Accounts.Triage.UseAutomatic}"
+                      Command="{Binding ClearCategoryOverrideCommand}" />
+            </StackPanel>
           </StackPanel>
         </Border>
       </StackPanel>

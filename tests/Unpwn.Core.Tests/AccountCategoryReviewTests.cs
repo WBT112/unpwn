@@ -10,7 +10,6 @@ public sealed class AccountCategoryReviewTests
     [InlineData(AccountRecoveryCategory.Critical, null, false)]
     [InlineData(AccountRecoveryCategory.NonCritical, null, false)]
     [InlineData(AccountRecoveryCategory.Unknown, null, true)]
-    [InlineData(AccountRecoveryCategory.Unknown, AccountRecoveryCategory.Unknown, false)]
     [InlineData(AccountRecoveryCategory.Unknown, AccountRecoveryCategory.Critical, false)]
     public void RequiredReviewDependsOnUnknownSuggestionWithoutExplicitChoice(
         AccountRecoveryCategory suggested,
@@ -29,6 +28,7 @@ public sealed class AccountCategoryReviewTests
             confirmed.HasValue ? 1 : null,
             DateTimeOffset.UnixEpoch);
 
+        account.Validate();
         Assert.Equal(expected, account.RequiresCategoryReview);
         Assert.Equal(confirmed ?? suggested, account.EffectiveCategory);
     }

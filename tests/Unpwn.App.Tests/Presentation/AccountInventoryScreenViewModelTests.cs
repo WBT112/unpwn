@@ -78,7 +78,10 @@ public sealed class AccountInventoryScreenViewModelTests
 
         Assert.Equal(unknown.Id, viewModel.Accounts[0].Id);
         Assert.Equal(unknown.Id, viewModel.SelectedAccount?.Id);
-        Assert.Equal("Needs review", viewModel.Accounts[0].ReviewText);
+        Assert.Equal("Needs review", viewModel.Accounts[0].CategoryText);
+        Assert.Equal(
+            "Not automatically recognized — choose a recovery category",
+            viewModel.Accounts[0].ReviewText);
         Assert.Equal(1, viewModel.RemainingCategoryCount);
         Assert.Equal(
             "Automatically categorized",
