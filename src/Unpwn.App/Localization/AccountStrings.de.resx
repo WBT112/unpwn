@@ -5,6 +5,7 @@
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="Accounts.Error.Command" xml:space="preserve"><value>Die Kontoaktion konnte nicht sicher abgeschlossen werden.</value></data>
+  <data name="Accounts.Error.Flow" xml:space="preserve"><value>Der Wiederherstellungsschritt konnte nicht sicher fortgesetzt werden. Prüfe den aktuellen Arbeitsbereich und versuche es erneut.</value></data>
   <data name="Accounts.Category.Email" xml:space="preserve"><value>E-Mail</value></data>
   <data name="Accounts.Category.Critical" xml:space="preserve"><value>Kritisch</value></data>
   <data name="Accounts.Category.NonCritical" xml:space="preserve"><value>Nicht kritisch</value></data>
