@@ -31,7 +31,7 @@ public sealed class AccountInventoryAcceptanceTests
         var initial = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([account], DateTimeOffset.UnixEpoch.AddSeconds(1));
         var updated = initial.ReplaceAccounts(
-            [initial.Accounts[0] with { ProviderId = "Streaming" }],
+            [initial.Accounts[0] with { ProviderId = "netflix" }],
             DateTimeOffset.UnixEpoch.AddSeconds(2));
 
         var persisted = Assert.Single(updated.Accounts);
@@ -61,9 +61,9 @@ public sealed class AccountInventoryAcceptanceTests
         var state = AccountInventoryState.Empty(Guid.Parse("10000000-0000-0000-0000-000000000000"), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts(
                 [
-                    CreateAccount("Streaming") with { Id = Guid.Parse("40000000-0000-0000-0000-000000000000") },
+                    CreateAccount("netflix") with { Id = Guid.Parse("40000000-0000-0000-0000-000000000000") },
                     CreateAccount("ı-service") with { Id = Guid.Parse("30000000-0000-0000-0000-000000000000") },
-                    CreateAccount("Banking") with { Id = Guid.Parse("20000000-0000-0000-0000-000000000000") },
+                    CreateAccount("deutschebank") with { Id = Guid.Parse("20000000-0000-0000-0000-000000000000") },
                     CreateAccount("Gmail") with { Id = Guid.Parse("10000000-0000-0000-0000-000000000001") },
                 ],
                 DateTimeOffset.UnixEpoch.AddSeconds(1));
