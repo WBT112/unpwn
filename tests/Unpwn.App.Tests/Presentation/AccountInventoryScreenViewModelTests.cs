@@ -96,7 +96,7 @@ public sealed class AccountInventoryScreenViewModelTests
     {
         var email = CreateAccount("gmail");
         var critical = CreateAccount("bitwarden");
-        var routine = CreateAccount("streaming");
+        var routine = CreateAccount("netflix");
         var service = new TestAccountInventoryService([critical, routine, email]);
         var viewModel = CreateViewModel(service);
 
