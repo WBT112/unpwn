@@ -19,23 +19,30 @@ Materialized account data is cleared when the vault locks. Only the current sche
 
 ## Local classification catalog
 
-`RepositoryAccountClassificationCatalog` is versioned, repository-controlled, deterministic, and offline-only. Runtime classification reads only embedded repository data and the provider identifier / safe HTTP or HTTPS host already present in the imported account record. It performs no network lookup and sends no account inventory information to a classification service.
+`RepositoryAccountClassificationCatalog` is versioned, repository-controlled, deterministic, and offline-only. Runtime classification uses only provider metadata compiled into unpwn plus the provider identifier and safe HTTP/HTTPS host already present in the imported account record. It performs no network lookup and sends no account inventory information to a classification service.
 
-The catalog is modeled as canonical provider/service records. Every record has a stable ID, human-reviewable name, recovery category, one or more normalized domains, optional provider-ID aliases, and a provenance ID. Provider counts therefore count records, not domains or regional aliases. Multi-domain families such as Outlook or Yahoo remain one curated record even when they own many domains.
+The catalog contains only **repository-reviewed canonical provider/service records**. Every record has a stable ID, human-reviewable name, recovery category, one or more normalized domains, optional provider-ID aliases, provenance, and a review basis. Multi-domain families such as Outlook/Hotmail, Yahoo, GMX, Proton, iCloud, Amazon, eBay, and PayPal are modeled as one provider when the domains are intentionally treated as one account/recovery family.
 
-The checked-in catalog enforces at least:
+There is intentionally **no provider-count target**. Catalog size is not a quality metric. A provider is added only through a reviewed repository change. If unpwn cannot make a defensible classification from a concrete provider alias or domain, the result stays `Unknown` and the user reviews it during triage.
 
-- 100 canonical `Email` provider/service records;
-- 1,000 canonical `Critical` provider/service records;
-- 1,000 canonical `NonCritical` provider/service records.
+The classifier does not treat generic words such as `banking`, `streaming`, `news`, a TLD, a keyword, or membership in a web-filtering/routing list as sufficient evidence for an automatic category. Broad third-party category snapshots are not embedded in the runtime catalog. This avoids turning unrelated categorization data into an unsupported recovery-risk decision.
 
-Curated records cover important provider families and retain explicit provider-ID aliases used by existing imports. Broader coverage comes from a pinned, repository-vendored subset of the Université Toulouse 1 Capitole web-categorization data via the normalized `cbuijs/ut1` mirror. The mapped source categories are `webmail` → `Email`, `bank` → `Critical`, and `press` → `NonCritical`. Source revision, license/attribution, selection rules, record targets, collision handling, and the update procedure are documented in `src/Unpwn.Core/Data/AccountClassification/README.md`.
+Domain matching is case/culture independent and normalizes internationalized host names to ASCII IDNA form before lookup. Canonical IDs, provider aliases, and domains must be unique. Parent/subdomain ownership cannot overlap across different canonical records; ambiguous metadata fails catalog construction instead of silently choosing an owner.
 
-Source lists are advisory data and can contain categorization mistakes. Curated records have first claim on their domains; remaining source ingestion uses deterministic precedence `Email` → `Critical` → `NonCritical`. A final catalog domain is owned by exactly one canonical record. Unmatched services remain `Unknown`, and a user's explicit override always wins over any suggestion.
-
-Domain matching is case/culture independent and normalizes internationalized host names to ASCII IDNA form before lookup. The embedded source loader is bounded by file size, line length, and record count. Invalid, duplicate, overlong, or oversized embedded data fails catalog construction instead of silently broadening classification.
+For externally derived aliases, the repository change adding them must document the source and applicable license where relevant. The current catalog is repository-curated metadata and does not bundle the UT1 data snapshot previously introduced during development.
 
 The catalog only proposes **when** an account should be handled. Provider workflow definitions independently decide **how** recovery works. A catalog entry cannot select a provider action, change recovery execution state, or prove control of an account. Priority metadata and reviewed provider-navigation/automation metadata remain separate trust boundaries.
+
+### Adding or changing a reviewed provider
+
+A catalog change should:
+
+1. identify the real provider/service family and the account/recovery realm being modeled;
+2. add only domains and provider aliases that are intentionally associated with that family;
+3. justify the recovery category as an unpwn product decision rather than inheriting a third-party category;
+4. prefer `Unknown` when the impact or provider ownership is unclear;
+5. add representative classification tests and collision coverage;
+6. run the full CI and security analysis before merge.
 
 ## Triage flow
 
@@ -54,15 +61,12 @@ The normal recovery queue is derived automatically from effective categories in 
 3. `Unknown`
 4. `NonCritical`
 
-Within one category, the language-neutral provider identifier and then the opaque account identifier
-are deterministic tie-breakers. UI culture, display text, incident warnings, browser state, and
-incomplete category review never change this order. An unresolved account keeps its conservative
-catalog suggestion, including `Unknown`, until the user explicitly chooses a real category.
+Within one category, the language-neutral provider identifier and then the opaque account identifier are deterministic tie-breakers. UI culture, display text, incident warnings, browser state, and incomplete category review never change this order. An unresolved account keeps its conservative catalog suggestion, including `Unknown`, until the user explicitly chooses a real category.
 
 The category queue has no parallel cross-account planning authority. Workflow execution, blocked required actions, failed actions, lost access, and unresolved risks remain canonical in the recovery execution model and are never hidden by category triage.
 
 ## Persistence and testing
 
-Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog record minimums and uniqueness, curated aliases versus canonical counts, representative global/German/European providers, culture-independent classification, provenance, catalog-produced `Unknown`, rejection of explicit `Unknown`, valid user overrides, clearing an override back to the automatic suggestion, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, import integration, localization, incompatible-record failure, and lock clearing.
+Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover curated multi-domain families, representative global/German/European providers, conservative `Unknown` fallback, rejection of generic category hints, culture-independent classification, metadata collisions, catalog-produced `Unknown`, rejection of explicit `Unknown`, valid user overrides, clearing an override back to the automatic suggestion, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, import integration, localization, incompatible-record failure, and lock clearing.
 
 See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Integrated Recovery Flow](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).
