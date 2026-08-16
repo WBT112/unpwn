@@ -106,6 +106,17 @@ public sealed class AccountClassificationCatalogTests
     }
 
     [Fact]
+    public void LoaderDeduplicatesEquivalentAliasesWithinOneProvider()
+    {
+        var catalog = RepositoryAccountClassificationCatalog.Load(new StringReader(Tsv(
+            Row("provider-name", "Provider", "Critical", "provider.example", "provider_name|provider-name"))));
+
+        var record = Assert.Single(catalog.Records);
+        Assert.Single(record.ProviderIdAliases);
+        Assert.Equal("provider_name", record.ProviderIdAliases[0]);
+    }
+
+    [Fact]
     public void LoaderRejectsUnknownAsCatalogCategory()
     {
         var input = Tsv(Row("unknown", "Unknown", "Unknown", "unknown.example", "unknown"));
