@@ -25,6 +25,7 @@ Only canonical user confirmations advance recovery state. Browser navigation, re
 | Canonical entities, progress, and completion semantics | [Data Model](DATA_MODEL.md) |
 | Threats, mitigations, and residual risk | [Threat Model](THREAT_MODEL.md) |
 | Test layers, CI, fixtures, and release verification | [Testing Strategy](TESTING.md) |
+| Blocking security-analysis gates and exceptions | [Security CI Gates](SECURITY_GATES.md) |
 
 ## For users
 
@@ -66,6 +67,7 @@ Only canonical user confirmations advance recovery state. Browser navigation, re
 
 - [Threat Model](THREAT_MODEL.md) — threats, mitigations, and residual risks
 - [Testing Strategy](TESTING.md) — authoritative testing and CI rules
+- [Security CI Gates](SECURITY_GATES.md) — CodeQL, analyzer, dependency, native-boundary, security-regression, and exception policy
 - [Contributing](../CONTRIBUTING.md) — contribution workflow
 - [Coding Agent Instructions](../AGENTS.md) — concise repository rules for automated contributors
 
