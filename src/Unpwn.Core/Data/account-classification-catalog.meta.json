@@ -1,0 +1,83 @@
+{
+  "catalogVersion": "2026.08.2",
+  "countingRule": "One canonical provider/service record counts once; domains and provider aliases never count as providers.",
+  "counts": {
+    "Critical": 1461,
+    "Email": 329,
+    "NonCritical": 1160
+  },
+  "precedence": [
+    "Email",
+    "Critical",
+    "NonCritical",
+    "Unknown"
+  ],
+  "sources": [
+    {
+      "commit": "6f8a5b43db087ae27decef85d80229850bbd40b1",
+      "criticalRoots": [
+        "category-ai-!cn",
+        "category-ai-chat-!cn",
+        "category-ai-cn",
+        "category-ai-ru",
+        "category-bank-cn",
+        "category-bank-ir",
+        "category-bank-jp",
+        "category-bank-mm",
+        "category-bank-ru",
+        "category-communication",
+        "category-cryptocurrency",
+        "category-dev",
+        "category-dev-cn",
+        "category-ecommerce",
+        "category-ecommerce-ru",
+        "category-education-cn",
+        "category-education-ir",
+        "category-education-ru",
+        "category-finance",
+        "category-forums",
+        "category-forums-ir",
+        "category-forums-ru",
+        "category-password-management",
+        "category-scholar-!cn",
+        "category-scholar-cn",
+        "category-scholar-hk",
+        "category-scholar-ir",
+        "category-scholar-uk",
+        "category-social-media-!cn",
+        "category-social-media-cn",
+        "category-social-media-ir",
+        "category-travel-ir",
+        "category-travel-ru",
+        "category-vpnservices"
+      ],
+      "id": "v2fly/domain-list-community",
+      "license": "MIT",
+      "nonCriticalRoots": [
+        "category-entertainment",
+        "category-entertainment-cn",
+        "category-entertainment-ru",
+        "category-games",
+        "category-games-!cn",
+        "category-games-cn",
+        "category-media",
+        "category-media-cn",
+        "category-media-ir",
+        "category-media-ru",
+        "category-media-ru-blocked",
+        "category-news-ir"
+      ],
+      "purpose": "Service/owner domain grouping used by unpwn's reviewed Critical/NonCritical mapping."
+    },
+    {
+      "id": "email-providers",
+      "license": "ISC",
+      "purpose": "Common mailbox domains used to seed canonical Email provider records.",
+      "version": "2.24.0"
+    },
+    {
+      "id": "unpwn-curated",
+      "purpose": "Reviewed continuity records and explicit mailbox-family alias grouping."
+    }
+  ]
+}
