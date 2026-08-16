@@ -37,10 +37,10 @@ public sealed class AccountInventoryTests
     }
 
     [Theory]
-    [InlineData("Banking", null, AccountRecoveryCategory.Critical)]
+    [InlineData("deutschebank", null, AccountRecoveryCategory.Critical)]
     [InlineData("manual", "https://vault.bitwarden.com", AccountRecoveryCategory.Critical)]
     [InlineData("manual", "https://www.reddit.com/settings", AccountRecoveryCategory.Critical)]
-    [InlineData("Streaming", null, AccountRecoveryCategory.NonCritical)]
+    [InlineData("netflix", null, AccountRecoveryCategory.NonCritical)]
     [InlineData("synthetic-provider", "https://provider.example.test", AccountRecoveryCategory.Unknown)]
     public void CatalogClassifiesKnownAndUnknownProviders(
         string providerId,
@@ -66,9 +66,9 @@ public sealed class AccountInventoryTests
     [Fact]
     public void PlanUsesCategoryOrderAndExplicitOverrides()
     {
-        var nonCritical = CreateAccount("Streaming", AccountRecoveryCategory.NonCritical);
+        var nonCritical = CreateAccount("netflix", AccountRecoveryCategory.NonCritical);
         var unknown = CreateAccount("Unknown");
-        var critical = CreateAccount("Banking", AccountRecoveryCategory.Critical);
+        var critical = CreateAccount("deutschebank", AccountRecoveryCategory.Critical);
         var email = CreateAccount("Gmail", AccountRecoveryCategory.Email);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([nonCritical, unknown, critical, email], DateTimeOffset.UnixEpoch.AddSeconds(1));
@@ -84,7 +84,7 @@ public sealed class AccountInventoryTests
     [Fact]
     public void IncidentInputCannotChangeTheCanonicalCategoryOrder()
     {
-        var critical = CreateAccount("Banking", AccountRecoveryCategory.Critical);
+        var critical = CreateAccount("deutschebank", AccountRecoveryCategory.Critical);
         var email = CreateAccount("Gmail", AccountRecoveryCategory.Email);
         var state = AccountInventoryState.Empty(Guid.NewGuid(), DateTimeOffset.UnixEpoch)
             .ReplaceAccounts([email, critical], DateTimeOffset.UnixEpoch.AddSeconds(1));
