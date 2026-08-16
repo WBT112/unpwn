@@ -43,7 +43,7 @@ public static class RepositoryAccountClassificationCatalog
     private static readonly IdnMapping Idn = new();
     private static readonly CatalogState State = BuildState();
 
-    private static readonly IReadOnlyDictionary<string, AccountRecoveryCategory> CategoryHintAliases =
+    private static readonly Dictionary<string, AccountRecoveryCategory> CategoryHintAliases =
         new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal)
         {
             ["banking"] = AccountRecoveryCategory.Critical,
@@ -289,7 +289,7 @@ public static class RepositoryAccountClassificationCatalog
                 $"{idPrefix}:{domain}",
                 domain,
                 category,
-                Array.AsReadOnly(new[] { domain }),
+                Array.AsReadOnly([domain]),
                 Array.AsReadOnly(Array.Empty<string>()),
                 provenanceId);
             AddRecord(record, records, ids, domains, aliases, allowClaimedDomainSkip: true);
@@ -371,7 +371,7 @@ public static class RepositoryAccountClassificationCatalog
         }
     }
 
-    private static IReadOnlyList<string> LoadSourceDomains(string resourceFileName)
+    private static List<string> LoadSourceDomains(string resourceFileName)
     {
         var resourceName = ResourcePrefix + resourceFileName;
         using var stream = typeof(RepositoryAccountClassificationCatalog).Assembly
