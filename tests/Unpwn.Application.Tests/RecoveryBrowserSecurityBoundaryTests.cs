@@ -6,6 +6,7 @@ namespace Unpwn.Application.Tests;
 public sealed class RecoveryBrowserSecurityBoundaryTests
 {
     [Fact]
+    [Trait("Category", "SecurityRegression")]
     public void ReviewedHttpsHandoffAllowsOnlyExactExpectedOrigins()
     {
         var handoff = Handoff(
@@ -30,6 +31,7 @@ public sealed class RecoveryBrowserSecurityBoundaryTests
     }
 
     [Theory]
+    [Trait("Category", "SecurityRegression")]
     [InlineData("file:///tmp/provider.html")]
     [InlineData("data:text/html,provider")]
     [InlineData("javascript:alert(1)")]
