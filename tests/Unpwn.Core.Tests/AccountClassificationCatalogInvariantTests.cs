@@ -6,22 +6,31 @@ namespace Unpwn.Core.Tests;
 
 public sealed class AccountClassificationCatalogInvariantTests
 {
+    private static readonly string[] ExampleDomain = ["example.test"];
+    private static readonly string[] InvalidDomain = ["not a domain"];
+    private static readonly string[] DuplicateExampleDomains = ["example.test", "EXAMPLE.TEST"];
+    private static readonly string[] InvalidAlias = ["---"];
+    private static readonly string[] DuplicateAliases = ["same-alias", "same alias"];
+    private static readonly string[] OtherDomain = ["other.example"];
+    private static readonly string[] ExistingAlias = ["existing-alias"];
+    private static readonly string[] ValidAlias = ["valid-alias"];
+
     [Fact]
     public void InvalidProviderRecordShapesAreRejected()
     {
-        var invalidRecords = new[]
-        {
+        AccountClassificationProviderRecord[] invalidRecords =
+        [
             ValidRecord() with { Id = "" },
             ValidRecord() with { Name = "" },
             ValidRecord() with { Category = AccountRecoveryCategory.Unknown },
             ValidRecord() with { Category = (AccountRecoveryCategory)999 },
             ValidRecord() with { ProvenanceId = "" },
-            ValidRecord() with { Domains = Array.Empty<string>() },
-            ValidRecord() with { Domains = new[] { "not a domain" } },
-            ValidRecord() with { Domains = new[] { "example.test", "EXAMPLE.TEST" } },
-            ValidRecord() with { ProviderIdAliases = new[] { "---" } },
-            ValidRecord() with { ProviderIdAliases = new[] { "same-alias", "same alias" } },
-        };
+            ValidRecord() with { Domains = [] },
+            ValidRecord() with { Domains = InvalidDomain },
+            ValidRecord() with { Domains = DuplicateExampleDomains },
+            ValidRecord() with { ProviderIdAliases = InvalidAlias },
+            ValidRecord() with { ProviderIdAliases = DuplicateAliases },
+        ];
 
         foreach (var record in invalidRecords)
         {
@@ -33,7 +42,7 @@ public sealed class AccountClassificationCatalogInvariantTests
     public void ClaimedSourceDomainIsSkippedWithoutCreatingAnotherCanonicalRecord()
     {
         var existing = ValidRecord();
-        var records = new List<AccountClassificationProviderRecord> { existing };
+        List<AccountClassificationProviderRecord> records = [existing];
         var ids = new HashSet<string>(StringComparer.Ordinal) { existing.Id };
         var domains = new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal)
         {
@@ -60,7 +69,7 @@ public sealed class AccountClassificationCatalogInvariantTests
         var existing = ValidRecord();
 
         AssertAddRecordThrows(
-            ValidRecord() with { Domains = new[] { "other.example" } },
+            ValidRecord() with { Domains = OtherDomain },
             ids: new HashSet<string>(StringComparer.Ordinal) { existing.Id });
 
         AssertAddRecordThrows(
@@ -74,8 +83,8 @@ public sealed class AccountClassificationCatalogInvariantTests
             ValidRecord() with
             {
                 Id = "other-id",
-                Domains = new[] { "other.example" },
-                ProviderIdAliases = new[] { "existing-alias" },
+                Domains = OtherDomain,
+                ProviderIdAliases = ExistingAlias,
             },
             aliases: new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal)
             {
@@ -101,8 +110,8 @@ public sealed class AccountClassificationCatalogInvariantTests
         "valid-id",
         "Valid provider",
         AccountRecoveryCategory.Critical,
-        new[] { "example.test" },
-        new[] { "valid-alias" },
+        ExampleDomain,
+        ValidAlias,
         "test-provenance");
 
     private static void AssertAddRecordThrows(
@@ -114,7 +123,7 @@ public sealed class AccountClassificationCatalogInvariantTests
         var exception = Assert.Throws<TargetInvocationException>(() =>
             InvokeAddRecord(
                 record,
-                new List<AccountClassificationProviderRecord>(),
+                [],
                 ids ?? new HashSet<string>(StringComparer.Ordinal),
                 domains ?? new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal),
                 aliases ?? new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal),
@@ -137,6 +146,6 @@ public sealed class AccountClassificationCatalogInvariantTests
         Assert.NotNull(method);
         method.Invoke(
             null,
-            new object[] { record, records, ids, domains, aliases, allowClaimedDomainSkip });
+            [record, records, ids, domains, aliases, allowClaimedDomainSkip]);
     }
 }
