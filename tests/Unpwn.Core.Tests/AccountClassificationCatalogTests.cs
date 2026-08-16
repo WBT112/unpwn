@@ -117,6 +117,18 @@ public sealed class AccountClassificationCatalogTests
     }
 
     [Fact]
+    public void LoaderKeepsDistinctCanonicalIdsWhenOnlyAliasNormalizationWouldCollide()
+    {
+        var catalog = RepositoryAccountClassificationCatalog.Load(new StringReader(Tsv(
+            Row("provider-name", "Provider One", "Critical", "one.example", "provider-name"),
+            Row("providername", "Provider Two", "NonCritical", "two.example", "providername"))));
+
+        Assert.Equal(2, catalog.Records.Length);
+        Assert.Contains(catalog.Records, record => record.ProviderId == "provider-name");
+        Assert.Contains(catalog.Records, record => record.ProviderId == "providername");
+    }
+
+    [Fact]
     public void LoaderRejectsUnknownAsCatalogCategory()
     {
         var input = Tsv(Row("unknown", "Unknown", "Unknown", "unknown.example", "unknown"));
