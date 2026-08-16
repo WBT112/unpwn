@@ -1,8 +1,19 @@
+using System.Globalization;
+using System.Reflection;
+
 namespace Unpwn.Core;
 
 public sealed record AccountClassificationSuggestion(
     AccountRecoveryCategory Category,
     string CatalogVersion);
+
+public sealed record AccountClassificationProviderRecord(
+    string ProviderId,
+    string DisplayName,
+    AccountRecoveryCategory Category,
+    IReadOnlyList<string> Domains,
+    IReadOnlyList<string> ProviderIdAliases,
+    IReadOnlyList<string> Provenance);
 
 /// <summary>
 /// Repository-controlled, offline-only account classification suggestions.
@@ -11,119 +22,362 @@ public sealed record AccountClassificationSuggestion(
 /// </summary>
 public static class RepositoryAccountClassificationCatalog
 {
-    public const string CurrentVersion = "2026.08.1";
+    public const string CurrentVersion = "2026.08.2";
 
-    private static readonly string[] EmailDomains =
-    [
-        "126.com", "139.com", "163.com", "a1.net", "alice.it", "aliyun.com", "aol.com", "aol.de",
-        "att.net", "bellsouth.net", "bigpond.com", "bluewin.ch", "bol.com.br", "btinternet.com",
-        "centrum.cz", "charter.net", "citromail.hu", "club-internet.fr", "comcast.net", "cox.net",
-        "daum.net", "disroot.org", "earthlink.net", "email.cz", "email.it", "ewe.net", "fastmail.com",
-        "fastmail.fm", "freenet.de", "frontier.com", "gmx.at", "gmx.ch", "gmx.com", "gmx.de", "gmx.net",
-        "googlemail.com", "gmail.com", "hanmail.net", "hey.com", "hushmail.com", "icloud.com", "iinet.net.au",
-        "inbox.lv", "interia.pl", "juno.com", "kakao.com", "laposte.net", "libero.it", "live.at", "live.be",
-        "live.ca", "live.co.uk", "live.com", "live.com.au", "live.de", "live.dk", "live.fr", "live.ie",
-        "live.it", "live.jp", "live.nl", "live.no", "live.se", "lycos.com", "mac.com", "mail.com", "mail.de",
-        "mail.ee", "mail.ru", "mailbox.org", "me.com", "msn.com", "naver.com", "netcourrier.com", "netzero.net",
-        "ntlworld.com", "o2.pl", "online.de", "orange.fr", "outlook.at", "outlook.be", "outlook.co.uk",
-        "outlook.com", "outlook.com.au", "outlook.de", "outlook.dk", "outlook.es", "outlook.fr", "outlook.ie",
-        "outlook.it", "outlook.jp", "outlook.nl", "outlook.pt", "outlook.se", "pobox.com", "post.cz",
-        "proton.me", "protonmail.ch", "protonmail.com", "qq.com", "rambler.ru", "rediffmail.com", "rocketmail.com",
-        "seznam.cz", "shaw.ca", "sina.com", "sky.com", "spectrum.net", "squirrelmail.org", "talktalk.net",
-        "t-online.de", "tiscali.co.uk", "tiscali.it", "tuta.com", "tutanota.com", "tutamail.com", "ukr.net",
-        "verizon.net", "virginmedia.com", "vodafone.de", "wanadoo.fr", "web.de", "wp.pl", "xs4all.nl",
-        "yahoo.ca", "yahoo.co.in", "yahoo.co.jp", "yahoo.co.uk", "yahoo.com", "yahoo.com.au", "yahoo.de",
-        "yahoo.es", "yahoo.fr", "yahoo.it", "yandex.com", "yandex.ru", "yeah.net", "zoho.com", "zohomail.com",
-    ];
+    private static readonly Lazy<AccountClassificationCatalogData> Catalog =
+        new(LoadEmbeddedCatalog, LazyThreadSafetyMode.ExecutionAndPublication);
 
-    private static readonly string[] EmailProviderIds =
-    [
-        "aol", "fastmail", "freenet", "gmail", "gmx", "googlemail", "icloudmail", "mailboxorg",
-        "outlook", "protonmail", "tutanota", "webde", "yahoomail", "yandexmail", "zohomail",
-    ];
+    public static IReadOnlyList<AccountClassificationProviderRecord> ProviderRecords =>
+        Catalog.Value.Records;
 
-    private static readonly string[] CriticalDomains =
-    [
-        "1password.com", "amazon.com", "amazon.de", "apple.com", "auth0.com", "bankofamerica.com",
-        "barclays.com", "bitwarden.com", "chase.com", "commerzbank.de", "deutsche-bank.de", "discord.com",
-        "dropbox.com", "ebay.com", "ebay.de", "etsy.com", "facebook.com", "fidelity.com", "github.com",
-        "google.com", "healthcare.gov", "instagram.com", "klarna.com", "lastpass.com", "linkedin.com",
-        "mastercard.com", "microsoft.com", "n26.com", "okta.com", "paypal.com", "reddit.com", "revolut.com",
-        "stripe.com", "wise.com", "x.com",
-    ];
-
-    private static readonly string[] CriticalProviderIds =
-    [
-        "1password", "amazon", "apple", "auth0", "banking", "bitwarden", "classifieds", "commerce",
-        "communications", "discord", "ebay", "etsy", "financial", "github", "google", "government", "health",
-        "identityprovider", "insurance", "lastpass", "marketplace", "microsoft", "okta", "passwordmanager",
-        "payments", "paypal", "reddit", "socialidentity", "stripe",
-    ];
-
-    private static readonly string[] NonCriticalDomains =
-    [
-        "allrecipes.com", "buzzfeed.com", "duolingo.com", "goodreads.com", "imdb.com", "medium.com",
-        "netflix.com", "pinterest.com", "spotify.com", "steampowered.com", "twitch.tv", "weather.com",
-    ];
-
-    private static readonly string[] NonCriticalProviderIds =
-    [
-        "entertainment", "game", "gaming", "newsletter", "news", "recipes", "streaming", "weather",
-    ];
-
-    public static int EmailAliasCount => EmailDomains.Length;
+    public static int EmailAliasCount => Catalog.Value.Records
+        .Where(record => record.Category == AccountRecoveryCategory.Email)
+        .Sum(record => record.Domains.Count);
 
     public static AccountClassificationSuggestion Classify(string providerId, string? accountUrl)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(providerId);
+        var data = Catalog.Value;
+        var categories = new List<AccountRecoveryCategory>(3);
         var provider = NormalizeProviderId(providerId);
-        var providerDomain = NormalizeProviderDomain(providerId);
-        var host = GetHost(accountUrl);
+        if (data.ProviderCategories.TryGetValue(provider, out var providerCategory))
+        {
+            categories.Add(providerCategory);
+        }
 
-        var category = Matches(provider, providerDomain, host, EmailProviderIds, EmailDomains)
-            ? AccountRecoveryCategory.Email
-            : Matches(provider, providerDomain, host, CriticalProviderIds, CriticalDomains)
-                ? AccountRecoveryCategory.Critical
-                : Matches(provider, providerDomain, host, NonCriticalProviderIds, NonCriticalDomains)
-                    ? AccountRecoveryCategory.NonCritical
-                    : AccountRecoveryCategory.Unknown;
+        var providerDomain = NormalizeProviderDomain(providerId);
+        if (MatchDomain(providerDomain, data.DomainCategories) is { } providerDomainCategory)
+        {
+            categories.Add(providerDomainCategory);
+        }
+
+        var host = GetHost(accountUrl);
+        if (MatchDomain(host, data.DomainCategories) is { } hostCategory)
+        {
+            categories.Add(hostCategory);
+        }
+
+        var category = categories.Count == 0
+            ? AccountRecoveryCategory.Unknown
+            : categories.Min();
         return new AccountClassificationSuggestion(category, CurrentVersion);
     }
 
-    private static bool Matches(
-        string provider,
-        string? providerDomain,
-        string? host,
-        IReadOnlyCollection<string> providerIds,
-        IReadOnlyCollection<string> domains) =>
-        providerIds.Contains(provider, StringComparer.Ordinal) ||
-        MatchesDomain(providerDomain, domains) ||
-        MatchesDomain(host, domains);
+    internal static AccountClassificationCatalogData Load(TextReader reader) =>
+        AccountClassificationCatalogLoader.Load(reader);
 
-    private static string NormalizeProviderId(string providerId) =>
-        string.Concat(providerId.Trim().ToLowerInvariant().Where(char.IsLetterOrDigit));
-
-    private static string? NormalizeProviderDomain(string providerId)
+    private static AccountClassificationCatalogData LoadEmbeddedCatalog()
     {
-        var value = providerId.Trim().TrimEnd('.');
-        return Uri.CheckHostName(value) is UriHostNameType.Dns or UriHostNameType.IPv4 or UriHostNameType.IPv6
-            ? new UriBuilder(Uri.UriSchemeHttps, value).Uri.IdnHost.ToLowerInvariant()
-            : null;
+        const string resourceName = "Unpwn.Core.Data.account-classification-catalog.tsv";
+        var assembly = typeof(RepositoryAccountClassificationCatalog).Assembly;
+        using var stream = assembly.GetManifestResourceStream(resourceName)
+            ?? throw new InvalidOperationException(
+                $"Embedded account classification catalog '{resourceName}' is missing.");
+        using var reader = new StreamReader(stream, detectEncodingFromByteOrderMarks: true);
+        return AccountClassificationCatalogLoader.Load(reader);
     }
 
-    private static bool MatchesDomain(string? host, IReadOnlyCollection<string> domains) =>
-        host is not null && domains.Any(domain =>
-            string.Equals(host, domain, StringComparison.Ordinal) ||
-            host.EndsWith('.' + domain, StringComparison.Ordinal));
-
-    private static string? GetHost(string? accountUrl)
+    private static AccountRecoveryCategory? MatchDomain(
+        string? host,
+        IReadOnlyDictionary<string, AccountRecoveryCategory> domains)
     {
-        if (string.IsNullOrWhiteSpace(accountUrl) ||
-            !Uri.TryCreate(accountUrl.Trim(), UriKind.Absolute, out var uri))
+        if (host is null)
         {
             return null;
         }
 
-        return uri.IdnHost.TrimEnd('.').ToLowerInvariant();
+        var candidate = host;
+        while (true)
+        {
+            if (domains.TryGetValue(candidate, out var category))
+            {
+                return category;
+            }
+
+            var separator = candidate.IndexOf('.');
+            if (separator < 0 || separator == candidate.Length - 1)
+            {
+                return null;
+            }
+
+            candidate = candidate[(separator + 1)..];
+        }
+    }
+
+    internal static string NormalizeProviderId(string providerId) =>
+        string.Concat(providerId.Trim().ToLowerInvariant().Where(char.IsLetterOrDigit));
+
+    internal static string? NormalizeDomain(string value)
+    {
+        var candidate = value.Trim().TrimEnd('.');
+        if (candidate.Length is 0 or > 253)
+        {
+            return null;
+        }
+
+        try
+        {
+            candidate = new IdnMapping().GetAscii(candidate).ToLowerInvariant();
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+
+        return Uri.CheckHostName(candidate) == UriHostNameType.Dns ? candidate : null;
+    }
+
+    private static string? NormalizeProviderDomain(string providerId) =>
+        NormalizeDomain(providerId);
+
+    private static string? GetHost(string? accountUrl)
+    {
+        if (string.IsNullOrWhiteSpace(accountUrl) ||
+            !Uri.TryCreate(accountUrl.Trim(), UriKind.Absolute, out var uri) ||
+            uri.Scheme is not (Uri.UriSchemeHttps or Uri.UriSchemeHttp) ||
+            string.IsNullOrWhiteSpace(uri.Host) ||
+            !string.IsNullOrEmpty(uri.UserInfo))
+        {
+            return null;
+        }
+
+        return NormalizeDomain(uri.IdnHost);
+    }
+}
+
+internal sealed record AccountClassificationCatalogData(
+    AccountClassificationProviderRecord[] Records,
+    IReadOnlyDictionary<string, AccountRecoveryCategory> ProviderCategories,
+    IReadOnlyDictionary<string, AccountRecoveryCategory> DomainCategories);
+
+internal static class AccountClassificationCatalogLoader
+{
+    private const string Header =
+        "provider_id\tdisplay_name\tcategory\tdomains\tprovider_aliases\tprovenance";
+    internal const int MaximumProviderRecords = 4000;
+    internal const int MaximumLineCharacters = 65536;
+    internal const int MaximumDomainsPerProvider = 512;
+    internal const int MaximumAliasesPerProvider = 128;
+    internal const int MaximumProvenanceEntriesPerProvider = 128;
+
+    internal static AccountClassificationCatalogData Load(TextReader reader)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        var firstLine = ReadBoundedLine(reader)
+            ?? throw new InvalidOperationException("The account classification catalog is empty.");
+        if (!string.Equals(firstLine, Header, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("The account classification catalog has an unsupported header.");
+        }
+
+        var records = new List<AccountClassificationProviderRecord>();
+        var canonicalProviderIds = new HashSet<string>(StringComparer.Ordinal);
+        string? line;
+        while ((line = ReadBoundedLine(reader)) is not null)
+        {
+            if (line.Length == 0)
+            {
+                continue;
+            }
+
+            if (records.Count >= MaximumProviderRecords)
+            {
+                throw new InvalidOperationException("The account classification catalog contains too many providers.");
+            }
+
+            var fields = line.Split('\t');
+            if (fields.Length != 6)
+            {
+                throw new InvalidOperationException("The account classification catalog contains a malformed record.");
+            }
+
+            var providerId = fields[0].Trim();
+            var normalizedProviderId = RepositoryAccountClassificationCatalog.NormalizeProviderId(providerId);
+            if (providerId.Length is 0 or > 160 || normalizedProviderId.Length == 0 ||
+                !canonicalProviderIds.Add(normalizedProviderId))
+            {
+                throw new InvalidOperationException("The account classification catalog contains an invalid or duplicate provider ID.");
+            }
+
+            var displayName = fields[1].Trim();
+            if (displayName.Length is 0 or > 240)
+            {
+                throw new InvalidOperationException("The account classification catalog contains an invalid provider name.");
+            }
+
+            if (!Enum.TryParse<AccountRecoveryCategory>(fields[2], ignoreCase: false, out var category) ||
+                !AccountRecoveryCategoryRules.IsUserSelectable(category))
+            {
+                throw new InvalidOperationException("The account classification catalog contains an invalid recovery category.");
+            }
+
+            var domains = ParseDomains(fields[3]);
+            var aliases = ParseAliases(fields[4], providerId);
+            var provenance = ParseValues(
+                fields[5], MaximumProvenanceEntriesPerProvider, 300, "provenance");
+            if (domains.Length == 0 || provenance.Length == 0)
+            {
+                throw new InvalidOperationException("Every account classification provider requires domains and provenance.");
+            }
+
+            records.Add(new AccountClassificationProviderRecord(
+                providerId,
+                displayName,
+                category,
+                domains,
+                aliases,
+                provenance));
+        }
+
+        if (records.Count == 0)
+        {
+            throw new InvalidOperationException("The account classification catalog contains no providers.");
+        }
+
+        return BuildIndexes(records.ToArray());
+    }
+
+    private static AccountClassificationCatalogData BuildIndexes(
+        AccountClassificationProviderRecord[] records)
+    {
+        var providerCategories = new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal);
+        foreach (var record in records)
+        {
+            foreach (var alias in record.ProviderIdAliases.Append(record.ProviderId))
+            {
+                var normalized = RepositoryAccountClassificationCatalog.NormalizeProviderId(alias);
+                if (providerCategories.TryGetValue(normalized, out var existing) && existing != record.Category)
+                {
+                    throw new InvalidOperationException(
+                        "The account classification catalog contains a provider alias collision.");
+                }
+
+                if (!providerCategories.TryAdd(normalized, record.Category) &&
+                    !record.ProviderIdAliases.Contains(alias, StringComparer.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        "The account classification catalog contains a duplicate provider alias.");
+                }
+            }
+        }
+
+        var domainEntries = records
+            .SelectMany(record => record.Domains.Select(domain => (Domain: domain, record.ProviderId, record.Category)))
+            .OrderBy(entry => entry.Domain.Count(character => character == '.'))
+            .ThenBy(entry => entry.Domain, StringComparer.Ordinal)
+            .ToArray();
+        var domainCategories = new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal);
+        var domainOwners = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var entry in domainEntries)
+        {
+            if (domainOwners.TryGetValue(entry.Domain, out var exactOwner) && exactOwner != entry.ProviderId)
+            {
+                throw new InvalidOperationException(
+                    "The account classification catalog contains a duplicate domain alias.");
+            }
+
+            var parent = entry.Domain;
+            while (true)
+            {
+                var separator = parent.IndexOf('.');
+                if (separator < 0 || separator == parent.Length - 1)
+                {
+                    break;
+                }
+
+                parent = parent[(separator + 1)..];
+                if (domainOwners.TryGetValue(parent, out var parentOwner) && parentOwner != entry.ProviderId)
+                {
+                    throw new InvalidOperationException(
+                        "The account classification catalog contains overlapping domain aliases.");
+                }
+            }
+
+            domainOwners[entry.Domain] = entry.ProviderId;
+            domainCategories[entry.Domain] = entry.Category;
+        }
+
+        return new AccountClassificationCatalogData(records, providerCategories, domainCategories);
+    }
+
+    private static string[] ParseDomains(string field)
+    {
+        var rawValues = ParseValues(field, MaximumDomainsPerProvider, 253, "domain");
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var raw in rawValues)
+        {
+            var normalized = RepositoryAccountClassificationCatalog.NormalizeDomain(raw)
+                ?? throw new InvalidOperationException(
+                    "The account classification catalog contains an invalid domain alias.");
+            if (!result.Add(normalized))
+            {
+                throw new InvalidOperationException(
+                    "The account classification catalog contains a duplicate domain within one provider.");
+            }
+        }
+
+        return [.. result.Order(StringComparer.Ordinal)];
+    }
+
+    private static string[] ParseAliases(string field, string providerId)
+    {
+        var rawValues = ParseValues(field, MaximumAliasesPerProvider, 160, "provider alias");
+        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var raw in rawValues.Append(providerId))
+        {
+            var normalized = RepositoryAccountClassificationCatalog.NormalizeProviderId(raw);
+            if (normalized.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    "The account classification catalog contains an invalid provider alias.");
+            }
+
+            if (!result.TryAdd(normalized, raw) &&
+                !string.Equals(result[normalized], raw, StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The account classification catalog contains duplicate normalized provider aliases.");
+            }
+        }
+
+        return [.. result.Values.Order(StringComparer.Ordinal)];
+    }
+
+    private static string[] ParseValues(
+        string field,
+        int maximumCount,
+        int maximumLength,
+        string label)
+    {
+        if (field.Length == 0)
+        {
+            return [];
+        }
+
+        var values = field.Split('|');
+        if (values.Length > maximumCount)
+        {
+            throw new InvalidOperationException(
+                $"The account classification catalog contains too many {label} entries.");
+        }
+
+        if (values.Any(value => value.Length == 0 || value.Length > maximumLength))
+        {
+            throw new InvalidOperationException(
+                $"The account classification catalog contains an invalid {label} entry.");
+        }
+
+        return values;
+    }
+
+    private static string? ReadBoundedLine(TextReader reader)
+    {
+        var line = reader.ReadLine();
+        if (line is not null && line.Length > MaximumLineCharacters)
+        {
+            throw new InvalidOperationException("The account classification catalog contains an overlong line.");
+        }
+
+        return line;
     }
 }
