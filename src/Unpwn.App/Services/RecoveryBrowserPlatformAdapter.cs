@@ -183,6 +183,8 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         CompleteWpeWebsiteDataClear;
     private static readonly AsyncReadyCallback GtkWebsiteDataClearedCallback =
         CompleteGtkWebsiteDataClear;
+    private static readonly RecoveryBrowserNativeAsyncOperationRegistry WebsiteDataClearOperations =
+        new();
     private readonly PermissionSignalCallback _permissionCallback;
     private readonly DownloadSignalCallback _downloadCallback;
     private readonly TlsSignalCallback _tlsCallback;
@@ -289,50 +291,45 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         _isConfigured = false;
     }
 
-    public override async Task ClearBrowsingDataAsync(CancellationToken cancellationToken)
+    public override Task ClearBrowsingDataAsync(CancellationToken cancellationToken)
     {
         if (_websiteDataManager == IntPtr.Zero || _backend == LinuxRecoveryBrowserBackend.None)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        var completion = new TaskCompletionSource(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        var handle = GCHandle.Alloc(completion);
-        try
-        {
-            var callback = _backend == LinuxRecoveryBrowserBackend.Wpe
-                ? WpeWebsiteDataClearedCallback
-                : GtkWebsiteDataClearedCallback;
-            var callbackPointer = Marshal.GetFunctionPointerForDelegate(callback);
-            if (_backend == LinuxRecoveryBrowserBackend.Wpe)
-            {
-                wpe_webkit_website_data_manager_clear(
-                    _websiteDataManager,
-                    AllWebsiteDataTypes,
-                    timespan: 0,
-                    IntPtr.Zero,
-                    callbackPointer,
-                    GCHandle.ToIntPtr(handle));
-            }
-            else
-            {
-                gtk_webkit_website_data_manager_clear(
-                    _websiteDataManager,
-                    AllWebsiteDataTypes,
-                    timespan: 0,
-                    IntPtr.Zero,
-                    callbackPointer,
-                    GCHandle.ToIntPtr(handle));
-            }
-        }
-        catch
-        {
-            handle.Free();
-            throw;
-        }
+        var manager = _websiteDataManager;
+        var backend = _backend;
+        var callback = backend == LinuxRecoveryBrowserBackend.Wpe
+            ? WpeWebsiteDataClearedCallback
+            : GtkWebsiteDataClearedCallback;
+        var callbackPointer = Marshal.GetFunctionPointerForDelegate(callback);
 
-        await completion.Task.WaitAsync(cancellationToken);
+        return WebsiteDataClearOperations.RunAsync(
+            userData =>
+            {
+                if (backend == LinuxRecoveryBrowserBackend.Wpe)
+                {
+                    wpe_webkit_website_data_manager_clear(
+                        manager,
+                        AllWebsiteDataTypes,
+                        timespan: 0,
+                        IntPtr.Zero,
+                        callbackPointer,
+                        userData);
+                }
+                else
+                {
+                    gtk_webkit_website_data_manager_clear(
+                        manager,
+                        AllWebsiteDataTypes,
+                        timespan: 0,
+                        IntPtr.Zero,
+                        callbackPointer,
+                        userData);
+                }
+            },
+            cancellationToken);
     }
 
     private void AttachWpe(IntPtr webView)
@@ -497,22 +494,16 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
         WebsiteDataClearFinish finish,
         string failureMessage)
     {
-        var handle = GCHandle.FromIntPtr(userData);
-        var completion = (TaskCompletionSource)handle.Target!;
-        handle.Free();
         IntPtr error = IntPtr.Zero;
-        if (finish(sourceObject, result, ref error))
-        {
-            completion.TrySetResult();
-            return;
-        }
-
+        var succeeded = finish(sourceObject, result, ref error);
         if (error != IntPtr.Zero)
         {
             g_error_free(error);
         }
 
-        completion.TrySetException(new IOException(failureMessage));
+        WebsiteDataClearOperations.Complete(
+            userData,
+            succeeded ? null : new IOException(failureMessage));
     }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
