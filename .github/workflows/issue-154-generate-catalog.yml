@@ -1,0 +1,46 @@
+name: Issue 154 catalog snapshot
+
+on:
+  push:
+    branches:
+      - agent/issue-154-account-priority-catalog
+    paths:
+      - scripts/update-account-classification-catalog.py
+      - .github/workflows/issue-154-generate-catalog.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out issue branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: agent/issue-154-account-priority-catalog
+
+      - name: Generate pinned offline snapshots
+        run: python3 scripts/update-account-classification-catalog.py
+
+      - name: Validate generated record minimums
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(wc -l < src/Unpwn.Core/Data/AccountClassification/ut1-webmail.txt)" -eq 180
+          test "$(wc -l < src/Unpwn.Core/Data/AccountClassification/ut1-bank.txt)" -eq 1250
+          test "$(wc -l < src/Unpwn.Core/Data/AccountClassification/ut1-press.txt)" -eq 1250
+
+      - name: Commit generated snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- src/Unpwn.Core/Data/AccountClassification; then
+            echo "Snapshot already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/Unpwn.Core/Data/AccountClassification
+          git commit -m "Vendor pinned account classification snapshot"
+          git push origin HEAD:agent/issue-154-account-priority-catalog
