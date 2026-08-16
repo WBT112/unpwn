@@ -96,7 +96,7 @@ public sealed class AccountInventoryScreenViewModelTests
     {
         var email = CreateAccount("gmail");
         var critical = CreateAccount("bitwarden");
-        var routine = CreateAccount("streaming");
+        var routine = CreateAccount("netflix");
         var service = new TestAccountInventoryService([critical, routine, email]);
         var viewModel = CreateViewModel(service);
 
@@ -191,7 +191,7 @@ public sealed class AccountInventoryScreenViewModelTests
     [Fact]
     public void ReviewedInventoryWithoutEmailCanStillContinueAfterWarning()
     {
-        var critical = CreateAccount("banking", confirmed: AccountRecoveryCategory.Critical);
+        var critical = CreateAccount("deutschebank", confirmed: AccountRecoveryCategory.Critical);
         var routine = CreateAccount("mystery.example", confirmed: AccountRecoveryCategory.NonCritical);
         var service = new TestAccountInventoryService([critical, routine]);
         var viewModel = CreateViewModel(service);
@@ -217,7 +217,6 @@ public sealed class AccountInventoryScreenViewModelTests
             DateTimeOffset.UnixEpoch,
             [invalidAccount]);
         var service = new InvalidCurrentModelInventoryService(invalidState);
-
         var viewModel = new AccountInventoryScreenViewModel(
             service,
             new TestConfirmationDialogService(),
