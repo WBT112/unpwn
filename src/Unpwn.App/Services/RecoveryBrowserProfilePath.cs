@@ -57,14 +57,30 @@ public static class RecoveryBrowserProfilePath
                 nameof(path));
         }
 
-        EnsureExistingPathIsNotRedirected(
-            Path.Combine(applicationDataRoot, "unpwn"),
-            nameof(path));
-        EnsureExistingPathIsNotRedirected(
-            Path.Combine(applicationDataRoot, "unpwn", "recovery-browser"),
-            nameof(path));
-        EnsureExistingPathIsNotRedirected(expectedRoot, nameof(path));
+        ValidateOwnedProfilesRoot(applicationDataRoot, nameof(path));
         EnsureExistingPathIsNotRedirected(candidate, nameof(path));
+    }
+
+    internal static void ValidateOwnedProfilesRoot(string applicationDataRoot)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(applicationDataRoot);
+        ValidateOwnedProfilesRoot(applicationDataRoot, nameof(applicationDataRoot));
+    }
+
+    private static void ValidateOwnedProfilesRoot(
+        string applicationDataRoot,
+        string parameterName)
+    {
+        var fullRoot = Path.GetFullPath(applicationDataRoot);
+        EnsureExistingPathIsNotRedirected(
+            Path.Combine(fullRoot, "unpwn"),
+            parameterName);
+        EnsureExistingPathIsNotRedirected(
+            Path.Combine(fullRoot, "unpwn", "recovery-browser"),
+            parameterName);
+        EnsureExistingPathIsNotRedirected(
+            GetOwnedProfilesRoot(fullRoot),
+            parameterName);
     }
 
     private static void EnsureExistingPathIsNotRedirected(

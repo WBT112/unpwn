@@ -53,10 +53,7 @@ The Recovery Browser never points at or imports a normal Chrome, Edge, Firefox, 
 
 Browser cookies/session storage are temporary operational state, not Recovery Vault records and not canonical recovery evidence.
 
-The profile path is treated as sensitive application-owned storage. The current pre-release Linux
-implementation validates path ownership and cleanup scope but does not yet claim an explicit
-owner-only filesystem mode for every profile/data/cache directory and marker from creation. A
-supported Linux release requires that invariant and controlled failure when it cannot be established.
+The profile path is treated as sensitive application-owned storage. On Linux, unpwn creates and verifies the `recovery-browser`, `profiles`, per-session profile, and WPE `data`/`cache` directories with owner-only mode `0700`. The unpwn-owned `.unpwn-session` marker and temporary marker replacement files are created with owner-only mode `0600`. Existing unpwn-owned browser directories and marker files are tightened before reuse or orphan processing. Redirected/symlinked storage, or a failure to establish the required mode, fails closed instead of continuing with a broader filesystem boundary. The surrounding operating-system application-data root is not treated as Recovery Browser-owned storage and is not recursively chmodded.
 
 ## Clean close and abnormal termination
 
@@ -72,7 +69,7 @@ A controlled close runs conservatively:
 
 Resource-release or deletion failure is visible and retryable. The implementation must not race profile deletion against a live browser adapter.
 
-At startup, opaque profile directories left from an abnormal termination are treated as orphaned. New embedded sessions remain blocked until cleanup succeeds. Because account association is not persisted, stale authenticated sessions are discarded rather than automatically resumed. Unexpected entries, symlinks/reparse points, or unreadable profile storage fail closed.
+At startup, opaque profile directories left from an abnormal termination are treated as orphaned. New embedded sessions remain blocked until cleanup succeeds. Because account association is not persisted, stale authenticated sessions are discarded rather than automatically resumed. Unexpected entries, symlinks/reparse points, unreadable profile storage, or storage that cannot be restricted to the required Linux owner-only mode fail closed.
 
 Cleanup is not a forensic-erasure guarantee. Filesystem snapshots, backups, storage-device behavior, or an operating-system/browser crash may retain data beyond the application's direct control.
 
@@ -120,7 +117,7 @@ Avalonia hosts the installed WebView2 runtime using the dedicated unpwn data dir
 
 ### Linux
 
-Avalonia hosts WPE WebKit with dedicated data/cache locations. The adapter disables persistent credential storage/developer tools where exposed and denies permissions, downloads, and TLS exceptions. WPE WebKit does not expose every WebView2 control through the maintained host; the dedicated profile boundary and conservative lifecycle remain mandatory instead of claiming identical platform hardening.
+Avalonia hosts WPE WebKit with dedicated data/cache locations and can use the separately hardened ephemeral WebKitGTK fallback where WPE is unavailable. The WPE profile, `data`, and `cache` locations must pass the owner-only `0700` filesystem check before they are handed to WebKit. The adapter disables persistent credential storage/developer tools where exposed and denies permissions, downloads, and TLS exceptions. WebKitGTK keeps website data ephemeral and still requires the unpwn-owned session profile directory to satisfy the same owner-only storage boundary. WPE WebKit does not expose every WebView2 control through the maintained host; the dedicated profile boundary and conservative lifecycle remain mandatory instead of claiming identical platform hardening.
 
 No platform may silently fall back to an unhardened profile or host.
 
@@ -135,6 +132,7 @@ Tests use synthetic/loopback content only and cover:
 - visible origin and browser controls;
 - popup/download/permission/default-deny behavior;
 - opaque profile paths and account isolation;
+- Linux `0700` profile/data/cache directories and `0600` session metadata, including tightening existing owned paths and rejecting redirected storage;
 - clear → release → delete cleanup ordering;
 - cleanup failure/retry, abnormal termination, orphan detection, and no auto-resume;
 - checklist persistence with no browser-driven recovery transition;
