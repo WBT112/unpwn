@@ -19,11 +19,23 @@ Materialized account data is cleared when the vault locks. Only the current sche
 
 ## Local classification catalog
 
-`RepositoryAccountClassificationCatalog` is versioned, repository-controlled, deterministic, and offline-only. It matches stable provider identifiers and safe HTTP/HTTPS host names already present in imported account data. It does not inspect arbitrary page content and performs no network lookup.
+`RepositoryAccountClassificationCatalog` is versioned, repository-controlled, deterministic, and offline-only. Runtime classification reads only embedded repository data and the provider identifier / safe HTTP or HTTPS host already present in the imported account record. It performs no network lookup and sends no account inventory information to a classification service.
 
-The catalog contains more than 100 common email domains and aliases, plus curated critical services such as financial/payment, commerce, health/insurance, government/identity, communications, password-manager, and identity-provider accounts. It also contains conservative not-critical patterns. Anything not matched remains `Unknown` and therefore needs user review.
+The catalog is modeled as canonical provider/service records. Every record has a stable ID, human-reviewable name, recovery category, one or more normalized domains, optional provider-ID aliases, and a provenance ID. Provider counts therefore count records, not domains or regional aliases. Multi-domain families such as Outlook or Yahoo remain one curated record even when they own many domains.
 
-The catalog only proposes **when** an account should be handled. Provider workflow definitions independently decide **how** recovery works. A catalog entry cannot select a provider action, change recovery execution state, or prove control of an account.
+The checked-in catalog enforces at least:
+
+- 100 canonical `Email` provider/service records;
+- 1,000 canonical `Critical` provider/service records;
+- 1,000 canonical `NonCritical` provider/service records.
+
+Curated records cover important provider families and retain explicit provider-ID aliases used by existing imports. Broader coverage comes from a pinned, repository-vendored subset of the Université Toulouse 1 Capitole web-categorization data via the normalized `cbuijs/ut1` mirror. The mapped source categories are `webmail` → `Email`, `bank` → `Critical`, and `press` → `NonCritical`. Source revision, license/attribution, selection rules, record targets, collision handling, and the update procedure are documented in `src/Unpwn.Core/Data/AccountClassification/README.md`.
+
+Source lists are advisory data and can contain categorization mistakes. Curated records have first claim on their domains; remaining source ingestion uses deterministic precedence `Email` → `Critical` → `NonCritical`. A final catalog domain is owned by exactly one canonical record. Unmatched services remain `Unknown`, and a user's explicit override always wins over any suggestion.
+
+Domain matching is case/culture independent and normalizes internationalized host names to ASCII IDNA form before lookup. The embedded source loader is bounded by file size, line length, and record count. Invalid, duplicate, overlong, or oversized embedded data fails catalog construction instead of silently broadening classification.
+
+The catalog only proposes **when** an account should be handled. Provider workflow definitions independently decide **how** recovery works. A catalog entry cannot select a provider action, change recovery execution state, or prove control of an account. Priority metadata and reviewed provider-navigation/automation metadata remain separate trust boundaries.
 
 ## Triage flow
 
@@ -51,6 +63,6 @@ The category queue has no parallel cross-account planning authority. Workflow ex
 
 ## Persistence and testing
 
-Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog-produced `Unknown`, rejection of explicit `Unknown`, valid user overrides, clearing an override back to the automatic suggestion, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, import integration, localization, incompatible-record failure, and lock clearing.
+Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover catalog record minimums and uniqueness, curated aliases versus canonical counts, representative global/German/European providers, culture-independent classification, provenance, catalog-produced `Unknown`, rejection of explicit `Unknown`, valid user overrides, clearing an override back to the automatic suggestion, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, import integration, localization, incompatible-record failure, and lock clearing.
 
 See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Integrated Recovery Flow](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).

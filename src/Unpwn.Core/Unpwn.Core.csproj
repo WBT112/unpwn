@@ -1,1 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <EmbeddedResource Include="Data/AccountClassification/ut1-*.txt"
+                      LogicalName="Unpwn.Core.AccountClassification.%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
