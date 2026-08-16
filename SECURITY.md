@@ -27,15 +27,26 @@ Recovery data is local-first. Old passwords are not stored. Credentials, vault k
 
 Plaintext generated-credential exports are an explicit escape from encrypted vault storage. On Unix-like platforms unpwn creates the temporary export with owner read/write permissions only (`0600`) from the initial exclusive open, verifies that mode before writing plaintext, and atomically moves the same file to its final name without overwrite. Parent-directory permissions are not modified. On Windows the export uses the normal ACL semantics inherited from the user-selected destination directory; unpwn does not claim a custom owner-only Windows ACL for arbitrary destinations.
 
+Linux Recovery Browser profiles use an application-owned filesystem boundary: unpwn-created profile/data/cache directories are restricted to `0700`, owned marker files to `0600`, and redirected or unprotectable storage fails closed.
+
+## Security CI
+
+Security regressions are first-class CI failures. The repository-maintained gates include:
+
+- built-in .NET `Security` analyzer diagnostics promoted to errors;
+- NuGet audit for direct and transitive dependencies at `moderate` severity or higher;
+- a native/unsafe boundary guard that allowlists the reviewed Recovery Browser interop location;
+- a deterministic `SecurityRegression` test subset for high-risk invariants;
+- CodeQL C# analysis on pull requests, `main`, and a weekly schedule;
+- the existing synthetic-secret artifact scan before CI artifacts are uploaded.
+
+The exact gates, allowlists, local commands, and exception process are documented in [Security CI Gates](docs/SECURITY_GATES.md). A green automated scan is additional evidence, not proof that a build is secure.
+
 ## Known pre-release hardening gaps
 
-The current source tree is not a supported security release. Remaining hardening work includes:
+The current source tree is still not a supported security release. Remaining release work includes real desktop validation of the Linux Recovery Browser fallback and a complete native desktop end-to-end recovery journey on Windows and Linux. These gaps concern production-runtime integration and release validation; they do not change the existing rule that browser activity is never canonical recovery truth.
 
-- owner-only creation permissions for Linux Recovery Browser profile data;
-- cancellation/resource-safety hardening for the Linux WPE browsing-data cleanup callback boundary;
-- dedicated code-security analysis, stricter dependency gating, and review guards around native interop.
-
-These are local-confidentiality, native-resource-lifetime, and regression-detection risks. Existing encryption, plaintext-export permissions, no-overwrite behavior, public-network-only recovery discovery, exact-origin validation, secret-safe diagnostics, and normal CI remain useful controls, but they must not be presented as covering the remaining boundaries.
+Existing encryption, resource limits, owner-only Linux browser/export permissions, public-network-only recovery discovery, exact-origin validation, cancellation-safe native cleanup, secret-safe diagnostics, and security CI are useful controls, but must not be presented as a guarantee against compromise of the host operating system or provider-side failures.
 
 ## Reporting a vulnerability
 
