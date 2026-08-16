@@ -44,12 +44,39 @@ jobs:
       - name: Restore
         run: dotnet restore unpwn.slnx
 
-      - name: Verify formatting
+      - name: Security gate - NuGet vulnerabilities (moderate+)
+        if: runner.os == 'Linux'
+        shell: pwsh
+        run: |
+          @'
+          ### NuGet vulnerability gate
+          - Scope: direct and transitive packages
+          - Threshold: moderate or higher
+          - Result: restore must complete without audit diagnostics promoted to errors
+          '@ | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          dotnet restore unpwn.slnx --force-evaluate
+
+      - name: Security gate - native and unsafe boundary
+        if: runner.os == 'Linux'
+        shell: pwsh
+        run: ./eng/verify-native-interop.ps1
+
+      - name: Verify formatting and analyzers
         if: runner.os == 'Linux'
         run: dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
 
       - name: Build
         run: dotnet build unpwn.slnx --configuration Release --no-restore
+
+      - name: Security regression suite
+        if: runner.os == 'Linux'
+        run: >-
+          dotnet test unpwn.slnx
+          --configuration Release
+          --no-build
+          --filter "Category=SecurityRegression"
+          --results-directory artifacts/security-test-results
+          --logger "trx;LogFilePrefix=security-${{ runner.os }}"
 
       - name: Build and test with coverage
         if: runner.os == 'Linux'
@@ -109,6 +136,7 @@ jobs:
         with:
           name: test-results-${{ runner.os }}
           path: |
+            artifacts/security-test-results
             artifacts/test-results
             artifacts/coverage
           if-no-files-found: warn
