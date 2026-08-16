@@ -447,6 +447,12 @@ internal sealed class FileRecoveryBrowserSessionStorage : IRecoveryBrowserSessio
             return [];
         }
 
+        RecoveryBrowserProfilePath.ValidateOwnedProfilesRoot(_applicationDataRoot);
+        RecoveryBrowserFilePermissions.EnsurePrivateDirectory(
+            Path.GetDirectoryName(_profilesRoot)!);
+        RecoveryBrowserFilePermissions.EnsurePrivateDirectory(_profilesRoot);
+        RecoveryBrowserProfilePath.ValidateOwnedProfilesRoot(_applicationDataRoot);
+
         return
         [
             .. Directory.EnumerateFileSystemEntries(_profilesRoot)
@@ -461,17 +467,18 @@ internal sealed class FileRecoveryBrowserSessionStorage : IRecoveryBrowserSessio
         var path = RecoveryBrowserProfilePath.GetOwnedProfileRoot(
             _applicationDataRoot,
             sessionId);
-        RecoveryBrowserProfilePath.ValidateOwnedProfileRoot(path, _applicationDataRoot);
-        Directory.CreateDirectory(path);
+        RecoveryBrowserFilePermissions.EnsurePrivateOwnedProfileHierarchy(
+            _applicationDataRoot,
+            path);
         WriteMarker(path, ActiveMarker);
         return new RecoveryBrowserSession(sessionId, accountId, path);
     }
 
     public void MarkCleanupPending(RecoveryBrowserSession session)
     {
-        RecoveryBrowserProfilePath.ValidateOwnedProfileRoot(
-            session.ProfileDataPath,
-            _applicationDataRoot);
+        RecoveryBrowserFilePermissions.EnsurePrivateOwnedProfileHierarchy(
+            _applicationDataRoot,
+            session.ProfileDataPath);
         WriteMarker(session.ProfileDataPath, CleanupPendingMarker);
     }
 
@@ -503,7 +510,11 @@ internal sealed class FileRecoveryBrowserSessionStorage : IRecoveryBrowserSessio
                 "The Recovery Browser profile root contains an unexpected entry.");
         }
 
-        RecoveryBrowserProfilePath.ValidateOwnedProfileRoot(path, _applicationDataRoot);
+        RecoveryBrowserFilePermissions.EnsurePrivateOwnedProfileHierarchy(
+            _applicationDataRoot,
+            path);
+        RecoveryBrowserFilePermissions.EnsurePrivateFile(
+            Path.Combine(path, MarkerFileName));
 
         return new RecoveryBrowserOrphanedSession(sessionId, path);
     }
@@ -514,8 +525,16 @@ internal sealed class FileRecoveryBrowserSessionStorage : IRecoveryBrowserSessio
         var temporaryPath = Path.Combine(profileDataPath, $".{Guid.NewGuid():N}.tmp");
         try
         {
-            File.WriteAllText(temporaryPath, content);
+            RecoveryBrowserFilePermissions.EnsurePrivateFile(markerPath);
+            using (var stream = RecoveryBrowserFilePermissions.CreatePrivateFile(temporaryPath))
+            using (var writer = new StreamWriter(stream, new System.Text.UTF8Encoding(false)))
+            {
+                writer.Write(content);
+            }
+
+            RecoveryBrowserFilePermissions.EnsurePrivateFile(temporaryPath);
             File.Move(temporaryPath, markerPath, overwrite: true);
+            RecoveryBrowserFilePermissions.EnsurePrivateFile(markerPath);
         }
         finally
         {
