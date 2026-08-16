@@ -44,7 +44,7 @@ public static class RepositoryAccountClassificationCatalog
     private static readonly CatalogState State = BuildState();
 
     private static readonly Dictionary<string, AccountRecoveryCategory> CategoryHintAliases =
-        new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal)
+        new(StringComparer.Ordinal)
         {
             ["banking"] = AccountRecoveryCategory.Critical,
             ["classifieds"] = AccountRecoveryCategory.Critical,
@@ -479,7 +479,8 @@ public static class RepositoryAccountClassificationCatalog
     {
         if (string.IsNullOrWhiteSpace(accountUrl) ||
             !Uri.TryCreate(accountUrl.Trim(), UriKind.Absolute, out var uri) ||
-            uri.Scheme is not (Uri.UriSchemeHttp or Uri.UriSchemeHttps))
+            (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
         {
             return null;
         }
