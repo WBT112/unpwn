@@ -131,7 +131,8 @@ public static class RepositoryAccountClassificationCatalog
     {
         if (string.IsNullOrWhiteSpace(accountUrl) ||
             !Uri.TryCreate(accountUrl.Trim(), UriKind.Absolute, out var uri) ||
-            uri.Scheme is not (Uri.UriSchemeHttps or Uri.UriSchemeHttp) ||
+            (!string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)) ||
             string.IsNullOrWhiteSpace(uri.Host) ||
             !string.IsNullOrEmpty(uri.UserInfo))
         {
