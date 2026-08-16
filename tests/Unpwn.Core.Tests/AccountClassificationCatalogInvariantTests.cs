@@ -12,6 +12,7 @@ public sealed class AccountClassificationCatalogInvariantTests
     private static readonly string[] InvalidAlias = ["---"];
     private static readonly string[] DuplicateAliases = ["same-alias", "same alias"];
     private static readonly string[] OtherDomain = ["other.example"];
+    private static readonly string[] ChildDomain = ["login.example.test"];
     private static readonly string[] ExistingAlias = ["existing-alias"];
     private static readonly string[] ValidAlias = ["valid-alias"];
 
@@ -25,6 +26,7 @@ public sealed class AccountClassificationCatalogInvariantTests
             ValidRecord() with { Category = AccountRecoveryCategory.Unknown },
             ValidRecord() with { Category = (AccountRecoveryCategory)999 },
             ValidRecord() with { ProvenanceId = "" },
+            ValidRecord() with { ReviewBasis = "" },
             ValidRecord() with { Domains = [] },
             ValidRecord() with { Domains = InvalidDomain },
             ValidRecord() with { Domains = DuplicateExampleDomains },
@@ -39,32 +41,7 @@ public sealed class AccountClassificationCatalogInvariantTests
     }
 
     [Fact]
-    public void ClaimedSourceDomainIsSkippedWithoutCreatingAnotherCanonicalRecord()
-    {
-        var existing = ValidRecord();
-        List<AccountClassificationProviderRecord> records = [existing];
-        var ids = new HashSet<string>(StringComparer.Ordinal) { existing.Id };
-        var domains = new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal)
-        {
-            ["example.test"] = existing,
-        };
-        var aliases = new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal);
-        var source = ValidRecord() with
-        {
-            Id = "source:example.test",
-            Name = "Source example",
-            ProvenanceId = "source",
-        };
-
-        InvokeAddRecord(source, records, ids, domains, aliases, allowClaimedDomainSkip: true);
-
-        Assert.Single(records);
-        Assert.Single(domains);
-        Assert.DoesNotContain("source:example.test", ids);
-    }
-
-    [Fact]
-    public void DuplicateCanonicalIdDomainAndProviderAliasAreRejected()
+    public void DuplicateCanonicalIdDomainAliasAndParentDomainOverlapAreRejected()
     {
         var existing = ValidRecord();
 
@@ -74,6 +51,13 @@ public sealed class AccountClassificationCatalogInvariantTests
 
         AssertAddRecordThrows(
             ValidRecord() with { Id = "other-id" },
+            domains: new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal)
+            {
+                ["example.test"] = existing,
+            });
+
+        AssertAddRecordThrows(
+            ValidRecord() with { Id = "other-id", Domains = ChildDomain },
             domains: new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal)
             {
                 ["example.test"] = existing,
@@ -96,7 +80,7 @@ public sealed class AccountClassificationCatalogInvariantTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("not an absolute url")]
-    [InlineData("ftp://cock.li/account")]
+    [InlineData("ftp://paypal.com/account")]
     public void NonHttpAccountLocationsNeverContributeAClassification(string? accountUrl)
     {
         var suggestion = RepositoryAccountClassificationCatalog.Classify(
@@ -112,7 +96,8 @@ public sealed class AccountClassificationCatalogInvariantTests
         AccountRecoveryCategory.Critical,
         ExampleDomain,
         ValidAlias,
-        "test-provenance");
+        "test-provenance",
+        "Reviewed test basis");
 
     private static void AssertAddRecordThrows(
         AccountClassificationProviderRecord record,
@@ -126,8 +111,7 @@ public sealed class AccountClassificationCatalogInvariantTests
                 [],
                 ids ?? new HashSet<string>(StringComparer.Ordinal),
                 domains ?? new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal),
-                aliases ?? new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal),
-                allowClaimedDomainSkip: false));
+                aliases ?? new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal)));
 
         Assert.IsType<InvalidOperationException>(exception.InnerException);
     }
@@ -137,15 +121,12 @@ public sealed class AccountClassificationCatalogInvariantTests
         List<AccountClassificationProviderRecord> records,
         HashSet<string> ids,
         Dictionary<string, AccountClassificationProviderRecord> domains,
-        Dictionary<string, AccountClassificationProviderRecord> aliases,
-        bool allowClaimedDomainSkip)
+        Dictionary<string, AccountClassificationProviderRecord> aliases)
     {
         var method = typeof(RepositoryAccountClassificationCatalog).GetMethod(
             "AddRecord",
             BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(method);
-        method.Invoke(
-            null,
-            [record, records, ids, domains, aliases, allowClaimedDomainSkip]);
+        method.Invoke(null, [record, records, ids, domains, aliases]);
     }
 }
