@@ -39,10 +39,18 @@ public static class RepositoryAccountClassificationCatalog
         ArgumentException.ThrowIfNullOrWhiteSpace(providerId);
         var data = Catalog.Value;
         var categories = new List<AccountRecoveryCategory>(3);
-        var provider = NormalizeProviderId(providerId);
-        if (data.ProviderCategories.TryGetValue(provider, out var providerCategory))
+        var canonicalProvider = providerId.Trim();
+        if (data.CanonicalProviderCategories.TryGetValue(canonicalProvider, out var canonicalCategory))
         {
-            categories.Add(providerCategory);
+            categories.Add(canonicalCategory);
+        }
+        else
+        {
+            var providerAlias = NormalizeProviderId(providerId);
+            if (data.ProviderAliasCategories.TryGetValue(providerAlias, out var aliasCategory))
+            {
+                categories.Add(aliasCategory);
+            }
         }
 
         var providerDomain = NormalizeDomain(providerId);
@@ -145,7 +153,8 @@ public static class RepositoryAccountClassificationCatalog
 
 internal sealed record AccountClassificationCatalogData(
     AccountClassificationProviderRecord[] Records,
-    IReadOnlyDictionary<string, AccountRecoveryCategory> ProviderCategories,
+    IReadOnlyDictionary<string, AccountRecoveryCategory> CanonicalProviderCategories,
+    IReadOnlyDictionary<string, AccountRecoveryCategory> ProviderAliasCategories,
     IReadOnlyDictionary<string, AccountRecoveryCategory> DomainCategories);
 
 internal static class AccountClassificationCatalogLoader
@@ -172,7 +181,7 @@ internal static class AccountClassificationCatalogLoader
         }
 
         var records = new List<AccountClassificationProviderRecord>();
-        var canonicalProviderIds = new HashSet<string>(StringComparer.Ordinal);
+        var canonicalProviderIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var totalDomains = 0;
         var totalAliases = 0;
         string? line;
@@ -195,12 +204,10 @@ internal static class AccountClassificationCatalogLoader
             }
 
             var providerId = fields[0].Trim();
-            var normalizedProviderId = RepositoryAccountClassificationCatalog.NormalizeProviderId(providerId);
-            if (providerId.Length is 0 or > 160 || normalizedProviderId.Length == 0 ||
-                !canonicalProviderIds.Add(normalizedProviderId))
+            if (!IsValidCanonicalProviderId(providerId) || !canonicalProviderIds.Add(providerId))
             {
                 throw new InvalidOperationException(
-                    "The account classification catalog contains an invalid or duplicate provider ID.");
+                    "The account classification catalog contains an invalid or duplicate canonical provider ID.");
             }
 
             var displayName = fields[1].Trim();
@@ -218,7 +225,7 @@ internal static class AccountClassificationCatalogLoader
             }
 
             var domains = ParseDomains(fields[3]);
-            var aliases = ParseAliases(fields[4], providerId);
+            var aliases = ParseAliases(fields[4]);
             var provenance = ParseValues(
                 fields[5], MaximumProvenanceEntriesPerProvider, 300, "provenance");
             if (domains.Length == 0 || provenance.Length == 0)
@@ -255,22 +262,48 @@ internal static class AccountClassificationCatalogLoader
     private static AccountClassificationCatalogData BuildIndexes(
         AccountClassificationProviderRecord[] records)
     {
-        var providerCategories = new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal);
-        var providerOwners = new Dictionary<string, string>(StringComparer.Ordinal);
+        var canonicalCategories = records.ToDictionary(
+            record => record.ProviderId,
+            record => record.Category,
+            StringComparer.OrdinalIgnoreCase);
+
+        var canonicalNormalizedOwners = new Dictionary<string, string?>(StringComparer.Ordinal);
         foreach (var record in records)
         {
-            foreach (var alias in record.ProviderIdAliases.Append(record.ProviderId))
+            var normalized = RepositoryAccountClassificationCatalog.NormalizeProviderId(record.ProviderId);
+            if (canonicalNormalizedOwners.TryGetValue(normalized, out var owner) &&
+                !string.Equals(owner, record.ProviderId, StringComparison.OrdinalIgnoreCase))
+            {
+                canonicalNormalizedOwners[normalized] = null;
+            }
+            else
+            {
+                canonicalNormalizedOwners[normalized] = record.ProviderId;
+            }
+        }
+
+        var aliasCategories = new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal);
+        var aliasOwners = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var record in records)
+        {
+            foreach (var alias in record.ProviderIdAliases)
             {
                 var normalized = RepositoryAccountClassificationCatalog.NormalizeProviderId(alias);
-                if (providerOwners.TryGetValue(normalized, out var owner) &&
-                    !string.Equals(owner, record.ProviderId, StringComparison.Ordinal))
+                if (canonicalNormalizedOwners.TryGetValue(normalized, out var canonicalOwner) &&
+                    !string.Equals(canonicalOwner, record.ProviderId, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (aliasOwners.TryGetValue(normalized, out var aliasOwner) &&
+                    !string.Equals(aliasOwner, record.ProviderId, StringComparison.OrdinalIgnoreCase))
                 {
                     throw new InvalidOperationException(
                         "The account classification catalog contains a provider alias collision.");
                 }
 
-                providerOwners[normalized] = record.ProviderId;
-                providerCategories[normalized] = record.Category;
+                aliasOwners[normalized] = record.ProviderId;
+                aliasCategories[normalized] = record.Category;
             }
         }
 
@@ -313,8 +346,20 @@ internal static class AccountClassificationCatalogLoader
             domainCategories[domain] = category;
         }
 
-        return new AccountClassificationCatalogData(records, providerCategories, domainCategories);
+        return new AccountClassificationCatalogData(
+            records,
+            canonicalCategories,
+            aliasCategories,
+            domainCategories);
     }
+
+    private static bool IsValidCanonicalProviderId(string providerId) =>
+        providerId.Length is > 0 and <= 160 &&
+        providerId.All(character =>
+            char.IsAsciiLetterOrDigit(character) || character == '-') &&
+        string.Equals(providerId, providerId.ToLowerInvariant(), StringComparison.Ordinal) &&
+        providerId[0] != '-' &&
+        providerId[^1] != '-';
 
     private static string[] ParseDomains(string field)
     {
@@ -335,11 +380,11 @@ internal static class AccountClassificationCatalogLoader
         return [.. result.Order(StringComparer.Ordinal)];
     }
 
-    private static string[] ParseAliases(string field, string providerId)
+    private static string[] ParseAliases(string field)
     {
         var rawValues = ParseValues(field, MaximumAliasesPerProvider, 160, "provider alias");
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var raw in rawValues.Append(providerId))
+        foreach (var raw in rawValues)
         {
             var normalized = RepositoryAccountClassificationCatalog.NormalizeProviderId(raw);
             if (normalized.Length == 0)
