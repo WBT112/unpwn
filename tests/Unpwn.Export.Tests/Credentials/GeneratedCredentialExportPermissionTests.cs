@@ -17,6 +17,7 @@ public sealed class GeneratedCredentialExportPermissionTests : IDisposable
         Guid.NewGuid().ToString("N"));
 
     [Fact]
+    [Trait("Category", "SecurityRegression")]
     public async Task PlaintextExportUsesOwnerOnlyPermissionsOnUnix()
     {
         if (OperatingSystem.IsWindows())

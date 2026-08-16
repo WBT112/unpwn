@@ -120,15 +120,27 @@ Before a supported release:
 
 ## Pull-request CI
 
-`.github/workflows/ci.yml` is authoritative. It currently runs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting/analyzer verification runs on Linux. Linux also collects Cobertura coverage, merges it, enforces the numeric gate, scans generated artifacts for synthetic secret markers, and uploads short-lived test/coverage artifacts. Windows uploads test artifacts only on failure after the same secret-safety check.
+`.github/workflows/ci.yml` is authoritative for the deterministic build/test matrix. It runs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting/analyzer verification runs on Linux. Linux also collects Cobertura coverage, merges it, enforces the numeric gate, runs the focused `SecurityRegression` category, verifies the native/unsafe interop allowlist, repeats the NuGet vulnerability gate with an explicit job summary, scans generated artifacts for synthetic secret markers, and uploads short-lived test/coverage artifacts. Windows uploads test artifacts only on failure after the same secret-safety check.
 
-The current baseline uses the .NET `Recommended` analyzer set with warnings as errors and audits
-direct/transitive NuGet dependencies at `high` severity. It does not yet claim a dedicated CodeQL/SAST
-job, all applicable .NET security-category rules, moderate-or-higher dependency blocking, or a CI
-allowlist that detects expansion of native/unsafe interop. Those controls are release-hardening work,
-not properties implied by a green current workflow.
+Security-specific gates are intentionally visible rather than being implied by an ordinary green build:
+
+- `.globalconfig` promotes all applicable built-in .NET `Security` analyzer diagnostics to errors while the broader analyzer set remains `Recommended`;
+- NuGet audit covers direct and transitive packages and blocks `moderate`-or-higher advisories under the repository warnings-as-errors policy;
+- `eng/verify-native-interop.ps1` rejects expansion of `AllowUnsafeBlocks`, P/Invoke/`LibraryImport`, pointer code, or raw-memory APIs outside the reviewed allowlist;
+- `dotnet test ... --filter "Category=SecurityRegression"` runs a fast deterministic sentinel suite for vault limits, CSV limits, public-network-only recovery discovery, exact browser origins/schemes, credential lifecycle, Unix plaintext-export permissions, and Linux Recovery Browser profile permissions;
+- `.github/workflows/codeql.yml` is the single repository-maintained CodeQL advanced setup and analyzes C# on pull requests, pushes to `main`, and a weekly schedule with `security-extended` queries.
+
+The detailed gate/exception policy and local commands are in [Security CI Gates](SECURITY_GATES.md). Do not solve a security-gate failure by globally suppressing an analyzer, raising the NuGet severity threshold, or broadening a native allowlist without a documented security review.
 
 The Linux coverage gate requires at least 80% line and 80% branch coverage across platform-neutral production assemblies (`Unpwn.Core`, `Unpwn.Application`, `Unpwn.Import`, `Unpwn.Export`, `Unpwn.Vault`, `Unpwn.Providers`, and `Unpwn.Automation`). `Unpwn.App` is validated through view-model, Avalonia headless, integration, and manual accessibility layers rather than the numeric gate. Presentation-independent behavior should not be moved into `Unpwn.App` merely to avoid coverage requirements.
+
+To reproduce the security-specific checks after a Release build:
+
+```pwsh
+./eng/verify-native-interop.ps1
+dotnet restore unpwn.slnx --force-evaluate
+dotnet test unpwn.slnx --configuration Release --no-build --filter "Category=SecurityRegression"
+```
 
 To reproduce the coverage check after a Release build:
 
@@ -143,11 +155,13 @@ Diagnostics tests use recognizable `UNPWN_TEST_SECRET_...` markers. The artifact
 
 ## Security and persistence failure coverage
 
+The focused `SecurityRegression` category is deliberately small and deterministic. Property-style cases use fixed seeds and bounded loops rather than large randomized payloads. It is a fast merge gate, not a replacement for the complete suite. Long-running or mutation-based fuzzing, if introduced later, belongs in a separate scheduled workflow and must remain synthetic and resource-bounded.
+
 Persistence-resilience tests inject I/O failures, denied access, conflicting/stale revisions, incompatible/corrupt state, and cancellation around commit boundaries. They assert that failures are not shown as saved, retries are explicit, operation IDs remain idempotent where required, and prepared projections become visible only after successful atomic persistence.
 
 Recovery-boundary tests cover stale process markers, unhandled exceptions, locked-vault recovery, and secret-safe diagnostics. Export tests distinguish file creation from lifecycle-state updates and preserve warnings when plaintext may already exist.
 
-A failing secret-leak, unsafe-origin, unauthenticated-vault, invalid workflow, nonce-reuse, browser-completion, localization-semantic, or persistence-integrity test is a security failure, not a flaky test to be retried away.
+A failing secret-leak, unsafe-origin, unauthenticated-vault, invalid workflow, nonce-reuse, browser-completion, localization-semantic, persistence-integrity, dependency-audit, native-boundary, Security-analyzer, or CodeQL finding is a security failure to investigate rather than a flaky test to retry away.
 
 ## Test data and artifacts
 
