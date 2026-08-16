@@ -249,7 +249,7 @@ internal static class AccountClassificationCatalogLoader
             throw new InvalidOperationException("The account classification catalog contains no providers.");
         }
 
-        return BuildIndexes(records.ToArray());
+        return BuildIndexes([.. records]);
     }
 
     private static AccountClassificationCatalogData BuildIndexes(
@@ -282,16 +282,16 @@ internal static class AccountClassificationCatalogLoader
             .ToArray();
         var domainCategories = new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal);
         var domainOwners = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var entry in domainEntries)
+        foreach (var (domain, providerId, category) in domainEntries)
         {
-            if (domainOwners.TryGetValue(entry.Domain, out var exactOwner) &&
-                !string.Equals(exactOwner, entry.ProviderId, StringComparison.Ordinal))
+            if (domainOwners.TryGetValue(domain, out var exactOwner) &&
+                !string.Equals(exactOwner, providerId, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     "The account classification catalog contains a duplicate domain alias.");
             }
 
-            var parent = entry.Domain;
+            var parent = domain;
             while (true)
             {
                 var separator = parent.IndexOf('.');
@@ -302,15 +302,15 @@ internal static class AccountClassificationCatalogLoader
 
                 parent = parent[(separator + 1)..];
                 if (domainOwners.TryGetValue(parent, out var parentOwner) &&
-                    !string.Equals(parentOwner, entry.ProviderId, StringComparison.Ordinal))
+                    !string.Equals(parentOwner, providerId, StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
                         "The account classification catalog contains overlapping domain aliases.");
                 }
             }
 
-            domainOwners[entry.Domain] = entry.ProviderId;
-            domainCategories[entry.Domain] = entry.Category;
+            domainOwners[domain] = providerId;
+            domainCategories[domain] = category;
         }
 
         return new AccountClassificationCatalogData(records, providerCategories, domainCategories);
