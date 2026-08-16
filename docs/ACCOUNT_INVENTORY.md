@@ -32,7 +32,7 @@ Each record stores:
 - zero or more provider-ID aliases;
 - provenance entries describing why the record exists in the generated dataset.
 
-Host names are normalized to lower-case ASCII IDN form before matching. Matching accepts the exact recorded domain and its subdomains; it does not use a TLD, free-text, substring or keyword heuristic. Provider IDs are normalized invariantly. Duplicate normalized provider IDs, provider aliases, exact domain aliases, or parent/subdomain aliases owned by different providers make catalog loading fail closed rather than choosing an ambiguous result.
+Host names are normalized to lower-case ASCII IDN form before matching. Matching accepts the exact recorded domain and its subdomains; it does not use a TLD, free-text, substring or keyword heuristic. Canonical provider IDs are exact, lower-case identifiers and are unique case-insensitively. Provider-ID aliases are a separate matching namespace and are normalized invariantly by removing punctuation. Equivalent alias spellings within one provider are deduplicated; the same normalized alias owned by two different providers is rejected. If punctuation removal would make two distinct canonical IDs look alike, exact canonical-ID matching takes precedence and that ambiguous normalized form is not used as a cross-provider alias. Exact domain aliases and parent/subdomain aliases owned by different providers also make catalog loading fail closed.
 
 When multiple independent account hints point to different valid categories, classification keeps the existing deterministic safety precedence `Email → Critical → NonCritical`; unmatched accounts remain `Unknown`.
 
@@ -85,6 +85,6 @@ The category queue has no parallel cross-account planning authority. Workflow ex
 
 ## Persistence and testing
 
-Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover canonical provider minimums, alias-count separation, representative global/German/European classifications, unknown providers, culture independence, bounded catalog loading, IDN normalization, alias/domain collisions, catalog-produced `Unknown`, rejection of explicit `Unknown`, valid user overrides, clearing an override back to the automatic suggestion, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, import integration, localization, incompatible-record failure, and lock clearing.
+Inventory changes and their dashboard projection are persisted atomically. A failed write is not published as successful state. Tests cover canonical provider minimums, alias-count separation, representative global/German/European classifications, unknown providers, culture independence, bounded catalog loading, IDN normalization, canonical-ID/alias/domain collisions, catalog-produced `Unknown`, rejection of explicit `Unknown`, valid user overrides, clearing an override back to the automatic suggestion, exact category ordering across culture changes and restart, incomplete triage, category revision persistence, import integration, localization, incompatible-record failure, and lock clearing.
 
 See [CSV Import](IMPORT.md), [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Integrated Recovery Flow](RECOVERY_WIZARD.md), and [Testing Strategy](TESTING.md).
