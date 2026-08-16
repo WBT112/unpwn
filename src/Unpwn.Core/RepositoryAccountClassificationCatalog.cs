@@ -1,5 +1,5 @@
 using System.Globalization;
-using System.Reflection;
+using System.Text;
 
 namespace Unpwn.Core;
 
@@ -28,7 +28,7 @@ public static class RepositoryAccountClassificationCatalog
         new(LoadEmbeddedCatalog, LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static IReadOnlyList<AccountClassificationProviderRecord> ProviderRecords =>
-        Catalog.Value.Records;
+        Array.AsReadOnly(Catalog.Value.Records);
 
     public static int EmailAliasCount => Catalog.Value.Records
         .Where(record => record.Category == AccountRecoveryCategory.Email)
@@ -45,7 +45,7 @@ public static class RepositoryAccountClassificationCatalog
             categories.Add(providerCategory);
         }
 
-        var providerDomain = NormalizeProviderDomain(providerId);
+        var providerDomain = NormalizeDomain(providerId);
         if (MatchDomain(providerDomain, data.DomainCategories) is { } providerDomainCategory)
         {
             categories.Add(providerDomainCategory);
@@ -59,12 +59,35 @@ public static class RepositoryAccountClassificationCatalog
 
         var category = categories.Count == 0
             ? AccountRecoveryCategory.Unknown
-            : categories.Min();
+            : categories.Order().First();
         return new AccountClassificationSuggestion(category, CurrentVersion);
     }
 
     internal static AccountClassificationCatalogData Load(TextReader reader) =>
         AccountClassificationCatalogLoader.Load(reader);
+
+    internal static string NormalizeProviderId(string providerId) =>
+        string.Concat(providerId.Trim().ToLowerInvariant().Where(char.IsLetterOrDigit));
+
+    internal static string? NormalizeDomain(string value)
+    {
+        var candidate = value.Trim().TrimEnd('.');
+        if (candidate.Length is 0 or > 253)
+        {
+            return null;
+        }
+
+        try
+        {
+            candidate = new IdnMapping().GetAscii(candidate).ToLowerInvariant();
+        }
+        catch (ArgumentException)
+        {
+            return null;
+        }
+
+        return Uri.CheckHostName(candidate) == UriHostNameType.Dns ? candidate : null;
+    }
 
     private static AccountClassificationCatalogData LoadEmbeddedCatalog()
     {
@@ -104,32 +127,6 @@ public static class RepositoryAccountClassificationCatalog
         }
     }
 
-    internal static string NormalizeProviderId(string providerId) =>
-        string.Concat(providerId.Trim().ToLowerInvariant().Where(char.IsLetterOrDigit));
-
-    internal static string? NormalizeDomain(string value)
-    {
-        var candidate = value.Trim().TrimEnd('.');
-        if (candidate.Length is 0 or > 253)
-        {
-            return null;
-        }
-
-        try
-        {
-            candidate = new IdnMapping().GetAscii(candidate).ToLowerInvariant();
-        }
-        catch (ArgumentException)
-        {
-            return null;
-        }
-
-        return Uri.CheckHostName(candidate) == UriHostNameType.Dns ? candidate : null;
-    }
-
-    private static string? NormalizeProviderDomain(string providerId) =>
-        NormalizeDomain(providerId);
-
     private static string? GetHost(string? accountUrl)
     {
         if (string.IsNullOrWhiteSpace(accountUrl) ||
@@ -154,11 +151,14 @@ internal static class AccountClassificationCatalogLoader
 {
     private const string Header =
         "provider_id\tdisplay_name\tcategory\tdomains\tprovider_aliases\tprovenance";
+
     internal const int MaximumProviderRecords = 4000;
     internal const int MaximumLineCharacters = 65536;
     internal const int MaximumDomainsPerProvider = 512;
     internal const int MaximumAliasesPerProvider = 128;
     internal const int MaximumProvenanceEntriesPerProvider = 128;
+    internal const int MaximumTotalDomains = 50000;
+    internal const int MaximumTotalProviderAliases = 20000;
 
     internal static AccountClassificationCatalogData Load(TextReader reader)
     {
@@ -172,6 +172,8 @@ internal static class AccountClassificationCatalogLoader
 
         var records = new List<AccountClassificationProviderRecord>();
         var canonicalProviderIds = new HashSet<string>(StringComparer.Ordinal);
+        var totalDomains = 0;
+        var totalAliases = 0;
         string? line;
         while ((line = ReadBoundedLine(reader)) is not null)
         {
@@ -196,19 +198,22 @@ internal static class AccountClassificationCatalogLoader
             if (providerId.Length is 0 or > 160 || normalizedProviderId.Length == 0 ||
                 !canonicalProviderIds.Add(normalizedProviderId))
             {
-                throw new InvalidOperationException("The account classification catalog contains an invalid or duplicate provider ID.");
+                throw new InvalidOperationException(
+                    "The account classification catalog contains an invalid or duplicate provider ID.");
             }
 
             var displayName = fields[1].Trim();
             if (displayName.Length is 0 or > 240)
             {
-                throw new InvalidOperationException("The account classification catalog contains an invalid provider name.");
+                throw new InvalidOperationException(
+                    "The account classification catalog contains an invalid provider name.");
             }
 
             if (!Enum.TryParse<AccountRecoveryCategory>(fields[2], ignoreCase: false, out var category) ||
                 !AccountRecoveryCategoryRules.IsUserSelectable(category))
             {
-                throw new InvalidOperationException("The account classification catalog contains an invalid recovery category.");
+                throw new InvalidOperationException(
+                    "The account classification catalog contains an invalid recovery category.");
             }
 
             var domains = ParseDomains(fields[3]);
@@ -217,7 +222,16 @@ internal static class AccountClassificationCatalogLoader
                 fields[5], MaximumProvenanceEntriesPerProvider, 300, "provenance");
             if (domains.Length == 0 || provenance.Length == 0)
             {
-                throw new InvalidOperationException("Every account classification provider requires domains and provenance.");
+                throw new InvalidOperationException(
+                    "Every account classification provider requires domains and provenance.");
+            }
+
+            totalDomains += domains.Length;
+            totalAliases += aliases.Length;
+            if (totalDomains > MaximumTotalDomains || totalAliases > MaximumTotalProviderAliases)
+            {
+                throw new InvalidOperationException(
+                    "The account classification catalog exceeds its aggregate resource limits.");
             }
 
             records.Add(new AccountClassificationProviderRecord(
@@ -241,28 +255,27 @@ internal static class AccountClassificationCatalogLoader
         AccountClassificationProviderRecord[] records)
     {
         var providerCategories = new Dictionary<string, AccountRecoveryCategory>(StringComparer.Ordinal);
+        var providerOwners = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var record in records)
         {
             foreach (var alias in record.ProviderIdAliases.Append(record.ProviderId))
             {
                 var normalized = RepositoryAccountClassificationCatalog.NormalizeProviderId(alias);
-                if (providerCategories.TryGetValue(normalized, out var existing) && existing != record.Category)
+                if (providerOwners.TryGetValue(normalized, out var owner) &&
+                    !string.Equals(owner, record.ProviderId, StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
                         "The account classification catalog contains a provider alias collision.");
                 }
 
-                if (!providerCategories.TryAdd(normalized, record.Category) &&
-                    !record.ProviderIdAliases.Contains(alias, StringComparer.Ordinal))
-                {
-                    throw new InvalidOperationException(
-                        "The account classification catalog contains a duplicate provider alias.");
-                }
+                providerOwners[normalized] = record.ProviderId;
+                providerCategories[normalized] = record.Category;
             }
         }
 
         var domainEntries = records
-            .SelectMany(record => record.Domains.Select(domain => (Domain: domain, record.ProviderId, record.Category)))
+            .SelectMany(record => record.Domains.Select(domain =>
+                (Domain: domain, record.ProviderId, record.Category)))
             .OrderBy(entry => entry.Domain.Count(character => character == '.'))
             .ThenBy(entry => entry.Domain, StringComparer.Ordinal)
             .ToArray();
@@ -270,7 +283,8 @@ internal static class AccountClassificationCatalogLoader
         var domainOwners = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var entry in domainEntries)
         {
-            if (domainOwners.TryGetValue(entry.Domain, out var exactOwner) && exactOwner != entry.ProviderId)
+            if (domainOwners.TryGetValue(entry.Domain, out var exactOwner) &&
+                !string.Equals(exactOwner, entry.ProviderId, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     "The account classification catalog contains a duplicate domain alias.");
@@ -286,7 +300,8 @@ internal static class AccountClassificationCatalogLoader
                 }
 
                 parent = parent[(separator + 1)..];
-                if (domainOwners.TryGetValue(parent, out var parentOwner) && parentOwner != entry.ProviderId)
+                if (domainOwners.TryGetValue(parent, out var parentOwner) &&
+                    !string.Equals(parentOwner, entry.ProviderId, StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
                         "The account classification catalog contains overlapping domain aliases.");
@@ -332,12 +347,14 @@ internal static class AccountClassificationCatalogLoader
                     "The account classification catalog contains an invalid provider alias.");
             }
 
-            if (!result.TryAdd(normalized, raw) &&
-                !string.Equals(result[normalized], raw, StringComparison.Ordinal))
+            if (result.TryGetValue(normalized, out var existing) &&
+                !string.Equals(existing, raw, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException(
                     "The account classification catalog contains duplicate normalized provider aliases.");
             }
+
+            result[normalized] = raw;
         }
 
         return [.. result.Values.Order(StringComparer.Ordinal)];
@@ -372,12 +389,37 @@ internal static class AccountClassificationCatalogLoader
 
     private static string? ReadBoundedLine(TextReader reader)
     {
-        var line = reader.ReadLine();
-        if (line is not null && line.Length > MaximumLineCharacters)
+        var builder = new StringBuilder(Math.Min(256, MaximumLineCharacters));
+        while (true)
         {
-            throw new InvalidOperationException("The account classification catalog contains an overlong line.");
-        }
+            var character = reader.Read();
+            if (character < 0)
+            {
+                return builder.Length == 0 ? null : builder.ToString();
+            }
 
-        return line;
+            if (character == '\n')
+            {
+                return builder.ToString();
+            }
+
+            if (character == '\r')
+            {
+                if (reader.Peek() == '\n')
+                {
+                    _ = reader.Read();
+                }
+
+                return builder.ToString();
+            }
+
+            if (builder.Length >= MaximumLineCharacters)
+            {
+                throw new InvalidOperationException(
+                    "The account classification catalog contains an overlong line.");
+            }
+
+            builder.Append((char)character);
+        }
     }
 }
