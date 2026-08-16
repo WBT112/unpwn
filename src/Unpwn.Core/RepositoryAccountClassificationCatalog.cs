@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Reflection;
 
 namespace Unpwn.Core;
 
@@ -13,7 +12,8 @@ public sealed record AccountClassificationProviderRecord(
     AccountRecoveryCategory Category,
     IReadOnlyList<string> Domains,
     IReadOnlyList<string> ProviderIdAliases,
-    string ProvenanceId);
+    string ProvenanceId,
+    string ReviewBasis);
 
 public sealed record AccountClassificationCatalogProvenance(
     string Id,
@@ -29,45 +29,12 @@ public sealed record AccountClassificationCatalogProvenance(
 /// </summary>
 public static class RepositoryAccountClassificationCatalog
 {
-    public const string CurrentVersion = "2026.08.2";
-    public const string Ut1SourceRevision = "1b3eb2de2ccef5e85acb5103f70933b59edc51f9";
+    public const string CurrentVersion = "2026.08.3";
 
-    private const int MaxSourceBytes = 128 * 1024;
-    private const int MaxSourceRecords = 2_000;
-    private const string CuratedProvenanceId = "unpwn-curated-2026.08.2";
-    private const string Ut1WebmailProvenanceId = "ut1-webmail-2026.08.16";
-    private const string Ut1BankProvenanceId = "ut1-bank-2026.08.16";
-    private const string Ut1PressProvenanceId = "ut1-press-2026.08.16";
-    private const string ResourcePrefix = "Unpwn.Core.AccountClassification.";
+    private const string CuratedProvenanceId = "unpwn-curated-2026.08.3";
 
     private static readonly IdnMapping Idn = new();
     private static readonly CatalogState State = BuildState();
-
-    private static readonly Dictionary<string, AccountRecoveryCategory> CategoryHintAliases =
-        new(StringComparer.Ordinal)
-        {
-            ["banking"] = AccountRecoveryCategory.Critical,
-            ["classifieds"] = AccountRecoveryCategory.Critical,
-            ["commerce"] = AccountRecoveryCategory.Critical,
-            ["communications"] = AccountRecoveryCategory.Critical,
-            ["financial"] = AccountRecoveryCategory.Critical,
-            ["government"] = AccountRecoveryCategory.Critical,
-            ["health"] = AccountRecoveryCategory.Critical,
-            ["identityprovider"] = AccountRecoveryCategory.Critical,
-            ["insurance"] = AccountRecoveryCategory.Critical,
-            ["marketplace"] = AccountRecoveryCategory.Critical,
-            ["passwordmanager"] = AccountRecoveryCategory.Critical,
-            ["payments"] = AccountRecoveryCategory.Critical,
-            ["socialidentity"] = AccountRecoveryCategory.Critical,
-            ["entertainment"] = AccountRecoveryCategory.NonCritical,
-            ["game"] = AccountRecoveryCategory.NonCritical,
-            ["gaming"] = AccountRecoveryCategory.NonCritical,
-            ["newsletter"] = AccountRecoveryCategory.NonCritical,
-            ["news"] = AccountRecoveryCategory.NonCritical,
-            ["recipes"] = AccountRecoveryCategory.NonCritical,
-            ["streaming"] = AccountRecoveryCategory.NonCritical,
-            ["weather"] = AccountRecoveryCategory.NonCritical,
-        };
 
     public static IReadOnlyList<AccountClassificationProviderRecord> Providers => State.Providers;
 
@@ -89,7 +56,6 @@ public static class RepositoryAccountClassificationCatalog
 
         var category = HighestPriority(
             FindProviderAliasCategory(normalizedProvider),
-            FindCategoryHint(normalizedProvider),
             FindDomainCategory(providerDomain),
             FindDomainCategory(host));
         return new AccountClassificationSuggestion(category, CurrentVersion);
@@ -101,67 +67,21 @@ public static class RepositoryAccountClassificationCatalog
         [
             new AccountClassificationCatalogProvenance(
                 CuratedProvenanceId,
-                "unpwn repository-curated provider metadata",
+                "unpwn repository-reviewed provider metadata",
                 CurrentVersion,
                 "AGPL-3.0-or-later",
-                "curated"),
-            new AccountClassificationCatalogProvenance(
-                Ut1WebmailProvenanceId,
-                "Université Toulouse 1 Capitole blacklists via cbuijs/ut1 normalized mirror",
-                Ut1SourceRevision,
-                "CC-BY-SA-4.0",
-                "webmail"),
-            new AccountClassificationCatalogProvenance(
-                Ut1BankProvenanceId,
-                "Université Toulouse 1 Capitole blacklists via cbuijs/ut1 normalized mirror",
-                Ut1SourceRevision,
-                "CC-BY-SA-4.0",
-                "bank"),
-            new AccountClassificationCatalogProvenance(
-                Ut1PressProvenanceId,
-                "Université Toulouse 1 Capitole blacklists via cbuijs/ut1 normalized mirror",
-                Ut1SourceRevision,
-                "CC-BY-SA-4.0",
-                "press"),
+                "curated-manual"),
         ]);
 
-        var records = new List<AccountClassificationProviderRecord>(3_000);
+        var records = new List<AccountClassificationProviderRecord>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
         var domains = new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal);
         var aliases = new Dictionary<string, AccountClassificationProviderRecord>(StringComparer.Ordinal);
 
         foreach (var record in CreateCuratedRecords())
         {
-            AddRecord(record, records, ids, domains, aliases, allowClaimedDomainSkip: false);
+            AddRecord(record, records, ids, domains, aliases);
         }
-
-        AddSourceRecords(
-            "ut1-webmail.txt",
-            "ut1-webmail",
-            AccountRecoveryCategory.Email,
-            Ut1WebmailProvenanceId,
-            records,
-            ids,
-            domains,
-            aliases);
-        AddSourceRecords(
-            "ut1-bank.txt",
-            "ut1-bank",
-            AccountRecoveryCategory.Critical,
-            Ut1BankProvenanceId,
-            records,
-            ids,
-            domains,
-            aliases);
-        AddSourceRecords(
-            "ut1-press.txt",
-            "ut1-press",
-            AccountRecoveryCategory.NonCritical,
-            Ut1PressProvenanceId,
-            records,
-            ids,
-            domains,
-            aliases);
 
         return new CatalogState(
             Array.AsReadOnly(records.ToArray()),
@@ -200,16 +120,16 @@ public static class RepositoryAccountClassificationCatalog
             ["zoho.com", "zohomail.com"], "zohomail"),
         Record("email-aol", "AOL Mail", AccountRecoveryCategory.Email,
             ["aol.com", "aol.de"], "aol"),
-        Record("email-t-online", "T-Online Mail", AccountRecoveryCategory.Email, ["t-online.de"]),
-        Record("email-mailru", "Mail.ru", AccountRecoveryCategory.Email, ["mail.ru"]),
-        Record("email-seznam", "Seznam Email", AccountRecoveryCategory.Email, ["seznam.cz"]),
-        Record("email-orange", "Orange Mail", AccountRecoveryCategory.Email, ["orange.fr", "wanadoo.fr"]),
-        Record("email-libero", "Libero Mail", AccountRecoveryCategory.Email, ["libero.it"]),
-        Record("email-qq", "QQ Mail", AccountRecoveryCategory.Email, ["qq.com"]),
-        Record("email-163", "NetEase 163 Mail", AccountRecoveryCategory.Email, ["163.com"]),
-        Record("email-126", "NetEase 126 Mail", AccountRecoveryCategory.Email, ["126.com"]),
-        Record("email-naver", "Naver Mail", AccountRecoveryCategory.Email, ["naver.com"]),
-        Record("email-mailcom", "mail.com", AccountRecoveryCategory.Email, ["mail.com"]),
+        Record("email-t-online", "T-Online Mail", AccountRecoveryCategory.Email, ["t-online.de"], "tonline"),
+        Record("email-mailru", "Mail.ru", AccountRecoveryCategory.Email, ["mail.ru"], "mailru"),
+        Record("email-seznam", "Seznam Email", AccountRecoveryCategory.Email, ["seznam.cz"], "seznam"),
+        Record("email-orange", "Orange Mail", AccountRecoveryCategory.Email, ["orange.fr", "wanadoo.fr"], "orangemail"),
+        Record("email-libero", "Libero Mail", AccountRecoveryCategory.Email, ["libero.it"], "liberomail"),
+        Record("email-qq", "QQ Mail", AccountRecoveryCategory.Email, ["qq.com"], "qqmail"),
+        Record("email-163", "NetEase 163 Mail", AccountRecoveryCategory.Email, ["163.com"], "163mail"),
+        Record("email-126", "NetEase 126 Mail", AccountRecoveryCategory.Email, ["126.com"], "126mail"),
+        Record("email-naver", "Naver Mail", AccountRecoveryCategory.Email, ["naver.com"], "navermail"),
+        Record("email-mailcom", "mail.com", AccountRecoveryCategory.Email, ["mail.com"], "mailcom"),
 
         Record("critical-1password", "1Password", AccountRecoveryCategory.Critical, ["1password.com"], "1password"),
         Record("critical-amazon", "Amazon", AccountRecoveryCategory.Critical,
@@ -218,45 +138,42 @@ public static class RepositoryAccountClassificationCatalog
         Record("critical-auth0", "Auth0", AccountRecoveryCategory.Critical, ["auth0.com"], "auth0"),
         Record("critical-bitwarden", "Bitwarden", AccountRecoveryCategory.Critical, ["bitwarden.com"], "bitwarden"),
         Record("critical-discord", "Discord", AccountRecoveryCategory.Critical, ["discord.com"], "discord"),
-        Record("critical-dropbox", "Dropbox", AccountRecoveryCategory.Critical, ["dropbox.com"]),
+        Record("critical-dropbox", "Dropbox", AccountRecoveryCategory.Critical, ["dropbox.com"], "dropbox"),
         Record("critical-ebay", "eBay", AccountRecoveryCategory.Critical, ["ebay.com", "ebay.de"], "ebay"),
         Record("critical-etsy", "Etsy", AccountRecoveryCategory.Critical, ["etsy.com"], "etsy"),
-        Record("critical-facebook", "Facebook", AccountRecoveryCategory.Critical, ["facebook.com"]),
-        Record("critical-fidelity", "Fidelity", AccountRecoveryCategory.Critical, ["fidelity.com"]),
+        Record("critical-facebook", "Facebook", AccountRecoveryCategory.Critical, ["facebook.com"], "facebook"),
+        Record("critical-fidelity", "Fidelity", AccountRecoveryCategory.Critical, ["fidelity.com"], "fidelity"),
         Record("critical-github", "GitHub", AccountRecoveryCategory.Critical, ["github.com"], "github"),
         Record("critical-google", "Google Account", AccountRecoveryCategory.Critical, ["google.com"], "google"),
-        Record("critical-healthcaregov", "HealthCare.gov", AccountRecoveryCategory.Critical, ["healthcare.gov"]),
-        Record("critical-instagram", "Instagram", AccountRecoveryCategory.Critical, ["instagram.com"]),
-        Record("critical-klarna", "Klarna", AccountRecoveryCategory.Critical, ["klarna.com"]),
+        Record("critical-healthcaregov", "HealthCare.gov", AccountRecoveryCategory.Critical, ["healthcare.gov"], "healthcaregov"),
+        Record("critical-instagram", "Instagram", AccountRecoveryCategory.Critical, ["instagram.com"], "instagram"),
+        Record("critical-klarna", "Klarna", AccountRecoveryCategory.Critical, ["klarna.com"], "klarna"),
         Record("critical-lastpass", "LastPass", AccountRecoveryCategory.Critical, ["lastpass.com"], "lastpass"),
-        Record("critical-linkedin", "LinkedIn", AccountRecoveryCategory.Critical, ["linkedin.com"]),
-        Record("critical-mastercard", "Mastercard", AccountRecoveryCategory.Critical, ["mastercard.com"]),
+        Record("critical-linkedin", "LinkedIn", AccountRecoveryCategory.Critical, ["linkedin.com"], "linkedin"),
         Record("critical-microsoft", "Microsoft Account", AccountRecoveryCategory.Critical, ["microsoft.com"], "microsoft"),
-        Record("critical-n26", "N26", AccountRecoveryCategory.Critical, ["n26.com"]),
+        Record("critical-n26", "N26", AccountRecoveryCategory.Critical, ["n26.com"], "n26"),
         Record("critical-okta", "Okta", AccountRecoveryCategory.Critical, ["okta.com"], "okta"),
         Record("critical-paypal", "PayPal", AccountRecoveryCategory.Critical, ["paypal.com", "paypal.de"], "paypal"),
         Record("critical-reddit", "Reddit", AccountRecoveryCategory.Critical, ["reddit.com"], "reddit"),
-        Record("critical-revolut", "Revolut", AccountRecoveryCategory.Critical, ["revolut.com"]),
+        Record("critical-revolut", "Revolut", AccountRecoveryCategory.Critical, ["revolut.com"], "revolut"),
         Record("critical-stripe", "Stripe", AccountRecoveryCategory.Critical, ["stripe.com"], "stripe"),
-        Record("critical-wise", "Wise", AccountRecoveryCategory.Critical, ["wise.com"]),
-        Record("critical-x", "X", AccountRecoveryCategory.Critical, ["x.com"]),
-        Record("critical-deutsche-bank", "Deutsche Bank", AccountRecoveryCategory.Critical, ["deutsche-bank.de"]),
-        Record("critical-commerzbank", "Commerzbank", AccountRecoveryCategory.Critical, ["commerzbank.de"]),
-        Record("critical-chase", "Chase", AccountRecoveryCategory.Critical, ["chase.com"]),
-        Record("critical-bankofamerica", "Bank of America", AccountRecoveryCategory.Critical, ["bankofamerica.com"]),
+        Record("critical-wise", "Wise", AccountRecoveryCategory.Critical, ["wise.com"], "wise"),
+        Record("critical-x", "X", AccountRecoveryCategory.Critical, ["x.com"], "x"),
+        Record("critical-deutsche-bank", "Deutsche Bank", AccountRecoveryCategory.Critical, ["deutsche-bank.de"], "deutschebank"),
+        Record("critical-commerzbank", "Commerzbank", AccountRecoveryCategory.Critical, ["commerzbank.de"], "commerzbank"),
+        Record("critical-chase", "Chase", AccountRecoveryCategory.Critical, ["chase.com"], "chase"),
+        Record("critical-bankofamerica", "Bank of America", AccountRecoveryCategory.Critical, ["bankofamerica.com"], "bankofamerica"),
 
-        Record("noncritical-allrecipes", "Allrecipes", AccountRecoveryCategory.NonCritical, ["allrecipes.com"]),
-        Record("noncritical-buzzfeed", "BuzzFeed", AccountRecoveryCategory.NonCritical, ["buzzfeed.com"]),
-        Record("noncritical-duolingo", "Duolingo", AccountRecoveryCategory.NonCritical, ["duolingo.com"]),
-        Record("noncritical-goodreads", "Goodreads", AccountRecoveryCategory.NonCritical, ["goodreads.com"]),
-        Record("noncritical-imdb", "IMDb", AccountRecoveryCategory.NonCritical, ["imdb.com"]),
-        Record("noncritical-medium", "Medium", AccountRecoveryCategory.NonCritical, ["medium.com"]),
-        Record("noncritical-netflix", "Netflix", AccountRecoveryCategory.NonCritical, ["netflix.com"]),
-        Record("noncritical-pinterest", "Pinterest", AccountRecoveryCategory.NonCritical, ["pinterest.com"]),
-        Record("noncritical-spotify", "Spotify", AccountRecoveryCategory.NonCritical, ["spotify.com"]),
-        Record("noncritical-steam", "Steam", AccountRecoveryCategory.NonCritical, ["steampowered.com"]),
-        Record("noncritical-twitch", "Twitch", AccountRecoveryCategory.NonCritical, ["twitch.tv"]),
-        Record("noncritical-weather", "The Weather Channel", AccountRecoveryCategory.NonCritical, ["weather.com"]),
+        Record("noncritical-allrecipes", "Allrecipes", AccountRecoveryCategory.NonCritical, ["allrecipes.com"], "allrecipes"),
+        Record("noncritical-buzzfeed", "BuzzFeed", AccountRecoveryCategory.NonCritical, ["buzzfeed.com"], "buzzfeed"),
+        Record("noncritical-duolingo", "Duolingo", AccountRecoveryCategory.NonCritical, ["duolingo.com"], "duolingo"),
+        Record("noncritical-goodreads", "Goodreads", AccountRecoveryCategory.NonCritical, ["goodreads.com"], "goodreads"),
+        Record("noncritical-imdb", "IMDb", AccountRecoveryCategory.NonCritical, ["imdb.com"], "imdb"),
+        Record("noncritical-medium", "Medium", AccountRecoveryCategory.NonCritical, ["medium.com"], "medium"),
+        Record("noncritical-netflix", "Netflix", AccountRecoveryCategory.NonCritical, ["netflix.com"], "netflix"),
+        Record("noncritical-pinterest", "Pinterest", AccountRecoveryCategory.NonCritical, ["pinterest.com"], "pinterest"),
+        Record("noncritical-spotify", "Spotify", AccountRecoveryCategory.NonCritical, ["spotify.com"], "spotify"),
+        Record("noncritical-weather", "The Weather Channel", AccountRecoveryCategory.NonCritical, ["weather.com"], "weatherchannel"),
     ];
 
     private static AccountClassificationProviderRecord Record(
@@ -271,62 +188,31 @@ public static class RepositoryAccountClassificationCatalog
             category,
             Array.AsReadOnly(domains),
             Array.AsReadOnly(providerIdAliases),
-            CuratedProvenanceId);
-
-    private static void AddSourceRecords(
-        string resourceFileName,
-        string idPrefix,
-        AccountRecoveryCategory category,
-        string provenanceId,
-        List<AccountClassificationProviderRecord> records,
-        HashSet<string> ids,
-        Dictionary<string, AccountClassificationProviderRecord> domains,
-        Dictionary<string, AccountClassificationProviderRecord> aliases)
-    {
-        foreach (var domain in LoadSourceDomains(resourceFileName))
-        {
-            var record = new AccountClassificationProviderRecord(
-                $"{idPrefix}:{domain}",
-                domain,
-                category,
-                Array.AsReadOnly([domain]),
-                Array.AsReadOnly(Array.Empty<string>()),
-                provenanceId);
-            AddRecord(record, records, ids, domains, aliases, allowClaimedDomainSkip: true);
-        }
-    }
+            CuratedProvenanceId,
+            category switch
+            {
+                AccountRecoveryCategory.Email => "Repository-reviewed mailbox provider family.",
+                AccountRecoveryCategory.Critical => "Repository-reviewed provider with material identity, money, communications, recovery, or account-control impact.",
+                AccountRecoveryCategory.NonCritical => "Repository-reviewed lower-impact consumer service; uncertain services remain Unknown.",
+                _ => throw new InvalidOperationException("Unknown cannot be a curated provider category."),
+            });
 
     private static void AddRecord(
         AccountClassificationProviderRecord record,
         List<AccountClassificationProviderRecord> records,
         HashSet<string> ids,
         Dictionary<string, AccountClassificationProviderRecord> domains,
-        Dictionary<string, AccountClassificationProviderRecord> aliases,
-        bool allowClaimedDomainSkip)
+        Dictionary<string, AccountClassificationProviderRecord> aliases)
     {
         if (string.IsNullOrWhiteSpace(record.Id) ||
             string.IsNullOrWhiteSpace(record.Name) ||
             record.Category == AccountRecoveryCategory.Unknown ||
             !Enum.IsDefined(record.Category) ||
             string.IsNullOrWhiteSpace(record.ProvenanceId) ||
+            string.IsNullOrWhiteSpace(record.ReviewBasis) ||
             record.Domains.Count == 0)
         {
             throw new InvalidOperationException("Account classification provider metadata is invalid.");
-        }
-
-        var normalizedDomains = record.Domains
-            .Select(domain => NormalizeDomain(domain) ?? throw new InvalidOperationException(
-                "Account classification provider metadata contains an invalid domain."))
-            .Distinct(StringComparer.Ordinal)
-            .ToArray();
-        if (normalizedDomains.Length != record.Domains.Count)
-        {
-            throw new InvalidOperationException("Account classification provider metadata contains duplicate domains.");
-        }
-
-        if (allowClaimedDomainSkip && normalizedDomains.Any(domains.ContainsKey))
-        {
-            return;
         }
 
         if (!ids.Add(record.Id))
@@ -334,11 +220,20 @@ public static class RepositoryAccountClassificationCatalog
             throw new InvalidOperationException("Account classification provider IDs must be unique.");
         }
 
+        var normalizedDomains = record.Domains
+            .Select(domain => NormalizeDomain(domain) ?? throw new InvalidOperationException(
+                "Account classification provider metadata contains an invalid domain."))
+            .ToArray();
+        if (normalizedDomains.Distinct(StringComparer.Ordinal).Count() != normalizedDomains.Length)
+        {
+            throw new InvalidOperationException("Account classification provider metadata contains duplicate domains.");
+        }
+
         foreach (var domain in normalizedDomains)
         {
-            if (domains.ContainsKey(domain))
+            if (domains.Keys.Any(existing => DomainsOverlap(existing, domain)))
             {
-                throw new InvalidOperationException("Account classification domains must have one canonical owner.");
+                throw new InvalidOperationException("Account classification domains must have one unambiguous canonical owner.");
             }
         }
 
@@ -357,6 +252,7 @@ public static class RepositoryAccountClassificationCatalog
             ProviderIdAliases = Array.AsReadOnly(normalizedAliases),
         };
         records.Add(normalizedRecord);
+
         foreach (var domain in normalizedDomains)
         {
             domains.Add(domain, normalizedRecord);
@@ -371,52 +267,14 @@ public static class RepositoryAccountClassificationCatalog
         }
     }
 
-    private static List<string> LoadSourceDomains(string resourceFileName)
-    {
-        var resourceName = ResourcePrefix + resourceFileName;
-        using var stream = typeof(RepositoryAccountClassificationCatalog).Assembly
-            .GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Embedded account classification resource is missing: {resourceName}");
-        if (stream.CanSeek && stream.Length > MaxSourceBytes)
-        {
-            throw new InvalidOperationException("Embedded account classification resource exceeds its size bound.");
-        }
-
-        using var reader = new StreamReader(stream);
-        var result = new List<string>();
-        var seen = new HashSet<string>(StringComparer.Ordinal);
-        while (reader.ReadLine() is { } line)
-        {
-            if (line.Length > 253)
-            {
-                throw new InvalidOperationException("Embedded account classification resource contains an overlong domain.");
-            }
-
-            var domain = NormalizeDomain(line)
-                ?? throw new InvalidOperationException("Embedded account classification resource contains an invalid domain.");
-            if (!seen.Add(domain))
-            {
-                throw new InvalidOperationException("Embedded account classification resource contains duplicate domains.");
-            }
-
-            result.Add(domain);
-            if (result.Count > MaxSourceRecords)
-            {
-                throw new InvalidOperationException("Embedded account classification resource exceeds its record bound.");
-            }
-        }
-
-        return result;
-    }
+    private static bool DomainsOverlap(string left, string right) =>
+        string.Equals(left, right, StringComparison.Ordinal) ||
+        left.EndsWith('.' + right, StringComparison.Ordinal) ||
+        right.EndsWith('.' + left, StringComparison.Ordinal);
 
     private static AccountRecoveryCategory FindProviderAliasCategory(string provider) =>
         State.ProviderAliasIndex.TryGetValue(provider, out var record)
             ? record.Category
-            : AccountRecoveryCategory.Unknown;
-
-    private static AccountRecoveryCategory FindCategoryHint(string provider) =>
-        CategoryHintAliases.TryGetValue(provider, out var category)
-            ? category
             : AccountRecoveryCategory.Unknown;
 
     private static AccountRecoveryCategory FindDomainCategory(string? domain)
@@ -436,8 +294,7 @@ public static class RepositoryAccountClassificationCatalog
         return AccountRecoveryCategory.Unknown;
     }
 
-    private static AccountRecoveryCategory HighestPriority(
-        params AccountRecoveryCategory[] categories)
+    private static AccountRecoveryCategory HighestPriority(params AccountRecoveryCategory[] categories)
     {
         if (categories.Contains(AccountRecoveryCategory.Email))
         {
@@ -480,7 +337,7 @@ public static class RepositoryAccountClassificationCatalog
         if (string.IsNullOrWhiteSpace(accountUrl) ||
             !Uri.TryCreate(accountUrl.Trim(), UriKind.Absolute, out var uri) ||
             (!string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
+             !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
         {
             return null;
         }
