@@ -348,14 +348,7 @@ internal static class AccountClassificationCatalogLoader
                     "The account classification catalog contains an invalid provider alias.");
             }
 
-            if (result.TryGetValue(normalized, out var existing) &&
-                !string.Equals(existing, raw, StringComparison.Ordinal))
-            {
-                throw new InvalidOperationException(
-                    "The account classification catalog contains duplicate normalized provider aliases.");
-            }
-
-            result[normalized] = raw;
+            result.TryAdd(normalized, raw);
         }
 
         return [.. result.Values.Order(StringComparer.Ordinal)];
