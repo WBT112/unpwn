@@ -193,6 +193,7 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     private IntPtr _downloadSignalOwner;
     private IntPtr _websiteDataManager;
     private LinuxRecoveryBrowserBackend _backend;
+    private bool _storageHardeningFailed;
 
     private bool _isConfigured;
 
@@ -211,31 +212,46 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     public override void ConfigureEnvironment(WebViewEnvironmentRequestedEventArgs args)
     {
         args.EnableDevTools = false;
-        switch (args)
+        if (_storageHardeningFailed)
         {
-            case LinuxWpeWebViewEnvironmentRequestedEventArgs wpe:
-                {
-                    var dataDirectory = Path.Combine(ProfileDataPath, "data");
-                    var cacheDirectory = Path.Combine(ProfileDataPath, "cache");
-                    Directory.CreateDirectory(dataDirectory);
-                    Directory.CreateDirectory(cacheDirectory);
-                    wpe.DataDirectory = dataDirectory;
-                    wpe.CacheDirectory = cacheDirectory;
-                    // Prefer WPE when it is available. Avalonia falls through to WebKitGTK when
-                    // WPE is unavailable, and the GTK path below is hardened separately.
-                    wpe.PreferWebKitGtkInstead = false;
+            return;
+        }
+
+        try
+        {
+            RecoveryBrowserFilePermissions.EnsurePrivateDirectory(ProfileDataPath);
+            switch (args)
+            {
+                case LinuxWpeWebViewEnvironmentRequestedEventArgs wpe:
+                    {
+                        var dataDirectory = Path.Combine(ProfileDataPath, "data");
+                        var cacheDirectory = Path.Combine(ProfileDataPath, "cache");
+                        RecoveryBrowserFilePermissions.EnsurePrivateDirectory(dataDirectory);
+                        RecoveryBrowserFilePermissions.EnsurePrivateDirectory(cacheDirectory);
+                        wpe.DataDirectory = dataDirectory;
+                        wpe.CacheDirectory = cacheDirectory;
+                        // Prefer WPE when it is available. Avalonia falls through to WebKitGTK when
+                        // WPE is unavailable, and the GTK path below is hardened separately.
+                        wpe.PreferWebKitGtkInstead = false;
+                        break;
+                    }
+                case GtkWebViewEnvironmentRequestedEventArgs gtk:
+                    // Keep all provider website state in memory. The Recovery Browser owns one
+                    // web view for the account-bound session, so cookies remain usable within the
+                    // session without writing browser state into a normal or persistent GTK profile.
+                    gtk.EphemeralDataManager = true;
+                    gtk.DisableCache = true;
+                    // Avalonia's normal GTK host is X11/XID-only. Use the compositor-backed GTK
+                    // adapter so the Recovery Browser also works when the Avalonia window is Wayland.
+                    gtk.ExperimentalOffscreen = true;
                     break;
-                }
-            case GtkWebViewEnvironmentRequestedEventArgs gtk:
-                // Keep all provider website state in memory. The Recovery Browser owns one
-                // web view for the account-bound session, so cookies remain usable within the
-                // session without writing browser state into a normal or persistent GTK profile.
-                gtk.EphemeralDataManager = true;
-                gtk.DisableCache = true;
-                // Avalonia's normal GTK host is X11/XID-only. Use the compositor-backed GTK
-                // adapter so the Recovery Browser also works when the Avalonia window is Wayland.
-                gtk.ExperimentalOffscreen = true;
-                break;
+            }
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            _storageHardeningFailed = true;
+            PublishSecurityEvent(RecoveryBrowserSecurityEventCode.PlatformHardeningUnavailable);
         }
     }
 
@@ -243,6 +259,11 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     {
         Detach();
         _isConfigured = false;
+        if (_storageHardeningFailed)
+        {
+            return;
+        }
+
         try
         {
             switch (platformHandle)
