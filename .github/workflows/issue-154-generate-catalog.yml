@@ -35,7 +35,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- src/Unpwn.Core/Data/AccountClassification; then
+          if test -z "$(git status --porcelain -- src/Unpwn.Core/Data/AccountClassification)"; then
             echo "Snapshot already current."
             exit 0
           fi
