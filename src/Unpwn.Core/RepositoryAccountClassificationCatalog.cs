@@ -224,7 +224,7 @@ internal static class AccountClassificationCatalogLoader
                     "The account classification catalog contains an invalid recovery category.");
             }
 
-            var domains = ParseDomains(fields[3]);
+            var domains = ParseDomains(fields[3], providerId);
             var aliases = ParseAliases(fields[4]);
             var provenance = ParseValues(
                 fields[5], MaximumProvenanceEntriesPerProvider, 300, "provenance");
@@ -361,7 +361,7 @@ internal static class AccountClassificationCatalogLoader
         providerId[0] != '-' &&
         providerId[^1] != '-';
 
-    private static string[] ParseDomains(string field)
+    private static string[] ParseDomains(string field, string providerId)
     {
         var rawValues = ParseValues(field, MaximumDomainsPerProvider, 253, "domain");
         var result = new HashSet<string>(StringComparer.Ordinal);
@@ -369,7 +369,7 @@ internal static class AccountClassificationCatalogLoader
         {
             var normalized = RepositoryAccountClassificationCatalog.NormalizeDomain(raw)
                 ?? throw new InvalidOperationException(
-                    "The account classification catalog contains an invalid domain alias.");
+                    $"The account classification catalog contains invalid domain alias '{raw}' for provider '{providerId}'.");
             if (!result.Add(normalized))
             {
                 throw new InvalidOperationException(
