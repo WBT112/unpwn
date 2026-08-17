@@ -246,6 +246,12 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
                     // Avalonia's normal GTK host is X11/XID-only. Use the compositor-backed GTK
                     // adapter so the Recovery Browser also works when the Avalonia window is Wayland.
                     gtk.ExperimentalOffscreen = true;
+                    // Avalonia.Controls.WebView 12.1 still initializes its GTK adapters through the
+                    // X11 GDK backend even for compositor/offscreen hosting. Ubuntu Wayland sessions
+                    // can export GDK_BACKEND=wayland, which otherwise prevents GTK initialization.
+                    // The upstream option scopes the override to GTK initialization and restores the
+                    // previous process value afterwards; it does not force the Avalonia top-level to X11.
+                    gtk.ForceX11GdkBackend = true;
                     break;
             }
         }
@@ -622,24 +628,4 @@ internal enum LinuxRecoveryBrowserBackend
     None,
     Wpe,
     Gtk,
-}
-
-internal sealed class UnsupportedRecoveryBrowserPlatformAdapter(string profileDataPath)
-    : RecoveryBrowserPlatformAdapter(profileDataPath)
-{
-    public override bool IsConfigured => false;
-
-    public override void ConfigureEnvironment(WebViewEnvironmentRequestedEventArgs args) =>
-        args.EnableDevTools = false;
-
-    public override void Attach(IPlatformHandle? platformHandle)
-    {
-    }
-
-    public override Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
-        Task.CompletedTask;
-
-    public override void Dispose()
-    {
-    }
 }
