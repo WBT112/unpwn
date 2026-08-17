@@ -7,7 +7,7 @@ namespace Unpwn.App.Services;
 /// WebKitGTK on Linux. The offscreen/compositor host removes the XID-parent dependency,
 /// but WebKitGTK 12.1 still initializes through GTK's X11 GDK backend.
 /// </summary>
-internal sealed class LinuxGtkWebViewInitializationScope : IDisposable
+internal sealed partial class LinuxGtkWebViewInitializationScope : IDisposable
 {
     private readonly string? _previousBackend;
     private readonly bool _changed;
@@ -69,6 +69,6 @@ internal sealed class LinuxGtkWebViewInitializationScope : IDisposable
         Environment.SetEnvironmentVariable("GDK_BACKEND", _previousBackend);
     }
 
-    [DllImport("libc", EntryPoint = "setenv", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-    private static extern int setenv(string name, string value, int overwrite);
+    [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int setenv(string name, string value, int overwrite);
 }
