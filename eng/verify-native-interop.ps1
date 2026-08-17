@@ -11,7 +11,8 @@ $approvedUnsafeProjects = @(
 )
 
 $approvedNativeSources = @(
-    'src/Unpwn.App/Services/RecoveryBrowserPlatformAdapter.cs'
+    'src/Unpwn.App/Services/RecoveryBrowserPlatformAdapter.cs',
+    'src/Unpwn.App/Services/LinuxGtkWebViewInitializationScope.cs'
 )
 
 function Get-RelativeRepositoryPath([string]$Path) {
@@ -60,4 +61,5 @@ if ($violations.Count -gt 0) {
 
 Write-Host 'Native/unsafe boundary verified.'
 Write-Host 'Approved unsafe project: src/Unpwn.App/Unpwn.App.csproj'
-Write-Host 'Approved native source: src/Unpwn.App/Services/RecoveryBrowserPlatformAdapter.cs'
+Write-Host 'Approved native sources:'
+$approvedNativeSources | ForEach-Object { Write-Host " - $_" }

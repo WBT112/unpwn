@@ -99,6 +99,11 @@ public partial class WorkflowExecutionView : AccessibleScreen
         bool opened;
         try
         {
+            // Avalonia.Controls.WebView 12.1's WebKitGTK adapters still initialize GTK through
+            // the X11 GDK backend, even when the compositor/offscreen host is used. Ubuntu 26.04
+            // Wayland sessions commonly export GDK_BACKEND=wayland, which prevents that GTK
+            // initialization. Scope the native environment override to browser activation only.
+            using var gtkInitialization = LinuxGtkWebViewInitializationScope.Enter();
             opened = await _browserView.StartAsync(
                 new RecoveryBrowserSessionStartRequest(
                     request.AccountId,
