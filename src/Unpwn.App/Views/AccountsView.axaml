@@ -112,7 +112,7 @@
                       AutomationProperties.AutomationId="accounts-category-save"
                       Content="{DynamicResource Accounts.Triage.SaveNext}"
                       Command="{Binding SaveCategoryCommand}" />
-              <Button IsVisible="{Binding HasCategoryOverride}"
+              <Button IsVisible="{Binding CanUseAutomaticCategory}"
                       AutomationProperties.AutomationId="accounts-category-reset"
                       Content="{DynamicResource Accounts.Triage.UseAutomatic}"
                       Command="{Binding ClearCategoryOverrideCommand}" />

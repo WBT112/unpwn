@@ -248,6 +248,10 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         _editingAccountId is { } accountId &&
         _currentInventory?.Accounts.Single(account => account.Id == accountId).ConfirmedCategory.HasValue == true;
 
+    public bool CanUseAutomaticCategory => HasCategoryOverride &&
+        SelectedAccount?.Account is { } account &&
+        AccountRecoveryCategoryRules.IsUserSelectable(account.SuggestedCategory);
+
     public bool HasEmailCategory =>
         _currentInventory?.Accounts.Any(account =>
             account.EffectiveCategory == AccountRecoveryCategory.Email) == true;
@@ -603,6 +607,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(IsEditingAccount));
         OnPropertyChanged(nameof(HasPersistedAccount));
         OnPropertyChanged(nameof(HasCategoryOverride));
+        OnPropertyChanged(nameof(CanUseAutomaticCategory));
         OnPropertyChanged(nameof(HasEmailCategory));
         OnPropertyChanged(nameof(RemainingCategoryCount));
         OnPropertyChanged(nameof(CanContinueRecovery));
