@@ -13,7 +13,7 @@ Windows and Linux are the current desktop targets. Core recovery logic must rema
 - SQLite
 - Argon2id and AES-256-GCM in the Recovery Vault
 - .NET resource files for presentation localization
-- Avalonia `NativeWebView` for the embedded Recovery Browser host
+- Avalonia `NativeWebView`, with an app-owned WebKitGTK dialog fallback on Linux, for the managed Recovery Browser host
 
 Detailed cryptographic rules live in [Vault Security](VAULT_SECURITY.md); localization rules live in [Localization](LOCALIZATION.md).
 
@@ -94,7 +94,9 @@ See [Localization](LOCALIZATION.md).
 
 ### Recovery Browser
 
-The embedded Recovery Browser consumes the validated `RecoveryNavigationHandoff`; it does not rediscover or infer provider destinations. The platform-neutral origin/security contract lives in `Unpwn.Application`, while Avalonia and native WebView2/WPE WebKit details remain in `Unpwn.App` behind browser-host and platform-adapter boundaries.
+The managed Recovery Browser consumes the validated `RecoveryNavigationHandoff`; it does not rediscover or infer provider destinations. The platform-neutral origin/security contract lives in `Unpwn.Application`, while Avalonia and native WebView2/WPE WebKit/WebKitGTK details remain in `Unpwn.App` behind browser-host and platform-adapter boundaries. Linux prefers embedded WPE and uses an app-owned WebKitGTK dialog when WPE is unavailable; both surfaces share the same security and session-lifecycle host.
+
+Repository-reviewed initial browser entries may supplement a general workflow without changing that workflow's `GeneralManualGuidance` trust level. This catalog is provider-controlled infrastructure, not imported account metadata, and supplies navigation context only.
 
 Browser observations are transient presentation context and have no dependency path to canonical recovery transitions. Navigation, redirects, browser close, form state, or credential insertion cannot complete an action or confirm provider success.
 

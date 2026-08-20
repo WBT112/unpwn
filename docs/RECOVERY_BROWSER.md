@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Recovery Browser is an unpwn-controlled embedded provider work surface. It uses Avalonia `NativeWebView`, backed by WebView2 on Windows and WPE WebKit on Linux.
+The Recovery Browser is an unpwn-controlled provider work surface. It uses Avalonia `NativeWebView`, backed by WebView2 on Windows and WPE WebKit on Linux. If WPE is unavailable, Linux uses an app-owned `NativeWebDialog` backed by WebKitGTK instead of pretending that the unsupported GTK offscreen surface is usable.
 
 It is not a general-purpose browser and it is not a source of canonical recovery truth. Its job is to keep the provider website, current recovery guidance, explicit checklist, and credential handoff in one coherent workspace while preserving the existing recovery state machine.
 
@@ -10,7 +10,7 @@ It is not a general-purpose browser and it is not a source of canonical recovery
 
 The platform-neutral `RecoveryBrowserSecurityBoundary` consumes an already validated `RecoveryNavigationHandoff` and accepts only destinations within its exact reviewed origin set. Browser-host implementation details remain outside `Unpwn.Core`.
 
-`Unpwn.App` owns the embedded host, platform hardening, localized browser chrome, temporary session lifecycle, and presentation-only credential assistance.
+`Unpwn.App` owns the managed host, platform hardening, localized browser chrome, temporary session lifecycle, and presentation-only credential assistance.
 
 Navigation, redirects, popups, downloads, permissions, TLS events, browser close, field insertion, and provider form state update only transient browser/presentation state. They cannot complete an action, acknowledge a criterion, confirm that a credential works, change risk, or advance the wizard. Only explicit canonical recovery and credential-lifecycle operations may change those states.
 
@@ -21,11 +21,22 @@ For a reviewed navigable action, the normal guided path presents the provider pa
 The recovery overview exposes one primary **Start recovery** transaction for the recommended account.
 That application action loads or creates the canonical execution, starts the current canonical action,
 validates its reviewed navigation handoff, and requests the isolated account-bound browser workspace.
-It must either make that workspace visible or leave an explicit safe error and external-browser
+It must either make that workspace visible or leave an explicit safe error and an applicable safe
 fallback; navigation alone is not represented as a successful start. Actions without a reviewed
 destination remain explicit manual guidance and never cause unpwn to guess a provider page.
 
-The external operating-system browser is an explicitly labelled fallback. Embedded-host failure must never silently downgrade to the external browser.
+A small repository-reviewed browser-entry catalog may provide an initial provider surface when a
+provider-specific recovery workflow does not yet exist. Such an entry validates only the destination
+and allowed origins: the workflow remains clearly labelled as general guidance, and the entry neither
+upgrades its trust level nor changes recovery state. Imported URLs, display names, and browser content
+cannot create or extend these entries.
+
+The external operating-system browser is an explicitly labelled fallback. Managed-host failure must never silently downgrade to the external browser. The Linux WebKitGTK dialog is still an isolated unpwn-owned host with the same boundary and lifecycle; it is not the external-browser fallback.
+
+If no reviewed or safely discovered start address is available, the browser stays closed and the
+guided screen explains why. The user can open the affected account directly in the account editor
+to review its provider and URL, continue with the manual guidance, or explicitly record why the
+step cannot continue. A rejected URL is never opened through the external-browser fallback.
 
 Each checklist checkmark is persisted through the canonical encrypted account-execution state before the UI reports it as recorded. No provider DOM, screenshot, page text, response body, cookie, or URL is stored as proof. Browser close/restart therefore preserves only explicit unpwn state, not inferred provider success.
 
@@ -117,7 +128,7 @@ Avalonia hosts the installed WebView2 runtime using the dedicated unpwn data dir
 
 ### Linux
 
-Avalonia hosts WPE WebKit with dedicated data/cache locations and can use the separately hardened ephemeral WebKitGTK fallback where WPE is unavailable. The WPE profile, `data`, and `cache` locations must pass the owner-only `0700` filesystem check before they are handed to WebKit. The adapter disables persistent credential storage/developer tools where exposed and denies permissions, downloads, and TLS exceptions. WebKitGTK keeps website data ephemeral and still requires the unpwn-owned session profile directory to satisfy the same owner-only storage boundary. WPE WebKit does not expose every WebView2 control through the maintained host; the dedicated profile boundary and conservative lifecycle remain mandatory instead of claiming identical platform hardening.
+Avalonia hosts WPE WebKit with dedicated data/cache locations. Where WPE is unavailable, a separately hardened ephemeral WebKitGTK dialog opens as an app-owned managed browser window while the recovery assistant remains visible in the main window. The GTK fallback disables the DMABUF renderer during WebKit child-process initialization because affected Ubuntu graphics stacks otherwise create a navigable but blank browser surface. The WPE profile, `data`, and `cache` locations must pass the owner-only `0700` filesystem check before they are handed to WebKit. The adapter disables persistent credential storage/developer tools where exposed and denies permissions, downloads, and TLS exceptions. WebKitGTK keeps website data ephemeral and still requires the unpwn-owned session profile directory to satisfy the same owner-only storage boundary. WPE WebKit does not expose every WebView2 control through the maintained host; the dedicated profile boundary and conservative lifecycle remain mandatory instead of claiming identical platform hardening.
 
 No platform may silently fall back to an unhardened profile or host.
 

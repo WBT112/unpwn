@@ -192,6 +192,24 @@
                        Text="{Binding NavigationStatus}"
                        TextWrapping="Wrap" />
 
+            <Border IsVisible="{Binding HasBrowserLocationProblem}"
+                    Padding="14" CornerRadius="8"
+                    BorderThickness="1"
+                    BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="10">
+                <TextBlock FontWeight="SemiBold"
+                           Text="{DynamicResource Workflow.Browser.LocationFallback.Title}"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{DynamicResource Workflow.Browser.LocationFallback.Help}"
+                           TextWrapping="Wrap" />
+                <Button HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="workflow-review-account-details"
+                        Content="{DynamicResource Workflow.Browser.LocationFallback.ReviewAccount}"
+                        Command="{Binding ReviewAccountDetailsCommand}" />
+              </StackPanel>
+            </Border>
+
             <Button IsVisible="{Binding CanReportCurrentProblem}"
                     HorizontalAlignment="Left"
                     AutomationProperties.AutomationId="workflow-cannot-continue"

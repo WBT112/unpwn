@@ -1,7 +1,11 @@
 using System.Globalization;
+using Avalonia.Controls;
+using Avalonia.Threading;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.App.Tests.Views;
+using Unpwn.App.Views;
 using Unpwn.Application.Credentials;
 using Unpwn.Application.Recovery;
 using Unpwn.Core;
@@ -364,6 +368,96 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task StartRecoveryPreservesBrowserRequestUntilNavigatedViewSubscribes()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+
+        Assert.True(viewModel.TryTakePendingRecoveryBrowserRequest(out var request));
+        Assert.Equal("https://github.com/password_reset", request.Handoff.Destination.AbsoluteUri);
+        Assert.False(viewModel.TryTakePendingRecoveryBrowserRequest(out _));
+        Assert.Contains("isolated Recovery Browser", viewModel.NavigationStatus, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task NavigatedViewConsumesBrowserRequestOnlyAfterItHasATopLevelOwner()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            var view = new WorkflowExecutionView { DataContext = viewModel };
+            var window = new Window { Content = view };
+
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+            await Task.Delay(25);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.False(viewModel.TryTakePendingRecoveryBrowserRequest(out _));
+            Assert.Contains("unavailable", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task InProgressStepCanExplicitlyReopenBrowserAfterPresentationRequestWasLost()
+    {
+        var fixture = new Fixture(
+            providerId: "unsupported.example",
+            accountUrl: "https://unsupported.example.test/account");
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        Assert.True(viewModel.TryTakePendingRecoveryBrowserRequest(out _));
+
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        Assert.True(viewModel.CanRunGuidedPrimary);
+        Assert.Equal("Open this step in Recovery Browser", viewModel.GuidedPrimaryActionText);
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        var request = Assert.Single(requests);
+        Assert.Equal("https://unsupported.example.test/account", request.Handoff.Destination.AbsoluteUri);
+        Assert.Equal(RecoveryActionStatus.InProgress,
+            fixture.Execution.State!.GetAction("identify-account-reset").Status);
+
+        viewModel.ReportRecoveryBrowserOpenResult(true, workspaceVisible: true);
+        Assert.False(viewModel.CanRunGuidedPrimary);
+    }
+
+    [Fact]
+    public async Task BitwardenSampleUsesReviewedBrowserEntryInsteadOfReservedImportedUrl()
+    {
+        var fixture = new Fixture(
+            providerId: "bitwarden",
+            accountUrl: "https://bitwarden-vault.example.test/account");
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+
+        Assert.True(viewModel.IsGeneralManualWorkflow);
+        Assert.Equal("https://vault.bitwarden.com/", viewModel.OfficialLocationText);
+        var request = Assert.Single(requests);
+        Assert.Equal("https://vault.bitwarden.com/", request.Handoff.Destination.AbsoluteUri);
+        Assert.Equal(
+            ["https://vault.bitwarden.com", "https://vault.bitwarden.eu"],
+            request.Handoff.ExpectedOrigins);
+        Assert.Equal(RecoveryLocationResolutionSource.ProviderDefined, request.Handoff.Source);
+        Assert.Equal(0, fixture.LocationDiscovery.Calls);
+    }
+
+    [Fact]
     public async Task GuidedLostAccessAndWaitingAnswersMapToCanonicalAccessStates()
     {
         var lostFixture = new Fixture();
@@ -634,6 +728,31 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
         Assert.Contains("no usable URL", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
         Assert.Equal(0, fixture.LocationDiscovery.Calls);
+        Assert.True(viewModel.HasBrowserLocationProblem);
+        Assert.True(viewModel.ReviewAccountDetailsCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task BlockedBrowserLocationOffersAccountReviewWithoutOpeningTheRejectedTarget()
+    {
+        var fixture = new Fixture(
+            "unsupported.example",
+            "https://private.example.test/account");
+        fixture.LocationDiscovery.Result = RecoveryLocationDiscoveryResult.Failure(
+            RecoveryLocationDiscoveryFailureCode.UnsafeNetworkTarget);
+        var viewModel = fixture.CreateViewModel();
+        var reviewRequests = new List<WorkflowAccountReviewRequest>();
+        viewModel.AccountReviewRequested += (_, request) => reviewRequests.Add(request);
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+        viewModel.ReviewAccountDetailsCommand.Execute(null);
+
+        Assert.True(viewModel.HasBrowserLocationProblem);
+        Assert.Equal(fixture.AccountId, Assert.Single(reviewRequests).AccountId);
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+        Assert.False(viewModel.HasPreparedNavigation);
     }
 
     [Fact]
@@ -654,6 +773,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
         Assert.Contains("not HTTPS", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("unsupported.example.test/account", viewModel.NavigationStatus, StringComparison.Ordinal);
+        Assert.True(viewModel.HasBrowserLocationProblem);
     }
 
     [Fact]
@@ -674,6 +794,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
         Assert.Contains("local, private", viewModel.NavigationStatus, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("private.example.test/account", viewModel.NavigationStatus, StringComparison.Ordinal);
+        Assert.True(viewModel.HasBrowserLocationProblem);
     }
 
     [Fact]

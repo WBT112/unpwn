@@ -3,14 +3,16 @@ using System.Runtime.InteropServices;
 namespace Unpwn.App.Services;
 
 /// <summary>
-/// Temporarily exposes the X11 GDK backend while Avalonia.Controls.WebView initializes
-/// WebKitGTK on Linux. The offscreen/compositor host removes the XID-parent dependency,
-/// but WebKitGTK 12.1 still initializes through GTK's X11 GDK backend.
+/// Applies process-wide GTK/WebKit compatibility settings only while the Linux browser adapter
+/// initializes. GTK requires its X11 backend alongside Avalonia's X11 window, and disabling the
+/// DMABUF renderer avoids blank WebKitGTK surfaces on unsupported GBM graphics stacks.
 /// </summary>
 internal sealed partial class LinuxGtkWebViewInitializationScope : IDisposable
 {
     private readonly string? _previousBackend;
-    private readonly bool _changed;
+    private readonly string? _previousDmaBufRenderer;
+    private readonly bool _backendChanged;
+    private readonly bool _dmaBufRendererChanged;
     private bool _disposed;
 
     private LinuxGtkWebViewInitializationScope()
@@ -21,23 +23,22 @@ internal sealed partial class LinuxGtkWebViewInitializationScope : IDisposable
         }
 
         var current = Environment.GetEnvironmentVariable("GDK_BACKEND");
-        if (string.IsNullOrWhiteSpace(current) ||
-            string.Equals(current, "x11", StringComparison.Ordinal))
+        if (!string.Equals(current, "x11", StringComparison.Ordinal) &&
+            setenv("GDK_BACKEND", "x11", overwrite: 1) == 0)
         {
-            return;
+            _previousBackend = current;
+            _backendChanged = true;
+            Environment.SetEnvironmentVariable("GDK_BACKEND", "x11");
         }
 
-        // Environment.SetEnvironmentVariable alone is insufficient here: GTK reads the native
-        // process environment. Keep managed and native views synchronized for the duration of
-        // WebKitGTK initialization, matching the upstream WebView 12.1 ForceX11GdkBackend behavior.
-        if (setenv("GDK_BACKEND", "x11", overwrite: 1) != 0)
+        var dmaBufRenderer = Environment.GetEnvironmentVariable("WEBKIT_DISABLE_DMABUF_RENDERER");
+        if (!string.Equals(dmaBufRenderer, "1", StringComparison.Ordinal) &&
+            setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", overwrite: 1) == 0)
         {
-            return;
+            _previousDmaBufRenderer = dmaBufRenderer;
+            _dmaBufRendererChanged = true;
+            Environment.SetEnvironmentVariable("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
         }
-
-        _previousBackend = current;
-        _changed = true;
-        Environment.SetEnvironmentVariable("GDK_BACKEND", "x11");
     }
 
     internal static LinuxGtkWebViewInitializationScope Enter() => new();
@@ -50,14 +51,13 @@ internal sealed partial class LinuxGtkWebViewInitializationScope : IDisposable
         }
         _disposed = true;
 
-        if (!_changed || _previousBackend is null)
-        {
-            return;
-        }
-
         try
         {
-            _ = setenv("GDK_BACKEND", _previousBackend, overwrite: 1);
+            Restore("GDK_BACKEND", _previousBackend, _backendChanged);
+            Restore(
+                "WEBKIT_DISABLE_DMABUF_RENDERER",
+                _previousDmaBufRenderer,
+                _dmaBufRendererChanged);
         }
         catch (DllNotFoundException)
         {
@@ -65,10 +65,30 @@ internal sealed partial class LinuxGtkWebViewInitializationScope : IDisposable
         catch (EntryPointNotFoundException)
         {
         }
+    }
 
-        Environment.SetEnvironmentVariable("GDK_BACKEND", _previousBackend);
+    private static void Restore(string name, string? previousValue, bool changed)
+    {
+        if (!changed)
+        {
+            return;
+        }
+
+        if (previousValue is null)
+        {
+            _ = unsetenv(name);
+        }
+        else
+        {
+            _ = setenv(name, previousValue, overwrite: 1);
+        }
+
+        Environment.SetEnvironmentVariable(name, previousValue);
     }
 
     [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
     private static partial int setenv(string name, string value, int overwrite);
+
+    [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial int unsetenv(string name);
 }

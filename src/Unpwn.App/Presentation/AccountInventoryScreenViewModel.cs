@@ -46,6 +46,7 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private AccountInventoryOption<AccountInventoryFilter>? _selectedFilter;
     private AccountInventoryOption<AccountInventorySort>? _selectedSort;
     private Guid? _editingAccountId;
+    private Guid? _requestedAccountId;
     private string _providerId = string.Empty;
     private string _accountName = string.Empty;
     private string _loginIdentifier = string.Empty;
@@ -271,6 +272,17 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public override void Activate() => RefreshFromService();
 
+    public void Activate(Guid? accountId)
+    {
+        _requestedAccountId = accountId;
+        if (accountId is not null && SelectedFilter?.Value != AccountInventoryFilter.All)
+        {
+            SelectedFilter = Filters.Single(option => option.Value == AccountInventoryFilter.All);
+        }
+
+        RefreshFromService();
+    }
+
     protected override void RefreshLocalization()
     {
         var category = SelectedCategory?.Value;
@@ -320,7 +332,8 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
     private void RefreshFromService()
     {
         CaptureInventoryProjection();
-        var selectedId = _editingAccountId;
+        var requestedId = _requestedAccountId;
+        var selectedId = requestedId ?? _editingAccountId;
         OnPropertyChanged(nameof(IsLocked));
         OnPropertyChanged(nameof(IsCorrupted));
         OnPropertyChanged(nameof(CanMutate));
@@ -353,9 +366,12 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         var previous = selectedId is null
             ? null
             : Accounts.FirstOrDefault(item => item.Id == selectedId);
-        SelectedAccount = previous?.Account.RequiresCategoryReview == true
-            ? previous
-            : requiredReview ?? previous ?? first;
+        SelectedAccount = requestedId is not null
+            ? previous ?? requiredReview ?? first
+            : previous?.Account.RequiresCategoryReview == true
+                ? previous
+                : requiredReview ?? previous ?? first;
+        _requestedAccountId = null;
         NotifyState();
         RaiseCommandStates();
     }

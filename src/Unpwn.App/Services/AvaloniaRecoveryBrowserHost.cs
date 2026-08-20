@@ -1,26 +1,44 @@
 using System.Diagnostics.CodeAnalysis;
 using Avalonia.Controls;
+using Avalonia.Platform;
 using Unpwn.Application.Recovery;
 
 namespace Unpwn.App.Services;
 
 public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposable
 {
-    private readonly NativeWebView _webView;
+    private readonly IRecoveryBrowserControl _webView;
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
     private RecoveryBrowserSecurityBoundary? _boundary;
     private IRecoveryBrowserPlatformAdapter? _platformAdapter;
     private TaskCompletionSource _platformReleased = CompletedRelease();
     private RecoveryBrowserHostSnapshot _snapshot = ClosedSnapshot;
     private RecoveryBrowserContentMode? _contentMode;
+    private bool _isClosingSurface;
+    private bool _surfaceClosingRaised;
 
     public AvaloniaRecoveryBrowserHost(NativeWebView webView)
-        : this(webView, RecoveryBrowserPlatformAdapter.Create)
+        : this(new EmbeddedRecoveryBrowserControl(webView), RecoveryBrowserPlatformAdapter.Create)
     {
     }
 
     internal AvaloniaRecoveryBrowserHost(
         NativeWebView webView,
+        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
+        : this(new EmbeddedRecoveryBrowserControl(webView), platformAdapterFactory)
+    {
+    }
+
+    internal AvaloniaRecoveryBrowserHost(
+        NativeWebDialog dialog,
+        TopLevel owner,
+        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
+        : this(new DialogRecoveryBrowserControl(dialog, owner), platformAdapterFactory)
+    {
+    }
+
+    private AvaloniaRecoveryBrowserHost(
+        IRecoveryBrowserControl webView,
         Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
     {
         _webView = webView ?? throw new ArgumentNullException(nameof(webView));
@@ -32,11 +50,20 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         _webView.NavigationStarted += WebView_OnNavigationStarted;
         _webView.NavigationCompleted += WebView_OnNavigationCompleted;
         _webView.NewWindowRequested += WebView_OnNewWindowRequested;
+        _webView.Closing += WebView_OnClosing;
     }
 
     public event EventHandler<RecoveryBrowserHostSnapshot>? SnapshotChanged;
 
+    internal event EventHandler? SurfaceClosing;
+
     public RecoveryBrowserHostSnapshot Snapshot => _snapshot;
+
+    internal bool IsEmbedded => _webView.IsEmbedded;
+
+    internal Control? EmbeddedControl => _webView.EmbeddedControl;
+
+    internal IPlatformHandle? TryGetPlatformHandle() => _webView.TryGetPlatformHandle();
 
     public bool Start(RecoveryBrowserHostRequest request)
     {
@@ -57,14 +84,20 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
 
         _platformAdapter = _platformAdapterFactory(request.ProfileDataPath);
         _platformAdapter.SecurityEvent += PlatformAdapter_OnSecurityEvent;
-        _webView.IsVisible = true;
         _boundary = boundary;
         _contentMode = request.ContentMode;
+        _surfaceClosingRaised = false;
         Publish(_snapshot with
         {
             State = RecoveryBrowserHostState.Starting,
             LastSecurityEvent = RecoveryBrowserSecurityEventCode.None,
         });
+        _webView.Show();
+        if (_snapshot.State == RecoveryBrowserHostState.Unavailable)
+        {
+            return false;
+        }
+
         return Navigate(request.Handoff.Destination);
     }
 
@@ -213,7 +246,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         _platformAdapter = null;
         _boundary = null;
         _contentMode = null;
-        _webView.IsVisible = false;
+        HideSurface();
         Publish(ClosedSnapshot);
     }
 
@@ -226,6 +259,8 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         _webView.NavigationStarted -= WebView_OnNavigationStarted;
         _webView.NavigationCompleted -= WebView_OnNavigationCompleted;
         _webView.NewWindowRequested -= WebView_OnNewWindowRequested;
+        _webView.Closing -= WebView_OnClosing;
+        _webView.Dispose();
     }
 
     private RecoveryBrowserCredentialAssistanceResult? ValidateCredentialContract(
@@ -288,7 +323,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         if (_platformAdapter is { IsConfigured: false })
         {
             _webView.Stop();
-            _webView.IsVisible = false;
+            HideSurface();
             Publish(_snapshot with
             {
                 State = RecoveryBrowserHostState.Unavailable,
@@ -299,8 +334,14 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
 
     private void WebView_OnAdapterDestroyed(object? sender, WebViewAdapterEventArgs args)
     {
+        var closeWasRequested = _isClosingSurface;
+        _isClosingSurface = false;
         _platformAdapter?.Attach(null);
         _platformReleased.TrySetResult();
+        if (!_webView.IsEmbedded && !closeWasRequested)
+        {
+            NotifySurfaceClosing();
+        }
     }
 
     private void WebView_OnNavigationStarted(
@@ -321,13 +362,14 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
             return;
         }
 
-        Publish(_snapshot with
-        {
-            Source = args.Request,
-            VisibleOrigin = decision.VisibleOrigin,
-            CanGoBack = _webView.CanGoBack,
-            CanGoForward = _webView.CanGoForward,
-        });
+        // WebKitGTK raises NavigationStarted through a synchronous dispatch from its GLib thread.
+        // Querying the adapter from this callback would synchronously dispatch back to that same
+        // thread and deadlock both dispatchers. Preserve the last completed history capabilities;
+        // NavigationCompleted refreshes them after the GLib callback has returned.
+        Publish(CreateNavigationStartedSnapshot(
+            _snapshot,
+            args.Request,
+            decision.VisibleOrigin));
     }
 
     private void WebView_OnNavigationCompleted(
@@ -343,7 +385,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
         if (!decision.IsAllowed)
         {
             _webView.Stop();
-            _webView.IsVisible = false;
+            HideSurface();
             PublishSecurityEvent(MapNavigationDecision(decision.Code));
             return;
         }
@@ -376,10 +418,39 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
             RecoveryBrowserSecurityEventCode.PlatformHardeningUnavailable)
         {
             _webView.Stop();
-            _webView.IsVisible = false;
+            HideSurface();
         }
 
         PublishSecurityEvent(code);
+    }
+
+    private void WebView_OnClosing(object? sender, EventArgs args)
+    {
+        if (!_isClosingSurface)
+        {
+            NotifySurfaceClosing();
+        }
+    }
+
+    private void NotifySurfaceClosing()
+    {
+        if (_surfaceClosingRaised)
+        {
+            return;
+        }
+
+        _surfaceClosingRaised = true;
+        SurfaceClosing?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void HideSurface()
+    {
+        _isClosingSurface = true;
+        _webView.Hide();
+        if (_webView.IsEmbedded)
+        {
+            _isClosingSurface = false;
+        }
     }
 
     private void PublishSecurityEvent(RecoveryBrowserSecurityEventCode code) =>
@@ -399,6 +470,15 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
             RecoveryBrowserBoundaryDecisionCode.ExternalProtocolDenied =>
                 RecoveryBrowserSecurityEventCode.ExternalProtocolBlocked,
             _ => RecoveryBrowserSecurityEventCode.UnsafeNavigationBlocked,
+        };
+
+    internal static RecoveryBrowserHostSnapshot CreateNavigationStartedSnapshot(
+        RecoveryBrowserHostSnapshot snapshot,
+        Uri source,
+        string? visibleOrigin) => snapshot with
+        {
+            Source = source,
+            VisibleOrigin = visibleOrigin,
         };
 
     private static RecoveryBrowserHostSnapshot ClosedSnapshot { get; } = new(

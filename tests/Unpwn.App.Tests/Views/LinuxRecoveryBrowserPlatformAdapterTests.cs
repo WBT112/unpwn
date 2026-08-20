@@ -58,6 +58,46 @@ public sealed class LinuxRecoveryBrowserPlatformAdapterTests
     }
 
     [Fact]
+    public void GtkDialogEnvironmentKeepsSessionEphemeralWithoutExperimentalOffscreenRendering()
+    {
+        var profilePath = CreateProfilePath();
+        try
+        {
+            using var adapter = new LinuxRecoveryBrowserPlatformAdapter(
+                profilePath,
+                useGtkOffscreen: false);
+            var args = (GtkWebViewEnvironmentRequestedEventArgs)
+                RuntimeHelpers.GetUninitializedObject(
+                    typeof(GtkWebViewEnvironmentRequestedEventArgs));
+
+            adapter.ConfigureEnvironment(args);
+
+            Assert.True(args.EphemeralDataManager);
+            Assert.False(args.ExperimentalOffscreen);
+            Assert.True(args.DisableCache);
+            Assert.False(args.EnableDevTools);
+        }
+        finally
+        {
+            DeleteProfilePath(profilePath);
+        }
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(false, false, false)]
+    public void DialogFallbackIsLimitedToLinuxWithoutWpe(
+        bool isLinux,
+        bool isWpeAvailable,
+        bool expected)
+    {
+        Assert.Equal(
+            expected,
+            LinuxRecoveryBrowserRuntime.ShouldUseDialogFallback(isLinux, isWpeAvailable));
+    }
+
+    [Fact]
     public void GtkHandleTypeIsRecognizedWithoutTreatingItAsWpe()
     {
         using var adapter = new LinuxRecoveryBrowserPlatformAdapter(CreateProfilePath());

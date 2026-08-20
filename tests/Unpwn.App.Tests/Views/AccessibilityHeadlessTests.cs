@@ -234,6 +234,7 @@ public sealed class AccessibilityHeadlessTests
             var browserWorkspace = FindByAutomationId(view, "workflow-browser-workspace");
             Assert.True(Assert.IsType<Control>(browserWorkspace, exactMatch: false).Focusable);
             Assert.NotNull(FindByAutomationId(view, "workflow-open-external-fallback"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-review-account-details"));
             Assert.NotNull(FindByAutomationId(view, "workflow-criteria-acknowledge"));
             Assert.NotNull(FindByAutomationId(view, "workflow-done"));
             Assert.NotNull(FindByAutomationId(view, "workflow-cannot-continue"));
