@@ -155,6 +155,52 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task DeferringActiveAccountPreservesExecutionAndProjectsNextOutstandingAccount()
+    {
+        var fixture = new Fixture(includeSecondAccount: true);
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        var executionRevision = fixture.Execution.State!.Revision;
+        var actionId = viewModel.SelectedAction!.DefinitionId;
+        var returned = new List<WorkflowOverviewReturnRequest>();
+        viewModel.OverviewReturnRequested += (_, request) => returned.Add(request);
+
+        Assert.True(viewModel.CanDeferAccount);
+        var outcome = await viewModel.DeferAccountCommand.ExecuteAsync();
+
+        Assert.Equal(AsyncCommandOutcome.Completed, outcome);
+        Assert.Equal(1, fixture.Session.DeferCalls);
+        var deferred = fixture.Session.CurrentSession!.Accounts.Single(account =>
+            account.AccountId == fixture.AccountId);
+        Assert.Equal(1, deferred.DeferralCount);
+        Assert.Equal(AccountRecoveryStatus.Open, deferred.RecoveryStatus);
+        Assert.Equal(executionRevision, fixture.Execution.State.Revision);
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State.GetAction(actionId).Status);
+        Assert.Equal(fixture.SecondAccountId, fixture.Session.Dashboard?.Recommendation.AccountId);
+        Assert.Equal("Workflow.Queue.Deferred", Assert.Single(returned).FeedbackResourceKey);
+    }
+
+    [Fact]
+    public async Task FailedDeferralLeavesWorkflowOpenAndShowsSafeValidation()
+    {
+        var fixture = new Fixture { DeferFailure = RecoverySessionOperationFailureCode.Conflict };
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        var returned = false;
+        viewModel.OverviewReturnRequested += (_, _) => returned = true;
+
+        await viewModel.DeferAccountCommand.ExecuteAsync();
+
+        Assert.False(returned);
+        Assert.True(viewModel.HasValidationMessage);
+        Assert.Contains("changed elsewhere", viewModel.ValidationMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, fixture.Session.CurrentSession!.Accounts.Single().DeferralCount);
+    }
+
+    [Fact]
     public async Task ChecklistConfirmationSurvivesBrowserCloseAndReloadWithoutCompletingAction()
     {
         var fixture = new Fixture();
@@ -844,10 +890,12 @@ public sealed class WorkflowExecutionScreenViewModelTests
     private sealed class Fixture
     {
         private readonly Guid _accountId = Guid.NewGuid();
+        private readonly Guid _secondAccountId = Guid.NewGuid();
 
         public Fixture(
             string providerId = "github.com",
-            string? accountUrl = "https://github.com/settings/security")
+            string? accountUrl = "https://github.com/settings/security",
+            bool includeSecondAccount = false)
         {
             var account = new AccountInventoryEntry(
                 _accountId,
@@ -860,24 +908,46 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 AccountRecoveryCategory.Critical,
                 CategoryConfirmedRevision: 1,
                 StartedAt);
+            var secondAccount = new AccountInventoryEntry(
+                _secondAccountId,
+                "routine.example",
+                "Routine recovery account",
+                "synthetic-user-2",
+                "https://routine.example/account",
+                AccountRecoveryCategory.NonCritical,
+                RepositoryAccountClassificationCatalog.CurrentVersion,
+                AccountRecoveryCategory.NonCritical,
+                CategoryConfirmedRevision: 1,
+                StartedAt);
             var inventory = new AccountInventoryState(
                 Guid.NewGuid(),
                 Revision: 1,
                 StartedAt,
-                [account]);
+                includeSecondAccount ? [account, secondAccount] : [account]);
             Inventory = new TestInventoryService(inventory);
             Session = new TestSessionService(RecoverySessionWorkspace.Create(
                 inventory.SessionId,
                 "Synthetic incident",
                 RecoveryIncidentIntake.Empty,
                 StartedAt).ReplaceAccounts(
-                [DashboardEntry(_accountId, providerId)],
+                includeSecondAccount
+                    ?
+                    [
+                        DashboardEntry(_accountId, providerId, AccountRecoveryCategory.Critical),
+                        DashboardEntry(
+                            _secondAccountId,
+                            secondAccount.ProviderId,
+                            AccountRecoveryCategory.NonCritical),
+                    ]
+                    : [DashboardEntry(_accountId, providerId, AccountRecoveryCategory.Critical)],
                 StartedAt.AddMinutes(1)));
         }
 
         public ResourceLocalizationService Localization { get; } = new(CultureInfo.GetCultureInfo("en"));
 
         public Guid AccountId => _accountId;
+
+        public Guid SecondAccountId => _secondAccountId;
 
         public TestInventoryService Inventory { get; }
 
@@ -894,6 +964,11 @@ public sealed class WorkflowExecutionScreenViewModelTests
         public bool Confirm { get; init; }
 
         public int ConfirmationCalls { get; private set; }
+
+        public RecoverySessionOperationFailureCode DeferFailure
+        {
+            init => Session.DeferFailure = value;
+        }
 
         public ExternalNavigationResult ExternalNavigationResult
         {
@@ -918,11 +993,14 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         private static RecoveryAccountDashboardEntry DashboardEntry(
             Guid accountId,
-            string providerId) =>
+            string providerId,
+            AccountRecoveryCategory category) =>
             new(
                 accountId,
                 providerId,
-                AccountCriticality.Critical,
+                category == AccountRecoveryCategory.Critical
+                    ? AccountCriticality.Critical
+                    : AccountCriticality.Routine,
                 AccountRecoveryStatus.Open,
                 RequiredActionsCompleted: 0,
                 RequiredActionsTotal: 0,
@@ -936,7 +1014,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
                 CredentialsAwaitingDeletion: 0,
                 RecommendedActionId: null)
             {
-                Category = AccountRecoveryCategory.Critical,
+                Category = category,
             };
     }
 
@@ -1320,9 +1398,13 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         public RecoverySessionLoadState LoadState => RecoverySessionLoadState.Loaded;
 
-        public RecoverySessionWorkspace? CurrentSession { get; } = workspace;
+        public RecoverySessionWorkspace? CurrentSession { get; private set; } = workspace;
 
         public RecoveryDashboardSnapshot? Dashboard => CurrentSession?.CreateDashboardSnapshot();
+
+        public int DeferCalls { get; private set; }
+
+        public RecoverySessionOperationFailureCode DeferFailure { get; set; }
 
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
@@ -1331,6 +1413,31 @@ public sealed class WorkflowExecutionScreenViewModelTests
         public Task<RecoverySessionOperationResult> PauseAsync(CancellationToken cancellationToken) => Unsupported();
 
         public Task<RecoverySessionOperationResult> ResumeAsync(CancellationToken cancellationToken) => Unsupported();
+
+        public Task<RecoverySessionOperationResult> DeferAccountAsync(
+            Guid accountId,
+            long expectedSessionRevision,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            DeferCalls++;
+            if (DeferFailure != RecoverySessionOperationFailureCode.None)
+            {
+                return Task.FromResult(RecoverySessionOperationResult.Failure(DeferFailure));
+            }
+
+            if (CurrentSession is null || CurrentSession.Revision != expectedSessionRevision)
+            {
+                return Task.FromResult(RecoverySessionOperationResult.Failure(
+                    RecoverySessionOperationFailureCode.Conflict));
+            }
+
+            CurrentSession = CurrentSession.DeferAccount(
+                accountId,
+                CurrentSession.UpdatedAt.AddMinutes(1));
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+            return Task.FromResult(RecoverySessionOperationResult.Success);
+        }
 
         public Task<RecoverySessionOperationResult> ArchiveAsync(CancellationToken cancellationToken) => Unsupported();
 

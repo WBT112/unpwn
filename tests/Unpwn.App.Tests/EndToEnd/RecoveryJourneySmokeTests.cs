@@ -249,6 +249,72 @@ public sealed class RecoveryJourneySmokeTests
 
     [Fact]
     [Trait("Category", "EndToEndSmoke")]
+    public async Task DeferringBitwardenKeepsItUnresolvedAndProjectsTheNextCanonicalAccount()
+    {
+        using var directory = new TemporaryDirectory();
+        var vaultPath = Path.Combine(directory.Path, "deferred-bitwarden.sqlite");
+        Guid bitwardenId;
+        Guid nextAccountId;
+
+        using (var journey = await RecoveryJourney.StartNewAsync(vaultPath, directory.Path))
+        {
+            await journey.CreateSessionAsync();
+            var preview = Preview(
+                "service,account,username,url\n" +
+                "bitwarden,Bitwarden recovery,synthetic-user,https://vault.bitwarden.com/\n" +
+                "netflix,Netflix recovery,synthetic-user,https://www.netflix.com/account\n",
+                new CsvColumnMapping("service", "account", "username", "url", []));
+            Assert.True((await journey.Inventory.ImportAsync(
+                preview.Candidates,
+                ImportDuplicateResolution.SkipDuplicates,
+                CancellationToken.None)).Succeeded);
+
+            Assert.True((await journey.Flow.AdvanceAsync(CancellationToken.None)).Succeeded);
+            Assert.Equal(RecoveryWizardStepId.AccountTriage, journey.Flow.Current.CurrentStep);
+            Assert.True((await journey.Flow.AdvanceAsync(CancellationToken.None)).Succeeded);
+            Assert.Equal(RecoveryWizardStepId.RecoveryOverview, journey.Flow.Current.CurrentStep);
+
+            var bitwarden = journey.Inventory.CurrentInventory!.Accounts.Single(account =>
+                account.ProviderId == "bitwarden");
+            var next = journey.Inventory.CurrentInventory.Accounts.Single(account =>
+                account.ProviderId == "netflix");
+            bitwardenId = bitwarden.Id;
+            nextAccountId = next.Id;
+            Assert.Equal(bitwardenId, journey.Session.Dashboard?.Recommendation.AccountId);
+
+            journey.Tick();
+            var deferred = await journey.Session.DeferAccountAsync(
+                bitwardenId,
+                journey.Session.CurrentSession!.Revision,
+                CancellationToken.None);
+
+            Assert.True(deferred.Succeeded);
+            var deferredEntry = journey.Session.CurrentSession!.Accounts.Single(account =>
+                account.AccountId == bitwardenId);
+            Assert.Equal(1, deferredEntry.DeferralCount);
+            Assert.Equal(AccountRecoveryStatus.Open, deferredEntry.RecoveryStatus);
+            Assert.Equal(nextAccountId, journey.Session.Dashboard?.Recommendation.AccountId);
+            Assert.Equal(NextUserTaskTarget.AccountRecovery, journey.Flow.NextTask.Target);
+            Assert.Equal(nextAccountId, journey.Flow.NextTask.AccountId);
+            var completion = await journey.Completion.ReviewAsync(CancellationToken.None);
+            Assert.Contains(
+                completion.Preflight!.Issues,
+                issue => issue.Kind == RecoveryCompletionIssueKind.DeferredAccount &&
+                    issue.AccountId == bitwardenId);
+            await journey.Vault.LockAsync(CancellationToken.None);
+        }
+
+        using var reopened = await RecoveryJourney.OpenExistingAsync(vaultPath, directory.Path);
+        var persisted = reopened.Session.CurrentSession!.Accounts.Single(account =>
+            account.AccountId == bitwardenId);
+        Assert.Equal(1, persisted.DeferralCount);
+        Assert.Equal(AccountRecoveryStatus.Open, persisted.RecoveryStatus);
+        Assert.Equal(nextAccountId, reopened.Session.Dashboard?.Recommendation.AccountId);
+        Assert.Equal(nextAccountId, reopened.Flow.NextTask.AccountId);
+    }
+
+    [Fact]
+    [Trait("Category", "EndToEndSmoke")]
     public async Task UnsupportedProviderRecoveryWithCredentialAndNotApplicableControlSurvivesRestart()
     {
         using var directory = new TemporaryDirectory();

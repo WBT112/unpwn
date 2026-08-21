@@ -137,6 +137,7 @@
   <data name="Workflow.Queue.Recalculated.Title" xml:space="preserve"><value>Wiederherstellungsreihenfolge aktualisiert</value></data>
   <data name="Workflow.Queue.Changed" xml:space="preserve"><value>Das empfohlene Konto oder die empfohlene Aktion hat sich nach dem erfassten Ergebnis geändert. Prüfe die aktuelle Empfehlung, bevor du fortfährst.</value></data>
   <data name="Workflow.Queue.Unchanged" xml:space="preserve"><value>Die Wiederherstellungsreihenfolge wurde aktualisiert. Die aktuelle Empfehlung bleibt gleich und ungelöste Arbeit bleibt sichtbar.</value></data>
+  <data name="Workflow.Queue.Deferred" xml:space="preserve"><value>Das Konto wurde für diesen Durchlauf hinter andere offene Arbeit verschoben. Nichts wurde als abgeschlossen oder sicher markiert; das zurückgestellte Konto bleibt ungelöst.</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Entsperre einen Vault und lade ein Kontoinventar, bevor du die Kontowiederherstellung beginnst.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>Das ausgewählte Konto ist im verschlüsselten Inventar nicht mehr verfügbar.</value></data>
   <data name="Workflow.Validation.NoSafeRecoveryPath" xml:space="preserve"><value>Für den aktuell bestätigten Kontozustand ist kein sicherer unterstützter Wiederherstellungsweg verfügbar. Das Konto bleibt sichtbar blockiert.</value></data>
@@ -166,6 +167,8 @@
   <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Hat dieser Schritt wirklich funktioniert?</value></data>
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Erledigt</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>Ich kann nicht fortfahren</value></data>
+  <data name="Workflow.Guided.Defer.Title" xml:space="preserve"><value>Möchtest du zuerst an einem anderen Konto arbeiten?</value></data>
+  <data name="Workflow.Guided.Defer.Help" xml:space="preserve"><value>Zurückstellen führt zur neu berechneten Wiederherstellungsreihenfolge zurück. Dieses Konto und alle unfertigen Schritte bleiben ungelöst.</value></data>
   <data name="Workflow.Guided.Credential.Generate" xml:space="preserve"><value>Neues Passwort für diesen Schritt erzeugen</value></data>
   <data name="Workflow.Guided.Authentication.Title" xml:space="preserve"><value>Anmeldung und Prüfung beim Anbieter</value></data>
   <data name="Workflow.Guided.AuthenticationGuidance" xml:space="preserve"><value>Der Anbieter kann deine aktuelle Anmeldung, MFA, einen Passkey, Sicherheitsschlüssel, Wiederherstellungscode, ein CAPTCHA, einen E-Mail-Link oder eine Identitätsprüfung verlangen. Führe diese Prüfungen selbst durch. unpwn speichert oder umgeht sie nicht und leitet keinen Erfolg aus der Seite ab.</value></data>
