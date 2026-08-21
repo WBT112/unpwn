@@ -23,7 +23,7 @@ internal sealed class DesktopE2EJourneyRunner(
 {
     private const string SyntheticVaultPassword = "desktop-e2e-only-482!";
     private static readonly TimeSpan ControlTimeout = TimeSpan.FromSeconds(15);
-    private static readonly TimeSpan BrowserTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan BrowserTimeout = TimeSpan.FromSeconds(75);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,

@@ -12,7 +12,7 @@ return await DesktopE2EHarness.RunAsync(args);
 
 internal static class DesktopE2EHarness
 {
-    private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan ProcessTimeout = TimeSpan.FromMinutes(4);
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,

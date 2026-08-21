@@ -10,7 +10,7 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
     // A first WebView2 startup on a clean Windows profile can exceed ten seconds while the native
     // runtime creates its isolated environment. Keep the wait bounded, but do not tear down the
     // control while that normal cold-start initialization is still completing.
-    private static readonly TimeSpan PlatformActivationTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan PlatformActivationTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan PlatformActivationPollInterval = TimeSpan.FromMilliseconds(25);
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
     private readonly IRecoveryBrowserSessionLifecycle _sessionLifecycle;
