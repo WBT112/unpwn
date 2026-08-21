@@ -92,6 +92,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private readonly IConfirmationDialogService _confirmationDialog;
     private readonly IGeneratedCredentialRepository? _generatedCredentials;
     private readonly IRecoveryBrowserSessionLifecycle? _browserSessions;
+    private readonly RecoveryBrowserContentMode _browserContentMode;
     private Guid? _requestedAccountId;
     private string? _requestedActionId;
     private AccountInventoryEntry? _account;
@@ -126,7 +127,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         IConfirmationDialogService confirmationDialog,
         ILocalizationService localization,
         IGeneratedCredentialRepository? generatedCredentials = null,
-        IRecoveryBrowserSessionLifecycle? browserSessions = null)
+        IRecoveryBrowserSessionLifecycle? browserSessions = null,
+        RecoveryBrowserContentMode browserContentMode = RecoveryBrowserContentMode.Recovery)
         : base(
             AppRoute.Workflow,
             localization,
@@ -144,6 +146,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _confirmationDialog = confirmationDialog ?? throw new ArgumentNullException(nameof(confirmationDialog));
         _generatedCredentials = generatedCredentials;
         _browserSessions = browserSessions;
+        _browserContentMode = browserContentMode;
 
         RefreshCommand = Command(LoadAsync, () => _inventory.CurrentInventory is not null);
         BeginCommand = Command(BeginAsync, () =>
@@ -283,6 +286,15 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         get => _selectedAction;
         set
         {
+            // Avalonia clears a ListBox selection while replacing its ItemsSource. The advanced
+            // action list is two-way bound, so that transient null must not erase the canonical
+            // current action selected by RefreshActions. A loaded workflow always has exactly one
+            // current action; RefreshActions clears the backing field directly when none exists.
+            if (value is null && _actions.Length > 0)
+            {
+                return;
+            }
+
             if (!SetProperty(ref _selectedAction, value))
             {
                 return;
@@ -1079,7 +1091,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         var request = new RecoveryBrowserWorkspaceRequest(
             _account.Id,
             handoff,
-            RecoveryBrowserContentMode.Recovery);
+            _browserContentMode);
         var handler = RecoveryBrowserRequested;
         if (handler is null)
         {

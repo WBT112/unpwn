@@ -27,6 +27,8 @@ public partial class WorkflowExecutionView : AccessibleScreen
         DataContextChanged += WorkflowExecutionView_OnDataContextChanged;
     }
 
+    internal RecoveryBrowserView? RecoveryBrowser => _browserView;
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -109,7 +111,8 @@ public partial class WorkflowExecutionView : AccessibleScreen
                 viewModel.BrowserSessions,
                 RecoveryBrowserPlatformAdapter.Create,
                 allowLinuxDialogFallback: true,
-                dialogOwner: owner);
+                dialogOwner: owner,
+                applicationDataRoot: global::Unpwn.App.Program.DesktopE2E?.DataRoot);
             _browserView.SessionClosed += BrowserView_OnSessionClosed;
             BrowserWorkspaceHost.Content = _browserView;
         }

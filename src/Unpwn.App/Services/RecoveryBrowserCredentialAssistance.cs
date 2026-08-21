@@ -126,7 +126,7 @@ public sealed class RepositoryRecoveryBrowserCredentialAssistanceCatalog
         // added as an explicit repository-reviewed adapter rather than inferred from arbitrary DOM.
         if (contentMode != RecoveryBrowserContentMode.SyntheticTest ||
             !string.Equals(providerId, "synthetic", StringComparison.OrdinalIgnoreCase) ||
-            !string.Equals(actionDefinitionId, "change-password", StringComparison.Ordinal) ||
+            actionDefinitionId is not ("change-password" or "reset-password") ||
             !handoff.Destination.IsLoopback)
         {
             return false;
@@ -134,7 +134,7 @@ public sealed class RepositoryRecoveryBrowserCredentialAssistanceCatalog
 
         contract = new RecoveryBrowserCredentialInsertionContract(
             "synthetic",
-            "change-password",
+            actionDefinitionId,
             RecoveryBrowserContentMode.SyntheticTest,
             [.. handoff.ExpectedOrigins],
             "body[data-unpwn-provider='synthetic'][data-unpwn-workflow='password-change']",

@@ -14,6 +14,7 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
     private readonly bool _ownsSessionLifecycle;
     private readonly bool _allowLinuxDialogFallback;
     private readonly TopLevel? _dialogOwner;
+    private readonly string _applicationDataRoot;
     private AvaloniaRecoveryBrowserHost? _host;
     private RecoveryBrowserSession? _session;
 
@@ -40,7 +41,8 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
         bool ownsSessionLifecycle = false,
         bool allowLinuxDialogFallback = false,
-        TopLevel? dialogOwner = null)
+        TopLevel? dialogOwner = null,
+        string? applicationDataRoot = null)
     {
         _sessionLifecycle = sessionLifecycle ??
             throw new ArgumentNullException(nameof(sessionLifecycle));
@@ -49,6 +51,9 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         _ownsSessionLifecycle = ownsSessionLifecycle;
         _allowLinuxDialogFallback = allowLinuxDialogFallback;
         _dialogOwner = dialogOwner;
+        _applicationDataRoot = Path.GetFullPath(
+            applicationDataRoot ??
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
         InitializeComponent();
         _sessionLifecycle.StateChanged += SessionLifecycle_OnStateChanged;
         UpdateSnapshot(null);
@@ -61,6 +66,10 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
 
     public RecoveryBrowserSessionLifecycleSnapshot SessionSnapshot =>
         _sessionLifecycle.Current;
+
+    internal bool IsNativeBackendReady => _host?.IsNativeBackendReady == true;
+
+    internal string NativeBackendStatus => _host?.NativeBackendStatus ?? "not-created";
 
     public async Task<bool> StartAsync(
         RecoveryBrowserSessionStartRequest request,
@@ -143,8 +152,12 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
                     CanUserResize = true,
                 },
                 owner!,
-                RecoveryBrowserPlatformAdapter.CreateDialog)
-            : new AvaloniaRecoveryBrowserHost(new NativeWebView(), _platformAdapterFactory);
+                RecoveryBrowserPlatformAdapter.CreateDialog,
+                _applicationDataRoot)
+            : new AvaloniaRecoveryBrowserHost(
+                new NativeWebView(),
+                _platformAdapterFactory,
+                _applicationDataRoot);
         host.SnapshotChanged += Host_OnSnapshotChanged;
         host.SurfaceClosing += Host_OnSurfaceClosing;
         try

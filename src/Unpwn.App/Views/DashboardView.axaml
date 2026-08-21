@@ -66,7 +66,8 @@
                          Text="{DynamicResource Dashboard.Intake.Indicators.Title}" />
               <TextBlock Text="{DynamicResource Dashboard.Intake.Indicators.Help}"
                          TextWrapping="Wrap" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Indicator.CompromisedRecovery}"
+              <CheckBox AutomationProperties.AutomationId="dashboard-compromised-recovery"
+                        Content="{DynamicResource Dashboard.Intake.Indicator.CompromisedRecovery}"
                         IsChecked="{Binding CompromisedRecoveryChannel, Mode=TwoWay}" />
               <TextBlock Text="{DynamicResource Dashboard.Intake.SkipHint}"
                          TextWrapping="Wrap" />
@@ -80,7 +81,8 @@
               <TextBlock Text="{DynamicResource Dashboard.Intake.SecurityWarning}"
                          TextWrapping="Wrap"
                          FontWeight="SemiBold" />
-              <CheckBox Content="{DynamicResource Dashboard.Intake.Acknowledge}"
+              <CheckBox AutomationProperties.AutomationId="dashboard-security-acknowledge"
+                        Content="{DynamicResource Dashboard.Intake.Acknowledge}"
                         IsChecked="{Binding SecurityWarningAcknowledged, Mode=TwoWay}" />
             </StackPanel>
           </Border>
@@ -98,7 +100,8 @@
                        TextWrapping="Wrap" />
           </Border>
 
-          <Button Content="{DynamicResource Dashboard.Intake.Create}"
+          <Button AutomationProperties.AutomationId="dashboard-create-session"
+                  Content="{DynamicResource Dashboard.Intake.Create}"
                   Command="{Binding CreateSessionCommand}"
                   HorizontalAlignment="Left" />
         </StackPanel>

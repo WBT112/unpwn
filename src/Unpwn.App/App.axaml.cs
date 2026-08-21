@@ -2,10 +2,12 @@ using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
 using Unpwn.Application.Diagnostics;
+using Unpwn.Application.Recovery;
 using Unpwn.Automation.Recovery;
 using Unpwn.Export.Credentials;
 
@@ -21,21 +23,24 @@ public partial class App : Avalonia.Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
+            var desktopE2E = Program.DesktopE2E;
             MainWindow? mainWindow = null;
             var localization = new ResourceLocalizationService();
             _ = new AvaloniaLocalizationResourceBridge(localization);
             var diagnosticStore = new BoundedSecretSafeDiagnosticStore();
             var diagnostics = new SecretSafeDiagnostics(diagnosticStore);
             var runStateService = new ApplicationRunStateService(
-                new FileApplicationRunMarkerStore(GetRunMarkerPath()),
+                new FileApplicationRunMarkerStore(
+                    desktopE2E?.RunMarkerPath ?? GetRunMarkerPath()),
                 diagnostics);
             var runState = runStateService.Begin();
             var browserSessions = new RecoveryBrowserSessionLifecycle(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+                desktopE2E?.DataRoot ??
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
             var wizard = new RecoveryWizardSessionService();
             var workspaceMutations = new WorkspaceMutationCoordinator();
             var vaultLifecycle = new RecoveryVaultLifecycleService(
-                new JsonRecentVaultStore(),
+                new JsonRecentVaultStore(desktopE2E?.RecentVaultsPath),
                 wizard);
             var resilientRecordStore = new ResilientWorkspaceRecordStore(
                 vaultLifecycle,
@@ -52,7 +57,9 @@ public partial class App : Avalonia.Application
                 resilientRecordStore,
                 recoverySession,
                 workspaceMutations);
-            var locationDiscovery = HttpRecoveryLocationDiscoveryService.CreateDefault();
+            IRecoveryLocationDiscoveryService locationDiscovery = desktopE2E is null
+                ? HttpRecoveryLocationDiscoveryService.CreateDefault()
+                : new DesktopE2ERecoveryLocationDiscoveryService(desktopE2E.PasswordChangeUri);
             var sessionVaultBridge = new RecoverySessionVaultBridge(
                 vaultLifecycle,
                 recoverySession,
@@ -80,7 +87,9 @@ public partial class App : Avalonia.Application
                 diagnostics,
                 applicationVersion: typeof(App).Assembly.GetName().Version?.ToString());
             var settings = new SettingsScreenViewModel(localization, diagnosticExport);
-            var applicationPreferences = FileApplicationPreferences.CreateDefault();
+            var applicationPreferences = desktopE2E is null
+                ? FileApplicationPreferences.CreateDefault()
+                : new FileApplicationPreferences(desktopE2E.PreferencesPath);
             var screenFactory = new AppScreenFactory(
                 confirmationDialog,
                 vaultLifecycle,
@@ -95,7 +104,11 @@ public partial class App : Avalonia.Application
                 credentialClipboard,
                 localization,
                 browserSessions,
-                recoveryFlow);
+                recoveryFlow,
+                desktopE2E is null ? null : new PlatformVaultPathProvider(desktopE2E.DataRoot),
+                desktopE2E is null
+                    ? RecoveryBrowserContentMode.Recovery
+                    : RecoveryBrowserContentMode.SyntheticTest);
             var shell = new ShellViewModel(
                 screenFactory,
                 vaultLifecycle,
@@ -137,7 +150,10 @@ public partial class App : Avalonia.Application
                 settings.Dispose();
                 sessionVaultBridge.Dispose();
                 recoveryFlow.Dispose();
-                locationDiscovery.Dispose();
+                if (locationDiscovery is IDisposable disposableLocationDiscovery)
+                {
+                    disposableLocationDiscovery.Dispose();
+                }
                 accountInventory.Dispose();
                 recoverySession.Dispose();
                 workspaceMutations.Dispose();
@@ -148,6 +164,14 @@ public partial class App : Avalonia.Application
             };
             desktop.MainWindow = mainWindow;
             _ = InitializeVaultReferencesAsync(vaultLifecycle, diagnostics);
+            if (desktopE2E is not null)
+            {
+                AttachDesktopE2ERunner(
+                    desktop,
+                    mainWindow,
+                    desktopE2E,
+                    browserSessions);
+            }
         }
 
         base.OnFrameworkInitializationCompleted();
@@ -177,4 +201,29 @@ public partial class App : Avalonia.Application
         "unpwn",
         "run-state",
         "active.marker");
+
+    private static void AttachDesktopE2ERunner(
+        IClassicDesktopStyleApplicationLifetime desktop,
+        MainWindow mainWindow,
+        DesktopE2EConfiguration configuration,
+        IRecoveryBrowserSessionLifecycle browserSessions)
+    {
+        void run(object? sender, EventArgs eventArgs)
+        {
+            mainWindow.Opened -= run;
+            Dispatcher.UIThread.Post(
+                async () =>
+                {
+                    var succeeded = await new DesktopE2EJourneyRunner(
+                        desktop,
+                        mainWindow,
+                        configuration,
+                        browserSessions).RunAsync();
+                    desktop.Shutdown(succeeded ? 0 : 1);
+                },
+                DispatcherPriority.Background);
+        }
+
+        mainWindow.Opened += run;
+    }
 }

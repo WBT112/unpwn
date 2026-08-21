@@ -204,19 +204,23 @@
                    Text="{DynamicResource Vault.Create.DefaultPathHint}"
                    TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Vault.Create.Password}" />
-        <TextBox Text="{Binding CreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+        <TextBox AutomationProperties.AutomationId="vault-create-password"
+                 Text="{Binding CreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding CreatePasswordCharacter}" />
         <TextBlock FontSize="12" Opacity="0.78" Text="{Binding CreatePasswordGuidance}" TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Vault.Create.ConfirmPassword}" />
-        <TextBox Text="{Binding ConfirmCreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+        <TextBox AutomationProperties.AutomationId="vault-create-password-confirm"
+                 Text="{Binding ConfirmCreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding CreatePasswordCharacter}" />
         <CheckBox AutomationProperties.AutomationId="vault-create-reveal-passwords"
                   IsChecked="{Binding IsCreatePasswordRevealed, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Create.Reveal}" />
-        <CheckBox IsChecked="{Binding AcknowledgesNonRecoverability, Mode=TwoWay}"
+        <CheckBox AutomationProperties.AutomationId="vault-create-acknowledge"
+                  IsChecked="{Binding AcknowledgesNonRecoverability, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Create.NonRecoverable}" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding CreateVaultCommand}"
+          <Button AutomationProperties.AutomationId="vault-create-submit"
+                  Command="{Binding CreateVaultCommand}"
                   Content="{DynamicResource Vault.Create.Submit}" />
           <Button Command="{Binding BackToVaultChoiceCommand}"
                   Content="{DynamicResource Vault.Create.Back}" />

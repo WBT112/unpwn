@@ -209,6 +209,23 @@ public sealed class RecoveryBrowserCredentialAssistanceTests
         Assert.Null(contract);
     }
 
+    [Theory]
+    [InlineData("change-password")]
+    [InlineData("reset-password")]
+    public void CatalogOffersOnlyExplicitSyntheticPasswordActions(string actionDefinitionId)
+    {
+        var handoff = Handoff(new Uri("http://127.0.0.1:43305/password-change"));
+
+        Assert.True(RepositoryRecoveryBrowserCredentialAssistanceCatalog.Instance.TryResolve(
+            "synthetic",
+            actionDefinitionId,
+            isReviewedProviderWorkflow: false,
+            handoff,
+            RecoveryBrowserContentMode.SyntheticTest,
+            out var contract));
+        Assert.Equal(actionDefinitionId, contract!.ActionDefinitionId);
+    }
+
     private static async Task InstallExpectedPasswordPageAsync(NativeWebView webView) =>
         await webView.InvokeScript(
             "document.body.setAttribute('data-unpwn-provider','synthetic');" +

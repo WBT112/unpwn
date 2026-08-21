@@ -47,6 +47,7 @@ public sealed class ProjectDependencyTests
             .Append("Unpwn.Application.Tests")
             .Append("Unpwn.Automation.Tests")
             .Append("Unpwn.Core.Tests")
+            .Append("Unpwn.DesktopE2E")
             .Append("Unpwn.Export.Tests")
             .Append("Unpwn.Import.Tests")
             .Append("Unpwn.ProviderSmokeChecks")
@@ -114,6 +115,18 @@ public sealed class ProjectDependencyTests
             .ToArray();
 
         Assert.Equal(["Unpwn.Automation", "Unpwn.Providers"], actualReferences);
+    }
+
+    [Fact]
+    public void DesktopE2EHarnessDoesNotBypassTheUiThroughProductReferences()
+    {
+        var project = XDocument.Load(Path.Combine(
+            RepositoryRoot,
+            "tools",
+            "Unpwn.DesktopE2E",
+            "Unpwn.DesktopE2E.csproj"));
+
+        Assert.Empty(project.Descendants("ProjectReference"));
     }
 
     private static string RepositoryRoot { get; } = FindRepositoryRoot();

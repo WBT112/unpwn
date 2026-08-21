@@ -40,6 +40,20 @@ public partial class CsvImportView : AccessibleScreen
 
     private async void OpenCsvButton_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
+        if (global::Unpwn.App.Program.DesktopE2E is { } desktopE2E)
+        {
+            await LoadCsvAsync(
+                Path.GetFileName(desktopE2E.CsvFixturePath),
+                () => Task.FromResult<Stream>(new FileStream(
+                    desktopE2E.CsvFixturePath,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    bufferSize: 4096,
+                    useAsync: true)));
+            return;
+        }
+
         var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
         if (storageProvider is null)
         {

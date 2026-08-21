@@ -36,6 +36,9 @@ dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
 dotnet test unpwn.slnx --configuration Release --no-build --filter "Category=SecurityRegression"
 ```
 
+The real desktop/native-browser journey has additional platform prerequisites and commands documented
+under [Packaged desktop end-to-end journey](docs/TESTING.md#6-packaged-desktop-end-to-end-journey).
+
 The authoritative CI, synthetic-provider, Recovery Browser, artifact, and secret-scanning rules are in [Testing Strategy](docs/TESTING.md). The blocking security gates and exception process are documented in [Security CI Gates](docs/SECURITY_GATES.md).
 
 ## Security-gate changes

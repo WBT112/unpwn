@@ -92,7 +92,9 @@ public sealed class AppScreenFactory : IScreenFactory
         ICredentialClipboardService credentialClipboard,
         ILocalizationService localization,
         IRecoveryBrowserSessionLifecycle? browserSessions = null,
-        IRecoveryFlowService? recoveryFlow = null)
+        IRecoveryFlowService? recoveryFlow = null,
+        IVaultPathProvider? vaultPathProvider = null,
+        RecoveryBrowserContentMode browserContentMode = RecoveryBrowserContentMode.Recovery)
         : this(
             confirmationDialog,
             vaultLifecycle,
@@ -109,7 +111,9 @@ public sealed class AppScreenFactory : IScreenFactory
             functionalWorkflow: true,
             functionalCredentials: true,
             browserSessions: browserSessions,
-            recoveryFlow: recoveryFlow)
+            recoveryFlow: recoveryFlow,
+            vaultPathProvider: vaultPathProvider,
+            browserContentMode: browserContentMode)
     {
     }
 
@@ -129,7 +133,9 @@ public sealed class AppScreenFactory : IScreenFactory
         bool functionalWorkflow = false,
         bool functionalCredentials = false,
         IRecoveryBrowserSessionLifecycle? browserSessions = null,
-        IRecoveryFlowService? recoveryFlow = null)
+        IRecoveryFlowService? recoveryFlow = null,
+        IVaultPathProvider? vaultPathProvider = null,
+        RecoveryBrowserContentMode browserContentMode = RecoveryBrowserContentMode.Recovery)
     {
         ArgumentNullException.ThrowIfNull(confirmationDialog);
         ArgumentNullException.ThrowIfNull(vaultLifecycle);
@@ -144,7 +150,8 @@ public sealed class AppScreenFactory : IScreenFactory
                 vaultLifecycle,
                 wizard,
                 confirmationDialog,
-                localization),
+                localization,
+                vaultPathProvider: vaultPathProvider),
             [AppRoute.Dashboard] = new DashboardScreenViewModel(
                 recoverySession,
                 vaultLifecycle,
@@ -165,7 +172,8 @@ public sealed class AppScreenFactory : IScreenFactory
                     confirmationDialog,
                     localization,
                     functionalCredentials ? credentialRepository : null,
-                    browserSessions)
+                    browserSessions,
+                    browserContentMode)
                 : new PlaceholderScreenViewModel(
                     AppRoute.Workflow,
                     localization,

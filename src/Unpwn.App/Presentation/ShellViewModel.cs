@@ -357,7 +357,10 @@ public sealed class ShellViewModel : ObservableObject
         var currentRoute = SelectedNavigation.Route;
         _navigationItems = BuildNavigationItems();
         var selected = _navigationItems.Single(item => item.Route == currentRoute);
-        if (!selected.IsEnabled)
+        var workspaceIsLoading =
+            _recoverySession?.LoadState == RecoverySessionLoadState.Loading ||
+            _accountInventory?.LoadState == AccountInventoryLoadState.Loading;
+        if (!selected.IsEnabled && !workspaceIsLoading)
         {
             var fallbackRoute = !IsVaultUnlocked
                 ? AppRoute.VaultEntry

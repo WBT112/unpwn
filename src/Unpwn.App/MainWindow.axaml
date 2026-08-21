@@ -6,6 +6,7 @@
         xmlns:views="using:Unpwn.App.Views"
         x:Class="Unpwn.App.MainWindow"
         x:DataType="vm:ShellViewModel"
+        AutomationProperties.AutomationId="unpwn-main-window"
         mc:Ignorable="d"
         d:DesignWidth="1080"
         d:DesignHeight="720"

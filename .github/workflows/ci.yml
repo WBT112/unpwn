@@ -117,13 +117,36 @@ jobs:
           --results-directory artifacts/test-results
           --logger "trx;LogFilePrefix=${{ runner.os }}"
 
+      - name: Install Linux desktop E2E runtime
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes xvfb libwebkit2gtk-4.1-0
+
+      - name: Complete desktop E2E journey
+        shell: pwsh
+        run: |
+          $app = (Resolve-Path 'src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll').Path
+          $harness = (Resolve-Path 'tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll').Path
+          $artifacts = Join-Path (Get-Location) 'artifacts/desktop-e2e'
+          if ($IsWindows) {
+            dotnet $harness --app $app --artifacts $artifacts
+          } else {
+            xvfb-run --auto-servernum dotnet $harness --app $app --artifacts $artifacts
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Verify test artifacts are secret-safe
         id: secret-scan
         if: always()
         shell: pwsh
         run: |
           $secretMatches = Get-ChildItem artifacts -Recurse -File -ErrorAction SilentlyContinue |
-            Select-String -SimpleMatch 'UNPWN_TEST_SECRET_'
+            Select-String -SimpleMatch -Pattern @(
+              'UNPWN_TEST_SECRET_',
+              'desktop-e2e-only-482!',
+              'synthetic-ignored-value'
+            )
 
           if ($secretMatches) {
             Write-Error 'Synthetic secret markers were found in test artifacts. Artifacts will not be uploaded.'
@@ -139,6 +162,7 @@ jobs:
             artifacts/security-test-results
             artifacts/test-results
             artifacts/coverage
+            artifacts/desktop-e2e
           if-no-files-found: warn
           retention-days: 7
 
@@ -147,6 +171,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: test-results-${{ runner.os }}
-          path: artifacts/test-results
+          path: |
+            artifacts/test-results
+            artifacts/desktop-e2e
           if-no-files-found: warn
           retention-days: 7
