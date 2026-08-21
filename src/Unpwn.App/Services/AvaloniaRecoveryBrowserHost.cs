@@ -262,6 +262,8 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     internal Task WaitForPlatformReleaseAsync(CancellationToken cancellationToken) =>
         _platformReleased.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
 
+    internal IAsyncDisposable? BeginEmbeddedRelease() => _webView.BeginReparenting();
+
     public void Close()
     {
         _webView.Stop();

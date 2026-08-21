@@ -242,10 +242,21 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         }
 
         host.StopLoading();
-        BrowserContent.Content = null;
-        if (!host.IsEmbedded)
+        var releaseScope = host.BeginEmbeddedRelease();
+        try
         {
-            host.Close();
+            BrowserContent.Content = null;
+            if (!host.IsEmbedded)
+            {
+                host.Close();
+            }
+        }
+        finally
+        {
+            if (releaseScope is not null)
+            {
+                await releaseScope.DisposeAsync();
+            }
         }
         await host.WaitForPlatformReleaseAsync(cancellationToken);
         host.SnapshotChanged -= Host_OnSnapshotChanged;
