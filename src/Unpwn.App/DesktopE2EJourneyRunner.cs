@@ -265,6 +265,21 @@ internal sealed class DesktopE2EJourneyRunner(
                     $"criterion-{actionId}");
             }
 
+            if (actionId.StartsWith("document-completion", StringComparison.Ordinal) &&
+                _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Active)
+            {
+                await ClickAsync("recovery-browser-close");
+                await WaitUntilAsync(
+                    () => _browserSessions.Current.State ==
+                        RecoveryBrowserSessionLifecycleState.Idle,
+                    "explicit-browser-session-cleanup",
+                    BrowserTimeout);
+                Record(
+                    "browser-session-cleanup",
+                    "recovery-browser-close",
+                    "passed");
+            }
+
             await ClickAsync("workflow-done");
             await ConfirmDialogAsync();
             await WaitUntilAsync(
