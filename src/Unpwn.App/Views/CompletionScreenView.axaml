@@ -116,7 +116,8 @@
         <TextBlock IsVisible="{Binding IsReadOnly}"
                    Text="{DynamicResource Completion.ReadOnly.Guidance}"
                    TextWrapping="Wrap" />
-        <CheckBox IsVisible="{Binding RequiresRiskAcceptance}"
+        <CheckBox AutomationProperties.AutomationId="completion-accept-risks"
+                  IsVisible="{Binding RequiresRiskAcceptance}"
                   IsEnabled="{Binding !IsReadOnly}"
                   IsChecked="{Binding AcceptUnresolvedRisks}"
                   Content="{DynamicResource Completion.AcceptRisks}" />
@@ -125,7 +126,8 @@
                    TextWrapping="Wrap" />
         <TextBlock Text="{DynamicResource Completion.Credentials.RetainNotice}" TextWrapping="Wrap" />
         <StackPanel IsVisible="{Binding !IsReadOnly}" Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding CompleteCommand}"
+          <Button AutomationProperties.AutomationId="completion-complete"
+                  Command="{Binding CompleteCommand}"
                   Content="{DynamicResource Completion.Complete.Button}" />
           <Button Command="{Binding ArchiveCommand}"
                   Content="{DynamicResource Completion.Archive.Button}" />

@@ -7,13 +7,17 @@ namespace Unpwn.App.Views;
 
 public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBrowserSessionResources
 {
-    private static readonly TimeSpan PlatformActivationTimeout = TimeSpan.FromSeconds(10);
+    // A first WebView2 startup on a clean Windows profile can exceed ten seconds while the native
+    // runtime creates its isolated environment. Keep the wait bounded, but do not tear down the
+    // control while that normal cold-start initialization is still completing.
+    private static readonly TimeSpan PlatformActivationTimeout = TimeSpan.FromSeconds(60);
     private static readonly TimeSpan PlatformActivationPollInterval = TimeSpan.FromMilliseconds(25);
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
     private readonly IRecoveryBrowserSessionLifecycle _sessionLifecycle;
     private readonly bool _ownsSessionLifecycle;
     private readonly bool _allowLinuxDialogFallback;
     private readonly TopLevel? _dialogOwner;
+    private readonly string _applicationDataRoot;
     private AvaloniaRecoveryBrowserHost? _host;
     private RecoveryBrowserSession? _session;
 
@@ -40,7 +44,8 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
         bool ownsSessionLifecycle = false,
         bool allowLinuxDialogFallback = false,
-        TopLevel? dialogOwner = null)
+        TopLevel? dialogOwner = null,
+        string? applicationDataRoot = null)
     {
         _sessionLifecycle = sessionLifecycle ??
             throw new ArgumentNullException(nameof(sessionLifecycle));
@@ -49,6 +54,9 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         _ownsSessionLifecycle = ownsSessionLifecycle;
         _allowLinuxDialogFallback = allowLinuxDialogFallback;
         _dialogOwner = dialogOwner;
+        _applicationDataRoot = Path.GetFullPath(
+            applicationDataRoot ??
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
         InitializeComponent();
         _sessionLifecycle.StateChanged += SessionLifecycle_OnStateChanged;
         UpdateSnapshot(null);
@@ -61,6 +69,10 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
 
     public RecoveryBrowserSessionLifecycleSnapshot SessionSnapshot =>
         _sessionLifecycle.Current;
+
+    internal bool IsNativeBackendReady => _host?.IsNativeBackendReady == true;
+
+    internal string NativeBackendStatus => _host?.NativeBackendStatus ?? "not-created";
 
     public async Task<bool> StartAsync(
         RecoveryBrowserSessionStartRequest request,
@@ -143,8 +155,12 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
                     CanUserResize = true,
                 },
                 owner!,
-                RecoveryBrowserPlatformAdapter.CreateDialog)
-            : new AvaloniaRecoveryBrowserHost(new NativeWebView(), _platformAdapterFactory);
+                RecoveryBrowserPlatformAdapter.CreateDialog,
+                _applicationDataRoot)
+            : new AvaloniaRecoveryBrowserHost(
+                new NativeWebView(),
+                _platformAdapterFactory,
+                _applicationDataRoot);
         host.SnapshotChanged += Host_OnSnapshotChanged;
         host.SurfaceClosing += Host_OnSurfaceClosing;
         try
@@ -226,10 +242,21 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         }
 
         host.StopLoading();
-        BrowserContent.Content = null;
-        if (!host.IsEmbedded)
+        var releaseScope = host.BeginEmbeddedRelease();
+        try
         {
-            host.Close();
+            BrowserContent.Content = null;
+            if (!host.IsEmbedded)
+            {
+                host.Close();
+            }
+        }
+        finally
+        {
+            if (releaseScope is not null)
+            {
+                await releaseScope.DisposeAsync();
+            }
         }
         await host.WaitForPlatformReleaseAsync(cancellationToken);
         host.SnapshotChanged -= Host_OnSnapshotChanged;

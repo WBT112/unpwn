@@ -88,4 +88,6 @@ internal interface IRecoveryBrowserPlatformAdapter : IDisposable
     void Attach(Avalonia.Platform.IPlatformHandle? platformHandle);
 
     Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
+
+    Task WaitForProfileReleaseAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

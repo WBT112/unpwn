@@ -20,6 +20,9 @@ internal abstract class RecoveryBrowserPlatformAdapter(string profileDataPath)
 
     public abstract Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
 
+    public virtual Task WaitForProfileReleaseAsync(CancellationToken cancellationToken) =>
+        Task.CompletedTask;
+
     public abstract void Dispose();
 
     protected void PublishSecurityEvent(RecoveryBrowserSecurityEventCode code) =>
@@ -53,7 +56,11 @@ internal abstract class RecoveryBrowserPlatformAdapter(string profileDataPath)
 internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPath)
     : RecoveryBrowserPlatformAdapter(profileDataPath)
 {
+    private static readonly TimeSpan BrowserProcessExitTimeout = TimeSpan.FromSeconds(15);
     private CoreWebView2? _webView;
+    private CoreWebView2Environment? _environment;
+    private uint _browserProcessId;
+    private TaskCompletionSource _browserProcessExited = CompletedBrowserProcessExit();
 
     private bool _isConfigured;
 
@@ -76,7 +83,7 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
 
     public override void Attach(IPlatformHandle? platformHandle)
     {
-        Detach();
+        DetachWebView();
         _isConfigured = false;
         if (platformHandle is not IWindowsWebView2PlatformHandle webView2Handle ||
             webView2Handle.CoreWebView2 == IntPtr.Zero)
@@ -86,7 +93,13 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
 
         try
         {
+            ResetEnvironmentTracking();
             _webView = CoreWebView2.CreateFromComICoreWebView2(webView2Handle.CoreWebView2);
+            _environment = _webView.Environment;
+            _browserProcessId = _webView.BrowserProcessId;
+            _browserProcessExited = new TaskCompletionSource(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            _environment.BrowserProcessExited += Environment_OnBrowserProcessExited;
             HardenSettings(_webView.Settings);
             _webView.PermissionRequested += WebView_OnPermissionRequested;
             _webView.DownloadStarting += WebView_OnDownloadStarting;
@@ -97,19 +110,26 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
         }
         catch (Exception exception) when (exception is COMException or InvalidOperationException)
         {
-            Detach();
+            DetachWebView();
+            ResetEnvironmentTracking();
         }
     }
 
     public override void Dispose()
     {
-        Detach();
+        DetachWebView();
+        ResetEnvironmentTracking();
         _isConfigured = false;
     }
 
     public override Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
         _webView?.Profile.ClearBrowsingDataAsync().WaitAsync(cancellationToken) ??
         Task.CompletedTask;
+
+    public override Task WaitForProfileReleaseAsync(CancellationToken cancellationToken) =>
+        _environment is null
+            ? Task.CompletedTask
+            : _browserProcessExited.Task.WaitAsync(BrowserProcessExitTimeout, cancellationToken);
 
     internal static void HardenSettings(CoreWebView2Settings settings)
     {
@@ -121,7 +141,7 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
         settings.IsPasswordAutosaveEnabled = false;
     }
 
-    private void Detach()
+    private void DetachWebView()
     {
         if (_webView is null)
         {
@@ -134,6 +154,33 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
         _webView.ServerCertificateErrorDetected -= WebView_OnServerCertificateErrorDetected;
         _webView.ClientCertificateRequested -= WebView_OnClientCertificateRequested;
         _webView = null;
+    }
+
+    private void ResetEnvironmentTracking()
+    {
+        _environment?.BrowserProcessExited -= Environment_OnBrowserProcessExited;
+
+        _environment = null;
+        _browserProcessId = 0;
+        _browserProcessExited.TrySetResult();
+    }
+
+    private void Environment_OnBrowserProcessExited(
+        object? sender,
+        CoreWebView2BrowserProcessExitedEventArgs args)
+    {
+        if (args.BrowserProcessId == _browserProcessId)
+        {
+            _browserProcessExited.TrySetResult();
+        }
+    }
+
+    private static TaskCompletionSource CompletedBrowserProcessExit()
+    {
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        completion.SetResult();
+        return completion;
     }
 
     private void WebView_OnPermissionRequested(

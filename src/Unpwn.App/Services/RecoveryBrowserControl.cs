@@ -70,6 +70,8 @@ internal interface IRecoveryBrowserControl : IDisposable
     bool Stop();
 
     Task<string?> InvokeScript(string script);
+
+    IAsyncDisposable? BeginReparenting();
 }
 
 internal sealed class EmbeddedRecoveryBrowserControl(NativeWebView webView)
@@ -145,6 +147,8 @@ internal sealed class EmbeddedRecoveryBrowserControl(NativeWebView webView)
     public bool Stop() => _webView.Stop();
 
     public Task<string?> InvokeScript(string script) => _webView.InvokeScript(script);
+
+    public IAsyncDisposable BeginReparenting() => _webView.BeginReparentingAsync();
 
     public void Dispose()
     {
@@ -246,6 +250,8 @@ internal sealed class DialogRecoveryBrowserControl : IRecoveryBrowserControl
     public bool Stop() => _dialog.Stop();
 
     public Task<string?> InvokeScript(string script) => _dialog.InvokeScript(script);
+
+    public IAsyncDisposable? BeginReparenting() => null;
 
     public void Dispose()
     {

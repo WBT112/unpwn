@@ -27,6 +27,8 @@ public partial class WorkflowExecutionView : AccessibleScreen
         DataContextChanged += WorkflowExecutionView_OnDataContextChanged;
     }
 
+    internal RecoveryBrowserView? RecoveryBrowser => _browserView;
+
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
@@ -39,10 +41,24 @@ public partial class WorkflowExecutionView : AccessibleScreen
         RemoveCredentialHandoff();
         if (_browserView is not null)
         {
-            _ = _browserView.CloseSessionAsync();
+            _ = CloseDetachedBrowserSessionAsync(_browserView);
         }
         _subscribedViewModel = null;
         base.OnDetachedFromVisualTree(e);
+    }
+
+    private static async Task CloseDetachedBrowserSessionAsync(RecoveryBrowserView browser)
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        try
+        {
+            await browser.CloseSessionAsync(timeout.Token);
+        }
+        catch (OperationCanceledException) when (timeout.IsCancellationRequested)
+        {
+            // The lifecycle publishes CleanupFailed before propagating cancellation. The shell
+            // keeps that conservative state visible and permits an explicit cleanup retry.
+        }
     }
 
     private void WorkflowExecutionView_OnDataContextChanged(object? sender, EventArgs eventArgs)
@@ -109,7 +125,8 @@ public partial class WorkflowExecutionView : AccessibleScreen
                 viewModel.BrowserSessions,
                 RecoveryBrowserPlatformAdapter.Create,
                 allowLinuxDialogFallback: true,
-                dialogOwner: owner);
+                dialogOwner: owner,
+                applicationDataRoot: global::Unpwn.App.Program.DesktopE2E?.DataRoot);
             _browserView.SessionClosed += BrowserView_OnSessionClosed;
             BrowserWorkspaceHost.Content = _browserView;
         }

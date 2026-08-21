@@ -9,6 +9,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
 {
     private readonly IRecoveryBrowserControl _webView;
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
+    private readonly string _applicationDataRoot;
     private RecoveryBrowserSecurityBoundary? _boundary;
     private IRecoveryBrowserPlatformAdapter? _platformAdapter;
     private TaskCompletionSource _platformReleased = CompletedRelease();
@@ -18,32 +19,47 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     private bool _surfaceClosingRaised;
 
     public AvaloniaRecoveryBrowserHost(NativeWebView webView)
-        : this(new EmbeddedRecoveryBrowserControl(webView), RecoveryBrowserPlatformAdapter.Create)
+        : this(
+            new EmbeddedRecoveryBrowserControl(webView),
+            RecoveryBrowserPlatformAdapter.Create,
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData))
     {
     }
 
     internal AvaloniaRecoveryBrowserHost(
         NativeWebView webView,
-        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
-        : this(new EmbeddedRecoveryBrowserControl(webView), platformAdapterFactory)
+        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
+        string? applicationDataRoot = null)
+        : this(
+            new EmbeddedRecoveryBrowserControl(webView),
+            platformAdapterFactory,
+            applicationDataRoot ??
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData))
     {
     }
 
     internal AvaloniaRecoveryBrowserHost(
         NativeWebDialog dialog,
         TopLevel owner,
-        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
-        : this(new DialogRecoveryBrowserControl(dialog, owner), platformAdapterFactory)
+        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
+        string? applicationDataRoot = null)
+        : this(
+            new DialogRecoveryBrowserControl(dialog, owner),
+            platformAdapterFactory,
+            applicationDataRoot ??
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData))
     {
     }
 
     private AvaloniaRecoveryBrowserHost(
         IRecoveryBrowserControl webView,
-        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory)
+        Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
+        string applicationDataRoot)
     {
         _webView = webView ?? throw new ArgumentNullException(nameof(webView));
         _platformAdapterFactory = platformAdapterFactory ??
             throw new ArgumentNullException(nameof(platformAdapterFactory));
+        _applicationDataRoot = Path.GetFullPath(applicationDataRoot);
         _webView.EnvironmentRequested += WebView_OnEnvironmentRequested;
         _webView.AdapterCreated += WebView_OnAdapterCreated;
         _webView.AdapterDestroyed += WebView_OnAdapterDestroyed;
@@ -60,6 +76,17 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     public RecoveryBrowserHostSnapshot Snapshot => _snapshot;
 
     internal bool IsEmbedded => _webView.IsEmbedded;
+
+    internal bool IsNativeBackendReady =>
+        _webView.TryGetPlatformHandle() is not null && _platformAdapter?.IsConfigured == true;
+
+    internal string NativeBackendStatus => _platformAdapter switch
+    {
+        WindowsRecoveryBrowserPlatformAdapter => "WebView2",
+        LinuxRecoveryBrowserPlatformAdapter linux => $"WebKit-{linux.Backend}",
+        null => "not-created",
+        _ => "unsupported",
+    };
 
     internal Control? EmbeddedControl => _webView.EmbeddedControl;
 
@@ -80,7 +107,7 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
 
         RecoveryBrowserProfilePath.ValidateOwnedProfileRoot(
             request.ProfileDataPath,
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+            _applicationDataRoot);
 
         _platformAdapter = _platformAdapterFactory(request.ProfileDataPath);
         _platformAdapter.SecurityEvent += PlatformAdapter_OnSecurityEvent;
@@ -232,8 +259,16 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     public Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
         _platformAdapter?.ClearBrowsingDataAsync(cancellationToken) ?? Task.CompletedTask;
 
-    internal Task WaitForPlatformReleaseAsync(CancellationToken cancellationToken) =>
-        _platformReleased.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+    internal async Task WaitForPlatformReleaseAsync(CancellationToken cancellationToken)
+    {
+        await _platformReleased.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        if (_platformAdapter is not null)
+        {
+            await _platformAdapter.WaitForProfileReleaseAsync(cancellationToken);
+        }
+    }
+
+    internal IAsyncDisposable? BeginEmbeddedRelease() => _webView.BeginReparenting();
 
     public void Close()
     {

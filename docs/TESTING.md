@@ -88,7 +88,44 @@ Run the focused smoke category with:
 dotnet test tests/Unpwn.App.Tests/Unpwn.App.Tests.csproj --configuration Release --filter Category=EndToEndSmoke
 ```
 
-### 6. Localization and culture tests
+### 6. Packaged desktop end-to-end journey
+
+`tools/Unpwn.DesktopE2E` starts a loopback-only synthetic provider, launches the real `Unpwn.App`
+desktop process with isolated temporary application data, and drives the visible recovery journey by
+stable automation IDs. It covers the trust gate, default-path vault creation, session creation, CSV
+import, account categorization, automatic queue/path selection, the native Managed Recovery Browser,
+explicit credential assistance and completion criteria, credential handoff, final report, browser
+cleanup, and a clean process exit. It does not call application services to advance user-visible state.
+
+Build the solution first, then run one of these platform commands from the repository root:
+
+```pwsh
+# Windows (WebView2 Runtime must be installed)
+dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll `
+  --app (Resolve-Path src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll) `
+  --artifacts (Join-Path (Get-Location) artifacts/desktop-e2e)
+```
+
+```shell
+# Linux (WebKitGTK 4.1 plus an active display)
+dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll \
+  --app "$(realpath src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll)" \
+  --artifacts "$(pwd)/artifacts/desktop-e2e"
+
+# Headless Linux, matching CI:
+xvfb-run --auto-servernum dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll \
+  --app "$(realpath src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll)" \
+  --artifacts "$(pwd)/artifacts/desktop-e2e"
+```
+
+The journey has bounded step and whole-process timeouts. Missing native runtime/display support is a
+failure, never a skip or headless substitute. Secret-safe JSON records the logical steps, controls,
+exit code, platform, and native backend; failures also capture the current app window. The isolated
+vault and browser profile live outside the artifact directory and are deleted after the process exits,
+so cookies, vault records, and browser storage are never uploaded. CI runs this same journey on every
+pull request and `main` on both Windows and Linux.
+
+### 7. Localization and culture tests
 
 Localization tests verify:
 
@@ -104,7 +141,7 @@ Localization tests verify:
 
 Missing security-critical resources or translations that alter canonical security meaning are release-blocking defects.
 
-### 7. Scheduled live-provider smoke checks
+### 8. Scheduled live-provider smoke checks
 
 Live-provider checks are read-only health observations, not account-recovery tests. They may check official recovery URLs, HTTPS, expected-origin redirect chains, plausibility of the final destination, and stale workflow verification dates.
 
@@ -112,7 +149,7 @@ They must not use credentials/cookies, submit forms, trigger reset emails or MFA
 
 The implementation lives in `Unpwn.Automation` with `tools/Unpwn.ProviderSmokeChecks`. `.github/workflows/provider-smoke-checks.yml` runs it on its documented schedule/manual dispatch, separate from pull-request CI. Provider blocking, rate limiting, transient unavailability, and cross-origin redirects remain observations requiring review rather than automatic compromise/workflow conclusions.
 
-### 8. Release verification
+### 9. Release verification
 
 Before a supported release:
 

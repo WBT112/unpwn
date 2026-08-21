@@ -453,6 +453,27 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task RenderingAdvancedActionListDoesNotClearCurrentGuidedAction()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            var fixture = new Fixture();
+            var viewModel = fixture.CreateViewModel();
+            await viewModel.RefreshCommand.ExecuteAsync();
+            Assert.NotNull(viewModel.SelectedAction);
+            var selectedActionId = viewModel.SelectedAction.DefinitionId;
+            var view = new WorkflowExecutionView { DataContext = viewModel };
+            var window = new Window { Content = view };
+
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(selectedActionId, viewModel.SelectedAction?.DefinitionId);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task InProgressStepCanExplicitlyReopenBrowserAfterPresentationRequestWasLost()
     {
         var fixture = new Fixture(

@@ -130,6 +130,56 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
+    public void TransientWorkspaceReloadDoesNotEjectActiveCompletionScreen()
+    {
+        var vault = new TestVaultLifecycleService();
+        var recoverySession = new TestRecoverySessionService();
+        var inventory = new TestAccountInventoryService();
+        var localization = CreateLocalization();
+        var factory = new AppScreenFactory(
+            new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            vault,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            recoverySession,
+            inventory,
+            localization);
+        var shell = new ShellViewModel(factory, vault, recoverySession, inventory, localization);
+        vault.Unlock("Synthetic vault", "Synthetic recovery session");
+        var session = RecoverySessionWorkspace.Create(
+            Guid.NewGuid(),
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch);
+        recoverySession.SetSession(session);
+        inventory.SetInventory(new AccountInventoryState(
+            session.Id,
+            1,
+            DateTimeOffset.UnixEpoch,
+            [
+                new AccountInventoryEntry(
+                    Guid.NewGuid(),
+                    "synthetic",
+                    "Synthetic account",
+                    "user@example.invalid",
+                    "https://example.invalid",
+                    AccountRecoveryCategory.Email,
+                    RepositoryAccountClassificationCatalog.CurrentVersion,
+                    AccountRecoveryCategory.Email,
+                    1,
+                    DateTimeOffset.UnixEpoch),
+            ]));
+        shell.SelectedNavigation = shell.NavigationItems.Single(
+            item => item.Route == AppRoute.Completion);
+
+        recoverySession.SetLoading();
+        Assert.Equal(AppRoute.Completion, shell.CurrentScreen.Route);
+
+        recoverySession.SetSession(session);
+        inventory.SetLoading();
+        Assert.Equal(AppRoute.Completion, shell.CurrentScreen.Route);
+    }
+
+    [Fact]
     public void LanguageChangeRefreshesShellNavigationAndCurrentScreen()
     {
         var localization = CreateLocalization();
@@ -856,6 +906,13 @@ public sealed class ShellViewModelTests
             LoadState = RecoverySessionLoadState.Loaded;
             SessionChanged?.Invoke(this, EventArgs.Empty);
         }
+
+        public void SetLoading()
+        {
+            CurrentSession = null;
+            LoadState = RecoverySessionLoadState.Loading;
+            SessionChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     internal sealed class TestAccountInventoryService : IAccountInventoryService
@@ -901,6 +958,13 @@ public sealed class ShellViewModelTests
         {
             CurrentInventory = inventory;
             LoadState = AccountInventoryLoadState.Loaded;
+            InventoryChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void SetLoading()
+        {
+            CurrentInventory = null;
+            LoadState = AccountInventoryLoadState.Loading;
             InventoryChanged?.Invoke(this, EventArgs.Empty);
         }
 

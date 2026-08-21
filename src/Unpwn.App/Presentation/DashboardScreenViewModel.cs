@@ -159,6 +159,9 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     public bool CanSkipRecommendation =>
         IsActiveSession && Dashboard?.Recommendation.AccountId is not null;
 
+    internal RecoveryDashboardRecommendationCode? RecommendationCode =>
+        Dashboard?.Recommendation.Code;
+
     public string? ValidationMessage => _validationKey is null
         ? null
         : Localization.GetString(_validationKey);
