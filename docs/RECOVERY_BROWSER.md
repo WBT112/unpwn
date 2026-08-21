@@ -74,7 +74,9 @@ A controlled close runs conservatively:
 2. materialized credential presentation and owned clipboard state are cleared;
 3. the browser session is marked cleanup-pending without storing account data;
 4. the platform engine is asked to clear browsing data;
-5. navigation/native browser resources are stopped and released;
+5. navigation/native browser resources are stopped and released; on Windows, cleanup additionally
+   waits for WebView2's matching browser-process-exited signal, which is the point at which the
+   runtime has released the user-data folder;
 6. the complete dedicated profile directory is deleted;
 7. cleanup is reported successful only when the owned profile no longer remains.
 

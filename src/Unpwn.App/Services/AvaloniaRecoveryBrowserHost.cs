@@ -259,8 +259,14 @@ public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposa
     public Task ClearBrowsingDataAsync(CancellationToken cancellationToken) =>
         _platformAdapter?.ClearBrowsingDataAsync(cancellationToken) ?? Task.CompletedTask;
 
-    internal Task WaitForPlatformReleaseAsync(CancellationToken cancellationToken) =>
-        _platformReleased.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+    internal async Task WaitForPlatformReleaseAsync(CancellationToken cancellationToken)
+    {
+        await _platformReleased.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken);
+        if (_platformAdapter is not null)
+        {
+            await _platformAdapter.WaitForProfileReleaseAsync(cancellationToken);
+        }
+    }
 
     internal IAsyncDisposable? BeginEmbeddedRelease() => _webView.BeginReparenting();
 

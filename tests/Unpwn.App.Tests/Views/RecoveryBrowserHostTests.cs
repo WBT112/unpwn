@@ -113,7 +113,7 @@ public sealed class RecoveryBrowserHostTests
             {
                 using var lifecycle = new RecoveryBrowserSessionLifecycle(root);
                 lifecycle.InspectStartup();
-                var platform = new TestPlatformAdapter();
+                var platform = new TestPlatformAdapter { DelayProfileRelease = true };
                 using var view = new RecoveryBrowserView(lifecycle, _ => platform);
                 var destination = new Uri("http://127.0.0.1:43219/password-change");
                 var origin = destination.GetLeftPart(UriPartial.Authority);
@@ -136,12 +136,18 @@ public sealed class RecoveryBrowserHostTests
                 var session = lifecycle.Current.ActiveSession!;
                 Assert.True(Directory.Exists(session.ProfileDataPath));
 
-                var cleanup = await lifecycle.EndAsync(
+                var cleanup = lifecycle.EndAsync(
                     session.SessionId,
                     view,
                     CancellationToken.None);
 
-                Assert.True(cleanup.Succeeded);
+                await platform.ProfileReleaseWaitStarted.Task;
+                Assert.False(cleanup.IsCompleted);
+                Assert.True(Directory.Exists(session.ProfileDataPath));
+                platform.ProfileReleased.SetResult();
+                var result = await cleanup;
+
+                Assert.True(result.Succeeded);
                 Assert.True(platform.BrowsingDataCleared);
                 Assert.False(Directory.Exists(session.ProfileDataPath));
                 Assert.Equal(RecoveryBrowserSessionLifecycleState.Idle, lifecycle.Current.State);
@@ -385,6 +391,14 @@ public sealed class RecoveryBrowserHostTests
 
         public bool BrowsingDataCleared { get; private set; }
 
+        public bool DelayProfileRelease { get; init; }
+
+        public TaskCompletionSource ProfileReleaseWaitStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource ProfileReleased { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public void ConfigureEnvironment(WebViewEnvironmentRequestedEventArgs args)
         {
             EnvironmentConfigured = true;
@@ -398,6 +412,14 @@ public sealed class RecoveryBrowserHostTests
         {
             BrowsingDataCleared = true;
             return Task.CompletedTask;
+        }
+
+        public Task WaitForProfileReleaseAsync(CancellationToken cancellationToken)
+        {
+            ProfileReleaseWaitStarted.TrySetResult();
+            return DelayProfileRelease
+                ? ProfileReleased.Task.WaitAsync(cancellationToken)
+                : Task.CompletedTask;
         }
 
         public void Publish(RecoveryBrowserSecurityEventCode code) =>
