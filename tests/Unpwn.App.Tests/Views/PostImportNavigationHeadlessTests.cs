@@ -8,6 +8,7 @@ using Avalonia.Threading;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.App.Tests.Presentation;
 using Unpwn.App.Views;
 using Unpwn.Application;
 using Unpwn.Core;
@@ -20,7 +21,7 @@ public sealed class PostImportNavigationHeadlessTests
     private const string VaultPassword = "UNPWN_TEST_SECRET_post-import-navigation";
 
     [Fact]
-    public async Task RealCsvImportContinuesToRenderedAccountsWorkspaceOnLinux()
+    public async Task SuccessfulReviewedImportAutomaticallyOpensRenderedAccountsWorkspaceOnLinux()
     {
         await AccessibilityHeadlessTests.Session.Dispatch(async () =>
         {
@@ -88,13 +89,6 @@ public sealed class PostImportNavigationHeadlessTests
                     new MemoryStream(System.Text.Encoding.UTF8.GetBytes(csv), writable: false)));
             var importButton = Assert.IsType<Button>(FindByAutomationId(importView, "import-reviewed"), exactMatch: false);
             importButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            await WaitUntilAsync(() => inventory.CurrentInventory?.Accounts.Length > 0);
-            Assert.True(import.ContinueToAccountReviewCommand.CanExecute(null));
-
-            var continueButton = Assert.IsType<Button>(
-                FindByAutomationId(importView, "import-continue-account-review"),
-                exactMatch: false);
-            continueButton.Command!.Execute(continueButton.CommandParameter);
             await WaitUntilAsync(() => shell.CurrentScreen.Route == AppRoute.Accounts);
             Dispatcher.UIThread.RunJobs();
 
@@ -108,6 +102,71 @@ public sealed class PostImportNavigationHeadlessTests
             Assert.Equal(3, list.Items.Count);
             Assert.Equal(3, inventory.CurrentInventory!.Accounts.Length);
             Assert.Equal(RecoveryWizardStepId.AccountTriage, flow.Current.CurrentStep);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task FailedReviewedImportRemainsInImportWorkspaceWithoutAdvancingFlow()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            var sessionId = Guid.NewGuid();
+            var vault = new ShellViewModelTests.TestVaultLifecycleService();
+            vault.Unlock("Synthetic vault", "Synthetic recovery");
+            var session = new ShellViewModelTests.TestRecoverySessionService();
+            session.SetSession(RecoverySessionWorkspace.Create(
+                sessionId,
+                "Synthetic recovery",
+                RecoveryIncidentIntake.Empty,
+                DateTimeOffset.UnixEpoch));
+            var inventory = new ShellViewModelTests.TestAccountInventoryService();
+            inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch));
+            var flow = new ShellViewModelTests.TestRecoveryFlowService(
+                ShellViewModelTests.WizardAt(RecoveryWizardStepId.AccountInventory),
+                new NextUserTask(
+                    RecoveryWizardStepId.AccountInventory,
+                    NextUserTaskState.ActionAvailable,
+                    NextUserTaskCode.ImportAccounts,
+                    NextUserTaskTarget.CsvImport));
+            var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
+            var import = new CsvImportScreenViewModel(inventory, localization, flow);
+            var accounts = new AccountInventoryScreenViewModel(
+                inventory,
+                new RejectingConfirmationService(),
+                localization,
+                flow);
+            var shell = new ShellViewModel(
+                new TestScreenFactory(localization, import, accounts),
+                vault,
+                session,
+                inventory,
+                localization,
+                flow);
+            var window = new global::Unpwn.App.MainWindow { DataContext = shell };
+            window.Show();
+            shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
+
+            var importView = Assert.Single(window.GetLogicalDescendants().OfType<CsvImportView>());
+            const string csv = "service,username\nExample,person@example.invalid\n";
+            await importView.LoadCsvAsync(
+                "synthetic.csv",
+                () => Task.FromResult<Stream>(
+                    new MemoryStream(System.Text.Encoding.UTF8.GetBytes(csv), writable: false)));
+            var importButton = Assert.IsType<Button>(FindByAutomationId(importView, "import-reviewed"), exactMatch: false);
+            importButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            await WaitUntilAsync(() => FindByAutomationId(importView, "import-result") is TextBlock
+            {
+                Text.Length: > 0,
+            });
+
+            Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
+            Assert.Equal(0, flow.AdvanceCalls);
+            Assert.Empty(inventory.CurrentInventory!.Accounts);
+            Assert.Contains(
+                "conflicts with the current inventory",
+                ((TextBlock)FindByAutomationId(importView, "import-result")).Text,
+                StringComparison.OrdinalIgnoreCase);
             window.Close();
         }, CancellationToken.None);
     }

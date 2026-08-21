@@ -12,23 +12,6 @@
 
     <views:StatusBannerView DataContext="{Binding Status}" />
 
-    <Border IsVisible="{Binding IsAccountReviewContinuationVisible}"
-            Padding="18"
-            CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-      <StackPanel Spacing="10">
-        <TextBlock Classes="section-title"
-                   Text="{DynamicResource Import.Continue.Title}" />
-        <TextBlock Text="{DynamicResource Import.Continue.Message}"
-                   TextWrapping="Wrap" />
-        <Button Classes="initial-focus"
-                AutomationProperties.AutomationId="import-continue-account-review"
-                HorizontalAlignment="Left"
-                Command="{Binding ContinueToAccountReviewCommand}"
-                Content="{DynamicResource Import.Continue.Action}" />
-      </StackPanel>
-    </Border>
-
     <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="14">
         <TextBlock Classes="section-title" Text="{DynamicResource Import.Step.Source}" />

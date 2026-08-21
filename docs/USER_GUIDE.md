@@ -66,8 +66,9 @@ Old-password columns are excluded automatically and cannot be selected as accoun
 preview and explicitly confirm the final import. Duplicate candidates remain conservative: the normal
 safe path keeps the first CSV occurrence and lets the existing inventory win.
 
-After at least one account is stored, select **Review account categories**. You can still return to
-CSV import later to add more accounts.
+After at least one reviewed account is stored successfully, unpwn opens account category review
+automatically. A failed import stays on the import screen so you can correct or retry it. You can still
+return to CSV import later to add more accounts.
 
 ### 5. Categorize accounts
 

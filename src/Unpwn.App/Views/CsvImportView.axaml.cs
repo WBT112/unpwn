@@ -224,7 +224,8 @@ public partial class CsvImportView : AccessibleScreen
 
     private async void ImportReviewedButton_OnClick(object? sender, RoutedEventArgs eventArgs)
     {
-        if (ViewModel is null || !_previewCanImport || _lastCandidates.Count == 0 || _isImporting)
+        var viewModel = ViewModel;
+        if (viewModel is null || !_previewCanImport || _lastCandidates.Count == 0 || _isImporting)
         {
             return;
         }
@@ -239,10 +240,15 @@ public partial class CsvImportView : AccessibleScreen
         RefreshImportControls();
         try
         {
-            var result = await ViewModel.ImportAsync(
+            var result = await viewModel.ImportAsync(
                 _lastCandidates,
                 resolution,
                 CancellationToken.None);
+            if (!ReferenceEquals(ViewModel, viewModel))
+            {
+                return;
+            }
+
             _importResultKey = CsvImportScreenViewModel.GetImportResultResourceKey(result);
             if (result.Succeeded)
             {
@@ -254,7 +260,10 @@ public partial class CsvImportView : AccessibleScreen
         finally
         {
             _isImporting = false;
-            RefreshImportControls();
+            if (ReferenceEquals(ViewModel, viewModel))
+            {
+                RefreshImportControls();
+            }
         }
     }
 

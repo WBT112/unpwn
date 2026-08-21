@@ -60,7 +60,7 @@ read-only review. Route changes are outputs of this projection and never inputs 
 The post-intake gates are deterministic:
 
 - the account-inventory step opens CSV import as the primary path after session creation;
-- inventory cannot advance until at least one imported account exists, after which the import workspace offers **Review account categories**;
+- inventory cannot advance until at least one imported account exists; a successful reviewed import then persists the canonical transition and opens account category review automatically, while failed or cancelled imports remain in CSV import;
 - category triage shows the next unreviewed account and remaining count; **Continue to recovery now** deliberately permits early continuation while further review remains optional;
 - a user who genuinely has no email account can review all accounts or deliberately continue from the triage workspace; leaving the route never records an implicit category or advances the flow;
 - account work is queued automatically as `Email`, `Critical`, `Unknown`, then `NonCritical`, with language-neutral identifiers as stable tie-breakers;
