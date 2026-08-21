@@ -151,48 +151,32 @@ public sealed class PlaceholderScreenViewModel(
         statusTitleKey,
         statusMessageKey);
 
-public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
+public sealed class CsvImportScreenViewModel(
+    IAccountInventoryService inventory,
+    ILocalizationService localization,
+    IRecoveryFlowService? recoveryFlow = null) : LocalizedScreenViewModel(
+        AppRoute.CsvImport,
+        localization,
+        "Screen.Import.Title",
+        "Screen.Import.Description",
+        AppVisualState.Warning,
+        "Screen.Import.StatusTitle",
+        "Screen.Import.StatusMessage")
 {
-    private readonly IAccountInventoryService _inventory;
-    private readonly IRecoveryFlowService? _recoveryFlow;
+    private readonly IAccountInventoryService _inventory =
+        inventory ?? throw new ArgumentNullException(nameof(inventory));
+    private readonly IRecoveryFlowService? _recoveryFlow = recoveryFlow;
     private int _importActive;
-
-    public CsvImportScreenViewModel(
-        IAccountInventoryService inventory,
-        ILocalizationService localization,
-        IRecoveryFlowService? recoveryFlow = null)
-        : base(
-            AppRoute.CsvImport,
-            localization,
-            "Screen.Import.Title",
-            "Screen.Import.Description",
-            AppVisualState.Warning,
-            "Screen.Import.StatusTitle",
-            "Screen.Import.StatusMessage")
-    {
-        _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
-        _recoveryFlow = recoveryFlow;
-        ContinueToAccountReviewCommand = new RelayCommand(
-            () => ContinueRequested?.Invoke(this, EventArgs.Empty),
-            () => IsAccountReviewContinuationVisible);
-        _inventory.InventoryChanged += Inventory_OnInventoryChanged;
-        _recoveryFlow?.NextTaskChanged += RecoveryFlow_OnNextTaskChanged;
-    }
 
     public CsvImportScreenViewModel(ILocalizationService localization)
         : this(new UnavailableAccountInventoryService(), localization)
     {
     }
 
-    public event EventHandler? ContinueRequested;
+    public event EventHandler? AccountReviewRequested;
 
-    public RelayCommand ContinueToAccountReviewCommand { get; }
-
-    public bool HasImportedAccounts =>
-        _inventory.CurrentInventory?.Accounts.Length > 0;
-
-    public bool IsAccountReviewContinuationVisible =>
-        HasImportedAccounts &&
+    private bool CanContinueToAccountReview =>
+        _inventory.CurrentInventory?.Accounts.Length > 0 &&
         (_recoveryFlow is null ||
          _recoveryFlow.NextTask.Target == NextUserTaskTarget.AccountTriage);
 
@@ -212,36 +196,29 @@ public sealed class CsvImportScreenViewModel : LocalizedScreenViewModel
 
         try
         {
+            AccountInventoryOperationResult result;
             if (duplicateResolution == ImportDuplicateResolution.SkipDuplicates &&
                 candidates.Count > 0 &&
                 candidates.All(candidate => candidate.DuplicateKind != CsvDuplicateKind.None))
             {
-                return AccountInventoryOperationResult.Success(affectedAccounts: 0);
+                result = AccountInventoryOperationResult.Success(affectedAccounts: 0);
+            }
+            else
+            {
+                result = await _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
             }
 
-            var result = await _inventory.ImportAsync(candidates, duplicateResolution, cancellationToken);
-            RefreshContinuationState();
+            if (result.Succeeded && CanContinueToAccountReview)
+            {
+                AccountReviewRequested?.Invoke(this, EventArgs.Empty);
+            }
+
             return result;
         }
         finally
         {
             Interlocked.Exchange(ref _importActive, 0);
         }
-    }
-
-    public override void Activate() => RefreshContinuationState();
-
-    private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs) =>
-        RefreshContinuationState();
-
-    private void RecoveryFlow_OnNextTaskChanged(object? sender, EventArgs eventArgs) =>
-        RefreshContinuationState();
-
-    private void RefreshContinuationState()
-    {
-        OnPropertyChanged(nameof(HasImportedAccounts));
-        OnPropertyChanged(nameof(IsAccountReviewContinuationVisible));
-        ContinueToAccountReviewCommand.RaiseCanExecuteChanged();
     }
 
     public static string GetImportResultResourceKey(AccountInventoryOperationResult result)

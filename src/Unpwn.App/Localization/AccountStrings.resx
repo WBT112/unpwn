@@ -80,7 +80,4 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>The reviewed accounts were stored in the encrypted inventory.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>No new accounts were imported because all reviewed accounts already exist in the inventory.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>The reviewed accounts were not imported. Resolve the duplicate choice or review the inventory state.</value></data>
-  <data name="Import.Continue.Title" xml:space="preserve"><value>Accounts are ready</value></data>
-  <data name="Import.Continue.Message" xml:space="preserve"><value>Continue to review only accounts that could not be categorized automatically. Known suggestions are already usable and do not require confirmation.</value></data>
-  <data name="Import.Continue.Action" xml:space="preserve"><value>Review account priorities</value></data>
 </root>

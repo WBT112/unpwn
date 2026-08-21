@@ -205,13 +205,14 @@ public sealed class AccessibilityHeadlessTests
     }
 
     [Fact]
-    public async Task ImportAndCredentialWorkspacesExposeTheirContinuationActions()
+    public async Task ImportHasNoExtraContinuationAndCredentialWorkspaceKeepsItsRequiredAction()
     {
         await Session.Dispatch(() =>
         {
-            Assert.NotNull(FindByAutomationId(
-                new CsvImportView(),
-                "import-continue-account-review"));
+            Assert.DoesNotContain(
+                new CsvImportView().GetLogicalDescendants().OfType<Control>(),
+                control => AutomationProperties.GetAutomationId(control) ==
+                    "import-continue-account-review");
             Assert.NotNull(FindByAutomationId(
                 new CredentialExportView(),
                 "credentials-continue-completion"));

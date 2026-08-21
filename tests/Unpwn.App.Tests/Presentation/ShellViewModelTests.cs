@@ -419,7 +419,7 @@ public sealed class ShellViewModelTests
     }
 
     [Fact]
-    public void ImportWorkspaceContinuationAdvancesAndOpensCategoryReview()
+    public async Task SuccessfulImportAutomaticallyAdvancesAndOpensCategoryReview()
     {
         var sessionId = Guid.NewGuid();
         var vault = new TestVaultLifecycleService();
@@ -430,7 +430,10 @@ public sealed class ShellViewModelTests
             "Synthetic recovery",
             RecoveryIncidentIntake.Empty,
             DateTimeOffset.UnixEpoch));
-        var inventory = new TestAccountInventoryService();
+        var inventory = new TestAccountInventoryService
+        {
+            ImportResult = AccountInventoryOperationResult.Success(1),
+        };
         inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
             .ReplaceAccounts(
             [InventoryAccount(Guid.NewGuid(), "example.test", "Synthetic account")],
@@ -447,15 +450,19 @@ public sealed class ShellViewModelTests
         shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
 
         var import = Assert.IsType<CsvImportScreenViewModel>(shell.CurrentScreen);
-        import.ContinueToAccountReviewCommand.Execute(null);
+        var result = await import.ImportAsync(
+            ImportCandidates(),
+            ImportDuplicateResolution.ImportAsSeparateAccounts,
+            CancellationToken.None);
 
+        Assert.True(result.Succeeded);
         Assert.Equal(AppRoute.Accounts, shell.CurrentScreen.Route);
         Assert.Equal(1, flow.AdvanceCalls);
         Assert.Equal(RecoveryWizardStepId.AccountTriage, flow.Current.CurrentStep);
     }
 
     [Fact]
-    public async Task ImportWorkspaceContinuationContainsUnexpectedAsyncFlowFailure()
+    public async Task AutomaticImportNavigationContainsUnexpectedAsyncFlowFailure()
     {
         var sessionId = Guid.NewGuid();
         var vault = new TestVaultLifecycleService();
@@ -466,7 +473,10 @@ public sealed class ShellViewModelTests
             "Synthetic recovery",
             RecoveryIncidentIntake.Empty,
             DateTimeOffset.UnixEpoch));
-        var inventory = new TestAccountInventoryService();
+        var inventory = new TestAccountInventoryService
+        {
+            ImportResult = AccountInventoryOperationResult.Success(1),
+        };
         inventory.SetInventory(AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
             .ReplaceAccounts(
             [InventoryAccount(Guid.NewGuid(), "example.test", "Synthetic account")],
@@ -492,13 +502,78 @@ public sealed class ShellViewModelTests
         };
 
         var import = Assert.IsType<CsvImportScreenViewModel>(shell.CurrentScreen);
-        import.ContinueToAccountReviewCommand.Execute(null);
+        var result = await import.ImportAsync(
+            ImportCandidates(),
+            ImportDuplicateResolution.ImportAsSeparateAccounts,
+            CancellationToken.None);
         await failureVisible.Task.WaitAsync(TimeSpan.FromSeconds(2));
 
+        Assert.True(result.Succeeded);
         Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
         Assert.Equal(1, flow.AdvanceCalls);
         Assert.Equal(AppVisualState.Error, shell.CurrentStatus.State);
         Assert.Equal(RecoveryWizardStepId.AccountInventory, flow.Current.CurrentStep);
+    }
+
+    [Fact]
+    public async Task AutomaticImportNavigationContainsDestinationConstructionFailure()
+    {
+        var sessionId = Guid.NewGuid();
+        var vault = new TestVaultLifecycleService();
+        vault.Unlock("Synthetic vault", "Synthetic recovery");
+        var session = new TestRecoverySessionService();
+        session.SetSession(RecoverySessionWorkspace.Create(
+            sessionId,
+            "Synthetic recovery",
+            RecoveryIncidentIntake.Empty,
+            DateTimeOffset.UnixEpoch));
+        var inventory = new TestAccountInventoryService
+        {
+            ImportResult = AccountInventoryOperationResult.Success(1),
+        };
+        var importedInventory = AccountInventoryState.Empty(sessionId, DateTimeOffset.UnixEpoch)
+            .ReplaceAccounts(
+            [InventoryAccount(Guid.NewGuid(), "example.test", "Synthetic account")],
+            DateTimeOffset.UnixEpoch);
+        inventory.SetInventory(importedInventory);
+        var flow = new TestRecoveryFlowService(
+            WizardAt(RecoveryWizardStepId.AccountInventory),
+            new NextUserTask(
+                RecoveryWizardStepId.AccountInventory,
+                NextUserTaskState.ActionAvailable,
+                NextUserTaskCode.ReviewAccountCategories,
+                NextUserTaskTarget.AccountTriage,
+                RecoveryWizardStepId.AccountTriage));
+        var localization = CreateLocalization();
+        var baseFactory = new AppScreenFactory(
+            new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
+            vault,
+            new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
+            session,
+            inventory,
+            localization);
+        var shell = new ShellViewModel(
+            new ThrowingAccountsScreenFactory(baseFactory),
+            vault,
+            session,
+            inventory,
+            localization,
+            flow);
+        shell.SelectedNavigation = shell.NavigationItems.Single(item => item.Route == AppRoute.CsvImport);
+
+        var import = Assert.IsType<CsvImportScreenViewModel>(shell.CurrentScreen);
+        var result = await import.ImportAsync(
+            ImportCandidates(),
+            ImportDuplicateResolution.ImportAsSeparateAccounts,
+            CancellationToken.None);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(AppRoute.CsvImport, shell.CurrentScreen.Route);
+        Assert.Equal(AppRoute.CsvImport, shell.SelectedNavigation.Route);
+        Assert.Equal(AppVisualState.Error, shell.CurrentStatus.State);
+        Assert.Same(importedInventory, inventory.CurrentInventory);
+        Assert.Equal(1, flow.AdvanceCalls);
+        Assert.Equal(RecoveryWizardStepId.AccountTriage, flow.Current.CurrentStep);
     }
 
     [Fact]
@@ -619,6 +694,16 @@ public sealed class ShellViewModelTests
         CategoryConfirmedRevision: null,
         DateTimeOffset.UnixEpoch);
 
+    private static IReadOnlyList<ImportAccountCandidate> ImportCandidates()
+    {
+        const string csv = "service,login\nExample,person@example.invalid\n";
+        var analysis = CsvAccountImportService.Analyze(new StringReader(csv));
+        return CsvAccountImportService.CreatePreview(
+                new StringReader(csv),
+                analysis.SuggestedMapping)
+            .Candidates;
+    }
+
     private static RecoveryAccountDashboardEntry DashboardAccount(
         Guid accountId,
         string providerId,
@@ -691,6 +776,13 @@ public sealed class ShellViewModelTests
         public Task<bool> ConfirmAsync(
             SensitiveConfirmationRequest request,
             CancellationToken cancellationToken) => confirm(request, cancellationToken);
+    }
+
+    private sealed class ThrowingAccountsScreenFactory(IScreenFactory inner) : IScreenFactory
+    {
+        public ScreenViewModel Create(AppRoute route) => route == AppRoute.Accounts
+            ? throw new InvalidOperationException("Synthetic destination construction failure.")
+            : inner.Create(route);
     }
 
     internal sealed class TestRecoverySessionService : IRecoverySessionService
@@ -776,6 +868,9 @@ public sealed class ShellViewModelTests
 
         public AccountRecoveryOrder? CurrentRecoveryOrder => null;
 
+        public AccountInventoryOperationResult ImportResult { get; set; } =
+            AccountInventoryOperationResult.Failure(AccountInventoryFailureCode.Conflict);
+
         public Task InitializeAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
         public Task<AccountInventoryOperationResult> UpsertAsync(
@@ -794,7 +889,11 @@ public sealed class ShellViewModelTests
         public Task<AccountInventoryOperationResult> ImportAsync(
             IReadOnlyCollection<ImportAccountCandidate> candidates,
             ImportDuplicateResolution? duplicateResolution,
-            CancellationToken cancellationToken) => Unsupported();
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(ImportResult);
+        }
 
         public IReadOnlyList<ExistingAccountReference> GetExistingAccountReferences() => [];
 

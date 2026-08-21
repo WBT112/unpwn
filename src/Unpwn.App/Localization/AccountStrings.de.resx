@@ -80,7 +80,4 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>Es wurden keine neuen Konten importiert, weil alle geprüften Konten bereits im Inventar vorhanden sind.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Kläre die Duplikatwahl oder prüfe den Inventarstatus.</value></data>
-  <data name="Import.Continue.Title" xml:space="preserve"><value>Konten sind bereit</value></data>
-  <data name="Import.Continue.Message" xml:space="preserve"><value>Prüfe als Nächstes nur Konten, die nicht automatisch kategorisiert werden konnten. Bekannte Vorschläge sind bereits verwendbar und müssen nicht bestätigt werden.</value></data>
-  <data name="Import.Continue.Action" xml:space="preserve"><value>Kontoprioritäten prüfen</value></data>
 </root>

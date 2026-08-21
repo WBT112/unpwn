@@ -9,10 +9,11 @@ The application starts with no vault unlocked. The header displays explicit lock
 During an active recovery session, the active workspace owns its instructions, explanation, current
 task, and primary action. Persistent shell chrome does not present a second assistant card or CTA.
 The dashboard projects the canonical next recommendation into the workspace; merely opening a route
-never advances the recovery flow. Session creation opens CSV import, successful import exposes a
-workspace-owned category-review action, triage exposes complete and deliberate early continuation,
-and credential handoff exposes completion review. Each of those buttons persists the canonical
-transition before navigation.
+never advances the recovery flow. Session creation opens CSV import; after the explicit reviewed-import
+action persists at least one account successfully, the shell persists the canonical next-task transition
+and opens category review automatically. Failed or cancelled imports remain in CSV import. Triage exposes
+complete and deliberate early continuation, and credential handoff exposes completion review. Each
+explicit continuation persists its canonical transition before navigation.
 
 The stable top-level routes remain available as secondary detail and correction views behind the
 workspace disclosure:

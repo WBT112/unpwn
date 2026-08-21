@@ -312,8 +312,24 @@ public sealed class ShellViewModel : ObservableObject
     private void ToggleWorkspaceNavigation() =>
         IsWorkspaceNavigationExpanded = !IsWorkspaceNavigationExpanded;
 
-    private void NavigateTo(AppRoute route) =>
-        SelectedNavigation = NavigationItems.Single(item => item.Route == route);
+    private void NavigateTo(AppRoute route)
+    {
+        var previousNavigation = _selectedNavigation;
+        try
+        {
+            SelectedNavigation = NavigationItems.Single(item => item.Route == route);
+        }
+        catch
+        {
+            if (!ReferenceEquals(_selectedNavigation, previousNavigation))
+            {
+                _selectedNavigation = previousNavigation;
+                OnPropertyChanged(nameof(SelectedNavigation));
+            }
+
+            throw;
+        }
+    }
 
     private void ShowScreen(AppRoute route)
     {
@@ -642,7 +658,7 @@ public sealed class ShellViewModel : ObservableObject
 
         if (screen is CsvImportScreenViewModel csvImport)
         {
-            csvImport.ContinueRequested += CsvImport_OnContinueRequested;
+            csvImport.AccountReviewRequested += CsvImport_OnAccountReviewRequested;
         }
 
         if (screen is AccountInventoryScreenViewModel accounts)
@@ -683,7 +699,7 @@ public sealed class ShellViewModel : ObservableObject
 
         if (screen is CsvImportScreenViewModel csvImport)
         {
-            csvImport.ContinueRequested -= CsvImport_OnContinueRequested;
+            csvImport.AccountReviewRequested -= CsvImport_OnAccountReviewRequested;
         }
 
         if (screen is AccountInventoryScreenViewModel accounts)
@@ -793,7 +809,7 @@ public sealed class ShellViewModel : ObservableObject
         _ => throw new ArgumentOutOfRangeException(nameof(target), target, "Unknown recovery task target."),
     };
 
-    private async void CsvImport_OnContinueRequested(object? sender, EventArgs eventArgs)
+    private async void CsvImport_OnAccountReviewRequested(object? sender, EventArgs eventArgs)
     {
         await ContinueWorkspaceAsync(NextUserTaskTarget.AccountTriage, AppRoute.Accounts);
     }

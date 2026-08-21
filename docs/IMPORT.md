@@ -12,8 +12,13 @@
    choices. The preview updates automatically as soon as the mapping is valid.
 5. Review valid rows, row-level diagnostics, and duplicates.
 6. Explicitly confirm the reviewed candidates for import into the encrypted account inventory.
+7. After persistence succeeds and at least one account exists, unpwn advances the canonical recovery
+   step and opens account category review automatically. A failed, cancelled, or validation-blocked
+   import remains in the import workspace.
 
 A successful preview is not a successful import. Persistence must complete before the UI reports imported work.
+Automatic navigation is presentation output of the canonical next-task transition; it does not mark
+category review or recovery work complete and never changes the committed inventory.
 
 ## Password handling
 

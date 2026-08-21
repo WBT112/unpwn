@@ -68,6 +68,12 @@ View-model tests cover locked startup, navigation, command concurrency, validati
 
 Avalonia headless tests cover screen-entry focus, focus after validation, dialogs, live-region metadata, browser/assistant interaction, and important accessibility states without opening a normal desktop window. These tests supplement rather than replace the manual Windows/NVDA and Ubuntu/Orca release checklist in [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md).
 
+The post-import navigation scenario drives the visible reviewed-import action against a temporary
+encrypted vault. It verifies that persistence succeeds before the canonical transition opens the
+rendered Accounts workspace, and that a failed import remains in CSV import without advancing recovery
+state. The broader packaged-desktop and platform matrix remains tracked separately from this headless
+regression layer.
+
 Security meaning must not depend on color alone, and pseudo-localization/minimum-window testing must keep warnings and primary controls visible or reachable.
 
 ### 5. End-to-end smoke journeys
