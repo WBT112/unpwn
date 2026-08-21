@@ -26,6 +26,14 @@ internal abstract class RecoveryBrowserPlatformAdapter(string profileDataPath)
         SecurityEvent?.Invoke(this, code);
 
     public static IRecoveryBrowserPlatformAdapter Create(string profileDataPath)
+        => Create(profileDataPath, useGtkOffscreen: true);
+
+    public static IRecoveryBrowserPlatformAdapter CreateDialog(string profileDataPath)
+        => Create(profileDataPath, useGtkOffscreen: false);
+
+    private static IRecoveryBrowserPlatformAdapter Create(
+        string profileDataPath,
+        bool useGtkOffscreen)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(profileDataPath);
         if (OperatingSystem.IsWindows())
@@ -35,7 +43,7 @@ internal abstract class RecoveryBrowserPlatformAdapter(string profileDataPath)
 
         if (OperatingSystem.IsLinux())
         {
-            return new LinuxRecoveryBrowserPlatformAdapter(profileDataPath);
+            return new LinuxRecoveryBrowserPlatformAdapter(profileDataPath, useGtkOffscreen);
         }
 
         return new UnsupportedRecoveryBrowserPlatformAdapter(profileDataPath);
@@ -196,12 +204,16 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
     private IntPtr _websiteDataManager;
     private LinuxRecoveryBrowserBackend _backend;
     private bool _storageHardeningFailed;
+    private readonly bool _useGtkOffscreen;
 
     private bool _isConfigured;
 
-    public LinuxRecoveryBrowserPlatformAdapter(string profileDataPath)
+    public LinuxRecoveryBrowserPlatformAdapter(
+        string profileDataPath,
+        bool useGtkOffscreen = true)
         : base(profileDataPath)
     {
+        _useGtkOffscreen = useGtkOffscreen;
         _permissionCallback = DenyPermission;
         _downloadCallback = CancelDownload;
         _tlsCallback = RejectTlsError;
@@ -245,7 +257,7 @@ internal sealed partial class LinuxRecoveryBrowserPlatformAdapter
                     gtk.DisableCache = true;
                     // Avalonia's normal GTK host is X11/XID-only. Use the compositor-backed GTK
                     // adapter so the Recovery Browser also works when the Avalonia window is Wayland.
-                    gtk.ExperimentalOffscreen = true;
+                    gtk.ExperimentalOffscreen = _useGtkOffscreen;
                     break;
             }
         }

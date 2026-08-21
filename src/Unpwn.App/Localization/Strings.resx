@@ -253,6 +253,7 @@
   <data name="RecoveryBrowser.Origin" xml:space="preserve"><value>Current HTTPS origin</value></data>
   <data name="RecoveryBrowser.OriginUnavailable" xml:space="preserve"><value>No approved origin is loaded.</value></data>
   <data name="RecoveryBrowser.ContextDisclaimer" xml:space="preserve"><value>Browser content is context only. It never proves that a recovery action succeeded or that an account is safe.</value></data>
+  <data name="RecoveryBrowser.DialogFallback" xml:space="preserve"><value>The provider page is open in a separate unpwn-managed browser window because the embedded Linux browser runtime is unavailable. Keep this assistant visible while you work.</value></data>
   <data name="RecoveryBrowser.Security.UnsafeNavigationBlocked" xml:space="preserve"><value>An unsafe or unsupported navigation was blocked.</value></data>
   <data name="RecoveryBrowser.Security.UnexpectedOriginBlocked" xml:space="preserve"><value>Navigation to an unexpected provider origin was blocked.</value></data>
   <data name="RecoveryBrowser.Security.PopupBlocked" xml:space="preserve"><value>A provider popup or new-window request was blocked.</value></data>
@@ -262,7 +263,7 @@
   <data name="RecoveryBrowser.Security.TlsErrorBlocked" xml:space="preserve"><value>The page was blocked because its secure connection could not be validated.</value></data>
   <data name="RecoveryBrowser.Security.ClientCertificateBlocked" xml:space="preserve"><value>A website request for a client certificate was blocked.</value></data>
   <data name="RecoveryBrowser.Security.PlatformHardeningUnavailable" xml:space="preserve"><value>Recovery Browser stopped because required platform security controls are unavailable.</value></data>
-  <data name="RecoveryBrowser.Session.Cleaning" xml:space="preserve"><value>Browser data is being cleared before the embedded browser releases its resources.</value></data>
+  <data name="RecoveryBrowser.Session.Cleaning" xml:space="preserve"><value>Browser data is being cleared before the managed browser releases its resources.</value></data>
   <data name="RecoveryBrowser.Session.AccountSwitchBlocked" xml:space="preserve"><value>Close and clean the current account's browser session before opening a different recovery account.</value></data>
   <data name="RecoveryBrowser.Session.CleanupFailed" xml:space="preserve"><value>Temporary browser data remains. Cleanup failed and must be retried before another recovery account can use the Recovery Browser.</value></data>
   <data name="RecoveryBrowser.Session.Orphaned" xml:space="preserve"><value>A previous Recovery Browser session did not end cleanly. Its temporary data will not be resumed automatically; discard it before starting a new browser session.</value></data>

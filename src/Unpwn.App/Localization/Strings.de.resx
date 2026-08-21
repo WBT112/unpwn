@@ -253,6 +253,7 @@
   <data name="RecoveryBrowser.Origin" xml:space="preserve"><value>Aktueller HTTPS-Ursprung</value></data>
   <data name="RecoveryBrowser.OriginUnavailable" xml:space="preserve"><value>Es ist kein freigegebener Ursprung geladen.</value></data>
   <data name="RecoveryBrowser.ContextDisclaimer" xml:space="preserve"><value>Browserinhalte sind nur Kontext. Sie beweisen niemals, dass eine Wiederherstellungsmaßnahme erfolgreich war oder ein Konto sicher ist.</value></data>
+  <data name="RecoveryBrowser.DialogFallback" xml:space="preserve"><value>Die Anbieterseite ist in einem separaten, von unpwn verwalteten Browserfenster geöffnet, weil die eingebettete Linux-Browserlaufzeit nicht verfügbar ist. Lass diesen Assistenten während der Bearbeitung sichtbar.</value></data>
   <data name="RecoveryBrowser.Security.UnsafeNavigationBlocked" xml:space="preserve"><value>Eine unsichere oder nicht unterstützte Navigation wurde blockiert.</value></data>
   <data name="RecoveryBrowser.Security.UnexpectedOriginBlocked" xml:space="preserve"><value>Die Navigation zu einem unerwarteten Anbieterursprung wurde blockiert.</value></data>
   <data name="RecoveryBrowser.Security.PopupBlocked" xml:space="preserve"><value>Ein Popup oder neues Fenster der Anbieterseite wurde blockiert.</value></data>
@@ -262,7 +263,7 @@
   <data name="RecoveryBrowser.Security.TlsErrorBlocked" xml:space="preserve"><value>Die Seite wurde blockiert, weil ihre sichere Verbindung nicht geprüft werden konnte.</value></data>
   <data name="RecoveryBrowser.Security.ClientCertificateBlocked" xml:space="preserve"><value>Die Anfrage einer Webseite nach einem Clientzertifikat wurde blockiert.</value></data>
   <data name="RecoveryBrowser.Security.PlatformHardeningUnavailable" xml:space="preserve"><value>Der Recovery Browser wurde angehalten, weil erforderliche Sicherheitskontrollen der Plattform nicht verfügbar sind.</value></data>
-  <data name="RecoveryBrowser.Session.Cleaning" xml:space="preserve"><value>Die Browserdaten werden gelöscht, bevor der eingebettete Browser seine Ressourcen freigibt.</value></data>
+  <data name="RecoveryBrowser.Session.Cleaning" xml:space="preserve"><value>Die Browserdaten werden gelöscht, bevor der verwaltete Browser seine Ressourcen freigibt.</value></data>
   <data name="RecoveryBrowser.Session.AccountSwitchBlocked" xml:space="preserve"><value>Schließe und bereinige die Browser-Sitzung des aktuellen Kontos, bevor du ein anderes Wiederherstellungskonto öffnest.</value></data>
   <data name="RecoveryBrowser.Session.CleanupFailed" xml:space="preserve"><value>Temporäre Browserdaten sind noch vorhanden. Die Bereinigung ist fehlgeschlagen und muss wiederholt werden, bevor ein anderes Wiederherstellungskonto den Recovery Browser verwenden kann.</value></data>
   <data name="RecoveryBrowser.Session.Orphaned" xml:space="preserve"><value>Eine frühere Recovery-Browser-Sitzung wurde nicht sauber beendet. Ihre temporären Daten werden nicht automatisch fortgesetzt; lösche sie vor dem Start einer neuen Browser-Sitzung.</value></data>

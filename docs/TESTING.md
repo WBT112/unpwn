@@ -38,7 +38,7 @@ CSV import boundary tests use small injected limits and cover raw bytes, decoded
 
 `tests/Unpwn.SyntheticProvider.Tests` provides a local deterministic ASP.NET Core provider on loopback. It exposes explicit scenarios for login, re-authentication, password change/reset, email-link handoff, MFA, CAPTCHA, expired links, provider errors, unexpected content, and manual recovery. The fixture uses synthetic identifiers only and never routes tests to a live provider.
 
-The embedded Recovery Browser is tested through its current managed-browser contracts rather than through a second standalone browser automation state machine.
+The Recovery Browser is tested through its current managed-browser contracts rather than through a second standalone browser automation state machine. Linux release smoke testing covers both embedded WPE availability selection and the visible app-owned WebKitGTK dialog fallback.
 
 Coverage includes:
 
@@ -51,8 +51,9 @@ Coverage includes:
 - cleanup failure/retry and orphan detection after abnormal termination;
 - no automatic resume of stale authenticated browser state;
 - explicit checklist persistence without browser-driven completion;
-- explicit external-browser fallback when the embedded host is unavailable;
-- one-command reviewed-provider start with a visible embedded workspace or explicit safe fallback;
+- explicit external-browser fallback when the managed host is unavailable;
+- one-command reviewed-provider start with a visible embedded workspace, app-owned Linux dialog, or explicit safe fallback;
+- repository-reviewed browser-entry selection over reserved or unsafe URLs from synthetic imports;
 - canonical account deferral, restart/resume ordering, and unresolved completion-preflight visibility;
 - synthetic provider-reviewed credential insertion with late vault retrieval;
 - wrong-origin, changed-page, MFA, CAPTCHA, and email-link stop conditions;

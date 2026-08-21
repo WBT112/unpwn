@@ -189,6 +189,23 @@ public sealed class AccountInventoryScreenViewModelTests
     }
 
     [Fact]
+    public void RequestedAccountReviewSelectsTheAffectedAccountEvenWhenAnotherNeedsTriage()
+    {
+        var needsTriage = CreateAccount("mystery.example");
+        var blockedBrowserAccount = CreateAccount("bitwarden");
+        var viewModel = CreateViewModel(new TestAccountInventoryService(
+            [needsTriage, blockedBrowserAccount]));
+        viewModel.SelectedFilter = viewModel.Filters.Single(option =>
+            option.Value == AccountInventoryFilter.NeedsReview);
+
+        viewModel.Activate(blockedBrowserAccount.Id);
+
+        Assert.Equal(AccountInventoryFilter.All, viewModel.SelectedFilter?.Value);
+        Assert.Equal(blockedBrowserAccount.Id, viewModel.SelectedAccount?.Id);
+        Assert.Equal(blockedBrowserAccount.AccountUrl ?? string.Empty, viewModel.AccountUrl);
+    }
+
+    [Fact]
     public void ReviewedInventoryWithoutEmailCanStillContinueAfterWarning()
     {
         var critical = CreateAccount("banking", confirmed: AccountRecoveryCategory.Critical);

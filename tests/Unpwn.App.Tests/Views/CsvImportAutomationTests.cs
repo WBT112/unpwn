@@ -85,6 +85,42 @@ public sealed class CsvImportAutomationTests
         }, CancellationToken.None);
     }
 
+    [Fact]
+    public async Task DetachingViewCancelsPendingPreviewWithoutLocalizationFailure()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            const string csv =
+                "service,username,password\n" +
+                "Mail,person@example.invalid,discarded\n";
+            var bytes = Encoding.UTF8.GetBytes(csv);
+            var pendingPreview = new TaskCompletionSource<Stream>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
+            var openCount = 0;
+            Task<Stream> OpenStreamAsync()
+            {
+                openCount++;
+                return openCount == 1
+                    ? Task.FromResult<Stream>(new MemoryStream(bytes, writable: false))
+                    : pendingPreview.Task;
+            }
+
+            var view = CreateView();
+            var window = new Window { Content = view };
+            window.Show();
+            var load = view.LoadCsvAsync("synthetic.csv", OpenStreamAsync);
+            Assert.Equal(2, openCount);
+
+            view.DataContext = null;
+            pendingPreview.SetResult(new MemoryStream(bytes, writable: false));
+            await load;
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Null(view.DataContext);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
     private static CsvImportView CreateView() => new()
     {
         DataContext = new CsvImportScreenViewModel(

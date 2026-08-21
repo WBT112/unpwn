@@ -325,6 +325,10 @@ public sealed class ShellViewModel : ObservableObject
             _navigationStartsRecovery = false;
             workflow.Activate(NavigationAccountId, NavigationActionId, startRecovery);
         }
+        else if (screen is AccountInventoryScreenViewModel accounts)
+        {
+            accounts.Activate(NavigationAccountId);
+        }
         else
         {
             screen.Activate();
@@ -615,6 +619,15 @@ public sealed class ShellViewModel : ObservableObject
         }
     }
 
+    private void Workflow_OnAccountReviewRequested(
+        object? sender,
+        WorkflowAccountReviewRequest eventArgs)
+    {
+        NavigationAccountId = eventArgs.AccountId;
+        NavigationActionId = null;
+        NavigateTo(AppRoute.Accounts);
+    }
+
     private void SubscribeToScreen(ScreenViewModel screen)
     {
         if (screen is VaultEntryScreenViewModel vaultEntry)
@@ -645,6 +658,7 @@ public sealed class ShellViewModel : ObservableObject
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
             workflow.OverviewReturnRequested += Workflow_OnOverviewReturnRequested;
+            workflow.AccountReviewRequested += Workflow_OnAccountReviewRequested;
         }
 
 
@@ -685,6 +699,7 @@ public sealed class ShellViewModel : ObservableObject
         if (screen is WorkflowExecutionScreenViewModel workflow)
         {
             workflow.OverviewReturnRequested -= Workflow_OnOverviewReturnRequested;
+            workflow.AccountReviewRequested -= Workflow_OnAccountReviewRequested;
         }
 
 

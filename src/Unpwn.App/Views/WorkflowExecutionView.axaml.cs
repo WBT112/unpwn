@@ -47,7 +47,12 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
     private void WorkflowExecutionView_OnDataContextChanged(object? sender, EventArgs eventArgs)
     {
-        SubscribeToViewModel();
+        UnsubscribeFromViewModel();
+        _subscribedViewModel = null;
+        if (TopLevel.GetTopLevel(this) is not null)
+        {
+            SubscribeToViewModel();
+        }
     }
 
     private void SubscribeToViewModel()
@@ -58,6 +63,10 @@ public partial class WorkflowExecutionView : AccessibleScreen
         {
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
             _subscribedViewModel.RecoveryBrowserRequested += ViewModel_OnRecoveryBrowserRequested;
+            if (_subscribedViewModel.TryTakePendingRecoveryBrowserRequest(out var request))
+            {
+                ViewModel_OnRecoveryBrowserRequested(_subscribedViewModel, request);
+            }
         }
     }
 
@@ -89,9 +98,18 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
         if (_browserView is null)
         {
+            var owner = TopLevel.GetTopLevel(this);
+            if (owner is null)
+            {
+                viewModel.ReportRecoveryBrowserOpenResult(false);
+                return;
+            }
+
             _browserView = new RecoveryBrowserView(
                 viewModel.BrowserSessions,
-                RecoveryBrowserPlatformAdapter.Create);
+                RecoveryBrowserPlatformAdapter.Create,
+                allowLinuxDialogFallback: true,
+                dialogOwner: owner);
             _browserView.SessionClosed += BrowserView_OnSessionClosed;
             BrowserWorkspaceHost.Content = _browserView;
         }
@@ -99,11 +117,6 @@ public partial class WorkflowExecutionView : AccessibleScreen
         bool opened;
         try
         {
-            // Avalonia.Controls.WebView 12.1's WebKitGTK adapters still initialize GTK through
-            // the X11 GDK backend, even when the compositor/offscreen host is used. Ubuntu 26.04
-            // Wayland sessions commonly export GDK_BACKEND=wayland, which prevents that GTK
-            // initialization. Scope the native environment override to browser activation only.
-            using var gtkInitialization = LinuxGtkWebViewInitializationScope.Enter();
             opened = await _browserView.StartAsync(
                 new RecoveryBrowserSessionStartRequest(
                     request.AccountId,

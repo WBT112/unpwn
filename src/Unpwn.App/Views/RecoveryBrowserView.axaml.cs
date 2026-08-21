@@ -12,6 +12,8 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;
     private readonly IRecoveryBrowserSessionLifecycle _sessionLifecycle;
     private readonly bool _ownsSessionLifecycle;
+    private readonly bool _allowLinuxDialogFallback;
+    private readonly TopLevel? _dialogOwner;
     private AvaloniaRecoveryBrowserHost? _host;
     private RecoveryBrowserSession? _session;
 
@@ -19,7 +21,8 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         : this(
             CreateDefaultSessionLifecycle(),
             RecoveryBrowserPlatformAdapter.Create,
-            ownsSessionLifecycle: true)
+            ownsSessionLifecycle: true,
+            allowLinuxDialogFallback: true)
     {
     }
 
@@ -35,13 +38,17 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
     internal RecoveryBrowserView(
         IRecoveryBrowserSessionLifecycle sessionLifecycle,
         Func<string, IRecoveryBrowserPlatformAdapter> platformAdapterFactory,
-        bool ownsSessionLifecycle = false)
+        bool ownsSessionLifecycle = false,
+        bool allowLinuxDialogFallback = false,
+        TopLevel? dialogOwner = null)
     {
         _sessionLifecycle = sessionLifecycle ??
             throw new ArgumentNullException(nameof(sessionLifecycle));
         _platformAdapterFactory = platformAdapterFactory ??
             throw new ArgumentNullException(nameof(platformAdapterFactory));
         _ownsSessionLifecycle = ownsSessionLifecycle;
+        _allowLinuxDialogFallback = allowLinuxDialogFallback;
+        _dialogOwner = dialogOwner;
         InitializeComponent();
         _sessionLifecycle.StateChanged += SessionLifecycle_OnStateChanged;
         UpdateSnapshot(null);
@@ -90,9 +97,15 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
             request.Handoff,
             request.ContentMode,
             _session!.ProfileDataPath);
+        // Keep GTK's X11 and software-rendering overrides active until the native adapter and its
+        // WebKit child process have initialized; the scope restores the caller's environment.
+        using var linuxInitialization = _allowLinuxDialogFallback
+            ? LinuxGtkWebViewInitializationScope.Enter()
+            : null;
         var hostAccepted = Start(hostRequest);
+        var hasTopLevelOwner = _dialogOwner is not null || TopLevel.GetTopLevel(this) is not null;
         if (hostAccepted &&
-            (TopLevel.GetTopLevel(this) is null || await WaitForPlatformActivationAsync(cancellationToken)))
+            (!hasTopLevelOwner || await WaitForPlatformActivationAsync(cancellationToken)))
         {
             return true;
         }
@@ -116,14 +129,30 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
             return false;
         }
 
-        var webView = new NativeWebView();
-        var host = new AvaloniaRecoveryBrowserHost(webView, _platformAdapterFactory);
+        var owner = _dialogOwner ?? TopLevel.GetTopLevel(this);
+        var useDialogFallback = owner is not null &&
+            _allowLinuxDialogFallback &&
+            LinuxRecoveryBrowserRuntime.ShouldUseDialogFallback(
+                OperatingSystem.IsLinux(),
+                LinuxRecoveryBrowserRuntime.IsEmbeddedWpeAvailable());
+        var host = useDialogFallback
+            ? new AvaloniaRecoveryBrowserHost(
+                new NativeWebDialog
+                {
+                    Title = "unpwn — Recovery Browser",
+                    CanUserResize = true,
+                },
+                owner!,
+                RecoveryBrowserPlatformAdapter.CreateDialog)
+            : new AvaloniaRecoveryBrowserHost(new NativeWebView(), _platformAdapterFactory);
         host.SnapshotChanged += Host_OnSnapshotChanged;
+        host.SurfaceClosing += Host_OnSurfaceClosing;
         try
         {
             if (!host.Start(request))
             {
                 host.SnapshotChanged -= Host_OnSnapshotChanged;
+                host.SurfaceClosing -= Host_OnSurfaceClosing;
                 host.Dispose();
                 return false;
             }
@@ -133,12 +162,15 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
                 InvalidOperationException)
         {
             host.SnapshotChanged -= Host_OnSnapshotChanged;
+            host.SurfaceClosing -= Host_OnSurfaceClosing;
             host.Dispose();
             return false;
         }
 
         _host = host;
-        BrowserContent.Content = webView;
+        BrowserContent.Content = host.EmbeddedControl;
+        BrowserContent.IsVisible = host.IsEmbedded;
+        DialogFallbackNotice.IsVisible = !host.IsEmbedded;
         UpdateSnapshot(host.Snapshot);
         return true;
     }
@@ -166,11 +198,14 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
         if (_host is not null)
         {
             _host.SnapshotChanged -= Host_OnSnapshotChanged;
+            _host.SurfaceClosing -= Host_OnSurfaceClosing;
             _host.Dispose();
             _host = null;
         }
 
         BrowserContent.Content = null;
+        BrowserContent.IsVisible = true;
+        DialogFallbackNotice.IsVisible = false;
         UpdateSnapshot(null);
         if (_ownsSessionLifecycle && _sessionLifecycle is IDisposable disposableLifecycle)
         {
@@ -192,17 +227,24 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
 
         host.StopLoading();
         BrowserContent.Content = null;
+        if (!host.IsEmbedded)
+        {
+            host.Close();
+        }
         await host.WaitForPlatformReleaseAsync(cancellationToken);
         host.SnapshotChanged -= Host_OnSnapshotChanged;
+        host.SurfaceClosing -= Host_OnSurfaceClosing;
         host.Dispose();
         _host = null;
+        BrowserContent.IsVisible = true;
+        DialogFallbackNotice.IsVisible = false;
         UpdateSnapshot(null);
     }
 
     private async Task<bool> WaitForPlatformActivationAsync(CancellationToken cancellationToken)
     {
         var host = _host;
-        if (host is null || BrowserContent.Content is not NativeWebView webView)
+        if (host is null)
         {
             return false;
         }
@@ -220,7 +262,7 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
                     return false;
                 }
 
-                if (webView.TryGetPlatformHandle() is not null)
+                if (host.TryGetPlatformHandle() is not null)
                 {
                     // AdapterCreated and the platform hardening callback run synchronously before
                     // the handle is usable. Yield once so the snapshot projection can settle.
@@ -242,6 +284,9 @@ public partial class RecoveryBrowserView : UserControl, IDisposable, IRecoveryBr
     private void Host_OnSnapshotChanged(
         object? sender,
         RecoveryBrowserHostSnapshot snapshot) => UpdateSnapshot(snapshot);
+
+    private async void Host_OnSurfaceClosing(object? sender, EventArgs args) =>
+        await CloseSessionAsync(CancellationToken.None);
 
     private void SessionLifecycle_OnStateChanged(
         object? sender,

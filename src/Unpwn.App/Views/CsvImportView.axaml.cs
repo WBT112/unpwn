@@ -77,7 +77,7 @@ public partial class CsvImportView : AccessibleScreen
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentNullException.ThrowIfNull(openReadAsync);
         _openSelectedStream = openReadAsync;
-        _ = Interlocked.Increment(ref _previewGeneration);
+        var generation = Interlocked.Increment(ref _previewGeneration);
 
         try
         {
@@ -87,12 +87,23 @@ public partial class CsvImportView : AccessibleScreen
         }
         catch (IOException)
         {
-            ShowReadFailure();
+            if (IsCurrentPreview(generation))
+            {
+                ShowReadFailure();
+            }
             return;
         }
         catch (UnauthorizedAccessException)
         {
-            ShowReadFailure();
+            if (IsCurrentPreview(generation))
+            {
+                ShowReadFailure();
+            }
+            return;
+        }
+
+        if (!IsCurrentPreview(generation))
+        {
             return;
         }
 
@@ -129,7 +140,8 @@ public partial class CsvImportView : AccessibleScreen
 
     internal async Task EvaluateMappingAndPreviewAsync()
     {
-        if (_openSelectedStream is null || _analysis is null)
+        if (_openSelectedStream is null || _analysis is null ||
+            _localization is null || ViewModel is null)
         {
             return;
         }
@@ -172,16 +184,22 @@ public partial class CsvImportView : AccessibleScreen
         }
         catch (IOException)
         {
-            ShowReadFailure();
+            if (IsCurrentPreview(generation))
+            {
+                ShowReadFailure();
+            }
             return;
         }
         catch (UnauthorizedAccessException)
         {
-            ShowReadFailure();
+            if (IsCurrentPreview(generation))
+            {
+                ShowReadFailure();
+            }
             return;
         }
 
-        if (generation != Volatile.Read(ref _previewGeneration))
+        if (!IsCurrentPreview(generation))
         {
             return;
         }
@@ -242,22 +260,23 @@ public partial class CsvImportView : AccessibleScreen
 
     private void CsvImportView_OnDataContextChanged(object? sender, EventArgs eventArgs)
     {
+        _ = Interlocked.Increment(ref _previewGeneration);
         if (_localization is { } previousLocalization)
         {
             previousLocalization.CultureChanged -= Localization_OnCultureChanged;
         }
 
         _localization = ViewModel?.Localization;
-        if (_localization is null)
-        {
-            SetEmptyMappingOptions();
-            return;
-        }
-
-        _localization.CultureChanged += Localization_OnCultureChanged;
         _isUpdatingMapping = true;
         try
         {
+            if (_localization is null)
+            {
+                SetEmptyMappingOptions();
+                return;
+            }
+
+            _localization.CultureChanged += Localization_OnCultureChanged;
             SetMappingOptions(_analysis?.Headers ?? []);
             RefreshLocalizedContent();
         }
@@ -330,7 +349,7 @@ public partial class CsvImportView : AccessibleScreen
 
     private async void MappingCombo_OnSelectionChanged(object? sender, SelectionChangedEventArgs eventArgs)
     {
-        if (!_isUpdatingMapping)
+        if (!_isUpdatingMapping && _localization is not null && ViewModel is not null)
         {
             await EvaluateMappingAndPreviewAsync();
         }
@@ -548,6 +567,11 @@ public partial class CsvImportView : AccessibleScreen
         GetMapping(LoginIdentifierColumnCombo),
         GetMapping(AccountUrlColumnCombo),
         _analysis?.DetectedPasswordColumns ?? []);
+
+    private bool IsCurrentPreview(int generation) =>
+        generation == Volatile.Read(ref _previewGeneration) &&
+        _localization is not null &&
+        ViewModel is not null;
 
     private void RefreshMappingIssues(CsvMappingAssessment assessment)
     {

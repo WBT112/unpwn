@@ -78,6 +78,30 @@ public sealed class RecoveryBrowserHostTests
     }
 
     [Fact]
+    public void NavigationStartedSnapshotPreservesLastCompletedHistoryCapabilities()
+    {
+        var previous = new RecoveryBrowserHostSnapshot(
+            RecoveryBrowserHostState.Ready,
+            new Uri("https://accounts.example.test/first"),
+            "https://accounts.example.test",
+            CanGoBack: true,
+            CanGoForward: true,
+            RecoveryBrowserSecurityEventCode.None);
+        var destination = new Uri("https://accounts.example.test/second");
+
+        var started = AvaloniaRecoveryBrowserHost.CreateNavigationStartedSnapshot(
+            previous,
+            destination,
+            "https://accounts.example.test");
+
+        Assert.Equal(destination, started.Source);
+        Assert.Equal("https://accounts.example.test", started.VisibleOrigin);
+        Assert.True(started.CanGoBack);
+        Assert.True(started.CanGoForward);
+        Assert.Equal(RecoveryBrowserHostState.Ready, started.State);
+    }
+
+    [Fact]
     public async Task ManagedSurfaceClearsAndReleasesBrowserBeforeDeletingSessionData()
     {
         await AccessibilityHeadlessTests.Session.Dispatch(async () =>
