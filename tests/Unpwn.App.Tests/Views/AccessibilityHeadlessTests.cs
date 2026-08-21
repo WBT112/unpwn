@@ -228,6 +228,7 @@ public sealed class AccessibilityHeadlessTests
             var currentAction = FindByAutomationId(view, "workflow-current-action");
             Assert.True(Assert.IsType<Control>(currentAction, exactMatch: false).Focusable);
             Assert.NotNull(FindByAutomationId(view, "workflow-primary-action"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-defer-account"));
             Assert.DoesNotContain(
                 view.GetLogicalDescendants().OfType<StyledElement>(),
                 element => AutomationProperties.GetAutomationId(element) == "workflow-recovery-path");

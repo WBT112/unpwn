@@ -196,6 +196,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => HasNavigationOpportunity);
         GenerateCredentialCommand = Command(GenerateCredentialAsync, CanGenerateCredential);
         GuidedPrimaryActionCommand = Command(GuidedPrimaryActionAsync, CanRunGuidedPrimaryAction);
+        DeferAccountCommand = Command(DeferAccountAsync, () => CanDeferAccount);
         ShowProblemReviewCommand = new RelayCommand(
             () => IsProblemReviewVisible = true,
             CanReportProblem);
@@ -260,6 +261,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public AsyncCommand GenerateCredentialCommand { get; }
 
     public AsyncCommand GuidedPrimaryActionCommand { get; }
+
+    public AsyncCommand DeferAccountCommand { get; }
 
     public RelayCommand ShowProblemReviewCommand { get; }
 
@@ -358,6 +361,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     }
 
     public bool IsGuidedActionVisible => !IsAdvancedStatusVisible;
+
+    public bool CanDeferAccount =>
+        _account is { } account &&
+        _session.CurrentSession is { Status: RecoveryWorkspaceLifecycleStatus.Active } session &&
+        session.Accounts.Any(candidate =>
+            candidate.AccountId == account.Id && !candidate.IsFullyReviewed);
 
     public bool IsBrowserWorkspaceVisible
     {
@@ -825,6 +834,30 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         {
             await ContinueCurrentActionAsync(cancellationToken);
         }
+    }
+
+    private async Task DeferAccountAsync(CancellationToken cancellationToken)
+    {
+        if (_account is not { } account ||
+            _session.CurrentSession is not { Status: RecoveryWorkspaceLifecycleStatus.Active } session)
+        {
+            SetValidation("Workflow.Validation.InvalidInput");
+            return;
+        }
+
+        var result = await _session.DeferAccountAsync(
+            account.Id,
+            session.Revision,
+            cancellationToken);
+        if (!result.Succeeded)
+        {
+            SetValidation(SessionFailureKey(result.FailureCode));
+            return;
+        }
+
+        OverviewReturnRequested?.Invoke(
+            this,
+            new WorkflowOverviewReturnRequest("Workflow.Queue.Deferred"));
     }
 
     private async Task CompleteCurrentActionAsync(CancellationToken cancellationToken)
@@ -1747,7 +1780,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,
                      SaveNotesCommand, OpenOfficialPageCommand,
                      OpenRecoveryBrowserCommand,
-                     GenerateCredentialCommand, GuidedPrimaryActionCommand,
+                     GenerateCredentialCommand, GuidedPrimaryActionCommand, DeferAccountCommand,
                      ApplyGuidedProblemCommand,
                  })
         {
@@ -1757,6 +1790,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(CanRunGuidedPrimary));
         OnPropertyChanged(nameof(CanReportCurrentProblem));
+        OnPropertyChanged(nameof(CanDeferAccount));
         ShowProblemReviewCommand.RaiseCanExecuteChanged();
     }
 
@@ -1793,7 +1827,18 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private void Session_OnSessionChanged(object? sender, EventArgs eventArgs)
     {
         OnPropertyChanged(nameof(RecommendationReasonText));
+        OnPropertyChanged(nameof(CanDeferAccount));
+        DeferAccountCommand.RaiseCanExecuteChanged();
     }
+
+    private static string SessionFailureKey(RecoverySessionOperationFailureCode failureCode) =>
+        failureCode switch
+        {
+            RecoverySessionOperationFailureCode.Locked => "Workflow.Validation.Locked",
+            RecoverySessionOperationFailureCode.Conflict => "Workflow.Validation.Conflict",
+            RecoverySessionOperationFailureCode.IoFailure => "Workflow.Validation.PersistenceFailure",
+            _ => "Workflow.Validation.InvalidInput",
+        };
 
     private static string FailureKey(AccountRecoveryExecutionFailureCode failureCode) => failureCode switch
     {

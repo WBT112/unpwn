@@ -43,6 +43,22 @@
       </StackPanel>
     </Border>
 
+    <Border IsVisible="{Binding CanDeferAccount}"
+            Padding="14" CornerRadius="8"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+      <StackPanel Spacing="8">
+        <TextBlock FontWeight="SemiBold"
+                   Text="{DynamicResource Workflow.Guided.Defer.Title}"
+                   TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Workflow.Guided.Defer.Help}"
+                   TextWrapping="Wrap" />
+        <Button HorizontalAlignment="Left"
+                AutomationProperties.AutomationId="workflow-defer-account"
+                Content="{DynamicResource Dashboard.Recommendation.Action.Skip}"
+                Command="{Binding DeferAccountCommand}" />
+      </StackPanel>
+    </Border>
+
     <Border IsVisible="{Binding !HasExecution}"
             Padding="18" CornerRadius="10"
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">

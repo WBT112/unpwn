@@ -137,6 +137,7 @@
   <data name="Workflow.Queue.Recalculated.Title" xml:space="preserve"><value>Recovery queue updated</value></data>
   <data name="Workflow.Queue.Changed" xml:space="preserve"><value>The recommended account or action changed after the recorded outcome. Review the current recommendation before continuing.</value></data>
   <data name="Workflow.Queue.Unchanged" xml:space="preserve"><value>The recovery queue was updated. The current recommendation remains the same and unresolved work is still visible.</value></data>
+  <data name="Workflow.Queue.Deferred" xml:space="preserve"><value>The account was moved behind other outstanding work for this pass. Nothing was marked complete or secure; the deferred account remains unresolved.</value></data>
   <data name="Workflow.Validation.InventoryUnavailable" xml:space="preserve"><value>Unlock a vault and load an account inventory before starting account recovery.</value></data>
   <data name="Workflow.Validation.AccountUnavailable" xml:space="preserve"><value>The selected account is no longer available in the encrypted inventory.</value></data>
   <data name="Workflow.Validation.NoSafeRecoveryPath" xml:space="preserve"><value>No safe supported recovery approach is available for the currently confirmed account state. The account remains visibly blocked.</value></data>
@@ -166,6 +167,8 @@
   <data name="Workflow.Guided.Completion.Title" xml:space="preserve"><value>Did this step really work?</value></data>
   <data name="Workflow.Guided.Done" xml:space="preserve"><value>Done</value></data>
   <data name="Workflow.Guided.CannotContinue" xml:space="preserve"><value>I cannot continue</value></data>
+  <data name="Workflow.Guided.Defer.Title" xml:space="preserve"><value>Need to work on another account first?</value></data>
+  <data name="Workflow.Guided.Defer.Help" xml:space="preserve"><value>Deferring returns to the recalculated recovery queue. This account and every unfinished step remain unresolved.</value></data>
   <data name="Workflow.Guided.Credential.Generate" xml:space="preserve"><value>Generate a new password for this step</value></data>
   <data name="Workflow.Guided.Authentication.Title" xml:space="preserve"><value>Provider sign-in and verification</value></data>
   <data name="Workflow.Guided.AuthenticationGuidance" xml:space="preserve"><value>The provider may require your current sign-in, MFA, passkey, security key, recovery code, CAPTCHA, email link, or identity verification. Complete those checks yourself. unpwn does not store or bypass them and does not infer success from the page.</value></data>
