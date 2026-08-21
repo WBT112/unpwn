@@ -158,10 +158,7 @@ internal sealed class WindowsRecoveryBrowserPlatformAdapter(string profileDataPa
 
     private void ResetEnvironmentTracking()
     {
-        if (_environment is not null)
-        {
-            _environment.BrowserProcessExited -= Environment_OnBrowserProcessExited;
-        }
+        _environment?.BrowserProcessExited -= Environment_OnBrowserProcessExited;
 
         _environment = null;
         _browserProcessId = 0;
