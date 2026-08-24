@@ -28,6 +28,22 @@ public sealed record RecoveryBrowserWorkspaceRequest(
     RecoveryNavigationHandoff Handoff,
     RecoveryBrowserContentMode ContentMode);
 
+public enum RecoveryBrowserLaunchState
+{
+    Available,
+    Starting,
+    Active,
+    Failed,
+}
+
+public enum RecoveryBrowserLaunchFailureReason
+{
+    None,
+    LifecycleUnavailable,
+    HostUnavailable,
+    StartupFailed,
+}
+
 public sealed class WorkflowCompletionCriterionViewModel : ObservableObject
 {
     private bool _isAcknowledged;
@@ -116,6 +132,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private bool _isAdvancedStatusVisible;
     private bool _isBrowserWorkspaceVisible;
     private bool _hasBrowserLocationProblem;
+    private bool _isSecurityDetailsVisible;
+    private bool _isProgressDetailsVisible;
+    private RecoveryBrowserLaunchState _browserLaunchState = RecoveryBrowserLaunchState.Available;
+    private RecoveryBrowserLaunchFailureReason _browserLaunchFailureReason;
     private long _currentActionFocusRequest;
 
     public WorkflowExecutionScreenViewModel(
@@ -195,8 +215,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         MarkNotApplicableCommand = Command(MarkNotApplicableAsync, CanTransitionCurrentAction);
         AcceptRiskCommand = Command(AcceptRiskAsync, CanAcceptRisk);
         SaveNotesCommand = Command(SaveNotesAsync, () => _execution is not null && CurrentActionState is not null);
-        OpenRecoveryBrowserCommand = Command(OpenRecoveryBrowserAsync, () => HasNavigationOpportunity);
-        OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => HasNavigationOpportunity);
+        OpenOfficialPageCommand = Command(OpenOfficialPageAsync, () => CanUseExternalBrowserFallback);
         GenerateCredentialCommand = Command(GenerateCredentialAsync, CanGenerateCredential);
         GuidedPrimaryActionCommand = Command(GuidedPrimaryActionAsync, CanRunGuidedPrimaryAction);
         DeferAccountCommand = Command(DeferAccountAsync, () => CanDeferAccount);
@@ -207,6 +226,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         ApplyGuidedProblemCommand = Command(ApplyGuidedProblemAsync, CanApplyGuidedProblem);
         ShowAdvancedStatusCommand = new RelayCommand(() => IsAdvancedStatusVisible = true);
         ShowGuidedActionCommand = new RelayCommand(() => IsAdvancedStatusVisible = false);
+        ToggleSecurityDetailsCommand = new RelayCommand(
+            () => IsSecurityDetailsVisible = !IsSecurityDetailsVisible);
+        ToggleProgressDetailsCommand = new RelayCommand(
+            () => IsProgressDetailsVisible = !IsProgressDetailsVisible);
         ReviewAccountDetailsCommand = new RelayCommand(
             RequestAccountReview,
             () => HasBrowserLocationProblem && _account is not null);
@@ -222,6 +245,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public event EventHandler<WorkflowAccountReviewRequest>? AccountReviewRequested;
 
     public event EventHandler<RecoveryBrowserWorkspaceRequest>? RecoveryBrowserRequested;
+
+    public event EventHandler? RecoveryBrowserFocusRequested;
 
     internal IRecoveryBrowserSessionLifecycle? BrowserSessions => _browserSessions;
 
@@ -259,8 +284,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     public AsyncCommand OpenOfficialPageCommand { get; }
 
-    public AsyncCommand OpenRecoveryBrowserCommand { get; }
-
     public AsyncCommand GenerateCredentialCommand { get; }
 
     public AsyncCommand GuidedPrimaryActionCommand { get; }
@@ -276,6 +299,10 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public RelayCommand ShowAdvancedStatusCommand { get; }
 
     public RelayCommand ShowGuidedActionCommand { get; }
+
+    public RelayCommand ToggleSecurityDetailsCommand { get; }
+
+    public RelayCommand ToggleProgressDetailsCommand { get; }
 
     public RecoveryPathOptionViewModel? SelectedPath => _selectedPath;
 
@@ -306,6 +333,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             _navigationStatusKey = null;
             _navigationFailureCode = ExternalNavigationFailureCode.None;
             _preparedNavigation = null;
+            ResetBrowserLaunchState();
+            IsSecurityDetailsVisible = false;
+            IsProgressDetailsVisible = false;
             IsProblemReviewVisible = false;
             CurrentActionFocusRequest++;
             NotifyCurrentActionProperties();
@@ -373,6 +403,38 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     }
 
     public bool IsGuidedActionVisible => !IsAdvancedStatusVisible;
+
+    public bool IsSecurityDetailsVisible
+    {
+        get => _isSecurityDetailsVisible;
+        private set
+        {
+            if (SetProperty(ref _isSecurityDetailsVisible, value))
+            {
+                OnPropertyChanged(nameof(SecurityDetailsActionText));
+            }
+        }
+    }
+
+    public bool IsProgressDetailsVisible
+    {
+        get => _isProgressDetailsVisible;
+        private set
+        {
+            if (SetProperty(ref _isProgressDetailsVisible, value))
+            {
+                OnPropertyChanged(nameof(ProgressDetailsActionText));
+            }
+        }
+    }
+
+    public string SecurityDetailsActionText => Localization.GetString(IsSecurityDetailsVisible
+        ? "Workflow.Guided.Details.Hide"
+        : "Workflow.Guided.Details.Show");
+
+    public string ProgressDetailsActionText => Localization.GetString(IsProgressDetailsVisible
+        ? "Workflow.Guided.Progress.Hide"
+        : "Workflow.Guided.Progress.Show");
 
     public bool CanDeferAccount =>
         _account is { } account &&
@@ -453,6 +515,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     public bool CanRunGuidedPrimary => CanRunGuidedPrimaryAction();
 
+    public bool IsGuidedPrimaryActionVisible =>
+        CurrentActionState?.Status is (
+            RecoveryActionStatus.Open or RecoveryActionStatus.InProgress or RecoveryActionStatus.Blocked or
+            RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction) &&
+        !HasBrowserLocationProblem;
+
     public bool CanReportCurrentProblem => CanReportProblem();
 
     public bool IsCurrentActionInProgress =>
@@ -461,21 +529,47 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public bool HasCurrentActionFinished => CurrentActionState?.Status is
         RecoveryActionStatus.Completed or RecoveryActionStatus.NotApplicable;
 
-    public string GuidedPrimaryActionText => CurrentActionState?.Status == RecoveryActionStatus.InProgress
-        ? Localization.GetString("Workflow.Guided.Primary.ResumeBrowser")
-        : CanDiscoverCurrentLocation && _preparedNavigation is null
-        ? Localization.GetString(CurrentActionState?.Status is
-            RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction
-                ? "Workflow.Guided.Primary.RetryAndDiscover"
-                : "Workflow.Guided.Primary.StartAndDiscover")
-        : CurrentActionState?.Status is
-        RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction
-            ? Localization.GetString(HasOfficialLocation
+    public string GuidedPrimaryActionText => BrowserLaunchState switch
+    {
+        RecoveryBrowserLaunchState.Starting => Localization.GetString("Workflow.Guided.Primary.Opening"),
+        RecoveryBrowserLaunchState.Active => Localization.GetString("Workflow.Guided.Primary.FocusBrowser"),
+        RecoveryBrowserLaunchState.Failed => Localization.GetString("Workflow.Guided.Primary.RetryBrowser"),
+        _ when CurrentActionState?.Status == RecoveryActionStatus.InProgress =>
+            Localization.GetString("Workflow.Guided.Primary.ResumeBrowser"),
+        _ when CanDiscoverCurrentLocation && _preparedNavigation is null =>
+            Localization.GetString(CurrentActionState?.Status is
+                RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction
+                    ? "Workflow.Guided.Primary.RetryAndDiscover"
+                    : "Workflow.Guided.Primary.StartAndDiscover"),
+        _ when CurrentActionState?.Status is
+            RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or RecoveryActionStatus.NeedsUserAction =>
+            Localization.GetString(HasOfficialLocation
                 ? "Workflow.Guided.Primary.RetryAndOpen"
-                : "Workflow.Guided.Primary.Retry")
-            : Localization.GetString(HasOfficialLocation
-                ? "Workflow.Guided.Primary.StartAndOpen"
-                : "Workflow.Guided.Primary.Start");
+                : "Workflow.Guided.Primary.Retry"),
+        _ => Localization.GetString(HasOfficialLocation
+            ? "Workflow.Guided.Primary.StartAndOpen"
+            : "Workflow.Guided.Primary.Start"),
+    };
+
+    public RecoveryBrowserLaunchState BrowserLaunchState => _browserLaunchState;
+
+    public bool IsBrowserLaunchStarting => BrowserLaunchState == RecoveryBrowserLaunchState.Starting;
+
+    public bool HasBrowserLaunchFailure => BrowserLaunchState == RecoveryBrowserLaunchState.Failed;
+
+    public bool CanUseExternalBrowserFallback =>
+        HasBrowserLaunchFailure &&
+        _preparedNavigation is not null &&
+        !HasBrowserLocationProblem;
+
+    public string BrowserLaunchFailureMessage => Localization.GetString(_browserLaunchFailureReason switch
+    {
+        RecoveryBrowserLaunchFailureReason.LifecycleUnavailable =>
+            "Workflow.Browser.Failure.LifecycleUnavailable",
+        RecoveryBrowserLaunchFailureReason.HostUnavailable =>
+            "Workflow.Browser.Failure.HostUnavailable",
+        _ => "Workflow.Browser.Failure.StartupFailed",
+    });
 
     public string CurrentActionWhyText => Localization.Format(
         "Workflow.Guided.Action.Why",
@@ -490,6 +584,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public bool HasNavigationStatus => _navigationStatusKey is not null ||
         _navigationFailureCode != ExternalNavigationFailureCode.None;
 
+    public bool HasStandaloneNavigationStatus =>
+        HasNavigationStatus && !HasBrowserLaunchFailure;
+
     public bool HasBrowserLocationProblem
     {
         get => _hasBrowserLocationProblem;
@@ -498,6 +595,11 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             if (SetProperty(ref _hasBrowserLocationProblem, value))
             {
                 ReviewAccountDetailsCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(IsGuidedPrimaryActionVisible));
+                OnPropertyChanged(nameof(CanRunGuidedPrimary));
+                OnPropertyChanged(nameof(CanUseExternalBrowserFallback));
+                GuidedPrimaryActionCommand.RaiseCanExecuteChanged();
+                OpenOfficialPageCommand.RaiseCanExecuteChanged();
             }
         }
     }
@@ -683,10 +785,19 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _ = ActivateAsync(startRecovery);
     }
 
-    public void ReportRecoveryBrowserOpenResult(bool succeeded, bool workspaceVisible = false)
+    public void ReportRecoveryBrowserOpenResult(
+        bool succeeded,
+        bool workspaceVisible = false,
+        RecoveryBrowserLaunchFailureReason failureReason = RecoveryBrowserLaunchFailureReason.StartupFailed)
     {
-        IsBrowserWorkspaceVisible = succeeded || workspaceVisible;
-        _navigationStatusKey = succeeded
+        var isActive = succeeded || workspaceVisible;
+        IsBrowserWorkspaceVisible = isActive;
+        SetBrowserLaunchState(
+            isActive
+                ? RecoveryBrowserLaunchState.Active
+                : RecoveryBrowserLaunchState.Failed,
+            isActive ? RecoveryBrowserLaunchFailureReason.None : failureReason);
+        _navigationStatusKey = isActive
             ? "Workflow.Browser.Opened"
             : "Workflow.Browser.Unavailable";
         NotifyNavigationStatus();
@@ -695,6 +806,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     public void ReportRecoveryBrowserClosed()
     {
         IsBrowserWorkspaceVisible = false;
+        SetBrowserLaunchState(RecoveryBrowserLaunchState.Available);
         _navigationStatusKey = CompletionCriteriaAcknowledged
             ? "Workflow.Browser.ClosedConfirmed"
             : "Workflow.Browser.ClosedIncomplete";
@@ -736,6 +848,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         NotifyCurrentActionProperties();
         OnPropertyChanged(nameof(ValidationMessage));
         OnPropertyChanged(nameof(NavigationStatus));
+        OnPropertyChanged(nameof(BrowserLaunchFailureMessage));
+        OnPropertyChanged(nameof(SecurityDetailsActionText));
+        OnPropertyChanged(nameof(ProgressDetailsActionText));
     }
 
     private AsyncCommand Command(Func<CancellationToken, Task> execute, Func<bool>? canExecute = null) =>
@@ -769,6 +884,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _navigationFailureCode = ExternalNavigationFailureCode.None;
         _preparedNavigation = null;
         _pendingRecoveryBrowserRequest = null;
+        ResetBrowserLaunchState();
+        IsSecurityDetailsVisible = false;
+        IsProgressDetailsVisible = false;
         var inventory = _inventory.CurrentInventory;
         if (inventory is null)
         {
@@ -1013,6 +1131,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
+        if (BrowserLaunchState == RecoveryBrowserLaunchState.Active && IsBrowserWorkspaceVisible)
+        {
+            RecoveryBrowserFocusRequested?.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
         await ContinueCurrentActionAsync(cancellationToken);
     }
 
@@ -1065,9 +1189,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             preserveNavigation: true);
     }
 
-    private Task OpenRecoveryBrowserAsync(CancellationToken cancellationToken) =>
-        OpenRecoveryBrowserAsync(allowBrowserEntryFallback: false, cancellationToken);
-
     private async Task OpenRecoveryBrowserAsync(
         bool allowBrowserEntryFallback,
         CancellationToken cancellationToken)
@@ -1075,17 +1196,20 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         var handoff = await PrepareNavigationAsync(
             allowBrowserEntryFallback,
             cancellationToken);
-        if (handoff is null || _account is null || _browserSessions is null)
+        if (handoff is null || _account is null)
         {
-            if (_browserSessions is null)
-            {
-                _navigationFailureCode = ExternalNavigationFailureCode.None;
-                _navigationStatusKey = "Workflow.Browser.Unavailable";
-                NotifyNavigationStatus();
-            }
             return;
         }
 
+        if (_browserSessions is null)
+        {
+            ReportRecoveryBrowserOpenResult(
+                false,
+                failureReason: RecoveryBrowserLaunchFailureReason.LifecycleUnavailable);
+            return;
+        }
+
+        SetBrowserLaunchState(RecoveryBrowserLaunchState.Starting);
         _navigationStatusKey = "Workflow.Browser.Opening";
         NotifyNavigationStatus();
         var request = new RecoveryBrowserWorkspaceRequest(
@@ -1165,8 +1289,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
     private async Task OpenOfficialPageAsync(CancellationToken cancellationToken)
     {
-        var handoff = await PrepareNavigationAsync(cancellationToken);
-        if (handoff is null)
+        if (!CanUseExternalBrowserFallback || _preparedNavigation is not { } handoff)
         {
             return;
         }
@@ -1176,10 +1299,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _navigationStatusKey = opened.Succeeded ? "Workflow.Navigation.OpenedExternal" : null;
         NotifyNavigationStatus();
     }
-
-    private Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
-        CancellationToken cancellationToken) =>
-        PrepareNavigationAsync(allowBrowserEntryFallback: false, cancellationToken);
 
     private async Task<RecoveryNavigationHandoff?> PrepareNavigationAsync(
         bool allowBrowserEntryFallback,
@@ -1400,6 +1519,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             _navigationStatusKey = null;
             _navigationFailureCode = ExternalNavigationFailureCode.None;
             _preparedNavigation = null;
+            ResetBrowserLaunchState();
         }
         IsProblemReviewVisible = false;
         ClearValidation();
@@ -1638,10 +1758,13 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     }
 
     private bool CanRunGuidedPrimaryAction() =>
+        !HasBrowserLocationProblem &&
+        BrowserLaunchState != RecoveryBrowserLaunchState.Starting &&
+        (BrowserLaunchState == RecoveryBrowserLaunchState.Active && IsBrowserWorkspaceVisible ||
         CurrentActionState?.Status is
             RecoveryActionStatus.Open or RecoveryActionStatus.Blocked or RecoveryActionStatus.Failed or
             RecoveryActionStatus.NeedsUserAction ||
-        (CurrentActionState?.Status == RecoveryActionStatus.InProgress && !IsBrowserWorkspaceVisible);
+        CurrentActionState?.Status == RecoveryActionStatus.InProgress);
 
     private bool CanReportProblem() => CurrentActionState?.Status is
         RecoveryActionStatus.Open or RecoveryActionStatus.InProgress or RecoveryActionStatus.Blocked or
@@ -1755,10 +1878,13 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(ReplacementCredentialGuidanceText));
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(CanRunGuidedPrimary));
+        OnPropertyChanged(nameof(IsGuidedPrimaryActionVisible));
         OnPropertyChanged(nameof(CanReportCurrentProblem));
         OnPropertyChanged(nameof(IsCurrentActionInProgress));
         OnPropertyChanged(nameof(HasCurrentActionFinished));
         OnPropertyChanged(nameof(GuidedPrimaryActionText));
+        OnPropertyChanged(nameof(SecurityDetailsActionText));
+        OnPropertyChanged(nameof(ProgressDetailsActionText));
         OnPropertyChanged(nameof(CurrentActionWhyText));
         OnPropertyChanged(nameof(HasRecordedReason));
         OnPropertyChanged(nameof(CurrentActionTitle));
@@ -1779,6 +1905,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
     private void NotifyNavigationStatus()
     {
         OnPropertyChanged(nameof(HasNavigationStatus));
+        OnPropertyChanged(nameof(HasStandaloneNavigationStatus));
         OnPropertyChanged(nameof(NavigationStatus));
     }
 
@@ -1791,7 +1918,6 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
                      CompleteActionCommand, RequireUserActionCommand, BlockActionCommand,
                      FailActionCommand, MarkNotApplicableCommand, AcceptRiskCommand,
                      SaveNotesCommand, OpenOfficialPageCommand,
-                     OpenRecoveryBrowserCommand,
                      GenerateCredentialCommand, GuidedPrimaryActionCommand, DeferAccountCommand,
                      ApplyGuidedProblemCommand,
                  })
@@ -1801,6 +1927,8 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
 
         OnPropertyChanged(nameof(CanGenerateCredentialForCurrentAction));
         OnPropertyChanged(nameof(CanRunGuidedPrimary));
+        OnPropertyChanged(nameof(IsGuidedPrimaryActionVisible));
+        OnPropertyChanged(nameof(CanUseExternalBrowserFallback));
         OnPropertyChanged(nameof(CanReportCurrentProblem));
         OnPropertyChanged(nameof(CanDeferAccount));
         ShowProblemReviewCommand.RaiseCanExecuteChanged();
@@ -1816,9 +1944,36 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         CurrentDefinition?.Type == RecoveryActionType.ChangePassword &&
         Uri.TryCreate(_account?.AccountUrl, UriKind.Absolute, out _);
 
-    private bool HasNavigationOpportunity =>
-        _preparedNavigation is not null || CurrentLocation is not null ||
-        ReviewedBrowserEntry is not null || CanDiscoverCurrentLocation;
+    private void ResetBrowserLaunchState()
+    {
+        SetBrowserLaunchState(IsBrowserWorkspaceVisible
+            ? RecoveryBrowserLaunchState.Active
+            : RecoveryBrowserLaunchState.Available);
+    }
+
+    private void SetBrowserLaunchState(
+        RecoveryBrowserLaunchState state,
+        RecoveryBrowserLaunchFailureReason failureReason = RecoveryBrowserLaunchFailureReason.None)
+    {
+        if (_browserLaunchState == state && _browserLaunchFailureReason == failureReason)
+        {
+            return;
+        }
+
+        _browserLaunchState = state;
+        _browserLaunchFailureReason = failureReason;
+        OnPropertyChanged(nameof(BrowserLaunchState));
+        OnPropertyChanged(nameof(IsBrowserLaunchStarting));
+        OnPropertyChanged(nameof(HasBrowserLaunchFailure));
+        OnPropertyChanged(nameof(HasStandaloneNavigationStatus));
+        OnPropertyChanged(nameof(CanUseExternalBrowserFallback));
+        OnPropertyChanged(nameof(BrowserLaunchFailureMessage));
+        OnPropertyChanged(nameof(GuidedPrimaryActionText));
+        OnPropertyChanged(nameof(CanRunGuidedPrimary));
+        OnPropertyChanged(nameof(IsGuidedPrimaryActionVisible));
+        GuidedPrimaryActionCommand.RaiseCanExecuteChanged();
+        OpenOfficialPageCommand.RaiseCanExecuteChanged();
+    }
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs)
     {

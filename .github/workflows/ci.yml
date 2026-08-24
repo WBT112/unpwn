@@ -129,7 +129,12 @@ jobs:
           $app = (Resolve-Path 'src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll').Path
           $harness = (Resolve-Path 'tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll').Path
           $scenarios = if ($IsWindows) {
-            @('golden', 'browser-close-preserves-recovery')
+            @(
+              'golden',
+              'browser-close-preserves-recovery',
+              'reviewed-browser-step-hierarchy',
+              'browser-startup-failure-fallback'
+            )
           } else {
             @(
               'golden',
@@ -137,7 +142,9 @@ jobs:
               'vault-wrong-password-and-resume',
               'import-correction-and-retry',
               'defer-account',
-              'browser-close-preserves-recovery'
+              'browser-close-preserves-recovery',
+              'reviewed-browser-step-hierarchy',
+              'browser-startup-failure-fallback'
             )
           }
           foreach ($scenario in $scenarios) {
@@ -228,7 +235,7 @@ jobs:
         run: |
           app="$GITHUB_WORKSPACE/src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll"
           harness="$GITHUB_WORKSPACE/tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll"
-          for scenario in golden browser-close-preserves-recovery; do
+          for scenario in golden browser-close-preserves-recovery reviewed-browser-step-hierarchy browser-startup-failure-fallback; do
             artifacts="$GITHUB_WORKSPACE/artifacts/desktop-e2e/$scenario"
             xvfb-run --auto-servernum dotnet "$harness" --app "$app" --scenario "$scenario" --artifacts "$artifacts"
           done

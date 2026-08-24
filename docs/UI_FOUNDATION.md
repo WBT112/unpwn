@@ -56,6 +56,14 @@ account-execution aggregate. Unsupported providers fail closed to manual guidanc
 URLs or actions. Material outcomes return to the dashboard after its recommendation has been
 recalculated.
 
+An active recovery step presents the account, one task, its concise instruction, and exactly one
+visually primary action. The same action starts, retries, or focuses the Managed Recovery Browser;
+there is no second internal-browser CTA. Provider trust, rationale, prerequisites, exact URL/origins,
+and advanced state are collapsed under security details. The complete action list is collapsed behind
+the compact progress indicator. Credential generation and handoff appear only for the password step
+that can consume them. **Cannot continue** and account deferral remain secondary actions and never
+silently complete or skip required work.
+
 Workspace-owned asynchronous continuation actions contain recovery-flow, persistence, navigation,
 and screen-activation failures before they reach Avalonia's platform dispatcher. A failure leaves an
 explicit localized warning and never fabricates a transition or treats a route change as recovery

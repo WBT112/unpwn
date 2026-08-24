@@ -8,6 +8,8 @@ internal static class DesktopE2EScenarioCatalog
     public const string ImportCorrectionAndRetry = "import-correction-and-retry";
     public const string DeferAccount = "defer-account";
     public const string BrowserClosePreservesRecovery = "browser-close-preserves-recovery";
+    public const string ReviewedBrowserStepHierarchy = "reviewed-browser-step-hierarchy";
+    public const string BrowserStartupFailureFallback = "browser-startup-failure-fallback";
 
     public static IReadOnlySet<string> All { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
@@ -17,6 +19,8 @@ internal static class DesktopE2EScenarioCatalog
         ImportCorrectionAndRetry,
         DeferAccount,
         BrowserClosePreservesRecovery,
+        ReviewedBrowserStepHierarchy,
+        BrowserStartupFailureFallback,
     };
 
     public static bool IsSupported(string? scenario) =>

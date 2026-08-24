@@ -7,6 +7,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Unpwn.App.Presentation;
 using Unpwn.App.Services;
+using Unpwn.Application.Recovery;
 
 namespace Unpwn.App.Views;
 
@@ -79,6 +80,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
         {
             _subscribedViewModel.PropertyChanged += ViewModel_OnPropertyChanged;
             _subscribedViewModel.RecoveryBrowserRequested += ViewModel_OnRecoveryBrowserRequested;
+            _subscribedViewModel.RecoveryBrowserFocusRequested += ViewModel_OnRecoveryBrowserFocusRequested;
             if (_subscribedViewModel.TryTakePendingRecoveryBrowserRequest(out var request))
             {
                 ViewModel_OnRecoveryBrowserRequested(_subscribedViewModel, request);
@@ -95,6 +97,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
         _subscribedViewModel.PropertyChanged -= ViewModel_OnPropertyChanged;
         _subscribedViewModel.RecoveryBrowserRequested -= ViewModel_OnRecoveryBrowserRequested;
+        _subscribedViewModel.RecoveryBrowserFocusRequested -= ViewModel_OnRecoveryBrowserFocusRequested;
     }
 
     [SuppressMessage(
@@ -108,7 +111,27 @@ public partial class WorkflowExecutionView : AccessibleScreen
         var viewModel = _subscribedViewModel;
         if (viewModel?.BrowserSessions is null)
         {
-            viewModel?.ReportRecoveryBrowserOpenResult(false);
+            viewModel?.ReportRecoveryBrowserOpenResult(
+                false,
+                failureReason: RecoveryBrowserLaunchFailureReason.LifecycleUnavailable);
+            return;
+        }
+
+        if (global::Unpwn.App.Program.DesktopE2E is
+            { ForceBrowserStartupFailure: true } &&
+            request.ContentMode == RecoveryBrowserContentMode.SyntheticTest &&
+            request.Handoff.RequiresVisibleConfirmation &&
+            (request.Handoff.Destination.IsLoopback ||
+             string.Equals(
+                 request.Handoff.Destination.Host,
+                 "vault.bitwarden.com",
+                 StringComparison.OrdinalIgnoreCase)))
+        {
+            // This deterministic failure exists only behind a validated desktop-E2E scenario.
+            // It runs before native host/session creation and never navigates the destination.
+            viewModel.ReportRecoveryBrowserOpenResult(
+                false,
+                failureReason: RecoveryBrowserLaunchFailureReason.StartupFailed);
             return;
         }
 
@@ -117,7 +140,9 @@ public partial class WorkflowExecutionView : AccessibleScreen
             var owner = TopLevel.GetTopLevel(this);
             if (owner is null)
             {
-                viewModel.ReportRecoveryBrowserOpenResult(false);
+                viewModel.ReportRecoveryBrowserOpenResult(
+                    false,
+                    failureReason: RecoveryBrowserLaunchFailureReason.HostUnavailable);
                 return;
             }
 
@@ -150,7 +175,8 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
         viewModel.ReportRecoveryBrowserOpenResult(
             opened,
-            _browserView.SessionSnapshot.State != RecoveryBrowserSessionLifecycleState.Idle);
+            _browserView.SessionSnapshot.State != RecoveryBrowserSessionLifecycleState.Idle,
+            RecoveryBrowserLaunchFailureReason.StartupFailed);
         if (!opened)
         {
             return;
@@ -191,10 +217,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
         var view = new RecoveryCredentialHandoffView { DataContext = handoff };
         _credentialHandoffViewModel = handoff;
         _credentialHandoffView = view;
-        if (CurrentActionCard.Child is StackPanel assistantPanel)
-        {
-            assistantPanel.Children.Add(view);
-        }
+        CredentialHandoffHost.Content = view;
 
         await handoff.InitializeAsync();
     }
@@ -215,11 +238,7 @@ public partial class WorkflowExecutionView : AccessibleScreen
 
     private void RemoveCredentialHandoff()
     {
-        if (_credentialHandoffView is not null &&
-            CurrentActionCard.Child is StackPanel assistantPanel)
-        {
-            assistantPanel.Children.Remove(_credentialHandoffView);
-        }
+        CredentialHandoffHost.Content = null;
 
         _credentialHandoffViewModel?.Dispose();
         _credentialHandoffViewModel = null;
@@ -233,6 +252,11 @@ public partial class WorkflowExecutionView : AccessibleScreen
             FocusCurrentActionUnlessBrowserHasFocus();
         }
     }
+
+    private void ViewModel_OnRecoveryBrowserFocusRequested(object? sender, EventArgs eventArgs) =>
+        Dispatcher.UIThread.Post(
+            () => BrowserWorkspacePanel.Focus(NavigationMethod.Tab),
+            DispatcherPriority.Loaded);
 
     internal void FocusCurrentActionUnlessBrowserHasFocus()
     {

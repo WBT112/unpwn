@@ -85,6 +85,11 @@ internal sealed record DesktopE2EConfiguration(
         ProviderBaseUri,
         "/settings/password?scenario=password-change");
 
+    public bool ForceBrowserStartupFailure => string.Equals(
+        Scenario,
+        DesktopE2EScenarioCatalog.BrowserStartupFailureFallback,
+        StringComparison.Ordinal);
+
     public string RecentVaultsPath => Path.Combine(DataRoot, "recent-vaults.json");
 
     public string PreferencesPath => Path.Combine(DataRoot, "preferences.json");

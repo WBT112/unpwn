@@ -112,6 +112,12 @@ internal sealed class DesktopE2EJourneyRunner(
             case DesktopE2EScenarioCatalog.BrowserClosePreservesRecovery:
                 await RunBrowserClosePreservesRecoveryAsync();
                 return;
+            case DesktopE2EScenarioCatalog.ReviewedBrowserStepHierarchy:
+                await RunReviewedBrowserStepHierarchyAsync();
+                return;
+            case DesktopE2EScenarioCatalog.BrowserStartupFailureFallback:
+                await RunBrowserStartupFailureFallbackAsync();
+                return;
             default:
                 throw Failure("The configured desktop scenario was not recognized.");
         }
@@ -261,6 +267,77 @@ internal sealed class DesktopE2EJourneyRunner(
         });
     }
 
+    private async Task RunReviewedBrowserStepHierarchyAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+        await ImportReviewedCsvAsync();
+        await CategorizeImportedAccountAsync();
+        var workflow = await StartRecoveryAsync();
+        if (!workflow.IsReviewedProviderWorkflow)
+        {
+            throw Failure("The reviewed-provider desktop scenario did not select a reviewed workflow.");
+        }
+
+        await StepAsync("close-reviewed-browser", "recovery-browser-close", async () =>
+        {
+            await ClickAsync("recovery-browser-close");
+            await WaitUntilAsync(
+                () => _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
+                "reviewed-browser-cleanup",
+                BrowserTimeout);
+        });
+    }
+
+    private async Task RunBrowserStartupFailureFallbackAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+        await ImportReviewedCsvAsync();
+        await CategorizeImportedAccountAsync();
+
+        await StepAsync("controlled-browser-startup-failure", "workflow-primary-action", async () =>
+        {
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen.Route == AppRoute.Dashboard,
+                "recovery-overview");
+            await ClickAsync("dashboard-recommendation-open");
+            var workflow = await WaitForWorkflowAsync();
+            if (!workflow.HasExecution)
+            {
+                await ClickAsync("workflow-begin");
+                await WaitUntilAsync(() => workflow.HasExecution, "recovery-execution-created");
+            }
+
+            await AssertRecoveryStepHierarchyAsync(workflow);
+            await ClickAsync("workflow-primary-action", allowOffscreen: true);
+            await WaitUntilAsync(
+                () => workflow.HasBrowserLaunchFailure,
+                "controlled-browser-startup-failure");
+
+            if (!workflow.IsGeneralManualWorkflow ||
+                !workflow.CanUseExternalBrowserFallback ||
+                _browserSessions.Current.State != RecoveryBrowserSessionLifecycleState.Idle)
+            {
+                throw Failure("The controlled generic-browser failure did not expose the safe degraded mode.");
+            }
+
+            await WaitForControlAsync<Button>(
+                "workflow-open-external-fallback",
+                button => button.IsVisible && button.IsEnabled);
+            await WaitForControlAsync<Border>(
+                "workflow-browser-launch-failure",
+                border => border.IsVisible);
+            if (FindControl<Control>("workflow-security-details") is not null ||
+                FindControl<Control>("workflow-progress-details") is not null)
+            {
+                throw Failure("Progressive details expanded during the browser failure.");
+            }
+        });
+    }
+
     private async Task RunDeferAccountAsync()
     {
         await AcceptTrustedDeviceAsync();
@@ -394,6 +471,8 @@ internal sealed class DesktopE2EJourneyRunner(
                 await WaitUntilAsync(() => workflow.HasExecution, "recovery-execution-created");
             }
 
+            await AssertRecoveryStepHierarchyAsync(workflow);
+
             Record(
                 "recovery-start-state",
                 "workflow-current-action",
@@ -418,6 +497,25 @@ internal sealed class DesktopE2EJourneyRunner(
             startedWorkflow = workflow;
         });
         return startedWorkflow!;
+    }
+
+    private async Task AssertRecoveryStepHierarchyAsync(
+        WorkflowExecutionScreenViewModel workflow)
+    {
+        await WaitForControlAsync<Button>(
+            "workflow-primary-action",
+            button => button.IsVisible && button.IsEnabled);
+        if (!workflow.IsGuidedPrimaryActionVisible ||
+            workflow.CanUseExternalBrowserFallback ||
+            workflow.IsSecurityDetailsVisible ||
+            workflow.IsProgressDetailsVisible ||
+            FindControl<Control>("workflow-open-external-fallback") is not null ||
+            FindControl<Control>("workflow-security-details") is not null ||
+            FindControl<Control>("workflow-progress-details") is not null ||
+            FindControl<Control>("workflow-open-discovered-page", includeHidden: true) is not null)
+        {
+            throw Failure("The recovery step did not render one primary task with collapsed details.");
+        }
     }
 
     private async Task CompleteRecoveryActionsAsync()
