@@ -38,7 +38,17 @@ File creation, password-manager import confirmation, and plaintext cleanup are d
 
 ## Desktop and Recovery Browser presentation
 
-The normal credential UI keeps secrets concealed and offers explicit short-lived reveal and owned clipboard copy. Reveal lasts 15 seconds and clipboard ownership lasts 30 seconds. Vault lock and relevant navigation/session boundaries clear materialized presentation state. Clipboard cleanup verifies ownership before removing content so later user clipboard data is not erased accidentally.
+The normal credential workspace is a guided password-manager handoff. It groups credentials by the
+next action they need and shows only the selected credential's current stage: use, confirm, export,
+confirm password-manager import, clean up plaintext, then remove the temporary readable vault copy.
+Lifecycle correction and standalone generation are secondary advanced tools; normal replacement
+password generation belongs to the relevant recovery step. The plaintext warning appears when an
+export destination is chosen, immediately before acknowledgement and export.
+
+Secrets remain concealed and use explicit short-lived reveal and owned clipboard copy. Reveal lasts
+15 seconds and clipboard ownership lasts 30 seconds. Vault lock and relevant navigation/session
+boundaries clear materialized presentation state. Clipboard cleanup verifies ownership before
+removing content so later user clipboard data is not erased accidentally.
 
 When an active password-change/reset action has an attached credential, the Recovery Browser assistant reuses the same repository/lifecycle services for Reveal, Hide, Copy, Mark used, and Confirm working. Browser close clears materialized reveal state and requests owned-clipboard cleanup. Browser close itself does not mark the credential used or confirmed.
 

@@ -46,8 +46,7 @@ public sealed class PostImportNavigationHeadlessTests
             Assert.True((await session.CreateAsync(
                 new RecoverySessionCreateRequest(
                     "Synthetic recovery",
-                    IncidentIndicator.None,
-                    SecurityWarningAcknowledged: true),
+                    IncidentIndicator.None),
                 CancellationToken.None)).Succeeded);
             await inventory.InitializeAsync(CancellationToken.None);
             using var flow = new RecoveryFlowService(

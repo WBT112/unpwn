@@ -13,13 +13,9 @@
   <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>The encrypted session record is missing required data or failed integrity-safe parsing. It was not overwritten.</value></data>
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Session name</value></data>
   <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Local recovery session name</value></data>
-  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Does a primary recovery channel need immediate attention?</value></data>
   <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Possible control of a primary email or recovery channel shows an immediate advisory. Record account-specific access later so unpwn can choose a recovery approach safely. This answer does not prove a compromise.</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>A primary email or recovery channel may be under someone else's control</value></data>
-  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>The optional guidance warning is stored in the encrypted vault. It changes recommendations only.</value></data>
-  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>I understand that this warning guides priorities and does not prove that an account or device was compromised.</value></data>
   <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Create recovery session</value></data>
-  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>This warning is optional. Leave it unchecked when it does not apply.</value></data>
   <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Active</value></data>
   <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Paused</value></data>
   <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archived</value></data>
@@ -29,26 +25,17 @@
   <data name="Dashboard.Session.Vault" xml:space="preserve"><value>Vault: {0}</value></data>
   <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Review the recovery channel first</value></data>
   <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Your answers indicate that a primary recovery channel or critical access may need immediate attention. This is an advisory priority, not an automated detection result.</value></data>
-  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Critical accounts</value></data>
   <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} of {1} critical accounts handled.</value></data>
-  <data name="Dashboard.Accounts.Title" xml:space="preserve"><value>Account coverage</value></data>
   <data name="Dashboard.Accounts.Coverage" xml:space="preserve"><value>{0} of {1} accounts are fully reviewed.</value></data>
-  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Recovery progress</value></data>
   <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>Progress: {0:P0}</value></data>
   <data name="Dashboard.Progress.Disclaimer" xml:space="preserve"><value>Progress is not a security verdict. Lost access, blockers, failures, and unresolved risks remain visible separately.</value></data>
   <data name="Dashboard.Metric.Unavailable" xml:space="preserve"><value>No session data is available.</value></data>
   <data name="Dashboard.Alert.SectionTitle" xml:space="preserve"><value>Work that still needs attention</value></data>
-  <data name="Dashboard.Alert.Blocked.Title" xml:space="preserve"><value>Blocked required actions</value></data>
   <data name="Dashboard.Alert.Blocked.Count" xml:space="preserve"><value>{0} blocked required action(s)</value></data>
-  <data name="Dashboard.Alert.Failed.Title" xml:space="preserve"><value>Failed required actions</value></data>
   <data name="Dashboard.Alert.Failed.Count" xml:space="preserve"><value>{0} failed required action(s)</value></data>
-  <data name="Dashboard.Alert.Unresolved.Title" xml:space="preserve"><value>Unresolved risks</value></data>
   <data name="Dashboard.Alert.Unresolved.Count" xml:space="preserve"><value>{0} unresolved risk(s)</value></data>
-  <data name="Dashboard.Alert.LostAccess.Title" xml:space="preserve"><value>Accounts with lost access</value></data>
   <data name="Dashboard.Alert.LostAccess.Count" xml:space="preserve"><value>{0} account(s) with lost access</value></data>
-  <data name="Dashboard.Alert.Export.Title" xml:space="preserve"><value>Credentials awaiting export</value></data>
   <data name="Dashboard.Alert.Export.Count" xml:space="preserve"><value>{0} credential(s) awaiting export</value></data>
-  <data name="Dashboard.Alert.Deletion.Title" xml:space="preserve"><value>Exported credentials awaiting deletion</value></data>
   <data name="Dashboard.Alert.Deletion.Count" xml:space="preserve"><value>{0} credential(s) awaiting deletion</value></data>
   <data name="Dashboard.Alert.Open" xml:space="preserve"><value>Open affected work</value></data>
   <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Recommended next step</value></data>
@@ -79,7 +66,6 @@
   <data name="Dashboard.Archive.Confirmation.Consequence" xml:space="preserve"><value>The session remains encrypted and readable, but recovery-state changes will stop. This does not mark accounts as secure or complete.</value></data>
   <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Archive session</value></data>
   <data name="Dashboard.Validation.NameRequired" xml:space="preserve"><value>Enter a session name.</value></data>
-  <data name="Dashboard.Validation.AcknowledgementRequired" xml:space="preserve"><value>Confirm the security warning before creating the session.</value></data>
   <data name="Dashboard.Validation.Locked" xml:space="preserve"><value>The vault is locked.</value></data>
   <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Review the session name and guidance acknowledgement.</value></data>
   <data name="Dashboard.Validation.Corrupted" xml:space="preserve"><value>The existing session record is corrupted and was not replaced.</value></data>
@@ -92,13 +78,13 @@
   <data name="Dashboard.Status.Empty.Title" xml:space="preserve"><value>No recovery session yet</value></data>
   <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Create a session and optionally adjust recovery-channel priority.</value></data>
   <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Recovery session unavailable</value></data>
-  <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>The encrypted record could not be parsed safely and was left unchanged.</value></data>
+  <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>The recovery data could not be read safely and was left unchanged.</value></data>
   <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Recovery session active</value></data>
   <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>The recommended next task and any work that still needs attention are shown below.</value></data>
   <data name="Dashboard.Status.Paused.Title" xml:space="preserve"><value>Recovery session paused</value></data>
   <data name="Dashboard.Status.Paused.Message" xml:space="preserve"><value>Resume the session before changing recovery state.</value></data>
   <data name="Dashboard.Status.Archived.Title" xml:space="preserve"><value>Recovery session archived</value></data>
-  <data name="Dashboard.Status.Archived.Message" xml:space="preserve"><value>The encrypted record remains available for review, but state changes are disabled.</value></data>
+  <data name="Dashboard.Status.Archived.Message" xml:space="preserve"><value>The recovery history remains available for review, but changes are disabled.</value></data>
   <data name="Dashboard.Status.Emergency.Title" xml:space="preserve"><value>High-impact recovery channel needs review</value></data>
   <data name="Dashboard.Status.Emergency.Message" xml:space="preserve"><value>The incident answers create an advisory priority. They do not prove that an account or device was compromised.</value></data>
   <data name="Dashboard.Status.Created.Title" xml:space="preserve"><value>Recovery session created</value></data>
@@ -109,4 +95,7 @@
   <data name="Dashboard.Status.Deferred.Title" xml:space="preserve"><value>Account deferred</value></data>
   <data name="Dashboard.Status.Deferred.Message" xml:space="preserve"><value>The account remains unresolved and was moved behind the other outstanding accounts for this pass.</value></data>
   <data name="Dashboard.Recommendation.Approach" xml:space="preserve"><value>Recovery approach: {0}</value></data>
+  <data name="Dashboard.Intake.SessionDetails" xml:space="preserve"><value>Change suggested session name</value></data>
+  <data name="Dashboard.Progress.OrientationTitle" xml:space="preserve"><value>Recovery progress</value></data>
+  <data name="Dashboard.Details.Title" xml:space="preserve"><value>Recovery details and session management</value></data>
 </root>

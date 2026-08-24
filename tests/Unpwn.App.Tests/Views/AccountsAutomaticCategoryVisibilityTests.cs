@@ -18,6 +18,40 @@ namespace Unpwn.App.Tests.Views;
 public sealed class AccountsAutomaticCategoryVisibilityTests
 {
     [Fact]
+    public async Task AutomaticallyCategorizedAccountContinuesWithoutOpeningManagementOrEditingDetails()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(() =>
+        {
+            var inventory = new ShellViewModelTests.TestAccountInventoryService();
+            inventory.SetInventory(CreateInventory(
+                AccountRecoveryCategory.Email,
+                confirmedCategory: null));
+            var viewModel = CreateViewModel(inventory);
+            var view = new AccountsView { DataContext = viewModel };
+            var window = new Window { Content = view };
+
+            window.Show();
+            Dispatcher.UIThread.RunJobs();
+
+            var triage = Assert.IsType<Border>(
+                FindByAutomationId(view, "accounts-current-triage-task"),
+                exactMatch: false);
+            var continueAction = Assert.IsType<Button>(
+                FindByAutomationId(view, "accounts-continue-recovery"),
+                exactMatch: false);
+            var management = Assert.IsType<Expander>(
+                FindByAutomationId(view, "accounts-inventory-management"),
+                exactMatch: false);
+
+            Assert.True(viewModel.IsCategoryReviewComplete);
+            Assert.False(triage.IsVisible);
+            Assert.True(continueAction.IsVisible);
+            Assert.False(management.IsExpanded);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task KnownAutomaticSuggestionKeepsResetActionVisibleForAnOverride()
     {
         await AccessibilityHeadlessTests.Session.Dispatch(() =>

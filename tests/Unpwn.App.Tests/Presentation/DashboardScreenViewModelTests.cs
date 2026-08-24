@@ -22,14 +22,11 @@ public sealed class DashboardScreenViewModelTests
     }
 
     [Fact]
-    public void SessionCreationRemainsDisabledUntilRequiredOverviewFieldsAreComplete()
+    public void SuggestedSessionNameEnablesCreationWithoutASecondAcknowledgement()
     {
         var viewModel = CreateViewModel(new TestRecoverySessionService());
 
-        Assert.False(viewModel.CreateSessionCommand.CanExecute(null));
         Assert.Equal("SyntheticUser-Recovery", viewModel.SessionName);
-
-        viewModel.SecurityWarningAcknowledged = true;
         Assert.True(viewModel.CreateSessionCommand.CanExecute(null));
 
         viewModel.SessionName = string.Empty;
@@ -74,7 +71,6 @@ public sealed class DashboardScreenViewModelTests
         var sessionService = new TestRecoverySessionService();
         var viewModel = CreateViewModel(sessionService);
         viewModel.SessionName = "Minimal recovery";
-        viewModel.SecurityWarningAcknowledged = true;
         DashboardNavigationRequest? navigation = null;
         viewModel.NavigationRequested += (_, request) => navigation = request;
 
@@ -95,7 +91,6 @@ public sealed class DashboardScreenViewModelTests
         var sessionService = new TestRecoverySessionService();
         var viewModel = CreateViewModel(sessionService);
         viewModel.CompromisedRecoveryChannel = true;
-        viewModel.SecurityWarningAcknowledged = true;
 
         var outcome = await viewModel.CreateSessionCommand.ExecuteAsync();
 

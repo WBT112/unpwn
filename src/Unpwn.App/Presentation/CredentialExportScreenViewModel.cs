@@ -211,6 +211,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
                 }
 
                 OnPropertyChanged(nameof(HasCredentials));
+                OnPropertyChanged(nameof(HasCredentialsReadyForExport));
             }
         }
     }
@@ -316,6 +317,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         {
             if (SetProperty(ref _destinationPath, value ?? string.Empty))
             {
+                OnPropertyChanged(nameof(HasExportDestination));
                 ExportCommand.RaiseCanExecuteChanged();
             }
         }
@@ -361,6 +363,26 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
     public bool HasCredentials => Credentials.Count > 0;
 
     public bool HasSelectedCredential => SelectedCredential is not null;
+
+    public bool HasExportDestination => !string.IsNullOrWhiteSpace(DestinationPath);
+
+    public bool HasCredentialsReadyForExport => Credentials.Any(item =>
+        !item.IsDeleted && item.Metadata.ConfirmedAt is not null && item.Metadata.ExportedAt is null);
+
+    public bool SelectedCredentialNeedsUse =>
+        SelectedCredential is { IsDeleted: false, Metadata.UsedAt: null };
+
+    public bool SelectedCredentialNeedsConfirmation =>
+        SelectedCredential is { IsDeleted: false, Metadata.UsedAt: not null, Metadata.ConfirmedAt: null };
+
+    public bool SelectedCredentialAwaitsImportConfirmation =>
+        SelectedCredential is { IsDeleted: false, Metadata.ExportedAt: not null } && !IsImportConfirmed;
+
+    public bool SelectedCredentialAwaitsCleanup =>
+        SelectedCredential is { IsDeleted: false } && IsImportConfirmed && IsCleanupPending;
+
+    public bool SelectedCredentialCanBeRemoved =>
+        SelectedCredential is { IsDeleted: false } && IsImportConfirmed && !IsCleanupPending;
 
     public bool HasResult => _resultKey is not null;
 
@@ -428,7 +450,7 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         var accountLabels = inventoryAccounts.ToDictionary(account => account.Id, AccountLabel);
         var metadata = await _repository.ListAsync(cancellationToken);
         Credentials = [.. metadata
-            .OrderBy(item => item.IsDeleted)
+            .OrderBy(CredentialHandoffOrder)
             .ThenByDescending(item => item.GeneratedAt)
             .Select(item => new GeneratedCredentialListItemViewModel(
                 item,
@@ -762,6 +784,14 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
     private string StageLabel(GeneratedCredentialStage stage) =>
         Localization.GetString($"Credentials.Stage.{stage}");
 
+    private static int CredentialHandoffOrder(GeneratedCredentialMetadata metadata) =>
+        metadata.IsDeleted ? 6 :
+        metadata.UsedAt is null ? 0 :
+        metadata.ConfirmedAt is null ? 1 :
+        metadata.ExportedAt is null ? 2 :
+        metadata.PasswordManagerImportConfirmedAt is null ? 3 :
+        metadata.IsPlaintextExportCleanupPending ? 4 : 5;
+
     private void ClearReveal()
     {
         _revealCancellation?.Cancel();
@@ -841,6 +871,11 @@ public sealed class CredentialExportScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(IsImportConfirmationPostponed));
         OnPropertyChanged(nameof(IsCleanupPending));
         OnPropertyChanged(nameof(IsImportConfirmed));
+        OnPropertyChanged(nameof(SelectedCredentialNeedsUse));
+        OnPropertyChanged(nameof(SelectedCredentialNeedsConfirmation));
+        OnPropertyChanged(nameof(SelectedCredentialAwaitsImportConfirmation));
+        OnPropertyChanged(nameof(SelectedCredentialAwaitsCleanup));
+        OnPropertyChanged(nameof(SelectedCredentialCanBeRemoved));
     }
 
     private void RaiseCommandStates()

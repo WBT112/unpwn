@@ -9,133 +9,97 @@
       <TextBlock Classes="page-title" Text="{Binding Title}" />
       <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
     </StackPanel>
-
     <views:StatusBannerView DataContext="{Binding Status}" />
 
-    <Border Padding="20"
-            CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="12">
-        <TextBlock Classes="section-title" Text="{DynamicResource Completion.Section.Title}" />
-        <TextBlock Text="{DynamicResource Completion.Section.Description}" TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Classes="initial-focus"
-                  AutomationProperties.AutomationId="completion-review"
-                  Command="{Binding ReviewCompletionCommand}"
-                  Content="{DynamicResource Completion.Review.Button}" />
-          <Button IsVisible="{Binding ReviewCompletionCommand.IsRunning}"
-                  Command="{Binding ReviewCompletionCommand.CancelCommand}"
-                  Content="{DynamicResource Common.Cancel}" />
-          <ProgressBar Width="120"
-                       IsIndeterminate="True"
-                       IsVisible="{Binding ReviewCompletionCommand.IsRunning}" />
-        </StackPanel>
-        <TextBlock IsVisible="{Binding !HasUnlockedVault}"
-                   Opacity="0.75"
-                   Text="{DynamicResource Completion.UnlockHint}" />
+    <Border IsVisible="{Binding ReviewCompletionCommand.IsRunning}" Classes="passive-information"
+            AutomationProperties.AutomationId="completion-loading"
+            AutomationProperties.LiveSetting="Polite">
+      <StackPanel Orientation="Horizontal" Spacing="12">
+        <ProgressBar Width="120" IsIndeterminate="True" />
+        <TextBlock VerticalAlignment="Center" Text="{DynamicResource Completion.AutoReview.Loading}" />
       </StackPanel>
     </Border>
+    <Border IsVisible="{Binding !HasUnlockedVault}" Classes="actionable-warning">
+      <TextBlock Text="{DynamicResource Completion.UnlockHint}" TextWrapping="Wrap" />
+    </Border>
 
-    <Grid IsVisible="{Binding HasReview}" ColumnDefinitions="*,*" ColumnSpacing="16">
-      <Border Grid.Column="0" Padding="16" BorderThickness="1" CornerRadius="8"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
-        <StackPanel Spacing="8">
-          <TextBlock FontWeight="Bold" Text="{DynamicResource Completion.Summary.Title}" />
-          <TextBlock Text="{Binding AccountsSummary}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding CriticalSummary}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-          <TextBlock Text="{Binding CredentialSummary}" TextWrapping="Wrap" />
-          <TextBlock FontWeight="Bold"
-                     Text="{DynamicResource Completion.NoSafetyClaim}"
-                     TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-      <Border Grid.Column="1" Padding="16" BorderThickness="1" CornerRadius="8"
-              BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
-        <StackPanel Spacing="8">
-          <TextBlock FontWeight="Bold" Text="{DynamicResource Completion.Report.Title}" />
-          <TextBlock Text="{DynamicResource Completion.Report.Description}" TextWrapping="Wrap" />
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBox Grid.Column="0"
-                     IsReadOnly="True"
-                     Text="{Binding DestinationPath}"
-                     PlaceholderText="{DynamicResource Completion.Export.PathWatermark}" />
-            <Button Grid.Column="1"
-                    Click="ChooseReportDestinationButton_OnClick"
-                    Content="{DynamicResource Completion.Export.Choose}" />
-          </Grid>
-          <Button HorizontalAlignment="Left"
-                  Command="{Binding ExportReportCommand}"
-                  Content="{DynamicResource Completion.Export.Button}" />
-        </StackPanel>
-      </Border>
-    </Grid>
-
-    <Border IsVisible="{Binding HasReview}"
-            Padding="20"
-            CornerRadius="8"
-            BorderThickness="1"
-            BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+    <Border IsVisible="{Binding HasIssues}" Classes="actionable-warning"
+            AutomationProperties.AutomationId="completion-before-finish">
       <StackPanel Spacing="12">
-        <TextBlock Classes="section-title" Text="{DynamicResource Completion.Issues.Title}" />
-        <TextBlock IsVisible="{Binding IsClean}"
-                   Text="{DynamicResource Completion.Issues.None}" />
+        <TextBlock Classes="section-title" Text="{DynamicResource Completion.BeforeFinish.Title}" />
+        <TextBlock Text="{DynamicResource Completion.BeforeFinish.Help}" TextWrapping="Wrap" />
         <ItemsControl ItemsSource="{Binding Issues}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:RecoveryCompletionIssueViewModel">
-              <Border Padding="10" Margin="0,0,0,8" BorderThickness="5,1,1,1" CornerRadius="5"
+              <Border Padding="10" Margin="0,0,0,8" BorderThickness="0,0,0,1"
                       BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                  <StackPanel Grid.Column="0" Spacing="3">
+                  <StackPanel Spacing="3">
                     <TextBlock FontWeight="Bold" Text="{Binding Title}" TextWrapping="Wrap" />
                     <TextBlock Text="{Binding Detail}" TextWrapping="Wrap" />
-                    <TextBlock FontWeight="Bold" Text="{Binding Severity}" />
+                    <TextBlock FontWeight="SemiBold" Text="{Binding Severity}" />
                   </StackPanel>
-                  <Button Grid.Column="1"
-                          VerticalAlignment="Center"
-                          Command="{Binding NavigateCommand}"
-                          Content="{DynamicResource Completion.Issue.Open}" />
+                  <Button Grid.Column="1" Classes="secondary" VerticalAlignment="Center"
+                          Command="{Binding NavigateCommand}" Content="{DynamicResource Completion.Issue.Open}" />
                 </Grid>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-        <Button IsVisible="{Binding !IsReadOnly}"
-                HorizontalAlignment="Left"
-                Command="{Binding OpenCredentialsCommand}"
-                Content="{DynamicResource Completion.Credentials.Open}" />
+        <Button IsVisible="{Binding !IsReadOnly}" Classes="secondary" HorizontalAlignment="Left"
+                Command="{Binding OpenCredentialsCommand}" Content="{DynamicResource Completion.Credentials.Open}" />
       </StackPanel>
     </Border>
 
-    <Border IsVisible="{Binding HasReview}"
-            Padding="20"
-            CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+    <Border IsVisible="{Binding HasReview}" Padding="22" CornerRadius="10"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+            AutomationProperties.AutomationId="completion-decision">
       <StackPanel Spacing="12">
         <TextBlock Classes="section-title" Text="{DynamicResource Completion.Decision.Title}" />
-        <TextBlock IsVisible="{Binding IsReadOnly}"
-                   Text="{DynamicResource Completion.ReadOnly.Guidance}"
-                   TextWrapping="Wrap" />
+        <TextBlock IsVisible="{Binding IsClean}" Text="{DynamicResource Completion.Issues.None}" TextWrapping="Wrap" />
+        <TextBlock IsVisible="{Binding IsReadOnly}" Text="{DynamicResource Completion.ReadOnly.Guidance}" TextWrapping="Wrap" />
         <CheckBox AutomationProperties.AutomationId="completion-accept-risks"
-                  IsVisible="{Binding RequiresRiskAcceptance}"
-                  IsEnabled="{Binding !IsReadOnly}"
+                  IsVisible="{Binding RequiresRiskAcceptance}" IsEnabled="{Binding !IsReadOnly}"
                   IsChecked="{Binding AcceptUnresolvedRisks}"
                   Content="{DynamicResource Completion.AcceptRisks}" />
         <TextBlock IsVisible="{Binding RequiresRiskAcceptance}"
-                   Text="{DynamicResource Completion.AcceptRisks.Detail}"
-                   TextWrapping="Wrap" />
-        <TextBlock Text="{DynamicResource Completion.Credentials.RetainNotice}" TextWrapping="Wrap" />
-        <StackPanel IsVisible="{Binding !IsReadOnly}" Orientation="Horizontal" Spacing="10">
-          <Button AutomationProperties.AutomationId="completion-complete"
-                  Command="{Binding CompleteCommand}"
-                  Content="{DynamicResource Completion.Complete.Button}" />
-          <Button Command="{Binding ArchiveCommand}"
-                  Content="{DynamicResource Completion.Archive.Button}" />
-          <Button IsVisible="{Binding CompleteCommand.IsRunning}"
-                  Command="{Binding CompleteCommand.CancelCommand}"
-                  Content="{DynamicResource Common.Cancel}" />
-        </StackPanel>
+                   Text="{DynamicResource Completion.AcceptRisks.Detail}" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Completion.NoSafetyClaim}" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <Button Classes="primary initial-focus" IsVisible="{Binding !IsReadOnly}"
+                AutomationProperties.AutomationId="completion-complete"
+                HorizontalAlignment="Left" Command="{Binding CompleteCommand}"
+                Content="{DynamicResource Completion.Complete.Button}" />
       </StackPanel>
     </Border>
+
+    <Expander IsVisible="{Binding HasReview}" Classes="details"
+              AutomationProperties.AutomationId="completion-details"
+              Header="{DynamicResource Completion.Details.Title}">
+      <StackPanel Margin="0,12,0,0" Spacing="14">
+        <TextBlock Text="{Binding AccountsSummary}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CriticalSummary}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding CredentialSummary}" TextWrapping="Wrap" />
+        <TextBlock FontWeight="Bold" Text="{DynamicResource Completion.NoSafetyClaim}" TextWrapping="Wrap" />
+        <TextBlock Classes="section-title" Text="{DynamicResource Completion.Report.Title}" />
+        <TextBlock Text="{DynamicResource Completion.Report.Description}" TextWrapping="Wrap" />
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+          <TextBox IsReadOnly="True" Text="{Binding DestinationPath}"
+                   PlaceholderText="{DynamicResource Completion.Export.PathWatermark}" />
+          <Button Grid.Column="1" Classes="secondary" Click="ChooseReportDestinationButton_OnClick"
+                  Content="{DynamicResource Completion.Export.Choose}" />
+        </Grid>
+        <Button Classes="secondary" HorizontalAlignment="Left" Command="{Binding ExportReportCommand}"
+                Content="{DynamicResource Completion.Export.Button}" />
+        <Expander IsVisible="{Binding !IsReadOnly}" Classes="details"
+                  Header="{DynamicResource Completion.SessionManagement.Title}">
+          <StackPanel Margin="0,8,0,0" Spacing="8">
+            <TextBlock Text="{DynamicResource Completion.SessionManagement.Help}" TextWrapping="Wrap" />
+            <Button Classes="destructive" HorizontalAlignment="Left" Command="{Binding ArchiveCommand}"
+                    Content="{DynamicResource Completion.Archive.Button}" />
+          </StackPanel>
+        </Expander>
+      </StackPanel>
+    </Expander>
   </StackPanel>
 </UserControl>

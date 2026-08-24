@@ -24,7 +24,7 @@ or WebView2 backend fails the scenario rather than skipping it.
 
 | ID | Tier | Visible branch and expected transition | CI platforms |
 | --- | --- | --- | --- |
-| `golden` | golden | trusted device → vault → session → CSV review → category → automatic queue/path → native browser → explicit criteria/completion → credential handoff → final report | Windows, Ubuntu, Debian |
+| `golden` | golden | trusted device → default-location vault → automatic-name session → progressively disclosed CSV review → single-account category task → automatic queue/path → native browser → explicit criteria/completion → stage-relevant credential handoff → automatic completion preflight/final report; every normal transition asserts its stable primary-action presentation | Windows, Ubuntu, Debian |
 | `safety-stop-and-retry` | fast | not-trusted/unsure guidance → explicit stop; no vault work starts → restart assessment → trusted → vault creation | Ubuntu |
 | `vault-wrong-password-and-resume` | fast | lock → rejected password with controlled feedback and cleared input/RAM reference → correct password → resumed next task | Ubuntu |
 | `import-correction-and-retry` | fast | ambiguous columns stay in import with disabled confirmation → corrected file → preview → explicit import → accounts | Ubuntu |

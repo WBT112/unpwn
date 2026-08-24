@@ -12,4 +12,7 @@
   <data name="Vault.Choice.TrustedAssessment" xml:space="preserve"><value>Back to trusted-device assessment</value></data>
   <data name="Vault.Unlocked.ReassessTrustedDevice" xml:space="preserve"><value>Back to trusted-device assessment</value></data>
   <data name="Vault.Create.DefaultPathHint" xml:space="preserve"><value>unpwn selected a local user-specific location. You can choose another location before creating the vault.</value></data>
+  <data name="Vault.Create.ChooseDifferentLocation" xml:space="preserve"><value>Choose a different location</value></data>
+  <data name="Vault.Open.ChooseAnother" xml:space="preserve"><value>Choose a different vault file</value></data>
+  <data name="Vault.Recent.ManageTitle" xml:space="preserve"><value>Manage recent vaults</value></data>
 </root>

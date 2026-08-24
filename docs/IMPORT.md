@@ -7,6 +7,8 @@
 1. Select a CSV file.
 2. unpwn analyzes the header, automatically excludes detected password columns, and evaluates the
    suggested mapping.
+   The review area is not shown before a file has been analyzed; afterwards the chooser collapses to
+   a selected-file summary with a secondary option to choose another file.
 3. A complete, unambiguous mapping immediately creates the preview; mapping controls stay hidden.
 4. If a required service/account identity is missing or ambiguous, resolve only the affected mapping
    choices. The preview updates automatically as soon as the mapping is valid.

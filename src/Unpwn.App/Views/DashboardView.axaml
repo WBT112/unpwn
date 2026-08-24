@@ -4,349 +4,159 @@
              xmlns:views="using:Unpwn.App.Views"
              x:Class="Unpwn.App.Views.DashboardView"
              x:DataType="vm:DashboardScreenViewModel">
-  <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                VerticalScrollBarVisibility="Auto">
-    <StackPanel Spacing="{DynamicResource ShellSpacingLarge}">
-      <Panel IsVisible="{Binding IsTransientStatusVisible}">
-        <views:StatusBannerView DataContext="{Binding Status}" />
-      </Panel>
-
-      <Border IsVisible="{Binding IsLockedState}"
-              Padding="24"
-              CornerRadius="12"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-        <TextBlock Text="{DynamicResource Dashboard.State.Locked}"
-                   TextWrapping="Wrap" />
-      </Border>
-
-      <Border IsVisible="{Binding IsLoadingState}"
-              Padding="24"
-              CornerRadius="12"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <TextBlock Text="{DynamicResource Dashboard.State.Loading}"
-                   TextWrapping="Wrap" />
-      </Border>
-
-      <Border IsVisible="{Binding IsCorruptedState}"
-              Padding="24"
-              CornerRadius="12"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-        <StackPanel Spacing="12">
-          <TextBlock Classes="section-title"
-                     Text="{DynamicResource Dashboard.State.Corrupted.Title}" />
-          <TextBlock Text="{DynamicResource Dashboard.State.Corrupted.Message}"
-                     TextWrapping="Wrap" />
-        </StackPanel>
-      </Border>
-
-      <Border IsVisible="{Binding IsEmptyState}"
-              Padding="24"
-              CornerRadius="12"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <StackPanel Spacing="16">
-          <TextBlock Classes="section-title"
-                     Text="{DynamicResource Dashboard.State.Empty.Title}" />
-          <TextBlock Text="{DynamicResource Dashboard.State.Empty.Message}"
-                     TextWrapping="Wrap" />
-
-          <TextBlock Text="{DynamicResource Dashboard.Intake.NameLabel}"
-                     FontWeight="SemiBold" />
-          <TextBox Classes="initial-focus"
-                   AutomationProperties.AutomationId="dashboard-session-name"
-                   AutomationProperties.Name="{DynamicResource Dashboard.Intake.NameLabel}"
-                   Text="{Binding SessionName, Mode=TwoWay}"
-                   PlaceholderText="{DynamicResource Dashboard.Intake.NameWatermark}"
-                   MaxLength="120" />
-
-          <Border Padding="16"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <StackPanel Spacing="8">
-              <TextBlock Classes="section-title"
-                         Text="{DynamicResource Dashboard.Intake.Indicators.Title}" />
-              <TextBlock Text="{DynamicResource Dashboard.Intake.Indicators.Help}"
-                         TextWrapping="Wrap" />
-              <CheckBox AutomationProperties.AutomationId="dashboard-compromised-recovery"
-                        Content="{DynamicResource Dashboard.Intake.Indicator.CompromisedRecovery}"
-                        IsChecked="{Binding CompromisedRecoveryChannel, Mode=TwoWay}" />
-              <TextBlock Text="{DynamicResource Dashboard.Intake.SkipHint}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-
-          <Border Padding="16"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <StackPanel Spacing="10">
-              <TextBlock Text="{DynamicResource Dashboard.Intake.SecurityWarning}"
-                         TextWrapping="Wrap"
-                         FontWeight="SemiBold" />
-              <CheckBox AutomationProperties.AutomationId="dashboard-security-acknowledge"
-                        Content="{DynamicResource Dashboard.Intake.Acknowledge}"
-                        IsChecked="{Binding SecurityWarningAcknowledged, Mode=TwoWay}" />
-            </StackPanel>
-          </Border>
-
-          <Border Classes="focus-on-visible"
-                  IsVisible="{Binding HasValidationMessage}"
-                  Focusable="True"
-                  AutomationProperties.AutomationId="dashboard-intake-validation"
-                  AutomationProperties.LiveSetting="Assertive"
-                  AutomationProperties.Name="{Binding ValidationMessage}"
-                  Padding="12"
-                  CornerRadius="8"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <TextBlock Text="{Binding ValidationMessage}"
-                       TextWrapping="Wrap" />
-          </Border>
-
-          <Button AutomationProperties.AutomationId="dashboard-create-session"
-                  Content="{DynamicResource Dashboard.Intake.Create}"
-                  Command="{Binding CreateSessionCommand}"
-                  HorizontalAlignment="Left" />
-        </StackPanel>
-      </Border>
-
-      <StackPanel IsVisible="{Binding IsDashboardState}"
-                  Spacing="{DynamicResource ShellSpacingLarge}">
-        <Border Padding="20"
-                CornerRadius="12"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-          <StackPanel Spacing="6">
-            <TextBlock Classes="section-title"
-                       Text="{Binding CurrentSessionName}" />
-            <TextBlock Text="{Binding SessionStatusText}" />
-            <TextBlock Text="{Binding LastSavedText}" />
-            <TextBlock Text="{Binding VaultText}" />
-          </StackPanel>
-        </Border>
-
-        <Border Padding="24"
-                AutomationProperties.AutomationId="dashboard-recommendation"
-                AutomationProperties.Name="{Binding RecommendationText}"
-                CornerRadius="12"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                BorderThickness="1"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-            <StackPanel Spacing="8">
-              <TextBlock FontSize="24"
-                         FontWeight="SemiBold"
-                         Text="{DynamicResource Dashboard.Recommendation.Title}" />
-              <TextBlock Text="{Binding RecommendationText}"
-                         FontSize="16"
-                         TextWrapping="Wrap" />
-              <TextBlock IsVisible="{Binding HasRecommendationTarget}"
-                         Text="{Binding RecommendationTargetText}"
-                         FontWeight="SemiBold"
-                         TextWrapping="Wrap" />
-              <TextBlock IsVisible="{Binding HasRecommendationCategory}"
-                         Text="{Binding RecommendationCategoryText}"
-                         TextWrapping="Wrap" />
-              <TextBlock IsVisible="{Binding HasRecommendationAction}"
-                         Text="{Binding RecommendationActionText}"
-                         FontWeight="SemiBold"
-                         TextWrapping="Wrap" />
-              <TextBlock IsVisible="{Binding HasRecommendationApproach}"
-                         Text="{Binding RecommendationApproachText}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-            <StackPanel Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Spacing="10">
-              <Button Classes="initial-focus"
-                      AutomationProperties.AutomationId="dashboard-recommendation-open"
-                      Content="{Binding RecommendationButtonText}"
-                      Command="{Binding OpenRecommendationCommand}" />
-              <Button IsVisible="{Binding CanSkipRecommendation}"
-                      AutomationProperties.AutomationId="dashboard-recommendation-skip"
-                      Content="{DynamicResource Dashboard.Recommendation.Action.Skip}"
-                      Command="{Binding SkipRecommendationCommand}" />
-            </StackPanel>
-          </Grid>
-        </Border>
-
-        <Border IsVisible="{Binding HasEmergencyAdvisory}"
-                Padding="20"
-                CornerRadius="12"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <StackPanel Spacing="8">
-            <TextBlock Classes="section-title"
-                       Text="{DynamicResource Dashboard.Emergency.Title}" />
-            <TextBlock Text="{DynamicResource Dashboard.Emergency.Message}"
-                       TextWrapping="Wrap" />
-          </StackPanel>
-        </Border>
-
-        <Grid ColumnDefinitions="*,*,*"
-              ColumnSpacing="16">
-          <Border Padding="18"
-                  CornerRadius="12"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <StackPanel Spacing="8">
-              <TextBlock Classes="section-title"
-                         Text="{DynamicResource Dashboard.Critical.Title}" />
-              <TextBlock Text="{Binding CriticalReadinessText}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="1"
-                  Padding="18"
-                  CornerRadius="12"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-            <StackPanel Spacing="8">
-              <TextBlock Classes="section-title"
-                         Text="{DynamicResource Dashboard.Accounts.Title}" />
-              <TextBlock Text="{Binding AccountCoverageText}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-          <Border Grid.Column="2"
-                  Padding="18"
-                  CornerRadius="12"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-            <StackPanel Spacing="8">
-              <TextBlock Classes="section-title"
-                         Text="{DynamicResource Dashboard.Progress.Title}" />
-              <TextBlock Text="{Binding WeightedProgressText}"
-                         TextWrapping="Wrap" />
-              <TextBlock Text="{DynamicResource Dashboard.Progress.Disclaimer}"
-                         TextWrapping="Wrap" />
-            </StackPanel>
-          </Border>
-        </Grid>
-
-        <StackPanel Spacing="12">
-          <TextBlock Classes="section-title"
-                     Text="{DynamicResource Dashboard.Alert.SectionTitle}" />
-
-          <Border IsVisible="{Binding HasBlockedActions}"
-                  Padding="16"
-                  CornerRadius="10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{DynamicResource Dashboard.Alert.Blocked.Title}"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding BlockedActionsText}" />
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Content="{DynamicResource Dashboard.Alert.Open}"
-                      Command="{Binding OpenBlockedCommand}" />
-            </Grid>
-          </Border>
-
-          <Border IsVisible="{Binding HasFailedActions}"
-                  Padding="16"
-                  CornerRadius="10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{DynamicResource Dashboard.Alert.Failed.Title}"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding FailedActionsText}" />
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Content="{DynamicResource Dashboard.Alert.Open}"
-                      Command="{Binding OpenFailedCommand}" />
-            </Grid>
-          </Border>
-
-          <Border IsVisible="{Binding HasUnresolvedRisks}"
-                  Padding="16"
-                  CornerRadius="10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{DynamicResource Dashboard.Alert.Unresolved.Title}"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding UnresolvedRisksText}" />
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Content="{DynamicResource Dashboard.Alert.Open}"
-                      Command="{Binding OpenUnresolvedRiskCommand}" />
-            </Grid>
-          </Border>
-
-          <Border IsVisible="{Binding HasLostAccess}"
-                  Padding="16"
-                  CornerRadius="10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{DynamicResource Dashboard.Alert.LostAccess.Title}"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding LostAccessText}" />
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Content="{DynamicResource Dashboard.Alert.Open}"
-                      Command="{Binding OpenLostAccessCommand}" />
-            </Grid>
-          </Border>
-
-          <Border IsVisible="{Binding HasCredentialExports}"
-                  Padding="16"
-                  CornerRadius="10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{DynamicResource Dashboard.Alert.Export.Title}"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding CredentialExportsText}" />
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Content="{DynamicResource Dashboard.Alert.Open}"
-                      Command="{Binding OpenCredentialExportCommand}" />
-            </Grid>
-          </Border>
-
-          <Border IsVisible="{Binding HasCredentialDeletions}"
-                  Padding="16"
-                  CornerRadius="10"
-                  Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-              <StackPanel Spacing="4">
-                <TextBlock Text="{DynamicResource Dashboard.Alert.Deletion.Title}"
-                           FontWeight="SemiBold" />
-                <TextBlock Text="{Binding CredentialDeletionsText}" />
-              </StackPanel>
-              <Button Grid.Column="1"
-                      Content="{DynamicResource Dashboard.Alert.Open}"
-                      Command="{Binding OpenCredentialDeletionCommand}" />
-            </Grid>
-          </Border>
-        </StackPanel>
-
-        <Border Classes="focus-on-visible"
-                IsVisible="{Binding HasValidationMessage}"
-                Focusable="True"
-                AutomationProperties.AutomationId="dashboard-session-validation"
-                AutomationProperties.LiveSetting="Assertive"
-                AutomationProperties.Name="{Binding ValidationMessage}"
-                Padding="12"
-                CornerRadius="8"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <TextBlock Text="{Binding ValidationMessage}"
-                     TextWrapping="Wrap" />
-        </Border>
-
-        <WrapPanel Orientation="Horizontal"
-                   ItemSpacing="10"
-                   LineSpacing="10">
-          <Button IsVisible="{Binding IsActiveSession}"
-                  Content="{DynamicResource Dashboard.Action.Pause}"
-                  Command="{Binding PauseCommand}" />
-          <Button IsVisible="{Binding IsPausedSession}"
-                  Content="{DynamicResource Dashboard.Action.Resume}"
-                  Command="{Binding ResumeCommand}" />
-          <Button IsVisible="{Binding IsActiveSession}"
-                  Content="{DynamicResource Dashboard.Action.Archive}"
-                  Command="{Binding ArchiveCommand}" />
-          <Button IsVisible="{Binding IsPausedSession}"
-                  Content="{DynamicResource Dashboard.Action.Archive}"
-                  Command="{Binding ArchiveCommand}" />
-        </WrapPanel>
+  <StackPanel Spacing="22">
+    <Panel IsVisible="{Binding IsTransientStatusVisible}">
+      <views:StatusBannerView DataContext="{Binding Status}" />
+    </Panel>
+    <Border IsVisible="{Binding IsLockedState}" Classes="passive-information">
+      <TextBlock Text="{DynamicResource Dashboard.State.Locked}" TextWrapping="Wrap" />
+    </Border>
+    <Border IsVisible="{Binding IsLoadingState}" Classes="passive-information">
+      <TextBlock Text="{DynamicResource Dashboard.State.Loading}" TextWrapping="Wrap" />
+    </Border>
+    <Border IsVisible="{Binding IsCorruptedState}" Classes="actionable-warning">
+      <StackPanel Spacing="8">
+        <TextBlock Classes="section-title" Text="{DynamicResource Dashboard.State.Corrupted.Title}" />
+        <TextBlock Text="{DynamicResource Dashboard.State.Corrupted.Message}" TextWrapping="Wrap" />
       </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsEmptyState}" Padding="24" CornerRadius="12"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+      <StackPanel Spacing="16">
+        <TextBlock Classes="section-title" Text="{DynamicResource Dashboard.State.Empty.Title}" />
+        <TextBlock Text="{DynamicResource Dashboard.State.Empty.Message}" TextWrapping="Wrap" />
+        <CheckBox Classes="initial-focus"
+                  AutomationProperties.AutomationId="dashboard-compromised-recovery"
+                  Content="{DynamicResource Dashboard.Intake.Indicator.CompromisedRecovery}"
+                  IsChecked="{Binding CompromisedRecoveryChannel, Mode=TwoWay}" />
+        <TextBlock Text="{DynamicResource Dashboard.Intake.Indicators.Help}"
+                   Opacity="0.8" TextWrapping="Wrap" />
+        <Expander Classes="details"
+                  AutomationProperties.AutomationId="dashboard-session-details"
+                  Header="{DynamicResource Dashboard.Intake.SessionDetails}">
+          <StackPanel Margin="0,10,0,0" Spacing="6">
+            <TextBlock Text="{DynamicResource Dashboard.Intake.NameLabel}" FontWeight="SemiBold" />
+            <TextBox AutomationProperties.AutomationId="dashboard-session-name"
+                     AutomationProperties.Name="{DynamicResource Dashboard.Intake.NameLabel}"
+                     Text="{Binding SessionName, Mode=TwoWay}"
+                     PlaceholderText="{DynamicResource Dashboard.Intake.NameWatermark}"
+                     MaxLength="120" />
+          </StackPanel>
+        </Expander>
+        <Border Classes="focus-on-visible actionable-warning"
+                IsVisible="{Binding HasValidationMessage}" Focusable="True"
+                AutomationProperties.AutomationId="dashboard-intake-validation"
+                AutomationProperties.LiveSetting="Assertive"
+                AutomationProperties.Name="{Binding ValidationMessage}">
+          <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+        </Border>
+        <Button Classes="primary"
+                AutomationProperties.AutomationId="dashboard-create-session"
+                Content="{DynamicResource Dashboard.Intake.Create}"
+                Command="{Binding CreateSessionCommand}" HorizontalAlignment="Left" />
+      </StackPanel>
+    </Border>
+
+    <StackPanel IsVisible="{Binding IsDashboardState}" Spacing="22">
+      <Border Padding="24"
+              AutomationProperties.AutomationId="dashboard-recommendation"
+              AutomationProperties.Name="{Binding RecommendationText}"
+              CornerRadius="12" BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+              BorderThickness="1" Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+        <StackPanel Spacing="12">
+          <TextBlock FontSize="24" FontWeight="SemiBold" Text="{DynamicResource Dashboard.Recommendation.Title}" />
+          <TextBlock Text="{Binding RecommendationText}" FontSize="16" TextWrapping="Wrap" />
+          <TextBlock IsVisible="{Binding HasRecommendationTarget}" Text="{Binding RecommendationTargetText}"
+                     FontWeight="SemiBold" TextWrapping="Wrap" />
+          <WrapPanel ItemSpacing="10" LineSpacing="8">
+            <Button Classes="primary initial-focus"
+                    AutomationProperties.AutomationId="dashboard-recommendation-open"
+                    Content="{Binding RecommendationButtonText}" Command="{Binding OpenRecommendationCommand}" />
+            <Button Classes="tertiary" IsVisible="{Binding CanSkipRecommendation}"
+                    AutomationProperties.AutomationId="dashboard-recommendation-skip"
+                    Content="{DynamicResource Dashboard.Recommendation.Action.Skip}"
+                    Command="{Binding SkipRecommendationCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </Border>
+
+      <Border IsVisible="{Binding HasEmergencyAdvisory}" Classes="actionable-warning">
+        <StackPanel Spacing="6">
+          <TextBlock Classes="section-title" Text="{DynamicResource Dashboard.Emergency.Title}" />
+          <TextBlock Text="{DynamicResource Dashboard.Emergency.Message}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border IsVisible="{Binding HasNeedsAttention}" Classes="actionable-warning"
+              AutomationProperties.AutomationId="dashboard-needs-attention">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="section-title" Text="{DynamicResource Dashboard.Alert.SectionTitle}" />
+          <Grid IsVisible="{Binding HasBlockedActions}" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding BlockedActionsText}" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Classes="tertiary" Content="{DynamicResource Dashboard.Alert.Open}" Command="{Binding OpenBlockedCommand}" />
+          </Grid>
+          <Grid IsVisible="{Binding HasFailedActions}" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding FailedActionsText}" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Classes="tertiary" Content="{DynamicResource Dashboard.Alert.Open}" Command="{Binding OpenFailedCommand}" />
+          </Grid>
+          <Grid IsVisible="{Binding HasLostAccess}" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding LostAccessText}" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Classes="tertiary" Content="{DynamicResource Dashboard.Alert.Open}" Command="{Binding OpenLostAccessCommand}" />
+          </Grid>
+          <Grid IsVisible="{Binding HasUnresolvedRisks}" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding UnresolvedRisksText}" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Classes="tertiary" Content="{DynamicResource Dashboard.Alert.Open}" Command="{Binding OpenUnresolvedRiskCommand}" />
+          </Grid>
+          <Grid IsVisible="{Binding HasCredentialExports}" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding CredentialExportsText}" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Classes="tertiary" Content="{DynamicResource Dashboard.Alert.Open}" Command="{Binding OpenCredentialExportCommand}" />
+          </Grid>
+          <Grid IsVisible="{Binding HasCredentialDeletions}" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Text="{Binding CredentialDeletionsText}" TextWrapping="Wrap" />
+            <Button Grid.Column="1" Classes="tertiary" Content="{DynamicResource Dashboard.Alert.Open}" Command="{Binding OpenCredentialDeletionCommand}" />
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="passive-information" AutomationProperties.AutomationId="dashboard-progress-summary">
+        <StackPanel Spacing="5">
+          <TextBlock Classes="section-title" Text="{DynamicResource Dashboard.Progress.OrientationTitle}" />
+          <TextBlock Text="{Binding CriticalReadinessText}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding AccountCoverageText}" TextWrapping="Wrap" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="focus-on-visible actionable-warning" IsVisible="{Binding HasValidationMessage}"
+              Focusable="True" AutomationProperties.AutomationId="dashboard-session-validation"
+              AutomationProperties.LiveSetting="Assertive" AutomationProperties.Name="{Binding ValidationMessage}">
+        <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+      </Border>
+
+      <Expander Classes="details" AutomationProperties.AutomationId="dashboard-recovery-details"
+                Header="{DynamicResource Dashboard.Details.Title}">
+        <StackPanel Margin="0,12,0,0" Spacing="10">
+          <TextBlock FontWeight="SemiBold" Text="{Binding CurrentSessionName}" />
+          <TextBlock Text="{Binding SessionStatusText}" />
+          <TextBlock Text="{Binding LastSavedText}" />
+          <TextBlock Text="{Binding VaultText}" />
+          <TextBlock IsVisible="{Binding HasRecommendationCategory}" Text="{Binding RecommendationCategoryText}" TextWrapping="Wrap" />
+          <TextBlock IsVisible="{Binding HasRecommendationAction}" Text="{Binding RecommendationActionText}" TextWrapping="Wrap" />
+          <TextBlock IsVisible="{Binding HasRecommendationApproach}" Text="{Binding RecommendationApproachText}" TextWrapping="Wrap" />
+          <TextBlock Text="{Binding WeightedProgressText}" TextWrapping="Wrap" />
+          <TextBlock Text="{DynamicResource Dashboard.Progress.Disclaimer}" TextWrapping="Wrap" />
+          <WrapPanel ItemSpacing="8" LineSpacing="8">
+            <Button Classes="secondary" IsVisible="{Binding IsActiveSession}"
+                    Content="{DynamicResource Dashboard.Action.Pause}" Command="{Binding PauseCommand}" />
+            <Button Classes="secondary" IsVisible="{Binding IsPausedSession}"
+                    Content="{DynamicResource Dashboard.Action.Resume}" Command="{Binding ResumeCommand}" />
+            <Button Classes="destructive" IsVisible="{Binding IsActiveSession}"
+                    Content="{DynamicResource Dashboard.Action.Archive}" Command="{Binding ArchiveCommand}" />
+            <Button Classes="destructive" IsVisible="{Binding IsPausedSession}"
+                    Content="{DynamicResource Dashboard.Action.Archive}" Command="{Binding ArchiveCommand}" />
+          </WrapPanel>
+        </StackPanel>
+      </Expander>
     </StackPanel>
-  </ScrollViewer>
+  </StackPanel>
 </UserControl>

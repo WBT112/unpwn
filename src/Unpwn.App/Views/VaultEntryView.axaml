@@ -32,7 +32,7 @@
       <StackPanel Spacing="16">
         <TextBlock Classes="section-title" Text="{DynamicResource Vault.Welcome.Title}" />
         <TextBlock Text="{DynamicResource Vault.Welcome.Description}" TextWrapping="Wrap" />
-        <Button Classes="initial-focus"
+        <Button Classes="primary initial-focus"
                 AutomationProperties.AutomationId="vault-begin"
                 HorizontalAlignment="Left"
                 Command="{Binding BeginCommand}"
@@ -48,7 +48,7 @@
         <TextBlock Classes="section-title" Text="{DynamicResource Vault.Trusted.Title}" />
         <TextBlock Text="{DynamicResource Vault.Trusted.Description}" TextWrapping="Wrap" />
         <StackPanel Spacing="10">
-          <Button Classes="initial-focus"
+          <Button Classes="primary initial-focus"
                   AutomationProperties.AutomationId="vault-trusted-yes"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Left"
@@ -93,7 +93,7 @@
       <StackPanel Spacing="16">
         <TextBlock Classes="section-title" Text="{DynamicResource Vault.SafetyStopped.Title}" />
         <TextBlock Text="{DynamicResource Vault.SafetyStopped.Description}" TextWrapping="Wrap" />
-        <Button Classes="initial-focus"
+        <Button Classes="primary initial-focus"
                 AutomationProperties.AutomationId="vault-restart-safety-check"
                 HorizontalAlignment="Left"
                 Command="{Binding RestartSafetyCheckCommand}"
@@ -127,17 +127,18 @@
             </StackPanel>
           </Border>
 
-          <Button Classes="initial-focus"
+          <Button Classes="primary initial-focus"
                   AutomationProperties.AutomationId="vault-primary-action"
                   HorizontalAlignment="Left"
                   Command="{Binding PrimaryVaultActionCommand}"
                   Content="{Binding PrimaryVaultActionText}" />
 
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button AutomationProperties.AutomationId="vault-open-another"
-                    Command="{Binding ShowOpenVaultCommand}"
+            <Button Classes="secondary"
+                    AutomationProperties.AutomationId="vault-open-another"
+                    Click="OpenAnotherVaultButton_OnClick"
                     Content="{DynamicResource Vault.Choice.OpenAnother}" />
-            <Button IsVisible="{Binding HasPrimaryRecentVault}"
+            <Button Classes="secondary" IsVisible="{Binding HasPrimaryRecentVault}"
                     AutomationProperties.AutomationId="vault-create-new"
                     Command="{Binding ShowCreateVaultCommand}"
                     Content="{DynamicResource Vault.Choice.Create}" />
@@ -145,12 +146,10 @@
         </StackPanel>
       </Border>
 
-      <Border IsVisible="{Binding HasRecentVaults}"
-              Padding="20"
-              CornerRadius="10"
-              Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <StackPanel Spacing="12">
-          <TextBlock Classes="section-title" Text="{DynamicResource Vault.Recent.Title}" />
+      <Expander IsVisible="{Binding HasRecentVaults}" Classes="details"
+                AutomationProperties.AutomationId="vault-manage-recent"
+                Header="{DynamicResource Vault.Recent.ManageTitle}">
+        <StackPanel Margin="0,10,0,0" Spacing="12">
           <ListBox ItemsSource="{Binding RecentVaults}"
                    SelectedItem="{Binding SelectedRecentVault, Mode=TwoWay}"
                    MaxHeight="180">
@@ -167,15 +166,15 @@
             </ListBox.ItemTemplate>
           </ListBox>
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <Button Command="{Binding UseRecentVaultCommand}"
+            <Button Classes="secondary" Command="{Binding UseRecentVaultCommand}"
                     Content="{DynamicResource Vault.Recent.Open}" />
-            <Button Command="{Binding RemoveRecentReferenceCommand}"
+            <Button Classes="tertiary" Command="{Binding RemoveRecentReferenceCommand}"
                     Content="{DynamicResource Vault.Recent.Remove}" />
-            <Button Command="{Binding DeleteRecentVaultCommand}"
+            <Button Classes="destructive" Command="{Binding DeleteRecentVaultCommand}"
                     Content="{DynamicResource Vault.Recent.Delete}" />
           </StackPanel>
         </StackPanel>
-      </Border>
+      </Expander>
 
       <Button HorizontalAlignment="Left"
               AutomationProperties.AutomationId="vault-back-trusted-assessment"
@@ -189,23 +188,24 @@
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="14">
         <TextBlock Classes="section-title" Text="{DynamicResource Vault.Create.Title}" />
-        <TextBlock Text="{DynamicResource Vault.Create.Path}" />
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-          <TextBox Grid.Column="0"
-                   Classes="initial-focus"
-                   AutomationProperties.AutomationId="vault-create-path"
-                   AutomationProperties.Name="{DynamicResource Vault.Create.Path}"
-                   Text="{Binding CreatePath, Mode=TwoWay}" />
-          <Button Grid.Column="1"
-                  Click="ChooseCreatePathButton_OnClick"
-                  Content="{DynamicResource Vault.Create.Browse}" />
-        </Grid>
         <TextBlock FontSize="12"
                    Opacity="0.72"
                    Text="{DynamicResource Vault.Create.DefaultPathHint}"
                    TextWrapping="Wrap" />
+        <Expander Classes="details" AutomationProperties.AutomationId="vault-create-location-details"
+                  Header="{DynamicResource Vault.Create.ChooseDifferentLocation}">
+          <Grid Margin="0,8,0,0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBox Grid.Column="0"
+                     AutomationProperties.AutomationId="vault-create-path"
+                     AutomationProperties.Name="{DynamicResource Vault.Create.Path}"
+                     Text="{Binding CreatePath, Mode=TwoWay}" />
+            <Button Grid.Column="1" Classes="secondary"
+                    Click="ChooseCreatePathButton_OnClick"
+                    Content="{DynamicResource Vault.Create.Browse}" />
+          </Grid>
+        </Expander>
         <TextBlock Text="{DynamicResource Vault.Create.Password}" />
-        <TextBox AutomationProperties.AutomationId="vault-create-password"
+        <TextBox Classes="initial-focus" AutomationProperties.AutomationId="vault-create-password"
                  Text="{Binding CreatePassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding CreatePasswordCharacter}" />
         <TextBlock FontSize="12" Opacity="0.78" Text="{Binding CreatePasswordGuidance}" TextWrapping="Wrap" />
@@ -220,7 +220,7 @@
                   IsChecked="{Binding AcknowledgesNonRecoverability, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Create.NonRecoverable}" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button AutomationProperties.AutomationId="vault-create-submit"
+          <Button Classes="primary" AutomationProperties.AutomationId="vault-create-submit"
                   Command="{Binding CreateVaultCommand}"
                   Content="{DynamicResource Vault.Create.Submit}" />
           <Button Command="{Binding BackToVaultChoiceCommand}"
@@ -235,19 +235,12 @@
             Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="14">
         <TextBlock Classes="section-title" Text="{DynamicResource Vault.Open.Title}" />
-        <TextBlock Text="{DynamicResource Vault.Open.Path}" />
-        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-          <TextBox Grid.Column="0"
-                   Classes="initial-focus"
-                   AutomationProperties.AutomationId="vault-open-path"
-                   AutomationProperties.Name="{DynamicResource Vault.Open.Path}"
-                   Text="{Binding OpenPath, Mode=TwoWay}" />
-          <Button Grid.Column="1"
-                  Click="ChooseOpenPathButton_OnClick"
-                  Content="{DynamicResource Vault.Open.Browse}" />
-        </Grid>
+        <TextBlock FontWeight="SemiBold" Text="{Binding OpenPath}" TextTrimming="CharacterEllipsis" />
+        <Button Classes="tertiary" HorizontalAlignment="Left"
+                Click="OpenAnotherVaultButton_OnClick"
+                Content="{DynamicResource Vault.Open.ChooseAnother}" />
         <TextBlock Text="{DynamicResource Vault.Open.Password}" />
-        <TextBox AutomationProperties.AutomationId="vault-unlock-password"
+        <TextBox Classes="initial-focus" AutomationProperties.AutomationId="vault-unlock-password"
                  AutomationProperties.Name="{DynamicResource Vault.Locked.Password}"
                  Text="{Binding OpenPassword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PasswordChar="{Binding OpenPasswordCharacter}" />
@@ -255,7 +248,8 @@
                   IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Open.Reveal}" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding OpenVaultCommand}"
+          <Button Classes="primary" AutomationProperties.AutomationId="vault-open-submit"
+                  Command="{Binding OpenVaultCommand}"
                   Content="{DynamicResource Vault.Open.Submit}" />
           <Button Command="{Binding BackToVaultChoiceCommand}"
                   Content="{DynamicResource Vault.Open.Back}" />
@@ -280,7 +274,7 @@
         <CheckBox AutomationProperties.AutomationId="vault-unlock-reveal-password"
                   IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Locked.Reveal}" />
-        <Button HorizontalAlignment="Left"
+        <Button Classes="primary" HorizontalAlignment="Left"
                 AutomationProperties.AutomationId="vault-locked-unlock"
                 Command="{Binding UnlockCurrentVaultCommand}"
                 Content="{DynamicResource Vault.Locked.Unlock}" />
@@ -297,7 +291,7 @@
         <TextBlock FontWeight="SemiBold" Text="{Binding CurrentVaultDisplayName}" />
         <TextBlock FontSize="12" Opacity="0.72" Text="{Binding CurrentVaultPath}" TextTrimming="CharacterEllipsis" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Classes="initial-focus"
+          <Button Classes="primary initial-focus"
                   AutomationProperties.AutomationId="vault-continue"
                   Command="{Binding ContinueCommand}"
                   Content="{DynamicResource Vault.Unlocked.Continue}" />
@@ -339,7 +333,7 @@
                   IsChecked="{Binding IsChangePasswordRevealed, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Change.Reveal}" />
         <StackPanel Orientation="Horizontal" Spacing="10">
-          <Button Command="{Binding ChangePasswordCommand}"
+          <Button Classes="primary" Command="{Binding ChangePasswordCommand}"
                   Content="{DynamicResource Vault.Change.Submit}" />
           <Button Command="{Binding CancelChangePasswordCommand}"
                   Content="{DynamicResource Vault.Change.Cancel}" />

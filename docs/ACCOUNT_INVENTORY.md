@@ -52,6 +52,11 @@ Known automatic suggestions are immediately usable for recovery ordering and do 
 
 A valid user choice records the explicit category and confirmation revision. The user can later remove that override with **Use automatic category**. Removing an override restores the current catalog suggestion; if that suggestion is `Unknown`, the account returns to the unresolved Needs-review state.
 
+The normal workspace selects the next unresolved account and shows only its recognizable identity and
+the three valid choices. **Save and next** immediately advances to the next unresolved account.
+Automatically categorized accounts need no interaction. Filters, sorting, full field editing,
+category corrections, addition, and deletion remain available under secondary inventory management.
+
 The user may continue recovery while unresolved accounts remain. Deferring a category decision never writes an `Unknown` confirmation. Account removal requires the normal destructive confirmation.
 
 ## Recovery queue boundary

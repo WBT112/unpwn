@@ -12,9 +12,6 @@
   <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Complete recovery session</value></data>
   <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Continue to completion review</value></data>
   <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Recovery session ended</value></data>
-  <data name="Completion.Review.Button" xml:space="preserve"><value>Run completion preflight</value></data>
-  <data name="Completion.Section.Description" xml:space="preserve"><value>The preflight reloads persisted account, action, risk, and credential state. Reviewing it does not change the session.</value></data>
-  <data name="Completion.Section.Title" xml:space="preserve"><value>Completion preflight</value></data>
   <data name="Completion.UnlockHint" xml:space="preserve"><value>Unlock a vault before reviewing session completion.</value></data>
   <data name="Completion.AcceptRisks" xml:space="preserve"><value>I explicitly accept that unresolved work and risks remain.</value></data>
   <data name="Completion.AcceptRisks.Detail" xml:space="preserve"><value>This acknowledgement records a follow-up-required outcome. It does not mean the accounts or device are safe.</value></data>
@@ -258,4 +255,10 @@
   <data name="RecoveryBrowser.Session.Orphaned" xml:space="preserve"><value>A previous Recovery Browser session did not end cleanly. Its temporary data will not be resumed automatically; discard it before starting a new browser session.</value></data>
   <data name="RecoveryBrowser.Session.OrphanedTitle" xml:space="preserve"><value>Temporary browser session data remains</value></data>
   <data name="RecoveryBrowser.Session.RetryCleanup" xml:space="preserve"><value>Retry secure cleanup</value></data>
+  <data name="Completion.AutoReview.Loading" xml:space="preserve"><value>Checking the current saved recovery state…</value></data>
+  <data name="Completion.BeforeFinish.Title" xml:space="preserve"><value>Before you finish</value></data>
+  <data name="Completion.BeforeFinish.Help" xml:space="preserve"><value>Resolve these items or explicitly accept the remaining risk where that is allowed.</value></data>
+  <data name="Completion.Details.Title" xml:space="preserve"><value>Recovery details and report</value></data>
+  <data name="Completion.SessionManagement.Title" xml:space="preserve"><value>Session management</value></data>
+  <data name="Completion.SessionManagement.Help" xml:space="preserve"><value>Archiving keeps your recovery history for review. It does not finish outstanding work or prove that accounts are secure.</value></data>
 </root>

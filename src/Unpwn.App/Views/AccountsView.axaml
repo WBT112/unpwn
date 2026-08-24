@@ -9,17 +9,39 @@
       <TextBlock Classes="page-title" Text="{Binding Title}" />
       <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
     </StackPanel>
-
     <views:StatusBannerView DataContext="{Binding Status}" />
 
-    <Border Padding="18" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-      <StackPanel Spacing="8">
-        <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Triage.Title}" />
-        <TextBlock FontWeight="SemiBold" Text="{Binding TriageProgress}" />
+    <Border IsVisible="{Binding IsSelectedAccountPendingReview}"
+            Padding="22" CornerRadius="12"
+            Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
+            AutomationProperties.AutomationId="accounts-current-triage-task">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Triage.AccountTitle}" />
+        <TextBlock Text="{Binding TriageProgress}" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding SelectedAccountIdentity}" FontSize="20" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock IsVisible="{Binding HasSelectedAccountContext}"
+                   Text="{Binding SelectedAccountContext}" Opacity="0.78" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Accounts.Triage.CategoryHelp}" TextWrapping="Wrap" />
+        <ComboBox Classes="initial-focus"
+                  AutomationProperties.AutomationId="accounts-category"
+                  ItemsSource="{Binding Categories}"
+                  SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                  PlaceholderText="{DynamicResource Accounts.Triage.CategoryRequired}">
+          <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Classes="primary"
+                AutomationProperties.AutomationId="accounts-category-save"
+                HorizontalAlignment="Left"
+                Content="{DynamicResource Accounts.Triage.SaveNext}"
+                Command="{Binding SaveCategoryCommand}" />
+      </StackPanel>
+    </Border>
+
+    <Border IsVisible="{Binding IsCategoryReviewComplete}" Classes="passive-information">
+      <StackPanel Spacing="10">
+        <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Triage.CompleteTitle}" />
         <TextBlock Text="{Binding ContinuationGuidance}" TextWrapping="Wrap" />
-        <TextBlock Text="{DynamicResource Accounts.Triage.OptionalHelp}" TextWrapping="Wrap" />
-        <Button Classes="initial-focus"
-                IsVisible="{Binding CanContinueRecovery}"
+        <Button Classes="primary initial-focus"
                 AutomationProperties.AutomationId="accounts-continue-recovery"
                 HorizontalAlignment="Left"
                 Command="{Binding ContinueRecoveryCommand}"
@@ -27,111 +49,100 @@
       </StackPanel>
     </Border>
 
-    <Grid ColumnDefinitions="300,*" ColumnSpacing="18">
-      <Border Grid.Column="0" Padding="12" CornerRadius="10" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
-        <StackPanel Spacing="10">
-          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-            <TextBlock Grid.Column="0" Classes="section-title" Text="{DynamicResource Accounts.List.Title}" />
-            <Button Grid.Column="1"
-                    AutomationProperties.AutomationId="accounts-new"
-                    Content="{DynamicResource Accounts.Action.New}"
-                    Command="{Binding NewAccountCommand}" />
-          </Grid>
-          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-            <ComboBox Grid.Column="0" ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}">
-              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
-            </ComboBox>
-            <ComboBox Grid.Column="1" ItemsSource="{Binding Sorts}" SelectedItem="{Binding SelectedSort, Mode=TwoWay}">
-              <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
-            </ComboBox>
-          </Grid>
-          <ListBox AutomationProperties.AutomationId="accounts-triage-list"
-                   ItemsSource="{Binding Accounts}"
-                   SelectedItem="{Binding SelectedAccount, Mode=TwoWay}"
-                   MinHeight="440">
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:AccountInventoryListItem">
-                <StackPanel Margin="4" Spacing="3">
-                  <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                  <TextBlock FontSize="12" Text="{Binding ProviderId}" />
-                  <TextBlock FontSize="12" Text="{Binding CategoryText}" />
-                  <TextBlock FontSize="12" FontWeight="SemiBold" Text="{Binding ReviewText}" />
-                </StackPanel>
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </StackPanel>
-      </Border>
+    <Border IsVisible="{Binding HasRemainingCategoryReview}" Classes="passive-information">
+      <StackPanel Spacing="8">
+        <TextBlock FontWeight="SemiBold" Text="{Binding ContinuationGuidance}" TextWrapping="Wrap" />
+        <TextBlock Text="{DynamicResource Accounts.Triage.OptionalHelp}" TextWrapping="Wrap" />
+        <Button Classes="tertiary"
+                AutomationProperties.AutomationId="accounts-continue-recovery-with-unresolved"
+                HorizontalAlignment="Left"
+                Command="{Binding ContinueRecoveryCommand}"
+                Content="{DynamicResource Accounts.Triage.Continue}" />
+      </StackPanel>
+    </Border>
 
-      <StackPanel Grid.Column="1" Spacing="18">
-        <Border Padding="18" CornerRadius="10"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-                IsEnabled="{Binding IsEditingAccount}">
-          <StackPanel Spacing="12">
-            <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Triage.AccountTitle}" />
-            <TextBlock Text="{DynamicResource Accounts.Triage.AccountHelp}" TextWrapping="Wrap" />
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="14" RowSpacing="10">
-              <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
-                <TextBlock Text="{DynamicResource Accounts.Field.Provider}" />
-                <TextBox Text="{Binding ProviderId, Mode=TwoWay}" MaxLength="160" />
+    <Border Classes="focus-on-visible actionable-warning"
+            IsVisible="{Binding HasValidationMessage}" Focusable="True"
+            AutomationProperties.AutomationId="accounts-validation"
+            AutomationProperties.LiveSetting="Assertive"
+            AutomationProperties.Name="{Binding ValidationMessage}">
+      <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+    </Border>
+
+    <Expander Classes="details"
+              AutomationProperties.AutomationId="accounts-inventory-management"
+              Header="{DynamicResource Accounts.Management.Title}">
+      <StackPanel Margin="0,12,0,0" Spacing="16">
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBlock Classes="section-title" Text="{DynamicResource Accounts.List.Title}" />
+          <Button Grid.Column="1" Classes="secondary"
+                  AutomationProperties.AutomationId="accounts-new"
+                  Content="{DynamicResource Accounts.Action.New}"
+                  Command="{Binding NewAccountCommand}" />
+        </Grid>
+        <WrapPanel ItemSpacing="8" LineSpacing="8">
+          <ComboBox Width="210" ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter, Mode=TwoWay}">
+            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+          <ComboBox Width="210" ItemsSource="{Binding Sorts}" SelectedItem="{Binding SelectedSort, Mode=TwoWay}">
+            <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+          </ComboBox>
+        </WrapPanel>
+        <ListBox AutomationProperties.AutomationId="accounts-triage-list"
+                 ItemsSource="{Binding Accounts}" SelectedItem="{Binding SelectedAccount, Mode=TwoWay}"
+                 MinHeight="160" MaxHeight="300">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:AccountInventoryListItem">
+              <StackPanel Margin="4" Spacing="3">
+                <TextBlock FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                <TextBlock FontSize="12" Text="{Binding CategoryText}" />
+                <TextBlock FontSize="12" Text="{Binding ReviewText}" />
               </StackPanel>
-              <StackPanel Grid.Row="0" Grid.Column="1" Spacing="4">
-                <TextBlock Text="{DynamicResource Accounts.Field.Name}" />
-                <TextBox Text="{Binding AccountName, Mode=TwoWay}" MaxLength="200" />
-              </StackPanel>
-              <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="4">
-                <TextBlock Text="{DynamicResource Accounts.Field.Login}" />
-                <TextBox Text="{Binding LoginIdentifier, Mode=TwoWay}" MaxLength="320" />
-              </StackPanel>
-              <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Spacing="4">
-                <TextBlock Text="{DynamicResource Accounts.Field.Url}" />
-                <TextBox Text="{Binding AccountUrl, Mode=TwoWay}" MaxLength="2048" />
-              </StackPanel>
-            </Grid>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Content="{DynamicResource Accounts.Action.Save}" Command="{Binding SaveAccountCommand}" />
-              <Button Content="{DynamicResource Accounts.Action.Delete}" Command="{Binding DeleteAccountCommand}" />
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+
+        <Expander Classes="details" Header="{DynamicResource Accounts.Management.EditDetails}">
+          <StackPanel Margin="0,10,0,0" Spacing="12" IsEnabled="{Binding IsEditingAccount}">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Accounts.Field.Provider}" />
+              <TextBox Text="{Binding ProviderId, Mode=TwoWay}" MaxLength="160" />
             </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Accounts.Field.Name}" />
+              <TextBox Text="{Binding AccountName, Mode=TwoWay}" MaxLength="200" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Accounts.Field.Login}" />
+              <TextBox Text="{Binding LoginIdentifier, Mode=TwoWay}" MaxLength="320" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{DynamicResource Accounts.Field.Url}" />
+              <TextBox Text="{Binding AccountUrl, Mode=TwoWay}" MaxLength="2048" />
+            </StackPanel>
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
+              <Button Classes="secondary" Content="{DynamicResource Accounts.Action.Save}" Command="{Binding SaveAccountCommand}" />
+              <Button Classes="destructive" Content="{DynamicResource Accounts.Action.Delete}" Command="{Binding DeleteAccountCommand}" />
+            </WrapPanel>
           </StackPanel>
-        </Border>
+        </Expander>
 
-        <Border Padding="18" CornerRadius="10"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}"
-                IsEnabled="{Binding HasPersistedAccount}">
-          <StackPanel Spacing="12">
-            <TextBlock Classes="section-title" Text="{DynamicResource Accounts.Triage.CategoryTitle}" />
-            <TextBlock Text="{DynamicResource Accounts.Triage.CategoryHelp}" TextWrapping="Wrap" />
-            <ComboBox AutomationProperties.AutomationId="accounts-category"
-                      ItemsSource="{Binding Categories}"
-                      SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
-                      PlaceholderText="{DynamicResource Accounts.Triage.CategoryRequired}">
+        <Expander Classes="details" IsVisible="{Binding HasPersistedAccount}"
+                  Header="{DynamicResource Accounts.Management.CorrectCategory}">
+          <StackPanel Margin="0,10,0,0" Spacing="10">
+            <ComboBox ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory, Mode=TwoWay}">
               <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
             </ComboBox>
-            <StackPanel Orientation="Horizontal" Spacing="10">
-              <Button Classes="initial-focus"
-                      AutomationProperties.AutomationId="accounts-category-save"
-                      Content="{DynamicResource Accounts.Triage.SaveNext}"
-                      Command="{Binding SaveCategoryCommand}" />
-              <Button IsVisible="{Binding CanUseAutomaticCategory}"
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
+              <Button Classes="secondary" Content="{DynamicResource Accounts.Action.Save}" Command="{Binding SaveCategoryCommand}" />
+              <Button Classes="tertiary" IsVisible="{Binding CanUseAutomaticCategory}"
                       AutomationProperties.AutomationId="accounts-category-reset"
                       Content="{DynamicResource Accounts.Triage.UseAutomatic}"
                       Command="{Binding ClearCategoryOverrideCommand}" />
-            </StackPanel>
+            </WrapPanel>
           </StackPanel>
-        </Border>
+        </Expander>
       </StackPanel>
-    </Grid>
-
-    <Border Classes="focus-on-visible"
-            IsVisible="{Binding HasValidationMessage}"
-            Focusable="True"
-            AutomationProperties.AutomationId="accounts-validation"
-            AutomationProperties.LiveSetting="Assertive"
-            AutomationProperties.Name="{Binding ValidationMessage}"
-            Padding="12" CornerRadius="8"
-            BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
-            BorderThickness="2">
-      <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
-    </Border>
+    </Expander>
   </StackPanel>
 </UserControl>

@@ -342,6 +342,11 @@ public sealed class AccessibilityHeadlessTests
                 .Select(view => Assert.IsType<VisualStatusViewModel>(view.DataContext))
                 .ToArray();
             Assert.Single(shellStatuses, status => status.Presentation == StatusPresentation.GlobalContext);
+            Assert.False(shell.IsGlobalStatusVisible);
+            var globalStatus = Assert.IsType<Control>(
+                FindByAutomationId(window, "shell-global-status"),
+                exactMatch: false);
+            Assert.False(globalStatus.IsVisible);
             Assert.DoesNotContain(
                 shellStatuses,
                 status => status.Presentation == StatusPresentation.ScreenInstruction);

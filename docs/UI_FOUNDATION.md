@@ -8,6 +8,9 @@ The application starts with no vault unlocked. The header displays explicit lock
 
 During an active recovery session, the active workspace owns its instructions, explanation, current
 task, and primary action. Persistent shell chrome does not present a second assistant card or CTA.
+Top-level navigation is compact and normally collapsed during guided work. The header owns vault and
+session context; the bottom global status surface is absent for routine context and appears only for a
+transient global result or warning.
 The dashboard projects the canonical next recommendation into the workspace; merely opening a route
 never advances the recovery flow. Session creation opens CSV import; after the explicit reviewed-import
 action persists at least one account successfully, the shell persists the canonical next-task transition
@@ -38,10 +41,16 @@ they are activated, in addition to reacting to change notifications, so data imp
 is visible immediately.
 
 Status ownership is explicit and language-neutral. `ScreenInstruction` and screen-local
-`TransientResult` messages render in the active workspace. The persistent status line renders
-`GlobalContext`, such as the current vault and recovery-session lifecycle, while `GlobalWarning`
-messages remain available across routes. The shell never promotes `ScreenViewModel.Status` into the
-global line based on its localized text.
+`TransientResult` messages render in the active workspace. Vault/session `GlobalContext` is available
+to the shell but does not render a second routine banner below the workspace; `GlobalWarning` and
+transient global results remain available across routes. The shell never promotes
+`ScreenViewModel.Status` into the global line based on its localized text.
+
+Reusable presentation classes give actions and information an application-wide hierarchy:
+`primary`, `secondary`, `tertiary`, and `destructive` actions; actionable warnings; passive
+information; and accessible expandable details. Each normal state has one dominant next action.
+Administrative controls, raw metadata, filters, lifecycle corrections, and destructive actions are
+progressively disclosed rather than competing with that action.
 
 Encrypted workspace writes publish visible saving, saved, retrying, cancelled, and save-failed
 states; failure text distinguishes access, storage, version, and lock/conflict cases without exposing

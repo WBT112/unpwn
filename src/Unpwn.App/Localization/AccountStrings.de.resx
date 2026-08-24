@@ -80,4 +80,9 @@
   <data name="Import.Result.Success" xml:space="preserve"><value>Die geprüften Konten wurden im verschlüsselten Inventar gespeichert.</value></data>
   <data name="Import.Result.NoChanges" xml:space="preserve"><value>Es wurden keine neuen Konten importiert, weil alle geprüften Konten bereits im Inventar vorhanden sind.</value></data>
   <data name="Import.Result.Failure" xml:space="preserve"><value>Die geprüften Konten wurden nicht importiert. Kläre die Duplikatwahl oder prüfe den Inventarstatus.</value></data>
+  <data name="Accounts.Triage.CompleteTitle" xml:space="preserve"><value>Kontenprüfung abgeschlossen</value></data>
+  <data name="Accounts.Management.Title" xml:space="preserve"><value>Kontenbestand verwalten</value></data>
+  <data name="Accounts.Management.EditDetails" xml:space="preserve"><value>Kontodetails bearbeiten</value></data>
+  <data name="Accounts.Management.CorrectCategory" xml:space="preserve"><value>Kategorie des ausgewählten Kontos korrigieren</value></data>
+  <data name="Import.ChooseAnotherFile.Button" xml:space="preserve"><value>Andere Datei wählen</value></data>
 </root>

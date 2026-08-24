@@ -104,6 +104,8 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
 
     public bool IsClean => _preflight?.IsClean == true;
 
+    public bool HasIssues => Issues.Count > 0;
+
     public bool RequiresRiskAcceptance => _preflight?.RequiresExplicitRiskAcceptance == true;
 
     public bool IsReadOnly
@@ -139,7 +141,13 @@ public sealed class CompletionScreenViewModel : LocalizedScreenViewModel
     public IReadOnlyList<RecoveryCompletionIssueViewModel> Issues
     {
         get => _issues;
-        private set => SetProperty(ref _issues, value);
+        private set
+        {
+            if (SetProperty(ref _issues, value))
+            {
+                OnPropertyChanged(nameof(HasIssues));
+            }
+        }
     }
 
     public string AccountsSummary => _report is null

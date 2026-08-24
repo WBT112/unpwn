@@ -41,8 +41,7 @@ public sealed class RecoveryFlowServiceTests
         Assert.True((await session.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Synthetic recovery",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None)).Succeeded);
         await inventory.InitializeAsync(CancellationToken.None);
         using var flow = new RecoveryFlowService(
@@ -106,8 +105,7 @@ public sealed class RecoveryFlowServiceTests
         Assert.True((await session.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Synthetic recovery",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None)).Succeeded);
         await inventory.InitializeAsync(CancellationToken.None);
         Assert.True((await inventory.UpsertAsync(

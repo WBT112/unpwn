@@ -219,7 +219,11 @@ public sealed class RecoveryVaultTests : IDisposable
         {
             command.CommandText = """
                 UPDATE vault_records
-                SET ciphertext = CAST(x'00' || substr(ciphertext, 2) AS BLOB)
+                SET ciphertext = CAST(
+                    CASE hex(substr(ciphertext, 1, 1))
+                        WHEN '00' THEN x'01'
+                        ELSE x'00'
+                    END || substr(ciphertext, 2) AS BLOB)
                 WHERE record_type = $record_type AND record_id = $record_id;
                 """;
             command.Parameters.AddWithValue("$record_type", "account-state");

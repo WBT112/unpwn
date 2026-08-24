@@ -238,11 +238,6 @@ public sealed class RecoverySessionService :
             return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.Locked);
         }
 
-        if (!request.SecurityWarningAcknowledged)
-        {
-            return RecoverySessionOperationResult.Failure(RecoverySessionOperationFailureCode.InvalidInput);
-        }
-
         RecoverySessionWorkspace session;
         try
         {
