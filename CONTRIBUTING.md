@@ -17,6 +17,7 @@ A pull request should:
 - address one coherent problem;
 - preserve the documented architecture and security boundaries;
 - include regression or feature tests where behavior changes;
+- add a real desktop scenario for a new user-visible workflow branch, or record the reviewed lower-level coverage exception in [Desktop E2E Scenarios](docs/DESKTOP_E2E.md);
 - update the canonical documentation when behavior or architecture changes;
 - keep user-facing text localizable and canonical state language-neutral;
 - describe what was actually tested.
@@ -37,7 +38,7 @@ dotnet test unpwn.slnx --configuration Release --no-build --filter "Category=Sec
 ```
 
 The real desktop/native-browser journey has additional platform prerequisites and commands documented
-under [Packaged desktop end-to-end journey](docs/TESTING.md#6-packaged-desktop-end-to-end-journey).
+under [Packaged desktop end-to-end scenarios](docs/TESTING.md#6-packaged-desktop-end-to-end-scenarios).
 
 The authoritative CI, synthetic-provider, Recovery Browser, artifact, and secret-scanning rules are in [Testing Strategy](docs/TESTING.md). The blocking security gates and exception process are documented in [Security CI Gates](docs/SECURITY_GATES.md).
 

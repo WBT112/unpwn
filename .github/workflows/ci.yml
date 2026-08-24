@@ -27,8 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
-          - windows-latest
+          - ubuntu-24.04
+          - windows-2025
 
     steps:
       - name: Check out repository
@@ -123,18 +123,32 @@ jobs:
           sudo apt-get update
           sudo apt-get install --yes xvfb libwebkit2gtk-4.1-0
 
-      - name: Complete desktop E2E journey
+      - name: Run tiered desktop E2E scenarios
         shell: pwsh
         run: |
           $app = (Resolve-Path 'src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll').Path
           $harness = (Resolve-Path 'tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll').Path
-          $artifacts = Join-Path (Get-Location) 'artifacts/desktop-e2e'
-          if ($IsWindows) {
-            dotnet $harness --app $app --artifacts $artifacts
+          $scenarios = if ($IsWindows) {
+            @('golden', 'browser-close-preserves-recovery')
           } else {
-            xvfb-run --auto-servernum dotnet $harness --app $app --artifacts $artifacts
+            @(
+              'golden',
+              'safety-stop-and-retry',
+              'vault-wrong-password-and-resume',
+              'import-correction-and-retry',
+              'defer-account',
+              'browser-close-preserves-recovery'
+            )
           }
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          foreach ($scenario in $scenarios) {
+            $artifacts = Join-Path (Get-Location) "artifacts/desktop-e2e/$scenario"
+            if ($IsWindows) {
+              dotnet $harness --app $app --scenario $scenario --artifacts $artifacts
+            } else {
+              xvfb-run --auto-servernum dotnet $harness --app $app --scenario $scenario --artifacts $artifacts
+            }
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       - name: Verify test artifacts are secret-safe
         id: secret-scan
@@ -174,5 +188,69 @@ jobs:
           path: |
             artifacts/test-results
             artifacts/desktop-e2e
+          if-no-files-found: warn
+          retention-days: 7
+
+  debian-desktop-e2e:
+    name: Desktop E2E (Debian 13)
+    runs-on: ubuntu-24.04
+    container: debian:13-slim
+
+    steps:
+      - name: Install Debian desktop and checkout prerequisites
+        run: |
+          apt-get update
+          apt-get install --yes --no-install-recommends ca-certificates git xauth xvfb libwebkit2gtk-4.1-0
+
+      - name: Verify Debian baseline
+        run: |
+          . /etc/os-release
+          test "$ID" = debian
+          test "$VERSION_ID" = 13
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Restore and build desktop harness
+        run: |
+          dotnet restore unpwn.slnx
+          dotnet build src/Unpwn.App/Unpwn.App.csproj --configuration Release --no-restore
+          dotnet build tools/Unpwn.DesktopE2E/Unpwn.DesktopE2E.csproj --configuration Release --no-restore
+
+      - name: Run Debian native-browser scenarios
+        run: |
+          app="$GITHUB_WORKSPACE/src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll"
+          harness="$GITHUB_WORKSPACE/tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll"
+          for scenario in golden browser-close-preserves-recovery; do
+            artifacts="$GITHUB_WORKSPACE/artifacts/desktop-e2e/$scenario"
+            xvfb-run --auto-servernum dotnet "$harness" --app "$app" --scenario "$scenario" --artifacts "$artifacts"
+          done
+
+      - name: Verify Debian artifacts are secret-safe
+        if: always()
+        run: |
+          if grep --recursive --files-with-matches --fixed-strings \
+            --exclude='*.png' \
+            --regexp='UNPWN_TEST_SECRET_' \
+            --regexp='desktop-e2e-only-482!' \
+            --regexp='synthetic-ignored-value' \
+            artifacts 2>/dev/null; then
+            echo 'Synthetic secret markers were found in test artifacts.' >&2
+            exit 1
+          fi
+
+      - name: Upload failed Debian diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-e2e-debian-13
+          path: artifacts/desktop-e2e
           if-no-files-found: warn
           retention-days: 7

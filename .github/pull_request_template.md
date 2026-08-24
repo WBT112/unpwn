@@ -6,6 +6,7 @@ Describe the problem and the proposed change.
 
 - [ ] One coherent change
 - [ ] Documentation updated where needed
+- [ ] New user-visible workflow branches have a desktop scenario or a reviewed matrix exception
 - [ ] No credentials, tokens, cookies, reset links, or personal account data included
 
 ## Security and Privacy Impact

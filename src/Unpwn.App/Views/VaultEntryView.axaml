@@ -79,7 +79,8 @@
                   AutomationProperties.AutomationId="vault-end-for-device-safety"
                   Command="{Binding EndForDeviceSafetyCommand}"
                   Content="{DynamicResource Vault.Guidance.End}" />
-          <Button Command="{Binding BackToTrustedDeviceCommand}"
+          <Button AutomationProperties.AutomationId="vault-reconsider-device-safety"
+                  Command="{Binding BackToTrustedDeviceCommand}"
                   Content="{DynamicResource Vault.Guidance.Reconsider}" />
         </StackPanel>
       </StackPanel>
@@ -280,6 +281,7 @@
                   IsChecked="{Binding IsOpenPasswordRevealed, Mode=TwoWay}"
                   Content="{DynamicResource Vault.Locked.Reveal}" />
         <Button HorizontalAlignment="Left"
+                AutomationProperties.AutomationId="vault-locked-unlock"
                 Command="{Binding UnlockCurrentVaultCommand}"
                 Content="{DynamicResource Vault.Locked.Unlock}" />
       </StackPanel>
