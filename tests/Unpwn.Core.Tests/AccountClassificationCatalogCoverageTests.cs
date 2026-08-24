@@ -73,6 +73,10 @@ public sealed class AccountClassificationCatalogCoverageTests
     [InlineData("Spotify", null, AccountRecoveryCategory.NonCritical)]
     [InlineData("EA", null, AccountRecoveryCategory.Critical)]
     [InlineData("manual", "https://www.spiegel.de", AccountRecoveryCategory.NonCritical)]
+    [InlineData("manual", "https://www.axisbank.com", AccountRecoveryCategory.Critical)]
+    [InlineData("manual", "https://www.tescobank.com", AccountRecoveryCategory.Critical)]
+    [InlineData("manual", "https://www.accountant.com", AccountRecoveryCategory.Email)]
+    [InlineData("manual", "https://www.mineo.jp", AccountRecoveryCategory.Email)]
     public void RepresentativeReviewedServicesClassifyCorrectly(
         string providerId,
         string? url,
@@ -90,6 +94,10 @@ public sealed class AccountClassificationCatalogCoverageTests
     [InlineData("manual", "https://www.bankrate.com")]
     [InlineData("manual", "https://www.banquealimentaire.org")]
     [InlineData("manual", "https://10minutemail.com")]
+    [InlineData("manual", "https://202608221.xyz")]
+    [InlineData("manual", "https://midnd.help")]
+    [InlineData("manual", "https://www.safeway.com")]
+    [InlineData("manual", "https://www.tcmb.gov.tr")]
     [InlineData("manual", "https://www.orkut.com")]
     [InlineData("FranceConnect", "https://franceconnect.gouv.fr")]
     [InlineData("definitely-unlisted-provider", "https://definitely-unlisted-provider.example.test/account")]
@@ -114,11 +122,14 @@ public sealed class AccountClassificationCatalogCoverageTests
             RepositoryAccountClassificationCatalog.Classify("manual", url).Category);
     }
 
-    [Fact]
-    public void NonCriticalCatalogReachesThePerCategoryCoverageGoal()
+    [Theory]
+    [InlineData(AccountRecoveryCategory.Email)]
+    [InlineData(AccountRecoveryCategory.Critical)]
+    [InlineData(AccountRecoveryCategory.NonCritical)]
+    public void CatalogReachesThePerCategoryCoverageGoal(AccountRecoveryCategory category)
     {
         Assert.True(
-            RepositoryAccountClassificationCatalog.GetProviderCount(AccountRecoveryCategory.NonCritical) >=
+            RepositoryAccountClassificationCatalog.GetProviderCount(category) >=
             RepositoryAccountClassificationCatalog.CoverageGoalPerCategory);
     }
 
@@ -208,13 +219,22 @@ public sealed class AccountClassificationCatalogCoverageTests
     {
         var provenance = RepositoryAccountClassificationCatalog.Provenance;
 
-        Assert.Equal(2, provenance.Count);
+        Assert.Equal(4, provenance.Count);
         Assert.Contains(provenance, source =>
             source.LicenseId == "AGPL-3.0-or-later" &&
             source.SourceCategory == "curated-manual");
         Assert.Contains(provenance, source =>
             source.LicenseId == "CC-BY-SA-4.0" &&
+            source.SourceName.Contains("press", StringComparison.Ordinal) &&
             source.SourceRevision.Contains("2ddb46bdb691721cadc8e1521abc780396e7aeb3", StringComparison.Ordinal));
+        Assert.Contains(provenance, source =>
+            source.LicenseId == "CC-BY-SA-4.0" &&
+            source.SourceName.Contains("bank", StringComparison.Ordinal) &&
+            source.SourceRevision.Contains("2ddb46bdb691721cadc8e1521abc780396e7aeb3", StringComparison.Ordinal));
+        Assert.Contains(provenance, source =>
+            source.LicenseId == "MIT" &&
+            source.SourceRevision.Contains("8e7fa38d2228a6eed81226c63776d56d1b53c242", StringComparison.Ordinal) &&
+            source.SourceRevision.Contains("3af5c60a1934d98a7a66d52fe5f2d12260027b34", StringComparison.Ordinal));
         Assert.All(provenance, source =>
             Assert.StartsWith("unpwn-curated", source.Id, StringComparison.Ordinal));
     }
