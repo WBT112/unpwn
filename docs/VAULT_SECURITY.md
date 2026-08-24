@@ -22,8 +22,6 @@ The vault password:
 - is not recoverable by the maintainers
 - is the portable unlock mechanism across supported operating systems
 
-Operating-system integrations may later offer optional convenience unlocking, but they must not replace the vault password as the portable security basis.
-
 ## Key Hierarchy
 
 1. Generate a random vault data key.
@@ -34,11 +32,24 @@ Operating-system integrations may later offer optional convenience unlocking, bu
 
 This design permits a vault-password change by re-encrypting the data key rather than every stored record.
 
-Argon2id parameters are stored as versioned vault metadata so they can be increased in future versions. New vaults currently use the repository's interactive profile of 64 MiB memory, three iterations, and parallelism two. Persisted parameters are part of the untrusted vault-file boundary. The current loader validates structural and minimum-strength requirements; production hardening also requires explicit resource ceilings and benchmarking on the minimum supported hardware before a supported release.
+Argon2id parameters are stored as versioned vault metadata so they can be increased in future versions. New vaults use the repository's interactive profile of 64 MiB memory, three iterations, and parallelism two. Persisted parameters are part of the untrusted vault-file boundary. The loader validates minimum strength and the finite current-format ceilings before key derivation. Benchmarking on the minimum supported hardware remains a release-readiness requirement.
 
 ## Current cryptographic implementation
 
 `Unpwn.Vault` implements the complete key hierarchy above and the encrypted SQLite storage boundary. Its cryptographic tests cover password-derived key wrapping, random vault data keys, password changes by rewrapping the data key, per-encryption nonces, AES-GCM authentication tags, associated-data binding, modified-record rejection, and atomic encrypted record persistence.
+
+## Current format and resource limits
+
+The current vault format accepts only finite values:
+
+- Argon2id memory: 19 MiB through 256 MiB;
+- Argon2id iterations: 2 through 10;
+- Argon2id parallelism: 1 through 8;
+- encrypted record payload: at most 8 MiB per record;
+- record descriptors: at most 4,096 per vault;
+- UTF-8 record type and opaque record ID: at most 64 bytes each.
+
+New vaults use the interactive parameters above. Values outside the current format are rejected rather than migrated or passed into expensive processing. Tests cover the boundaries with small deterministic fixtures instead of high-memory stress runs. These values are security/resource limits, not a promise that future vault versions will use the same ceilings.
 
 ## Record Encryption
 

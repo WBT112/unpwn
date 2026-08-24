@@ -72,13 +72,18 @@ return to CSV import later to add more accounts.
 
 ### 5. Categorize accounts
 
-unpwn suggests one simple local category for every account: **Email**, **Critical**, **Not critical**, or **Unknown**. The versioned catalog works offline and recognizes common email services and important account types. A suggestion is never your decision: choose a category explicitly and select **Save and review next**.
+unpwn assigns one simple local category to recognized accounts: **Email**, **Critical**, or **Not
+critical**. The versioned catalog works offline and its automatic categories are used immediately for
+the recovery order. You do not need to confirm every recognized account, but you can correct a
+suggestion and later return to **Use automatic category**.
 
-Select **Continue to recovery** after all categories are reviewed. If useful, you can deliberately
-select **Continue to recovery now** while reviews remain; unpwn keeps the remaining count visible and
-does not silently confirm any suggestion. If you genuinely have no email account, review the accounts
-as such or deliberately continue. On resume, the same workspace shows remaining review and its next
-action instead of requiring a separate assistant or guessed navigation tab.
+An account that cannot be classified safely is labelled **Needs review**; `Unknown` is this unresolved
+system state, not a category you can choose. Select **Email**, **Critical**, or **Not critical**, then
+use **Save category**. You can deliberately select **Continue to recovery now** while unresolved
+accounts remain. unpwn keeps the remaining count visible and does not write an implicit category. If
+no email account was recognized, check unresolved accounts first when one may be your recovery
+mailbox, or continue if the inventory genuinely contains none. On resume, the workspace shows the
+remaining review and next action instead of requiring a separate assistant or guessed navigation tab.
 
 Categories decide when an account is considered; the reviewed provider workflow independently decides how it is recovered. The normal product does not ask you to maintain roles, dependency graphs, cycles, or scheduling overrides. Opening a view or leaving triage does not record an implicit category.
 

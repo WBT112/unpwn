@@ -1,325 +1,159 @@
 # Data Model
 
-## Goals
+## Purpose and ownership
 
-The data model must support:
+The platform-neutral model in `Unpwn.Core` is the canonical source for recovery identity, ordering, execution, progress, completion, and audit semantics. Presentation models, dashboard rows, browser state, and localized text are projections or transient context; they must not create a second recovery state machine.
 
-- recovery sessions that last days or weeks
-- many accounts per session
-- service-specific workflows
-- simple account categories and service-specific recovery actions
-- encrypted generated credentials
-- reliable progress reporting
-- an audit history without storing secrets in audit events
-- presentation in multiple languages without rewriting canonical or persisted data
+This document maps the implemented aggregates and their ownership. Detailed transition rules live in the linked feature documents instead of being repeated here.
 
-## Language-neutral data principle
+## Language-neutral data
 
-Domain and persisted data remain independent of the selected GUI language.
+Canonical and persisted data uses stable identifiers, enums, structured reason/error codes, revisions, timestamps, numeric counters, workflow/action types, URLs, and opaque GUIDs. User-visible labels, warnings, descriptions, dates, percentages, and plural-sensitive sentences are produced at the presentation localization boundary.
 
-Canonical data uses:
+Do not persist translated status names, resource output, localized errors, or browser-rendered text as recovery state. A language change must not require a domain, workflow, audit, or vault migration. User-authored notes and reasons remain exactly as entered and are never machine-translated.
 
-- stable identifiers
-- enum and status values
-- structured error and diagnostic codes
-- timestamps and numeric values
-- workflow and action types
-- opaque vault record identifiers
+See [Localization](LOCALIZATION.md).
 
-Localized labels, warnings, descriptions, dates, numbers, percentages, and plural-sensitive sentences are produced only in the presentation layer.
+## Canonical aggregates
 
-Do not persist localized status names, resource output, or localized error messages as canonical data. Changing the selected language must not require a domain migration, workflow migration, audit rewrite, or vault rewrite.
+| Aggregate | Owns | Does not own |
+| --- | --- | --- |
+| `RecoveryWizardState` | current/safe-resume step, trusted-device decision, lifecycle, revision | session content, account ordering, browser observations |
+| `RecoverySessionWorkspace` | session identity/name, retained incident guidance, lifecycle, account dashboard projection, terminal completion record | account identity details, action execution, credential plaintext |
+| `AccountInventoryState` | account identity metadata, catalog suggestion/version, explicit user category, inventory revision | provider workflow or action outcomes |
+| `AccountRecoveryExecutionState` | selected provider workflow/path, access state, prior path attempts, action state, completion acknowledgements, generated-credential references | account labels, credential secrets, browser content |
+| generated-credential record and `GeneratedCredentialMetadata` | generated secret while retained, lifecycle, opaque references, secret-free audit entries | old credentials or provider/browser state |
+| `RecoveryCompletionRecord` | explicit terminal outcome and secret-free final report | account labels, URLs, notes, credential identifiers or secrets |
 
-User-authored notes remain exactly as entered and are not machine-translated.
+### Integrated flow state
 
-See [Localization and Multilingual GUI](LOCALIZATION.md).
+`RecoveryWizardState` contains an opaque ID, current step, conservative resume step, lifecycle, trusted-device decision, vault-context flag, revision, and timestamp. Supported step IDs are defined by `RecoveryWizardStepId`; unknown serialized steps fail closed.
 
-## Core Entities
+The wizard coordinates services but does not own their state. `RecoveryNextUserTask` combines the latest wizard, session, inventory, execution, and credential projections into one language-neutral next task. Navigation is an output of that projection and never a recovery input.
 
-### RecoverySession
+See [Integrated Recovery Flow](RECOVERY_WIZARD.md).
 
-Represents one recovery effort after a suspected incident.
+### Recovery session
 
-Suggested fields:
+`RecoverySessionWorkspace` contains:
 
-- `Id`
-- `Name`
-- `Status`
-- `CreatedAt`
-- `UpdatedAt`
-- `CompletedAt`
-- `SecurityWarningAcknowledgedAt`
+- opaque session ID and editable local display name;
+- the retained structured incident input;
+- `Active`, `Paused`, `Archived`, `Completed`, or `FollowUpRequired` lifecycle;
+- created/updated timestamps and monotonically increasing revision;
+- language-neutral `RecoveryAccountDashboardEntry` projections;
+- an optional terminal `RecoveryCompletionRecord`.
 
-Session status values:
+Terminal workspaces are read-only. The session projection is not the source for account metadata or action transitions and can be rebuilt from those canonical aggregates.
 
-- `ACTIVE`
-- `PAUSED`
-- `COMPLETED`
-- `ARCHIVED`
+See [Recovery Session and Overview](RECOVERY_SESSION_DASHBOARD.md).
 
-Session names are user-authored content. Status values remain canonical and are mapped to localized presentation resources.
+### Account inventory and category
 
-### Account
+`AccountInventoryState` is scoped to one session and owns its revision, update timestamp, and `AccountInventoryEntry` values. Each entry contains:
 
-Represents one user account or digital identity to review.
+- opaque account ID;
+- provider ID;
+- optional account name, login identifier, and safe HTTP/HTTPS account URL;
+- repository catalog suggestion and catalog version;
+- optional explicit user category plus the revision at which it was confirmed;
+- update timestamp.
 
-Suggested fields:
+Recovery categories are `Email`, `Critical`, `Unknown`, and `NonCritical`. `Unknown` is a system-only unresolved suggestion and cannot be stored as an explicit user confirmation. The user's explicit category wins over the catalog suggestion.
 
-- `Id`
-- `RecoverySessionId`
-- `ProviderId`
-- `DisplayName`
-- `LoginIdentifier`
-- `AccountUrl`
-- `SuggestedCategory`
-- `ClassificationCatalogVersion`
-- `ConfirmedCategory`
-- `CategoryConfirmedRevision`
-- `Status`
-- `CreatedAt`
-- `UpdatedAt`
+`AccountRecoveryOrder` is derived deterministically as `Email → Critical → Unknown → NonCritical`, followed by stable provider and opaque account-ID tie-breakers. It does not own execution outcomes.
 
-Account recovery category values:
+See [Account Inventory and Recovery Queue](ACCOUNT_INVENTORY.md).
 
-- `EMAIL`
-- `CRITICAL`
-- `NON_CRITICAL`
-- `UNKNOWN`
+### Provider workflow definitions
 
-Account status values:
+`RecoveryWorkflowDefinition` is immutable repository metadata containing provider/workflow identity, version, account type, verification date, reviewed recovery locations/origins, and action definitions.
 
-- `OPEN`
-- `IN_PROGRESS`
-- `BLOCKED`
-- `FULLY_REVIEWED`
-- `REVIEWED_WITH_UNRESOLVED_RISK`
-- `ACCESS_LOST`
+`RecoveryActionDefinition` contains stable action identity/type, requirement, importance, supported recovery paths, prerequisites, completion-criterion resource keys, optional reviewed location, and automation support. Resource keys are presentation references, never control values.
 
-Provider IDs, category values, catalog versions, confirmation revisions, and statuses are language-neutral. Display names and login identifiers are user data and are never treated as translation keys. The explicit category wins over the persisted local suggestion. `UNKNOWN` is a system-only unresolved suggestion and is never a valid explicit user confirmation; an unresolved account keeps `ConfirmedCategory = null` until the user chooses `EMAIL`, `CRITICAL`, or `NON_CRITICAL`.
+Definitions are shipped with the application and validated before use. They are not downloaded as runtime plugins.
 
-### Account classification catalog
+See [Recovery Workflows](RECOVERY_WORKFLOWS.md).
 
-The repository-controlled classification catalog proposes an account category from stable provider identifiers and safe URL host names. It is versioned, deterministic, local-only, and separate from provider workflow definitions. Unknown services stay `UNKNOWN`, and catalog observations never become recovery truth.
+### Account recovery execution
 
-The inventory accepts only its current category schema. Unsupported serialized members or an explicit `ConfirmedCategory = UNKNOWN` fail closed at the inventory persistence boundary rather than being interpreted as recovery state.
+`AccountRecoveryExecutionState` is bound to one inventory account and one exact workflow/version. It owns:
 
-Category ordering and provider workflow selection are separate: category answers **when**, workflow answers **how**. The category queue is always `EMAIL`, `CRITICAL`, `UNKNOWN`, then `NON_CRITICAL`, with provider and opaque account IDs as stable tie-breakers. Recovery execution continues to own blocked actions, failed actions, lost access, and unresolved-risk state.
+- provider/workflow identity and automatically selected recovery path/reason;
+- confirmed access state and encrypted non-secret reason;
+- previous path attempts and fallback reasons;
+- created/updated timestamps and revision;
+- `RecoveryActionExecutionState` values for the selected path.
 
-### RecoveryWorkflowDefinition
+Each action state stores its canonical status, structured reason, optional encrypted user reason/notes, timestamps, unresolved-risk/not-applicable disposition, optional opaque generated-credential reference, and acknowledged repository completion-criterion keys.
 
-A versioned provider-defined workflow template.
+Action statuses are `Open`, `InProgress`, `Blocked`, `NeedsUserAction`, `Completed`, `Failed`, and `NotApplicable`. A required action cannot be silently skipped. `NotApplicable` requires either:
 
-Suggested fields:
+- `TrulyNotApplicable`, which excludes an absent capability from required progress; or
+- `UnresolvedRisk`, which keeps the relevant control unresolved.
 
-- `WorkflowId`
-- `ProviderId`
-- `ProviderName`
-- `WorkflowVersion`
-- `SupportedAccountType`
-- `VerifiedAt`
-- `RecoveryLocations`
-- `Actions`
-- display-resource keys where user-facing guidance is required
+Browser URLs, DOM/page content, cookies, reset links, credential values, and translated text are never execution state.
 
-Definitions are repository-controlled and shipped with an application release. Provider validation and runtime action instances use the same canonical types from `Unpwn.Core`.
+See [Account Recovery Execution](ACCOUNT_RECOVERY_EXECUTION.md).
 
-Workflow semantics do not contain localized control values. Translation-only changes do not alter workflow versions, paths, prerequisites, or verification dates.
+### Generated credentials
 
-### RecoveryActionDefinition
+unpwn stores only newly generated temporary credentials, never old passwords. Canonical execution references a credential with opaque credential/account IDs; plaintext access requires an unlocked vault and a short-lived disposable lease.
 
-Describes one action in a workflow template.
+`GeneratedCredentialMetadata` tracks generation, use, confirmation, export, password-manager handoff, plaintext cleanup, deletion, revision, and structured secret-free audit events. File creation, password-manager confirmation, and plaintext cleanup are separate states.
 
-Suggested fields:
+See [Generated Credentials](GENERATED_CREDENTIALS.md).
 
-- `Id`
-- `Type`
-- `Requirement`
-- `Importance`
-- `RecoveryPaths`
-- `AutomationSupport`
-- `Prerequisites`
-- `CompletionCriteria`
-- resource keys for user-facing title, description, warning, and completion guidance
+### Completion
 
-Importance values and their progress weights are:
+`RecoveryCompletionPreflight` is revision-bound and contains structured issues, not a mutable terminal state. It must be rebuilt when the session, inventory, execution, or credential metadata changes.
 
-- `CRITICAL`: `5`
-- `IMPORTANT`: `3`
-- `ROUTINE`: `1`
+`RecoveryCompletionRecord` stores:
 
-Resource keys are presentation references. They are not used to compare actions or determine completion.
+- `Completed`, `FollowUpRequired`, or `Archived` outcome;
+- completion timestamp;
+- explicit unresolved-risk acceptance where required;
+- a secret-free `RecoveryCompletionReport`.
 
-### RecoveryActionInstance
+The report contains opaque session/account IDs, provider/action IDs, canonical issue codes, timestamps, and aggregate counters. It excludes account labels, login identifiers, URLs, notes, credential identifiers, and secrets.
 
-The mutable state of an action for one account.
+## Projections and progress
 
-Suggested fields:
+`RecoveryDashboardSnapshot`, account dashboard entries, queue recommendations, `RecoveryNextUserTask`, and view models are derived projections. They may explain state but cannot mutate canonical truth by being opened, refreshed, or navigated.
 
-- `Id`
-- `AccountId`
-- `DefinitionId`
-- `Status`
-- `StartedAt`
-- `CompletedAt`
-- `StatusReason`
-- `NotApplicableDisposition`
-- `HasUnresolvedRisk`
-- `UserNotes`
+Progress deliberately separates:
 
-The containing `AccountRecoveryExecutionState` owns the automatically selected recovery path,
-structured selection reason, and previous path attempts. Confirmed authenticated access prefers an
-authenticated change; otherwise the selector tries password reset and then manual recovery. Failed
-or lost-access attempts retain their structured reason and do not disappear when a safe fallback is
-materialized. Browser observations are not stored as path-selection input.
+- critical accounts ready versus total critical accounts;
+- fully reviewed accounts versus all accounts;
+- weighted required-action completion;
+- blocked and failed required actions;
+- lost access and unresolved risks;
+- credential handoff and plaintext-cleanup work.
 
-Status values:
+A high percentage never hides blockers or means an account/device is secure. Deferred accounts remain open and appear in completion preflight.
 
-- `OPEN`
-- `IN_PROGRESS`
-- `BLOCKED`
-- `NEEDS_USER_ACTION`
-- `COMPLETED`
-- `FAILED`
-- `NOT_APPLICABLE`
+## Encrypted persistence map
 
-`NOT_APPLICABLE` always requires a reason and one explicit disposition:
+| Vault record type | Identifier scope | Canonical payload |
+| --- | --- | --- |
+| `recovery-session` | fixed opaque IDs | wizard state and recovery-session workspace in separate records |
+| `account-state` | fixed opaque inventory ID | `AccountInventoryState` |
+| `account-execution` | opaque account ID | `AccountRecoveryExecutionState` |
+| `generated-credential` | opaque credential ID | generated secret plus lifecycle metadata while retained |
 
-- `TRULY_NOT_APPLICABLE`: the capability is absent for the account type and the action is excluded from required progress
-- `UNRESOLVED_RISK`: the control is relevant but unavailable or declined; the action remains in required progress and prevents a fully secured result
+Record type, opaque identifier, and schema version are authenticated associated data. Unsupported schema members, invalid enums/IDs/revisions, workflow-version mismatch, or malformed aggregate structure fail closed rather than being silently reinterpreted.
 
-Status and disposition values are canonical. User-authored reasons and notes are encrypted content and are never automatically translated.
+Logically related session/wizard, inventory/dashboard, and execution/dashboard changes use the documented atomic batch boundary. Materialized state is published only after successful encrypted persistence.
 
-### CredentialEntry
+Browser cookies, profile data, page content, and navigation history are temporary operational state outside the Recovery Vault. They never become canonical recovery evidence.
 
-Stores a newly generated credential during recovery.
+See [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Vault Security](VAULT_SECURITY.md), and [Recovery Browser Security Boundary](RECOVERY_BROWSER.md).
 
-Suggested fields:
+## Audit boundary
 
-- `Id`
-- `AccountId`
-- `EncryptedSecret`
-- `GeneratedAt`
-- `UsedAt`
-- `ConfirmedAt`
-- `ExportedAt`
-- `DeletedAt`
+`AuditEvent` contains a timestamp, repository-defined event type, and optional opaque account ID and
+canonical action type. Generated-credential audit entries contain an opaque operation ID, event type,
+and timestamp. Neither form may contain passwords, keys, reset tokens, MFA secrets, recovery codes,
+browser content, account notes, source exception text, or localized summaries.
 
-Old credentials are never stored.
-
-Credential state remains canonical. Localized UI resources describe the state without embedding translated labels in the vault.
-
-### RecoveryProgress
-
-Reports recovery status without implying that unresolved risks are secured. It includes:
-
-- critical accounts secured versus total critical accounts
-- overall accounts fully reviewed versus total accounts
-- weighted required-action completion using action importance
-- blocked required-action count
-- failed required-action count
-- unresolved-risk count
-
-Critical-account readiness is calculated separately from the overall percentage so blocked critical accounts and accepted unresolved risks remain visible.
-
-The domain returns numbers and structured states. The presentation layer formats counts, dates, percentages, and plural-sensitive messages using the selected UI culture.
-
-### AuditEvent
-
-Records meaningful recovery-state changes without containing user-controlled free text.
-
-Implemented structured fields:
-
-- `OccurredAt`
-- `EventType`
-- `AccountId` when relevant
-- `ActionType` when relevant
-
-Examples:
-
-- account imported
-- account category confirmed or changed
-- action started
-- action completed
-- unresolved risk accepted
-- credential exported
-- vault locked
-
-Human notes and detailed reasons belong to encrypted domain records, not audit event summaries. Audit events must never contain passwords, vault keys, reset tokens, MFA secrets, recovery codes, account notes, browser content, or localized summary text.
-
-The UI maps `EventType` and optional structured fields to localized descriptions at display time. Historical events therefore follow the current selected UI language without modifying the stored audit history.
-
-## Progress Model
-
-A single percentage can create false confidence. unpwn therefore reports several related indicators.
-
-### Critical account readiness
-
-Display:
-
-- number of critical accounts fully reviewed
-- total number of critical accounts
-- critical accounts that remain blocked, failed, or carry unresolved risk
-
-This is the primary emergency indicator.
-
-### Account coverage
-
-Formula:
-
-```text
-fully reviewed accounts / all included accounts
-```
-
-Accounts reviewed with unresolved risk are shown separately and do not count as fully reviewed.
-
-### Weighted action progress
-
-Required applicable actions receive fixed weights:
-
-- critical action: `5`
-- important action: `3`
-- routine action: `1`
-
-Formula:
-
-```text
-sum(weights of completed required actions)
-/
-sum(weights of all applicable required actions)
-```
-
-Only actions marked `NOT_APPLICABLE` with a reason and the `TRULY_NOT_APPLICABLE` disposition are excluded from the denominator.
-
-Blocked, failed, and unresolved required actions remain in the denominator.
-
-Optional actions may be displayed separately but do not affect the required-action percentage.
-
-### Blocked and unresolved work
-
-The UI must always show:
-
-- blocked actions
-- failed actions
-- accounts with unresolved risks
-- accounts for which access could not be restored
-
-A high action-progress percentage must not hide these conditions. Missing localized resources must fall back to complete English text rather than suppressing a warning.
-
-## Completion
-
-A recovery session can be marked completed only through an explicit user action.
-
-Before completion, unpwn summarizes:
-
-- critical accounts not fully reviewed
-- required actions not completed
-- unresolved risks
-- credentials not exported or deliberately deleted
-- plaintext export files that may still require cleanup
-- exported credentials whose password-manager import has not been confirmed
-
-The user may complete a session with unresolved risks, but the final report must preserve those risks and must not describe the session as fully secured.
-
-Completion reports may be rendered in the selected supported language, but canonical status codes, timestamps, numeric values, and machine-readable export fields remain stable.
-
-The persisted `RecoveryCompletionRecord` contains the terminal outcome, completion timestamp, explicit unresolved-risk acknowledgement, and a secret-free `RecoveryCompletionReport`. It never contains account labels, login identifiers, account URLs, user notes, credential identifiers, or credential secret material. Terminal recovery-session lifecycle states are `Completed`, `FollowUpRequired`, and `Archived`; all are read-only unless a separate explicit follow-up workflow is created.
+The UI maps structured event types to the selected language at display time, so changing language does not rewrite history.

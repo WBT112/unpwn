@@ -95,41 +95,10 @@ desktop process with isolated temporary application data, and drives the visible
 stable automation IDs. The golden scenario covers the complete primary journey. Additional scenarios
 cover safety stop/retry, wrong-password clearing and resume, import correction/retry, defer, and the
 rule that closing a native browser does not complete recovery. The authoritative IDs, tiers, platform
-matrix, diagnostics, and reviewed coverage gaps are in [Desktop E2E Scenarios](DESKTOP_E2E.md). The
-harness does not call application services to advance user-visible state.
-
-Build the solution first, then run one of these platform commands from the repository root:
-
-```pwsh
-# Windows (WebView2 Runtime must be installed)
-dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll `
-  --app (Resolve-Path src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll) `
-  --scenario golden `
-  --artifacts (Join-Path (Get-Location) artifacts/desktop-e2e)
-```
-
-```shell
-# Linux (WebKitGTK 4.1 plus an active display)
-dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll \
-  --app "$(realpath src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll)" \
-  --scenario golden \
-  --artifacts "$(pwd)/artifacts/desktop-e2e"
-
-# Headless Linux, matching CI:
-xvfb-run --auto-servernum dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll \
-  --app "$(realpath src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll)" \
-  --scenario golden \
-  --artifacts "$(pwd)/artifacts/desktop-e2e"
-```
-
-The journey has bounded step and whole-process timeouts. Missing native runtime/display support is a
-failure, never a skip or headless substitute. Secret-safe JSON records the scenario, logical steps,
-controls, process exit, exact distribution/version, display, and native backend; failures also capture
-the current app window. The isolated
-vault and browser profile live outside the artifact directory and are deleted after the process exits,
-so cookies, vault records, and browser storage are never uploaded. CI runs the golden and native
-platform scenarios on Windows 2025, Ubuntu 24.04 LTS, and Debian 13. Ubuntu also runs the full
-deterministic scenario set.
+matrix, local commands, diagnostics policy, and reviewed coverage gaps live only in
+[Desktop E2E Scenarios](DESKTOP_E2E.md). The harness does not call application services to advance
+user-visible state. Missing native runtime or display support is a failure, never a skip or headless
+substitute.
 
 ### 7. Localization and culture tests
 
@@ -170,27 +139,17 @@ Before a supported release:
 
 ## Pull-request CI
 
-`.github/workflows/ci.yml` is authoritative for the deterministic build/test matrix. It runs restore, Release build, and the complete test suite on Windows and Linux for pushes to `main` and pull requests. Formatting/analyzer verification runs on Linux. Linux also collects Cobertura coverage, merges it, enforces the numeric gate, runs the focused `SecurityRegression` category, verifies the native/unsafe interop allowlist, repeats the NuGet vulnerability gate with an explicit job summary, scans generated artifacts for synthetic secret markers, and uploads short-lived test/coverage artifacts. Windows uploads test artifacts only on failure after the same secret-safety check.
+`.github/workflows/ci.yml` is authoritative for the deterministic build/test matrix. Pull requests
+and pushes to `main` run Release build/tests on Ubuntu and Windows plus the documented native desktop
+matrix. Linux additionally owns formatting/analyzer verification, merged coverage, focused security
+regressions, dependency/native-boundary checks, and short-lived test artifacts. Every artifact path
+passes the synthetic-secret scan before upload.
 
-Security-specific gates are intentionally visible rather than being implied by an ordinary green build:
-
-- `.globalconfig` promotes all applicable built-in .NET `Security` analyzer diagnostics to errors while the broader analyzer set remains `Recommended`;
-- NuGet audit covers direct and transitive packages and blocks `moderate`-or-higher advisories under the repository warnings-as-errors policy;
-- `eng/verify-native-interop.ps1` rejects expansion of `AllowUnsafeBlocks`, P/Invoke/`LibraryImport`, pointer code, or raw-memory APIs outside the reviewed allowlist;
-- `dotnet test ... --filter "Category=SecurityRegression"` runs a fast deterministic sentinel suite for vault limits, CSV limits, public-network-only recovery discovery, exact browser origins/schemes, credential lifecycle, Unix plaintext-export permissions, and Linux Recovery Browser profile permissions;
-- `.github/workflows/codeql.yml` is the single repository-maintained CodeQL advanced setup and analyzes C# on pull requests, pushes to `main`, and a weekly schedule with `security-extended` queries.
-
-The detailed gate/exception policy and local commands are in [Security CI Gates](SECURITY_GATES.md). Do not solve a security-gate failure by globally suppressing an analyzer, raising the NuGet severity threshold, or broadening a native allowlist without a documented security review.
+[Security CI Gates](SECURITY_GATES.md) is the single source for security-gate policy, allowlists, and
+exceptions. [Contributing](../CONTRIBUTING.md) owns the normal local command sequence, and
+[Desktop E2E Scenarios](DESKTOP_E2E.md) owns platform commands and scenario selection.
 
 The Linux coverage gate requires at least 80% line and 80% branch coverage across platform-neutral production assemblies (`Unpwn.Core`, `Unpwn.Application`, `Unpwn.Import`, `Unpwn.Export`, `Unpwn.Vault`, `Unpwn.Providers`, and `Unpwn.Automation`). `Unpwn.App` is validated through view-model, Avalonia headless, integration, and manual accessibility layers rather than the numeric gate. Presentation-independent behavior should not be moved into `Unpwn.App` merely to avoid coverage requirements.
-
-To reproduce the security-specific checks after a Release build:
-
-```pwsh
-./eng/verify-native-interop.ps1
-dotnet restore unpwn.slnx --force-evaluate
-dotnet test unpwn.slnx --configuration Release --no-build --filter "Category=SecurityRegression"
-```
 
 To reproduce the coverage check after a Release build:
 

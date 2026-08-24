@@ -42,11 +42,11 @@ Security regressions are first-class CI failures. The repository-maintained gate
 
 The exact gates, allowlists, local commands, and exception process are documented in [Security CI Gates](docs/SECURITY_GATES.md). A green automated scan is additional evidence, not proof that a build is secure.
 
-## Known pre-release hardening gaps
+## Pre-release status and remaining validation
 
-The current source tree is still not a supported security release. Remaining release work includes real desktop validation of the Linux Recovery Browser fallback and a complete native desktop end-to-end recovery journey on Windows and Linux. These gaps concern production-runtime integration and release validation; they do not change the existing rule that browser activity is never canonical recovery truth.
+The current source tree is still not a supported security release. CI exercises the native desktop journey and managed-browser cleanup on Windows, Ubuntu, and Debian, but automated coverage is not a production-support claim.
 
-Existing encryption, resource limits, owner-only Linux browser/export permissions, public-network-only recovery discovery, exact-origin validation, cancellation-safe native cleanup, secret-safe diagnostics, and security CI are useful controls, but must not be presented as a guarantee against compromise of the host operating system or provider-side failures.
+Release readiness still requires the documented Windows/NVDA and Ubuntu/Orca acceptance runs, representative packaged-runtime validation (including supported Linux browser backends), minimum-hardware vault/KDF benchmarking, and defined installation, update, signing, and support procedures. Existing encryption, resource limits, owner-only Linux browser/export permissions, public-network-only recovery discovery, exact-origin validation, cancellation-safe native cleanup, secret-safe diagnostics, and security CI are useful controls, not guarantees against a compromised host or provider-side failure.
 
 ## Reporting a vulnerability
 

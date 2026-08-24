@@ -8,7 +8,7 @@ The normal journey is one integrated workspace:
 
 1. confirm a reasonably trusted device;
 2. create or unlock the encrypted Recovery Vault and create or resume a session;
-3. import accounts, then explicitly review their simple categories;
+3. import accounts, review unresolved categories, and correct automatic suggestions when needed;
 4. follow the automatic `Email → Critical → Unknown → NonCritical` queue;
 5. perform provider work in the isolated Recovery Browser while unpwn shows one instruction and checklist;
 6. handle generated credentials and explicitly review unresolved work before finishing.

@@ -7,7 +7,7 @@ The roadmap prioritizes a trustworthy guided recovery flow over broad automation
 The repository contains the main end-to-end foundations for the desktop application:
 
 - trusted-device gate and encrypted local Recovery Vault;
-- incident intake, recovery session, risk-first dashboard, pause/lock/resume, and final completion review;
+- retained incident guidance, recovery session and overview, pause/lock/resume, and final completion review;
 - account inventory, CSV import, simple account categories, and a deterministic recovery queue;
 - reviewed provider workflows plus a clearly distinguished generic manual fallback;
 - canonical per-account/action recovery execution with explicit completion criteria and unresolved-risk handling;

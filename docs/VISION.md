@@ -13,7 +13,7 @@ unpwn should guide the user through one understandable recovery process:
 1. start on a trusted device;
 2. create or resume an encrypted local recovery workspace;
 3. import or add affected accounts and record only guidance inputs that change recovery behavior;
-4. categorize accounts as email, critical, unknown, or non-critical;
+4. categorize accounts as email, critical, or non-critical and keep uncertain accounts visibly unresolved;
 5. recommend a deterministic recovery order and explain why;
 6. guide provider recovery actions one step at a time;
 7. keep blocked, failed, lost-access, and unresolved-risk states visible;

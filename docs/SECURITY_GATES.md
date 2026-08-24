@@ -31,7 +31,9 @@ There are no standing broad vulnerability-audit exemptions.
 Current allowlist:
 
 - unsafe-enabled project: `src/Unpwn.App/Unpwn.App.csproj`;
-- native interop source: `src/Unpwn.App/Services/RecoveryBrowserPlatformAdapter.cs`.
+- native interop sources:
+  - `src/Unpwn.App/Services/RecoveryBrowserPlatformAdapter.cs`;
+  - `src/Unpwn.App/Services/LinuxGtkWebViewInitializationScope.cs`.
 
 The gate rejects additional `AllowUnsafeBlocks` projects and unmanaged/import/raw-memory constructs outside the approved source boundary. Expanding the allowlist requires a security-focused issue/PR explaining why managed alternatives are insufficient, how lifetime/bounds/error handling are controlled, and what regression tests cover the new boundary.
 

@@ -54,8 +54,9 @@ unpwn may guide and track this process but cannot guarantee that the provider re
 ## Account categories and action prerequisites
 
 Account categories decide when an account should be considered: `Email`, `Critical`, `Unknown`, or
-`NonCritical`. The local classification catalog supplies a suggestion and the user's explicit choice
-wins. Categories do not select or increase trust in a provider workflow.
+`NonCritical`. A known local catalog suggestion is immediately usable; an explicit user override wins.
+`Unknown` is the unresolved state for accounts the catalog cannot classify, not a user-selectable
+category. Categories do not select or increase trust in a provider workflow.
 
 Provider workflows independently decide how an account can be recovered. Their action prerequisites
 express ordering inside one reviewed workflow path, such as reviewing account access before changing
@@ -218,7 +219,7 @@ unpwn does not download or execute third-party provider plugins or language pack
 
 ## Repository Workflow Definitions
 
-Repository-controlled workflow definitions are represented in code as immutable `RecoveryWorkflowDefinition` records until the on-disk workflow package format is introduced. Each definition includes provider metadata, supported account type, workflow version, verification date, official recovery locations, expected origins, and recovery actions.
+Repository-controlled workflow definitions are represented in code as immutable `RecoveryWorkflowDefinition` records. Each definition includes provider metadata, supported account type, workflow version, verification date, official recovery locations, expected origins, and recovery actions.
 
 The validation boundary for these definitions is `RecoveryWorkflowValidator`. It rejects missing required metadata, a verification date later than the supplied or current validation date, duplicate location or action identifiers, invalid HTTPS locations or origins, missing or duplicate recovery paths, missing prerequisite targets, prerequisite cycles, required actions without non-empty completion criteria, and claims of fully automated recovery. Fully automated recovery is intentionally disallowed at this stage because repository workflows may guide or navigate, but they must not bypass user-visible security decisions.
 

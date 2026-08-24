@@ -29,7 +29,7 @@ dotnet test unpwn.slnx
 dotnet run --project src/Unpwn.App/Unpwn.App.csproj
 ```
 
-The managed Recovery Browser uses the installed WebView2 runtime on Windows. On Linux, Avalonia uses WPE WebKit when it is available and can fall back to WebKitGTK 4.1; unpwn hardens either accepted backend before the recovery workspace is considered usable. Ubuntu 26.04 provides the WebKitGTK runtime through `libwebkit2gtk-4.1-0`. If no supported embedded runtime can be hardened, unpwn keeps recovery guidance visible and offers an explicitly labelled operating-system-browser fallback; it never silently uses a normal browser profile.
+The managed Recovery Browser uses the installed WebView2 runtime on Windows. On Linux, Avalonia uses WPE WebKit when available and an app-owned WebKitGTK 4.1 dialog otherwise. unpwn hardens either accepted backend before use; if no supported managed host is available, guidance stays visible and the operating-system browser is offered only as an explicit fallback. Platform prerequisites and local E2E commands live in [Desktop E2E Scenarios](docs/DESKTOP_E2E.md).
 
 See [Contributing](CONTRIBUTING.md) for the full development checks.
 

@@ -49,7 +49,7 @@ update this table in review with a stable lower-layer test and a reason.
 | create, lock, wrong password, unlock, clear secrets, resume | `golden`; `vault-wrong-password-and-resume`; vault lifecycle and presentation tests | Existing-path/no-overwrite, corrupt vault, I/O denial, deletion confirmation, and password change use injected storage/crypto failures that cannot be made deterministic through a native picker. |
 | create, pause, resume, archive session | `golden`; application smoke and dashboard tests | Pause/archive conflict and crash-marker recovery remain deterministic service/process-boundary tests; an abrupt OS kill is an extended desktop candidate. |
 | automatic CSV mapping, password exclusion, ambiguous mapping, retry, duplicates, malformed/oversized input | `golden`; `import-correction-and-retry`; import unit/property/security tests | Duplicate choices and parser limits stay below desktop because the same UI confirmation delegates to the canonical import result and native-picker behavior adds no state branch. |
-| account category suggestions/override and Email → Critical → Unknown → NonCritical queue | `golden`; inventory/planner tests | Multi-account ordering is exhaustively asserted in platform-neutral tests; the desktop journey proves the UI handoff for one synthetic account. |
+| account category suggestions/override and Email → Critical → Unknown → NonCritical queue | `golden`; inventory/order tests | Multi-account ordering is exhaustively asserted in platform-neutral tests; the desktop journey proves the UI handoff for one synthetic account. |
 | defer, lost access, blocked, failed, retry, unresolved risk | `defer-account`; execution/dashboard/application smoke tests | Lost-access and injected persistence conflicts remain lower-layer scenarios. A multi-account desktop retry journey is a documented extended gap. |
 | reviewed provider, unknown/manual provider, discovered location, external fallback | `golden`; workflow/location/browser host tests | Native fallback buttons and origin enforcement are headless UI/component tested. Deterministically removing a runtime would contradict the blocking platform job, so missing runtime is verified by fail-fast startup, not a passing fallback scenario. |
 | browser start, navigation context, close, cleanup, orphaned cleanup retry | `golden`; `browser-close-preserves-recovery`; browser lifecycle/security tests | Forced crash during native-profile teardown remains an extended desktop candidate; lifecycle tests inject the failure and verify conservative restart handling. |
@@ -58,8 +58,25 @@ update this table in review with a stable lower-layer test and a reason.
 
 ## Local execution
 
-Build Release first. Pass `--scenario <id>` to select a row above and use a separate artifact
-directory per invocation. Example on Linux:
+Build Release first:
+
+```shell
+dotnet restore unpwn.slnx
+dotnet build unpwn.slnx --configuration Release --no-restore
+```
+
+Pass `--scenario <id>` to select a row above and use a separate artifact directory per invocation.
+Windows requires the installed WebView2 Runtime:
+
+```pwsh
+dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll `
+  --app (Resolve-Path src/Unpwn.App/bin/Release/net10.0/Unpwn.App.dll) `
+  --scenario golden `
+  --artifacts (Join-Path (Get-Location) artifacts/desktop-e2e/golden)
+```
+
+Linux requires WebKitGTK 4.1 and an active display. The Ubuntu/Debian package used by CI is
+`libwebkit2gtk-4.1-0`; headless execution additionally requires `xvfb`:
 
 ```shell
 xvfb-run --auto-servernum dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll \
@@ -69,4 +86,5 @@ xvfb-run --auto-servernum dotnet tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpw
 ```
 
 Use an active desktop instead of `xvfb-run` when diagnosing native rendering. Linux requires
-WebKitGTK 4.1; Windows requires WebView2. The provider remains local and synthetic in both cases.
+the same managed browser boundary whether Avalonia selects WPE or the app-owned WebKitGTK dialog.
+The provider remains local and synthetic on every platform.

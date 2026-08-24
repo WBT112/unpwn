@@ -59,7 +59,9 @@ Before any secret lease is opened, the current origin/page contract is inspected
 
 The managed insertion path does not submit the provider form. Successful insertion may record the credential as `Used`; it never records it as `Confirmed` and never completes the recovery action.
 
-The repository currently exposes automatic insertion only for the explicit synthetic-test contract. Real-provider and generic/manual workflows remain Reveal/Copy/manual entry unless a separate provider/action adapter is reviewed.
+Provider/action insertion eligibility and the currently enabled contracts are defined in
+[Recovery Browser Security Boundary](RECOVERY_BROWSER.md). All other workflows use
+Reveal/Copy/manual entry.
 
 ## Export boundary
 
