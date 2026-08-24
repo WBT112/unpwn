@@ -10,7 +10,8 @@
 3. A complete, unambiguous mapping immediately creates the preview; mapping controls stay hidden.
 4. If a required service/account identity is missing or ambiguous, resolve only the affected mapping
    choices. The preview updates automatically as soon as the mapping is valid.
-5. Review valid rows, row-level diagnostics, and duplicates.
+5. Review the valid accounts using contiguous account numbering, together with source-row diagnostics
+   and duplicates.
 6. Explicitly confirm the reviewed candidates for import into the encrypted account inventory.
 7. After persistence succeeds and at least one account exists, unpwn advances the canonical recovery
    step and opens account category review automatically. A failed, cancelled, or validation-blocked

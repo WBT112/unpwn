@@ -496,7 +496,9 @@ public partial class CsvImportView : AccessibleScreen
             return;
         }
 
-        PreviewItems.ItemsSource = _lastCandidates.Select(FormatCandidate).ToArray();
+        PreviewItems.ItemsSource = _lastCandidates
+            .Select((candidate, index) => FormatCandidate(candidate, index + 1))
+            .ToArray();
     }
 
     private void RefreshPreviewSummary()
@@ -557,7 +559,7 @@ public partial class CsvImportView : AccessibleScreen
         DiagnosticsItems.Focus(NavigationMethod.Tab);
     }
 
-    private string FormatCandidate(ImportAccountCandidate candidate)
+    private string FormatCandidate(ImportAccountCandidate candidate, int accountNumber)
     {
         var service = candidate.ServiceName ?? candidate.AccountUrl ??
             Localization.GetString("Import.UnknownService");
@@ -576,8 +578,8 @@ public partial class CsvImportView : AccessibleScreen
                     _ => throw new ArgumentOutOfRangeException(nameof(candidate)),
                 }));
         return Localization.Format(
-            "Import.Candidate.Row",
-            candidate.RowNumber,
+            "Import.Candidate.Account",
+            accountNumber,
             service,
             account,
             duplicate);

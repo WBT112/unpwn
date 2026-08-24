@@ -35,7 +35,10 @@ public sealed class ResourceLocalizationServiceTests
         Assert.Equal("de", localization.CurrentLanguageCode);
         Assert.Equal(culture, localization.CurrentCulture);
         Assert.Equal("Tresor", localization.GetString("Shell.Navigation.Vault.Label"));
-        Assert.Contains("1234,5", localization.Format("Import.Candidate.Row", 1234.5m, "Dienst", "Konto", string.Empty));
+        Assert.StartsWith(
+            "Konto 1:",
+            localization.Format("Import.Candidate.Account", 1, "Dienst", "Konto", string.Empty),
+            StringComparison.Ordinal);
     }
 
     [Fact]
@@ -121,13 +124,13 @@ public sealed class ResourceLocalizationServiceTests
         var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
         localization.SetLanguage(ResourceLocalizationService.PseudoLanguageCode);
 
-        var pseudo = localization.GetString("Import.Candidate.Row");
+        var pseudo = localization.GetString("Import.Candidate.Account");
 
         Assert.StartsWith("⟦", pseudo, StringComparison.Ordinal);
         Assert.EndsWith("···⟧", pseudo, StringComparison.Ordinal);
         Assert.Contains("{0}", pseudo, StringComparison.Ordinal);
         Assert.Contains("{3}", pseudo, StringComparison.Ordinal);
-        Assert.NotEqual("Row {0}: {1} — {2}{3}", pseudo);
+        Assert.NotEqual("Account {0}: {1} — {2}{3}", pseudo);
     }
 
     [Theory]

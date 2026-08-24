@@ -94,7 +94,7 @@
   <data name="Confirmation.Risk.Sensitive" xml:space="preserve"><value>SENSITIVE ACTION</value></data>
   <data name="Confirmation.WindowTitle" xml:space="preserve"><value>Confirm sensitive action</value></data>
   <data name="Import.Candidate.Duplicate" xml:space="preserve"><value> — possible duplicate ({0})</value></data>
-  <data name="Import.Candidate.Row" xml:space="preserve"><value>Row {0}: {1} — {2}{3}</value></data>
+  <data name="Import.Candidate.Account" xml:space="preserve"><value>Account {0}: {1} — {2}{3}</value></data>
   <data name="Import.ChooseFile.Button" xml:space="preserve"><value>Choose CSV file</value></data>
   <data name="Import.Diagnostic.DuplicateHeader" xml:space="preserve"><value>The CSV header contains duplicate column names.</value></data>
   <data name="Import.Diagnostic.InvalidAccountUrl" xml:space="preserve"><value>The row contains an invalid or unsupported account URL.</value></data>
