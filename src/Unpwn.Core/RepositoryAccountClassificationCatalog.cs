@@ -29,9 +29,9 @@ public sealed record AccountClassificationCatalogProvenance(
 /// </summary>
 public static class RepositoryAccountClassificationCatalog
 {
-    public const string CurrentVersion = "2026.08.3";
+    public const string CurrentVersion = "2026.08.4";
 
-    private const string CuratedProvenanceId = "unpwn-curated-2026.08.3";
+    private const string CuratedProvenanceId = "unpwn-curated-2026.08.4";
 
     private static readonly IdnMapping Idn = new();
     private static readonly CatalogState State = BuildState();
@@ -83,6 +83,12 @@ public static class RepositoryAccountClassificationCatalog
             AddRecord(record, records, ids, domains, aliases);
         }
 
+        foreach (var record in RepositoryAccountClassificationProviderData.CreateExpandedRecords(
+                     CuratedProvenanceId))
+        {
+            AddRecord(record, records, ids, domains, aliases);
+        }
+
         return new CatalogState(
             Array.AsReadOnly(records.ToArray()),
             provenance,
@@ -100,11 +106,11 @@ public static class RepositoryAccountClassificationCatalog
             "outlook"),
         Record("email-yahoo", "Yahoo Mail", AccountRecoveryCategory.Email,
             ["yahoo.com", "yahoo.de", "yahoo.fr", "yahoo.it", "yahoo.es", "yahoo.co.uk", "yahoo.co.jp",
-             "yahoo.co.in", "yahoo.com.au", "yahoo.ca", "rocketmail.com"], "yahoomail"),
+             "yahoo.co.in", "yahoo.com.au", "yahoo.ca", "rocketmail.com", "ymail.com"], "yahoomail"),
         Record("email-proton", "Proton Mail", AccountRecoveryCategory.Email,
-            ["proton.me", "protonmail.com", "protonmail.ch"], "protonmail"),
+            ["proton.me", "protonmail.com", "protonmail.ch", "pm.me"], "protonmail"),
         Record("email-tuta", "Tuta", AccountRecoveryCategory.Email,
-            ["tuta.com", "tutanota.com", "tutamail.com"], "tutanota"),
+            ["tuta.com", "tutanota.com", "tutamail.com", "tuta.io"], "tutanota"),
         Record("email-gmx", "GMX", AccountRecoveryCategory.Email,
             ["gmx.de", "gmx.net", "gmx.com", "gmx.at", "gmx.ch"], "gmx"),
         Record("email-webde", "WEB.DE", AccountRecoveryCategory.Email, ["web.de"], "webde"),
@@ -121,7 +127,8 @@ public static class RepositoryAccountClassificationCatalog
         Record("email-aol", "AOL Mail", AccountRecoveryCategory.Email,
             ["aol.com", "aol.de"], "aol"),
         Record("email-t-online", "T-Online Mail", AccountRecoveryCategory.Email, ["t-online.de"], "tonline"),
-        Record("email-mailru", "Mail.ru", AccountRecoveryCategory.Email, ["mail.ru"], "mailru"),
+        Record("email-mailru", "Mail.ru", AccountRecoveryCategory.Email,
+            ["mail.ru", "inbox.ru", "list.ru", "bk.ru"], "mailru"),
         Record("email-seznam", "Seznam Email", AccountRecoveryCategory.Email, ["seznam.cz"], "seznam"),
         Record("email-orange", "Orange Mail", AccountRecoveryCategory.Email, ["orange.fr", "wanadoo.fr"], "orangemail"),
         Record("email-libero", "Libero Mail", AccountRecoveryCategory.Email, ["libero.it"], "liberomail"),
@@ -150,7 +157,8 @@ public static class RepositoryAccountClassificationCatalog
         Record("critical-klarna", "Klarna", AccountRecoveryCategory.Critical, ["klarna.com"], "klarna"),
         Record("critical-lastpass", "LastPass", AccountRecoveryCategory.Critical, ["lastpass.com"], "lastpass"),
         Record("critical-linkedin", "LinkedIn", AccountRecoveryCategory.Critical, ["linkedin.com"], "linkedin"),
-        Record("critical-microsoft", "Microsoft Account", AccountRecoveryCategory.Critical, ["microsoft.com"], "microsoft"),
+        Record("critical-microsoft", "Microsoft Account / Xbox", AccountRecoveryCategory.Critical,
+            ["microsoft.com", "xbox.com"], "microsoft", "xbox"),
         Record("critical-n26", "N26", AccountRecoveryCategory.Critical, ["n26.com"], "n26"),
         Record("critical-okta", "Okta", AccountRecoveryCategory.Critical, ["okta.com"], "okta"),
         Record("critical-paypal", "PayPal", AccountRecoveryCategory.Critical, ["paypal.com", "paypal.de"], "paypal"),
@@ -158,7 +166,7 @@ public static class RepositoryAccountClassificationCatalog
         Record("critical-revolut", "Revolut", AccountRecoveryCategory.Critical, ["revolut.com"], "revolut"),
         Record("critical-stripe", "Stripe", AccountRecoveryCategory.Critical, ["stripe.com"], "stripe"),
         Record("critical-wise", "Wise", AccountRecoveryCategory.Critical, ["wise.com"], "wise"),
-        Record("critical-x", "X", AccountRecoveryCategory.Critical, ["x.com"], "x"),
+        Record("critical-x", "X", AccountRecoveryCategory.Critical, ["x.com", "twitter.com"], "x", "twitter"),
         Record("critical-deutsche-bank", "Deutsche Bank", AccountRecoveryCategory.Critical, ["deutsche-bank.de"], "deutschebank"),
         Record("critical-commerzbank", "Commerzbank", AccountRecoveryCategory.Critical, ["commerzbank.de"], "commerzbank"),
         Record("critical-chase", "Chase", AccountRecoveryCategory.Critical, ["chase.com"], "chase"),
@@ -227,6 +235,18 @@ public static class RepositoryAccountClassificationCatalog
         if (normalizedDomains.Distinct(StringComparer.Ordinal).Count() != normalizedDomains.Length)
         {
             throw new InvalidOperationException("Account classification provider metadata contains duplicate domains.");
+        }
+
+        for (var i = 0; i < normalizedDomains.Length; i++)
+        {
+            for (var j = i + 1; j < normalizedDomains.Length; j++)
+            {
+                if (DomainsOverlap(normalizedDomains[i], normalizedDomains[j]))
+                {
+                    throw new InvalidOperationException(
+                        "Account classification domains within one canonical owner must not overlap.");
+                }
+            }
         }
 
         foreach (var domain in normalizedDomains)

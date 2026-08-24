@@ -9,6 +9,7 @@ public sealed class AccountClassificationCatalogInvariantTests
     private static readonly string[] ExampleDomain = ["example.test"];
     private static readonly string[] InvalidDomain = ["not a domain"];
     private static readonly string[] DuplicateExampleDomains = ["example.test", "EXAMPLE.TEST"];
+    private static readonly string[] OverlappingExampleDomains = ["example.test", "login.example.test"];
     private static readonly string[] InvalidAlias = ["---"];
     private static readonly string[] DuplicateAliases = ["same-alias", "same alias"];
     private static readonly string[] OtherDomain = ["other.example"];
@@ -30,6 +31,7 @@ public sealed class AccountClassificationCatalogInvariantTests
             ValidRecord() with { Domains = [] },
             ValidRecord() with { Domains = InvalidDomain },
             ValidRecord() with { Domains = DuplicateExampleDomains },
+            ValidRecord() with { Domains = OverlappingExampleDomains },
             ValidRecord() with { ProviderIdAliases = InvalidAlias },
             ValidRecord() with { ProviderIdAliases = DuplicateAliases },
         ];
@@ -88,6 +90,17 @@ public sealed class AccountClassificationCatalogInvariantTests
             accountUrl);
 
         Assert.Equal(AccountRecoveryCategory.Unknown, suggestion.Category);
+    }
+
+    [Fact]
+    public void InternationalizedDomainsAreNormalizedDeterministically()
+    {
+        var method = typeof(RepositoryAccountClassificationCatalog).GetMethod(
+            "NormalizeDomain",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+
+        Assert.Equal("xn--bcher-kva.example", method.Invoke(null, ["BÜCHER.example."]));
     }
 
     private static AccountClassificationProviderRecord ValidRecord() => new(

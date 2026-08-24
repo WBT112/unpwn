@@ -21,7 +21,9 @@ Materialized account data is cleared when the vault locks. Only the current sche
 
 `RepositoryAccountClassificationCatalog` is versioned, repository-controlled, deterministic, and offline-only. Runtime classification uses only provider metadata compiled into unpwn plus the provider identifier and safe HTTP/HTTPS host already present in the imported account record. It performs no network lookup and sends no account inventory information to a classification service.
 
-The catalog contains only **repository-reviewed canonical provider/service records**. Every record has a stable ID, human-reviewable name, recovery category, one or more normalized domains, optional provider-ID aliases, provenance, and a review basis. Multi-domain families such as Outlook/Hotmail, Yahoo, GMX, Proton, iCloud, Amazon, eBay, and PayPal are modeled as one provider when the domains are intentionally treated as one account/recovery family.
+The catalog contains only **repository-reviewed canonical provider/service records**. Every record has a stable ID, human-reviewable name, recovery category, one or more normalized domains, optional provider-ID aliases, provenance, and a review basis. Multi-domain families such as Outlook/Hotmail, Yahoo/ymail, Proton/pm.me, Tuta/tuta.io, Mail.ru/inbox.ru, AT&T/Bellsouth, ING/ING-DiBa, X/Twitter, Amazon, eBay, and PayPal are modeled as one provider when the domains intentionally share an account/recovery realm.
+
+Catalog version `2026.08.4` materially expands reviewed German, European, and global coverage across mailbox providers; finance and payments; password, security, and identity services; cloud, developer, and work platforms; commerce and travel; communications; gaming; government, health, and insurance; and clearly lower-impact consumer services. Gaming accounts are `Critical` when they can hold purchases, balance, tradable or valuable digital inventory, marketplace access, or material social identity; a generic `games` hint still proves nothing. The [August 2026 classification review](ACCOUNT_CLASSIFICATION_REVIEW_2026_08.md) records the historical candidate material, review method, additions, evidence, and representative exclusions. That report is an audit artifact and is not loaded at runtime.
 
 There is intentionally **no provider-count target**. Catalog size is not a quality metric. A provider is added only through a reviewed repository change. If unpwn cannot make a defensible classification from a concrete provider alias or domain, the result stays `Unknown` and the user reviews it during triage.
 
@@ -29,7 +31,7 @@ The classifier does not treat generic words such as `banking`, `streaming`, `new
 
 Domain matching is case/culture independent and normalizes internationalized host names to ASCII IDNA form before lookup. Canonical IDs, provider aliases, and domains must be unique. Parent/subdomain ownership cannot overlap across different canonical records; ambiguous metadata fails catalog construction instead of silently choosing an owner.
 
-For externally derived aliases, the repository change adding them must document the source and applicable license where relevant. The current catalog is repository-curated metadata and does not bundle the UT1 data snapshot previously introduced during development.
+For externally derived aliases, the repository change adding them must document the source and applicable license where relevant. The current catalog is repository-curated metadata and does not bundle the UT1 or generated broad-category snapshots previously introduced during development.
 
 The catalog only proposes **when** an account should be handled. Provider workflow definitions independently decide **how** recovery works. A catalog entry cannot select a provider action, change recovery execution state, or prove control of an account. Priority metadata and reviewed provider-navigation/automation metadata remain separate trust boundaries.
 
