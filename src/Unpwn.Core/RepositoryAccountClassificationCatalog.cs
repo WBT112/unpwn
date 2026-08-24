@@ -29,11 +29,13 @@ public sealed record AccountClassificationCatalogProvenance(
 /// </summary>
 public static class RepositoryAccountClassificationCatalog
 {
-    public const string CurrentVersion = "2026.08.5";
+    public const string CurrentVersion = "2026.08.6";
     public const int CoverageGoalPerCategory = 1_000;
 
-    private const string CuratedProvenanceId = "unpwn-curated-2026.08.5";
+    private const string CuratedProvenanceId = "unpwn-curated-2026.08.6";
     private const string ReviewedNonCriticalProvenanceId = "unpwn-curated-ut1-press-review-2026.08.5";
+    private const string ReviewedCriticalProvenanceId = "unpwn-curated-ut1-bank-review-2026.08.6";
+    private const string ReviewedEmailProvenanceId = "unpwn-curated-public-mail-review-2026.08.6";
 
     private static readonly IdnMapping Idn = new();
     private static readonly CatalogState State = BuildState();
@@ -79,6 +81,18 @@ public static class RepositoryAccountClassificationCatalog
                 "cbuijs/ut1@2ddb46bdb691721cadc8e1521abc780396e7aeb3",
                 "CC-BY-SA-4.0",
                 "curated-candidate-review"),
+            new AccountClassificationCatalogProvenance(
+                ReviewedCriticalProvenanceId,
+                "unpwn review of pinned UT1 bank candidates",
+                "cbuijs/ut1@2ddb46bdb691721cadc8e1521abc780396e7aeb3",
+                "CC-BY-SA-4.0",
+                "curated-candidate-review"),
+            new AccountClassificationCatalogProvenance(
+                ReviewedEmailProvenanceId,
+                "unpwn review of public mailbox candidates with disposable-domain exclusion",
+                "Validemailchecker/free-email-provider-domains@8e7fa38d2228a6eed81226c63776d56d1b53c242; disposable-email-domains@3af5c60a1934d98a7a66d52fe5f2d12260027b34",
+                "MIT",
+                "curated-candidate-review"),
         ]);
 
         var records = new List<AccountClassificationProviderRecord>();
@@ -99,6 +113,18 @@ public static class RepositoryAccountClassificationCatalog
 
         foreach (var record in RepositoryAccountClassificationNonCriticalProviderData.CreateRecords(
                      ReviewedNonCriticalProvenanceId))
+        {
+            AddRecord(record, records, ids, domains, aliases);
+        }
+
+        foreach (var record in RepositoryAccountClassificationCriticalProviderData.CreateRecords(
+                     ReviewedCriticalProvenanceId))
+        {
+            AddRecord(record, records, ids, domains, aliases);
+        }
+
+        foreach (var record in RepositoryAccountClassificationEmailProviderData.CreateRecords(
+                     ReviewedEmailProvenanceId))
         {
             AddRecord(record, records, ids, domains, aliases);
         }
