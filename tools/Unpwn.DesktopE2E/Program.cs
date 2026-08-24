@@ -114,9 +114,10 @@ internal static class DesktopE2EHarness
             await WriteConfigurationAsync(
                 configPath, scenario, dataRoot, csvPath, provider.BaseAddress,
                 artifacts, "single", externallyDriven: false);
-            var phase = await RunAppProcessAsync(appPath, configPath, runRoot, "single");
-            processLogs.Add(phase.Log);
-            succeeded = phase.CompletedNormally && IsSuccessfulAppResult(artifacts);
+            var (completedNormally, processLog) =
+                await RunAppProcessAsync(appPath, configPath, runRoot, "single");
+            processLogs.Add(processLog);
+            succeeded = completedNormally && IsSuccessfulAppResult(artifacts);
         }
 
         await File.WriteAllTextAsync(
@@ -169,9 +170,10 @@ internal static class DesktopE2EHarness
         await WriteConfigurationAsync(
             configPath, scenario, dataRoot, csvPath, providerBaseUri,
             artifacts, "resume", externallyDriven: false);
-        var resume = await RunAppProcessAsync(appPath, configPath, runRoot, "resume");
-        processLogs.Add(resume.Log);
-        return resume.CompletedNormally && IsSuccessfulAppResult(artifacts);
+        var (completedNormally, processLog) =
+            await RunAppProcessAsync(appPath, configPath, runRoot, "resume");
+        processLogs.Add(processLog);
+        return completedNormally && IsSuccessfulAppResult(artifacts);
     }
 
     private static async Task<bool> RunExternallyDrivenAsync(
@@ -461,10 +463,11 @@ internal static class DesktopE2EHarness
         foreach (var file in files)
         {
             await using var stream = File.OpenRead(file);
+            var fileInfo = new FileInfo(file);
             inventoryFiles.Add(new
             {
                 Path = Path.GetRelativePath(publishedRoot, file).Replace('\\', '/'),
-                Length = new FileInfo(file).Length,
+                fileInfo.Length,
                 Sha256 = Convert.ToHexString(await SHA256.HashDataAsync(stream)),
             });
         }
