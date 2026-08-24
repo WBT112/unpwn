@@ -1131,7 +1131,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        if (BrowserLaunchState == RecoveryBrowserLaunchState.Active && IsBrowserWorkspaceVisible)
+        if (BrowserLaunchState == RecoveryBrowserLaunchState.Active &&
+            IsBrowserWorkspaceVisible &&
+            CurrentActionState?.Status == RecoveryActionStatus.InProgress)
         {
             RecoveryBrowserFocusRequested?.Invoke(this, EventArgs.Empty);
             return;

@@ -965,6 +965,34 @@ public sealed class WorkflowExecutionScreenViewModelTests
     }
 
     [Fact]
+    public async Task ActiveWorkspaceStartsTheNextOpenActionBeforeReusingBrowser()
+    {
+        var fixture = new Fixture { Confirm = true };
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        viewModel.ReportRecoveryBrowserOpenResult(true, workspaceVisible: true);
+        foreach (var criterion in viewModel.CompletionCriteria)
+        {
+            await criterion.ToggleCommand.ExecuteAsync();
+        }
+        await viewModel.CompleteActionCommand.ExecuteAsync();
+        var nextActionId = viewModel.SelectedAction!.DefinitionId;
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        Assert.Equal(
+            RecoveryActionStatus.Open,
+            fixture.Execution.State!.GetAction(nextActionId).Status);
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State.GetAction(nextActionId).Status);
+        Assert.Single(requests);
+    }
+
+    [Fact]
     public async Task RejectedDestinationNeverEnablesExternalFallback()
     {
         var fixture = new Fixture(
