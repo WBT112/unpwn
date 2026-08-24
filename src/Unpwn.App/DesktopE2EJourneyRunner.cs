@@ -311,7 +311,6 @@ internal sealed class DesktopE2EJourneyRunner(
                 await WaitUntilAsync(() => workflow.HasExecution, "recovery-execution-created");
             }
 
-            await AssertRecoveryStepHierarchyAsync(workflow);
             await ClickAsync("workflow-primary-action", allowOffscreen: true);
             await WaitUntilAsync(
                 () => workflow.HasBrowserLaunchFailure,

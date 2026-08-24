@@ -87,8 +87,7 @@
 
             <Border IsVisible="{Binding IsGeneralManualWorkflow}"
                     Padding="12" CornerRadius="8"
-                    BorderThickness="1"
-                    BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}">
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
               <TextBlock Text="{DynamicResource Workflow.Trust.General.CompactMessage}" TextWrapping="Wrap" />
             </Border>
 
