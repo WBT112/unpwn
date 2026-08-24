@@ -29,9 +29,11 @@ public sealed record AccountClassificationCatalogProvenance(
 /// </summary>
 public static class RepositoryAccountClassificationCatalog
 {
-    public const string CurrentVersion = "2026.08.4";
+    public const string CurrentVersion = "2026.08.5";
+    public const int CoverageGoalPerCategory = 1_000;
 
-    private const string CuratedProvenanceId = "unpwn-curated-2026.08.4";
+    private const string CuratedProvenanceId = "unpwn-curated-2026.08.5";
+    private const string ReviewedNonCriticalProvenanceId = "unpwn-curated-ut1-press-review-2026.08.5";
 
     private static readonly IdnMapping Idn = new();
     private static readonly CatalogState State = BuildState();
@@ -71,6 +73,12 @@ public static class RepositoryAccountClassificationCatalog
                 CurrentVersion,
                 "AGPL-3.0-or-later",
                 "curated-manual"),
+            new AccountClassificationCatalogProvenance(
+                ReviewedNonCriticalProvenanceId,
+                "unpwn review of pinned UT1 press candidates",
+                "cbuijs/ut1@2ddb46bdb691721cadc8e1521abc780396e7aeb3",
+                "CC-BY-SA-4.0",
+                "curated-candidate-review"),
         ]);
 
         var records = new List<AccountClassificationProviderRecord>();
@@ -85,6 +93,12 @@ public static class RepositoryAccountClassificationCatalog
 
         foreach (var record in RepositoryAccountClassificationProviderData.CreateExpandedRecords(
                      CuratedProvenanceId))
+        {
+            AddRecord(record, records, ids, domains, aliases);
+        }
+
+        foreach (var record in RepositoryAccountClassificationNonCriticalProviderData.CreateRecords(
+                     ReviewedNonCriticalProvenanceId))
         {
             AddRecord(record, records, ids, domains, aliases);
         }

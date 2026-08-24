@@ -92,13 +92,34 @@ public sealed class AccountClassificationCatalogCoverageTests
     [InlineData("manual", "https://10minutemail.com")]
     [InlineData("manual", "https://www.orkut.com")]
     [InlineData("FranceConnect", "https://franceconnect.gouv.fr")]
-    [InlineData("manual", "https://www.bild.de")]
     [InlineData("definitely-unlisted-provider", "https://definitely-unlisted-provider.example.test/account")]
     public void UnreviewedOrGenericCategoryHintsRemainUnknown(string providerId, string? url)
     {
         Assert.Equal(
             AccountRecoveryCategory.Unknown,
             RepositoryAccountClassificationCatalog.Classify(providerId, url).Category);
+    }
+
+    [Theory]
+    [InlineData("https://www.bild.de")]
+    [InlineData("https://abc.es")]
+    [InlineData("https://www.aljazeera.net")]
+    [InlineData("https://www.aftenposten.no")]
+    [InlineData("https://www.lequipe.fr")]
+    [InlineData("https://www.nicematin.com")]
+    public void ReviewedPublisherConsumerAccountsAreNonCritical(string url)
+    {
+        Assert.Equal(
+            AccountRecoveryCategory.NonCritical,
+            RepositoryAccountClassificationCatalog.Classify("manual", url).Category);
+    }
+
+    [Fact]
+    public void NonCriticalCatalogReachesThePerCategoryCoverageGoal()
+    {
+        Assert.True(
+            RepositoryAccountClassificationCatalog.GetProviderCount(AccountRecoveryCategory.NonCritical) >=
+            RepositoryAccountClassificationCatalog.CoverageGoalPerCategory);
     }
 
     [Theory]
@@ -185,11 +206,17 @@ public sealed class AccountClassificationCatalogCoverageTests
     [Fact]
     public void ProvenanceContainsOnlyRepositoryReviewedMetadata()
     {
-        var provenance = Assert.Single(RepositoryAccountClassificationCatalog.Provenance);
+        var provenance = RepositoryAccountClassificationCatalog.Provenance;
 
-        Assert.StartsWith("unpwn-curated", provenance.Id, StringComparison.Ordinal);
-        Assert.Equal("AGPL-3.0-or-later", provenance.LicenseId);
-        Assert.Equal("curated-manual", provenance.SourceCategory);
+        Assert.Equal(2, provenance.Count);
+        Assert.Contains(provenance, source =>
+            source.LicenseId == "AGPL-3.0-or-later" &&
+            source.SourceCategory == "curated-manual");
+        Assert.Contains(provenance, source =>
+            source.LicenseId == "CC-BY-SA-4.0" &&
+            source.SourceRevision.Contains("2ddb46bdb691721cadc8e1521abc780396e7aeb3", StringComparison.Ordinal));
+        Assert.All(provenance, source =>
+            Assert.StartsWith("unpwn-curated", source.Id, StringComparison.Ordinal));
     }
 
     [Fact]
