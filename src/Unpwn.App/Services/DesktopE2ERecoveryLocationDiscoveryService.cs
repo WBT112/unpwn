@@ -16,6 +16,10 @@ internal sealed class DesktopE2ERecoveryLocationDiscoveryService(Uri destination
         if (!string.Equals(
                 request.Workflow.ProviderId,
                 "synthetic",
+                StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(
+                request.Workflow.ProviderId,
+                "github.com",
                 StringComparison.OrdinalIgnoreCase))
         {
             return Task.FromResult(RecoveryLocationDiscoveryResult.Failure(
