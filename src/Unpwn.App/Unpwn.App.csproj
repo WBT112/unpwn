@@ -32,7 +32,6 @@
     <ProjectReference Include="../Unpwn.Automation/Unpwn.Automation.csproj" />
     <ProjectReference Include="../Unpwn.Export/Unpwn.Export.csproj" />
     <ProjectReference Include="../Unpwn.Import/Unpwn.Import.csproj" />
-    <ProjectReference Include="../Unpwn.Infrastructure/Unpwn.Infrastructure.csproj" />
     <ProjectReference Include="../Unpwn.Providers/Unpwn.Providers.csproj" />
     <ProjectReference Include="../Unpwn.Vault/Unpwn.Vault.csproj" />
   </ItemGroup>

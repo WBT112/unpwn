@@ -32,9 +32,6 @@
     <DataTemplate DataType="{x:Type vm:CsvImportScreenViewModel}">
       <views:CsvImportView />
     </DataTemplate>
-    <DataTemplate DataType="{x:Type vm:PlaceholderScreenViewModel}">
-      <views:PlaceholderScreenView />
-    </DataTemplate>
   </Application.DataTemplates>
 
   <Application.Styles>

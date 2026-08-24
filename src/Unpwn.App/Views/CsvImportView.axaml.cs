@@ -480,7 +480,7 @@ public partial class CsvImportView : AccessibleScreen
 
     private string FormatDiagnostic(CsvImportDiagnostic diagnostic)
     {
-        var severity = Localization.GetString($"Import.Severity.{diagnostic.Severity}");
+        var severity = Localization.GetString("Import.Severity.Error");
         var message = diagnostic.Code == "ReadFailure"
             ? Localization.GetString("Import.ReadFailure")
             : Localization.GetString($"Import.Diagnostic.{diagnostic.Code}");
@@ -531,7 +531,6 @@ public partial class CsvImportView : AccessibleScreen
         _lastDiagnostics =
         [
             new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "ReadFailure",
                 string.Empty),
         ];

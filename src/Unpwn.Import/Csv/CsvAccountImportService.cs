@@ -136,7 +136,6 @@ public sealed class CsvAccountImportService
                 if (record.IsMalformed || record.Fields.Count != analysis.Headers.Count)
                 {
                     diagnostics.Add(new CsvImportDiagnostic(
-                        CsvImportDiagnosticSeverity.Error,
                         "MalformedRow",
                         "The row is malformed or has an unexpected number of columns.",
                         record.RowNumber));
@@ -231,7 +230,6 @@ public sealed class CsvAccountImportService
         if (headerLine is null)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MissingHeader",
                 "The CSV source does not contain a header row."));
             return new CsvImportAnalysis(
@@ -260,7 +258,6 @@ public sealed class CsvAccountImportService
         if (headerRecord.IsMalformed || headers.Any(string.IsNullOrWhiteSpace))
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MalformedHeader",
                 "The CSV header is malformed or contains an empty column name."));
         }
@@ -268,7 +265,6 @@ public sealed class CsvAccountImportService
         if (headers.Distinct(StringComparer.OrdinalIgnoreCase).Count() != headers.Length)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "DuplicateHeader",
                 "The CSV header contains duplicate column names."));
         }
@@ -408,7 +404,6 @@ public sealed class CsvAccountImportService
         if (referencedColumns.Any(column => !headerIndexes.ContainsKey(column)))
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MissingMappedColumn",
                 "The mapping references a column that is not present in the CSV header."));
         }
@@ -416,7 +411,6 @@ public sealed class CsvAccountImportService
         if (mappedColumns.Distinct(StringComparer.OrdinalIgnoreCase).Count() != mappedColumns.Length)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "RepeatedMappedColumn",
                 "A source column cannot be mapped to more than one account field."));
         }
@@ -425,7 +419,6 @@ public sealed class CsvAccountImportService
                 !mapping.ExcludedPasswordColumns.Contains(passwordColumn, StringComparer.OrdinalIgnoreCase)))
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "PasswordColumnNotExcluded",
                 "Every detected password column must be excluded before previewing the import."));
         }
@@ -434,7 +427,6 @@ public sealed class CsvAccountImportService
                 analysis.DetectedPasswordColumns.Contains(mappedColumn, StringComparer.OrdinalIgnoreCase)))
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "PasswordColumnMapped",
                 "A detected password column cannot be mapped to an account field."));
         }
@@ -442,7 +434,6 @@ public sealed class CsvAccountImportService
         if (mapping.ServiceNameColumn is null && mapping.AccountUrlColumn is null)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MissingServiceMapping",
                 "Map either a service name or an account URL column."));
         }
@@ -450,7 +441,6 @@ public sealed class CsvAccountImportService
         if (mapping.LoginIdentifierColumn is null && mapping.AccountNameColumn is null)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MissingAccountMapping",
                 "Map either a login identifier or an account name column."));
         }
@@ -470,7 +460,6 @@ public sealed class CsvAccountImportService
         if (serviceName is null && accountUrl is null)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MissingServiceValue",
                 "The row does not contain a service name or account URL.",
                 record.RowNumber));
@@ -480,7 +469,6 @@ public sealed class CsvAccountImportService
         if (loginIdentifier is null && accountName is null)
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "MissingAccountValue",
                 "The row does not contain a login identifier or account name.",
                 record.RowNumber));
@@ -490,7 +478,6 @@ public sealed class CsvAccountImportService
         if (accountUrl is not null && !IsSupportedAccountUrl(accountUrl))
         {
             diagnostics.Add(new CsvImportDiagnostic(
-                CsvImportDiagnosticSeverity.Error,
                 "InvalidAccountUrl",
                 "The row contains an invalid or unsupported account URL.",
                 record.RowNumber));
@@ -696,16 +683,14 @@ public sealed class CsvAccountImportService
     private static CsvImportDiagnostic CreateLimitDiagnostic(string code) => code switch
     {
         CsvImportFailureCodes.InputTooLarge => new CsvImportDiagnostic(
-            CsvImportDiagnosticSeverity.Error,
             CsvImportFailureCodes.InputTooLarge,
             "The CSV input exceeds the supported size limit."),
         CsvImportFailureCodes.InputTooComplex => new CsvImportDiagnostic(
-            CsvImportDiagnosticSeverity.Error,
             CsvImportFailureCodes.InputTooComplex,
             "The CSV input exceeds the supported structural complexity limit."),
         _ => throw new ArgumentOutOfRangeException(nameof(code)),
     };
 
     private static bool HasDocumentErrors(IEnumerable<CsvImportDiagnostic> diagnostics) => diagnostics.Any(
-        diagnostic => diagnostic.Severity == CsvImportDiagnosticSeverity.Error && diagnostic.RowNumber is null);
+        diagnostic => diagnostic.RowNumber is null);
 }

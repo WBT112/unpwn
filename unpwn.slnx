@@ -6,7 +6,6 @@
     <Project Path="src/Unpwn.Core/Unpwn.Core.csproj" />
     <Project Path="src/Unpwn.Export/Unpwn.Export.csproj" />
     <Project Path="src/Unpwn.Import/Unpwn.Import.csproj" />
-    <Project Path="src/Unpwn.Infrastructure/Unpwn.Infrastructure.csproj" />
     <Project Path="src/Unpwn.Providers/Unpwn.Providers.csproj" />
     <Project Path="src/Unpwn.Vault/Unpwn.Vault.csproj" />
   </Folder>

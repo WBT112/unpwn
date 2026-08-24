@@ -2,15 +2,6 @@ using Unpwn.Core;
 
 namespace Unpwn.Application.Recovery;
 
-public enum AccountRecoveryExecutionLoadState
-{
-    Locked,
-    NotFound,
-    Loaded,
-    Corrupted,
-    LoadFailed,
-}
-
 public enum AccountRecoveryExecutionFailureCode
 {
     None,

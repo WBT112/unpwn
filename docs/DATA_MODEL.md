@@ -151,9 +151,8 @@ See [Workspace Persistence](WORKSPACE_PERSISTENCE.md), [Vault Security](VAULT_SE
 
 ## Audit boundary
 
-`AuditEvent` contains a timestamp, repository-defined event type, and optional opaque account ID and
-canonical action type. Generated-credential audit entries contain an opaque operation ID, event type,
-and timestamp. Neither form may contain passwords, keys, reset tokens, MFA secrets, recovery codes,
+Generated-credential audit entries contain an opaque operation ID, repository-defined event type,
+and timestamp. They may not contain passwords, keys, reset tokens, MFA secrets, recovery codes,
 browser content, account notes, source exception text, or localized summaries.
 
 The UI maps structured event types to the selected language at display time, so changing language does not rewrite history.

@@ -60,7 +60,7 @@ public sealed class ShellViewModelTests
         var inventory = new TestAccountInventoryService();
         var localization = CreateLocalization();
         var confirmation = new TestConfirmationDialogService((_, _) => Task.FromResult(false));
-        var factory = new AppScreenFactory(
+        var factory = new TestScreenFactory(
             confirmation,
             vault,
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
@@ -103,7 +103,7 @@ public sealed class ShellViewModelTests
         var recoverySession = new TestRecoverySessionService();
         var inventory = new TestAccountInventoryService();
         var localization = CreateLocalization();
-        var factory = new AppScreenFactory(
+        var factory = new TestScreenFactory(
             new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
             vault,
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
@@ -136,7 +136,7 @@ public sealed class ShellViewModelTests
         var recoverySession = new TestRecoverySessionService();
         var inventory = new TestAccountInventoryService();
         var localization = CreateLocalization();
-        var factory = new AppScreenFactory(
+        var factory = new TestScreenFactory(
             new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
             vault,
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
@@ -202,7 +202,7 @@ public sealed class ShellViewModelTests
         var inventory = new TestAccountInventoryService();
         var localization = CreateLocalization();
         var persistence = new TestPersistenceStatus();
-        var factory = new AppScreenFactory(
+        var factory = new TestScreenFactory(
             new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
             vault,
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
@@ -244,7 +244,7 @@ public sealed class ShellViewModelTests
         var inventory = new TestAccountInventoryService();
         var localization = CreateLocalization();
         var browserSessions = new TestBrowserSessionLifecycle();
-        var factory = new AppScreenFactory(
+        var factory = new TestScreenFactory(
             new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
             vault,
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
@@ -595,7 +595,7 @@ public sealed class ShellViewModelTests
                 NextUserTaskTarget.AccountTriage,
                 RecoveryWizardStepId.AccountTriage));
         var localization = CreateLocalization();
-        var baseFactory = new AppScreenFactory(
+        var baseFactory = new TestScreenFactory(
             new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
             vault,
             new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
@@ -703,7 +703,7 @@ public sealed class ShellViewModelTests
     {
         var localization = CreateLocalization();
         var wizard = new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch);
-        var factory = new AppScreenFactory(
+        var factory = new TestScreenFactory(
             new TestConfirmationDialogService((_, _) => Task.FromResult(false)),
             vault,
             wizard,
@@ -809,11 +809,12 @@ public sealed class ShellViewModelTests
         localization ??= CreateLocalization();
         var confirmation = new TestConfirmationDialogService((_, _) => Task.FromResult(false));
         return new ShellViewModel(
-            new AppScreenFactory(
+            new TestScreenFactory(
                 confirmation,
                 shellContext,
                 new RecoveryWizardSessionService(DateTimeOffset.UnixEpoch),
                 new TestRecoverySessionService(),
+                new TestAccountInventoryService(),
                 localization),
             shellContext,
             localization);

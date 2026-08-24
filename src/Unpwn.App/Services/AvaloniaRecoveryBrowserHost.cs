@@ -5,7 +5,7 @@ using Unpwn.Application.Recovery;
 
 namespace Unpwn.App.Services;
 
-public sealed class AvaloniaRecoveryBrowserHost : IRecoveryBrowserHost, IDisposable
+public sealed class AvaloniaRecoveryBrowserHost : IDisposable
 {
     private readonly IRecoveryBrowserControl _webView;
     private readonly Func<string, IRecoveryBrowserPlatformAdapter> _platformAdapterFactory;

@@ -6,6 +6,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Unpwn.App.Localization;
 using Unpwn.App.Presentation;
+using Unpwn.App.Tests.Presentation;
 using Unpwn.App.Views;
 using Xunit;
 
@@ -124,6 +125,7 @@ public sealed class CsvImportAutomationTests
     private static CsvImportView CreateView() => new()
     {
         DataContext = new CsvImportScreenViewModel(
+            new EmptyAccountInventoryService(),
             new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"))),
     };
 

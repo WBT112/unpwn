@@ -29,9 +29,6 @@ Unpwn.Application
 Unpwn.Core
   Recovery domain, state machines, account categories, execution state, progress
 
-Unpwn.Infrastructure
-  General infrastructure and OS integration boundary
-
 Unpwn.Vault
   Encrypted Recovery Vault, keys, records, generated credentials
 
@@ -54,8 +51,7 @@ Dependencies point inward:
 
 ```text
 Unpwn.App
- ├── Infrastructure ─┐
- ├── Vault ──────────┤
+ ├── Vault ──────────┐
  ├── Automation ─────┤
  ├── Import ─────────┼──> Unpwn.Application ──> Unpwn.Core
  ├── Export ─────────┤

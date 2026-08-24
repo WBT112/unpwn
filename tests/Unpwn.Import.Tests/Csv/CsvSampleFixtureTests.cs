@@ -19,8 +19,7 @@ public sealed partial class CsvSampleFixtureTests
 
         Assert.True(preview.CanImport);
         Assert.Equal(16, preview.Candidates.Count);
-        Assert.DoesNotContain(preview.Diagnostics, diagnostic =>
-            diagnostic.Severity == CsvImportDiagnosticSeverity.Error);
+        Assert.Empty(preview.Diagnostics);
         Assert.Contains(preview.Candidates, candidate => candidate.AccountName == "example-marketplace.test");
         Assert.Contains(preview.Candidates, candidate => candidate.AccountName == "Müller – 测试konto");
         Assert.Contains(preview.Candidates, candidate =>
@@ -68,7 +67,7 @@ public sealed partial class CsvSampleFixtureTests
         Assert.True(preview.CanImport);
         Assert.Equal(6, preview.Candidates.Count);
         Assert.Collection(
-            preview.Diagnostics.Where(diagnostic => diagnostic.Severity == CsvImportDiagnosticSeverity.Error),
+            preview.Diagnostics,
             diagnostic =>
             {
                 Assert.Equal("InvalidAccountUrl", diagnostic.Code);

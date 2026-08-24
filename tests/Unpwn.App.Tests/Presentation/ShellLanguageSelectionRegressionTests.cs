@@ -37,7 +37,7 @@ public sealed class ShellLanguageSelectionRegressionTests
 
     private sealed class TestScreenFactory(ILocalizationService localization) : IScreenFactory
     {
-        public ScreenViewModel Create(AppRoute route) => new PlaceholderScreenViewModel(
+        public ScreenViewModel Create(AppRoute route) => new TestPlaceholderScreenViewModel(
             route,
             localization,
             "Screen.Vault.Title",

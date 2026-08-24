@@ -199,7 +199,7 @@ public sealed class PostImportNavigationHeadlessTests
                 {
                     AppRoute.CsvImport => import,
                     AppRoute.Accounts => accounts,
-                    _ => new PlaceholderScreenViewModel(
+                    _ => new TestPlaceholderScreenViewModel(
                         route,
                         localization,
                         "Screen.Import.Title",
