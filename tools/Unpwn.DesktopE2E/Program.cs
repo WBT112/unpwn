@@ -24,9 +24,13 @@ internal static class DesktopE2EHarness
             !Path.IsPathFullyQualified(appPath) ||
             !File.Exists(appPath))
         {
-            Console.Error.WriteLine("Usage: Unpwn.DesktopE2E --app <absolute Unpwn.App.dll path> [--artifacts <absolute directory>]");
+            Console.Error.WriteLine("Usage: Unpwn.DesktopE2E --app <absolute Unpwn.App.dll path> [--scenario <id>] [--artifacts <absolute directory>]");
             return 2;
         }
+
+        var scenario = TryReadOption(args, "--scenario", out var requestedScenario)
+            ? requestedScenario
+            : "golden";
 
         var artifacts = TryReadOption(args, "--artifacts", out var requestedArtifacts)
             ? requestedArtifacts
@@ -47,16 +51,23 @@ internal static class DesktopE2EHarness
 
         await using var provider = await SyntheticProvider.StartAsync();
         var csvPath = Path.Combine(runRoot, "synthetic-accounts.csv");
+        var csvContents = string.Equals(
+            scenario,
+            "import-correction-and-retry",
+            StringComparison.Ordinal)
+            ? "unrelated,columns\nvalue,only\n"
+            : "service,username,url,password\n" +
+                $"synthetic,user@example.invalid,{provider.PasswordChangeUri},synthetic-ignored-value\n";
         await File.WriteAllTextAsync(
             csvPath,
-            "service,username,url,password\n" +
-            $"synthetic,user@example.invalid,{provider.PasswordChangeUri},synthetic-ignored-value\n");
+            csvContents);
         var configPath = Path.Combine(runRoot, "desktop-e2e-config.json");
         await File.WriteAllTextAsync(
             configPath,
             JsonSerializer.Serialize(
                 new
                 {
+                    Scenario = scenario,
                     DataRoot = Path.Combine(runRoot, "app-data"),
                     CsvFixturePath = csvPath,
                     ProviderBaseUri = provider.BaseAddress.ToString(),
@@ -88,6 +99,12 @@ internal static class DesktopE2EHarness
 
         var processLog = new
         {
+            Scenario = scenario,
+            OperatingSystem = Environment.OSVersion.VersionString,
+            Distribution = ReadLinuxDistribution(),
+            Display = Environment.GetEnvironmentVariable("XDG_SESSION_TYPE") ??
+                Environment.GetEnvironmentVariable("DISPLAY") ??
+                (OperatingSystem.IsWindows() ? "windows-desktop" : "unknown"),
             LogicalStep = timedOut ? "process-timeout" : "process-exit",
             ExitCode = timedOut ? -1 : process.ExitCode,
             TimedOut = timedOut,
@@ -97,6 +114,18 @@ internal static class DesktopE2EHarness
         await File.WriteAllTextAsync(
             Path.Combine(artifacts, "desktop-process.json"),
             JsonSerializer.Serialize(processLog, JsonOptions));
+
+        var manifest = new
+        {
+            Scenario = scenario,
+            Files = Directory.EnumerateFiles(artifacts)
+                .Select(Path.GetFileName)
+                .Order(StringComparer.Ordinal)
+                .ToArray(),
+        };
+        await File.WriteAllTextAsync(
+            Path.Combine(artifacts, "desktop-e2e-manifest.json"),
+            JsonSerializer.Serialize(manifest, JsonOptions));
 
         var resultPath = Path.Combine(artifacts, "desktop-e2e-result.json");
         var succeeded = !timedOut && process.ExitCode == 0 &&
@@ -146,7 +175,22 @@ internal static class DesktopE2EHarness
 
     private static string Sanitize(string text) => text
         .Replace("desktop-e2e-only-482!", "[redacted]", StringComparison.Ordinal)
+        .Replace("synthetic-wrong-password", "[redacted]", StringComparison.Ordinal)
         .Replace("synthetic-ignored-value", "[redacted]", StringComparison.Ordinal);
+
+    private static string ReadLinuxDistribution()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/etc/os-release"))
+        {
+            return OperatingSystem.IsWindows() ? "windows" : "unknown";
+        }
+
+        var values = File.ReadLines("/etc/os-release")
+            .Select(line => line.Split('=', 2))
+            .Where(parts => parts.Length == 2)
+            .ToDictionary(parts => parts[0], parts => parts[1].Trim('"'), StringComparer.Ordinal);
+        return values.TryGetValue("PRETTY_NAME", out var name) ? name : "linux-unknown";
+    }
 }
 
 internal sealed class SyntheticProvider : IAsyncDisposable

@@ -51,6 +51,7 @@ internal sealed class DesktopE2EJourneyRunner(
                 () => _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
                 "browser-session-cleanup",
                 BrowserTimeout);
+            _currentStep = "journey-complete";
             Record("journey-complete", "unpwn-main-window", "passed");
             WriteResult(succeeded: true, failureCode: null);
             return true;
@@ -91,12 +92,213 @@ internal sealed class DesktopE2EJourneyRunner(
 
     private async Task RunJourneyAsync()
     {
+        switch (_configuration.Scenario)
+        {
+            case DesktopE2EScenarioCatalog.Golden:
+                await RunGoldenJourneyAsync();
+                return;
+            case DesktopE2EScenarioCatalog.SafetyStopAndRetry:
+                await RunSafetyStopAndRetryAsync();
+                return;
+            case DesktopE2EScenarioCatalog.VaultWrongPasswordAndResume:
+                await RunVaultWrongPasswordAndResumeAsync();
+                return;
+            case DesktopE2EScenarioCatalog.ImportCorrectionAndRetry:
+                await RunImportCorrectionAndRetryAsync();
+                return;
+            case DesktopE2EScenarioCatalog.DeferAccount:
+                await RunDeferAccountAsync();
+                return;
+            case DesktopE2EScenarioCatalog.BrowserClosePreservesRecovery:
+                await RunBrowserClosePreservesRecoveryAsync();
+                return;
+            default:
+                throw Failure("The configured desktop scenario was not recognized.");
+        }
+    }
+
+    private async Task RunGoldenJourneyAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+        await ImportReviewedCsvAsync();
+        await CategorizeImportedAccountAsync();
+        await StartRecoveryAsync();
+        await CompleteRecoveryActionsAsync();
+        await CompleteRecoverySessionAsync();
+    }
+
+    private async Task RunSafetyStopAndRetryAsync()
+    {
+        await StepAsync("trust-gate", "vault-begin", async () =>
+        {
+            await ClickAsync("vault-begin");
+            await ClickAsync("vault-trusted-no-or-unsure");
+            var vault = Shell.CurrentScreen as VaultEntryScreenViewModel ??
+                throw Failure("The trusted-device guidance did not remain in the vault workspace.");
+            await WaitUntilAsync(
+                () => vault.Stage == VaultEntryStage.TrustedDeviceGuidance,
+                "trusted-device-guidance");
+            if (Directory.EnumerateFiles(_configuration.DataRoot, "*.unpwn", SearchOption.AllDirectories).Any())
+            {
+                throw Failure("Sensitive vault work started before the trusted-device gate passed.");
+            }
+
+            await ClickAsync("vault-end-for-device-safety");
+            await WaitUntilAsync(
+                () => vault.Stage == VaultEntryStage.SafetyStopped,
+                "safety-stop");
+            await ClickAsync("vault-restart-safety-check");
+            await ClickAsync("vault-trusted-yes");
+        });
+
+        await CreateVaultAsync();
+    }
+
+    private async Task RunVaultWrongPasswordAndResumeAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+
+        await StepAsync("lock-vault", "shell-lock-vault", async () =>
+        {
+            await ClickAsync("shell-lock-vault");
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen is VaultEntryScreenViewModel
+                { Stage: VaultEntryStage.LockedVault },
+                "locked-vault-entry");
+        });
+
+        await StepAsync("wrong-password", "vault-locked-unlock", async () =>
+        {
+            await SetTextAsync("vault-locked-password", "synthetic-wrong-password");
+            await ClickAsync("vault-locked-unlock");
+            var vault = (VaultEntryScreenViewModel)Shell.CurrentScreen;
+            await WaitUntilAsync(
+                () => vault.HasValidationMessage && !vault.UnlockCurrentVaultCommand.IsRunning,
+                "wrong-password-feedback");
+            var password = await WaitForControlAsync<TextBox>("vault-locked-password");
+            if (!string.IsNullOrEmpty(password.Text) || !string.IsNullOrEmpty(vault.OpenPassword))
+            {
+                throw Failure("The rejected vault password remained in the UI or view-model memory.");
+            }
+        });
+
+        await StepAsync("unlock-and-resume", "vault-locked-unlock", async () =>
+        {
+            var vault = (VaultEntryScreenViewModel)Shell.CurrentScreen;
+            await SetTextAsync("vault-locked-password", SyntheticVaultPassword);
+            await ClickAsync("vault-locked-unlock");
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen.Route == AppRoute.Dashboard,
+                "resumed-dashboard");
+            if (!string.IsNullOrEmpty(vault.OpenPassword))
+            {
+                throw Failure("The accepted vault password remained in the deactivated view model.");
+            }
+        });
+    }
+
+    private async Task RunImportCorrectionAndRetryAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+
+        await StepAsync("invalid-import", "import-open-csv", async () =>
+        {
+            await ClickAsync("import-open-csv");
+            var review = await WaitForControlAsync<Button>("import-reviewed");
+            var mapping = await WaitForControlAsync<Border>("import-mapping-panel");
+            await WaitUntilAsync(
+                () => mapping.IsVisible && !review.IsEnabled,
+                "invalid-import-feedback");
+            if (Shell.CurrentScreen.Route != AppRoute.CsvImport)
+            {
+                throw Failure("An invalid import left the import workspace.");
+            }
+        });
+
+        await StepAsync("correct-and-retry-import", "import-open-csv", async () =>
+        {
+            await File.WriteAllTextAsync(
+                _configuration.CsvFixturePath,
+                "service,username,url,password\n" +
+                $"synthetic,user@example.invalid,{_configuration.PasswordChangeUri},synthetic-ignored-value\n");
+            await ClickAsync("import-open-csv");
+            await WaitForControlAsync<Button>("import-reviewed", control => control.IsEnabled);
+            await ClickAsync("import-reviewed");
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen.Route == AppRoute.Accounts,
+                "corrected-import-reviewed");
+        });
+    }
+
+    private async Task RunBrowserClosePreservesRecoveryAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+        await ImportReviewedCsvAsync();
+        await CategorizeImportedAccountAsync();
+        var workflow = await StartRecoveryAsync();
+        var actionId = workflow.SelectedAction?.DefinitionId;
+
+        await StepAsync("close-browser-without-completion", "recovery-browser-close", async () =>
+        {
+            await ClickAsync("recovery-browser-close");
+            await WaitUntilAsync(
+                () => _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
+                "browser-close-cleanup",
+                BrowserTimeout);
+            if (Shell.CurrentScreen is not WorkflowExecutionScreenViewModel current ||
+                !string.Equals(current.SelectedAction?.DefinitionId, actionId, StringComparison.Ordinal) ||
+                !current.IsCurrentActionInProgress)
+            {
+                throw Failure("Closing the browser incorrectly changed canonical recovery completion.");
+            }
+        });
+    }
+
+    private async Task RunDeferAccountAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+        await ImportReviewedCsvAsync();
+        await CategorizeImportedAccountAsync();
+
+        await StepAsync("defer-account", "dashboard-recommendation-skip", async () =>
+        {
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen.Route == AppRoute.Dashboard,
+                "recovery-overview-before-defer");
+            var dashboard = Shell.CurrentScreen as DashboardScreenViewModel ??
+                throw Failure("The recovery overview was not active before defer.");
+            await ClickAsync("dashboard-recommendation-skip");
+            await WaitUntilAsync(
+                () => !dashboard.SkipRecommendationCommand.IsRunning &&
+                    dashboard.SkipRecommendationCommand.LastOutcome == AsyncCommandOutcome.Completed,
+                "account-deferred");
+            if (dashboard.Status.State != AppVisualState.Warning)
+            {
+                throw Failure("The explicit deferral did not remain visibly unresolved.");
+            }
+        });
+    }
+
+    private async Task AcceptTrustedDeviceAsync()
+    {
         await StepAsync("trust-gate", "vault-begin", async () =>
         {
             await ClickAsync("vault-begin");
             await ClickAsync("vault-trusted-yes");
         });
+    }
 
+    private async Task CreateVaultAsync()
+    {
         await StepAsync("create-vault", "vault-primary-action", async () =>
         {
             await ClickAsync("vault-primary-action");
@@ -115,7 +317,10 @@ internal sealed class DesktopE2EJourneyRunner(
                 () => Shell.CurrentScreen.Route == AppRoute.Dashboard,
                 "vault-created");
         });
+    }
 
+    private async Task CreateSessionAsync()
+    {
         await StepAsync("create-session", "dashboard-create-session", async () =>
         {
             var name = await WaitForControlAsync<TextBox>("dashboard-session-name");
@@ -130,14 +335,20 @@ internal sealed class DesktopE2EJourneyRunner(
                 () => Shell.CurrentScreen.Route == AppRoute.CsvImport,
                 "dashboard-session-ready");
         });
+    }
 
+    private async Task ImportReviewedCsvAsync()
+    {
         await StepAsync("open-csv-import", "import-open-csv", async () =>
         {
             await ClickAsync("import-open-csv");
             await WaitForControlAsync<Button>("import-reviewed", control => control.IsEnabled);
             await ClickAsync("import-reviewed");
         });
+    }
 
+    private async Task CategorizeImportedAccountAsync()
+    {
         await StepAsync("categorize-accounts", "accounts-triage-list", async () =>
         {
             var accounts = await WaitForControlAsync<ListBox>(
@@ -152,7 +363,11 @@ internal sealed class DesktopE2EJourneyRunner(
             await ClickAsync("accounts-category-save");
             await ClickAsync("accounts-continue-recovery");
         });
+    }
 
+    private async Task<WorkflowExecutionScreenViewModel> StartRecoveryAsync()
+    {
+        WorkflowExecutionScreenViewModel? startedWorkflow = null;
         await StepAsync("start-recovery", "dashboard-recommendation-open", async () =>
         {
             await WaitUntilAsync(
@@ -200,10 +415,9 @@ internal sealed class DesktopE2EJourneyRunner(
                 await ClickAsync("workflow-primary-action", allowOffscreen: true);
             }
             await WaitForNativeBrowserAsync();
+            startedWorkflow = workflow;
         });
-
-        await CompleteRecoveryActionsAsync();
-        await CompleteRecoverySessionAsync();
+        return startedWorkflow!;
     }
 
     private async Task CompleteRecoveryActionsAsync()
@@ -574,8 +788,13 @@ internal sealed class DesktopE2EJourneyRunner(
         var result = new DesktopE2EResult(
             succeeded,
             failureCode,
+            _configuration.Scenario,
             Environment.ProcessId,
-            OperatingSystem.IsWindows() ? "windows" : "linux",
+            Environment.OSVersion.VersionString,
+            ReadDistribution(),
+            Environment.GetEnvironmentVariable("XDG_SESSION_TYPE") ??
+                Environment.GetEnvironmentVariable("DISPLAY") ??
+                (OperatingSystem.IsWindows() ? "windows-desktop" : "unknown"),
             _browserBackend,
             _currentStep,
             _steps.Count,
@@ -610,6 +829,20 @@ internal sealed class DesktopE2EJourneyRunner(
 
     private static DesktopE2EFailure Failure(string reason) => new(reason);
 
+    private static string ReadDistribution()
+    {
+        if (!OperatingSystem.IsLinux() || !File.Exists("/etc/os-release"))
+        {
+            return OperatingSystem.IsWindows() ? "windows" : "unknown";
+        }
+
+        var prettyName = File.ReadLines("/etc/os-release")
+            .FirstOrDefault(line => line.StartsWith("PRETTY_NAME=", StringComparison.Ordinal));
+        return prettyName is null
+            ? "linux-unknown"
+            : prettyName["PRETTY_NAME=".Length..].Trim('"');
+    }
+
     private static bool IsWithinDirectory(string candidate, string directory)
     {
         var relative = Path.GetRelativePath(
@@ -640,8 +873,11 @@ internal sealed class DesktopE2EJourneyRunner(
     private sealed record DesktopE2EResult(
         bool Succeeded,
         string? FailureCode,
+        string Scenario,
         int ProcessId,
-        string Platform,
+        string OperatingSystem,
+        string Distribution,
+        string Display,
         string BrowserBackend,
         string LastStep,
         int StepCount,

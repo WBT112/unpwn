@@ -3,6 +3,7 @@ using System.Text.Json;
 namespace Unpwn.App;
 
 internal sealed record DesktopE2EConfiguration(
+    string Scenario,
     string DataRoot,
     string CsvFixturePath,
     Uri ProviderBaseUri,
@@ -56,6 +57,11 @@ internal sealed record DesktopE2EConfiguration(
             throw new InvalidOperationException("The desktop E2E CSV fixture does not exist.");
         }
 
+        if (!DesktopE2EScenarioCatalog.IsSupported(document.Scenario))
+        {
+            throw new InvalidOperationException("The desktop E2E scenario is not supported.");
+        }
+
         if (!Uri.TryCreate(document.ProviderBaseUri, UriKind.Absolute, out var providerBaseUri) ||
             providerBaseUri.Scheme != Uri.UriSchemeHttp ||
             !providerBaseUri.IsLoopback ||
@@ -68,6 +74,7 @@ internal sealed record DesktopE2EConfiguration(
         Directory.CreateDirectory(dataRoot);
         Directory.CreateDirectory(artifactDirectory);
         return new DesktopE2EConfiguration(
+            document.Scenario!,
             dataRoot,
             csvFixturePath,
             providerBaseUri,
@@ -95,6 +102,7 @@ internal sealed record DesktopE2EConfiguration(
     }
 
     private sealed record DesktopE2EConfigurationDocument(
+        string? Scenario,
         string? DataRoot,
         string? CsvFixturePath,
         string? ProviderBaseUri,
