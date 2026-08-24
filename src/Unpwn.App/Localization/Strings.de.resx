@@ -94,7 +94,7 @@
   <data name="Confirmation.Risk.Sensitive" xml:space="preserve"><value>SICHERHEITSRELEVANTE AKTION</value></data>
   <data name="Confirmation.WindowTitle" xml:space="preserve"><value>Sicherheitsrelevante Aktion bestätigen</value></data>
   <data name="Import.Candidate.Duplicate" xml:space="preserve"><value> — mögliches Duplikat ({0})</value></data>
-  <data name="Import.Candidate.Row" xml:space="preserve"><value>Zeile {0}: {1} — {2}{3}</value></data>
+  <data name="Import.Candidate.Account" xml:space="preserve"><value>Konto {0}: {1} — {2}{3}</value></data>
   <data name="Import.ChooseFile.Button" xml:space="preserve"><value>CSV-Datei auswählen</value></data>
   <data name="Import.Diagnostic.DuplicateHeader" xml:space="preserve"><value>Die CSV-Kopfzeile enthält doppelte Spaltennamen.</value></data>
   <data name="Import.Diagnostic.InvalidAccountUrl" xml:space="preserve"><value>Die Zeile enthält eine ungültige oder nicht unterstützte Konto-URL.</value></data>

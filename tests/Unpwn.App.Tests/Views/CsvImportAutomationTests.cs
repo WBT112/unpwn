@@ -49,6 +49,62 @@ public sealed class CsvImportAutomationTests
     }
 
     [Fact]
+    public async Task PreviewNumbersVisibleEntriesAsLocalizedAccountsInsteadOfSourceRows()
+    {
+        await AccessibilityHeadlessTests.Session.Dispatch(async () =>
+        {
+            const string csv =
+                "service,username\n" +
+                "Mail,first@example.invalid\n" +
+                "malformed,row,with-extra-field\n" +
+                "Market,second@example.invalid\n" +
+                "Game,third@example.invalid\n";
+            var localization = new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"));
+            var view = CreateView(localization);
+            var window = new Window { Content = view };
+            window.Show();
+
+            await view.LoadCsvAsync("accounts.csv", StreamFactory(csv));
+            Dispatcher.UIThread.RunJobs();
+
+            var preview = Find<ListBox>(view, "import-preview-items");
+            Assert.Collection(
+                preview.Items.Cast<string>(),
+                item => Assert.StartsWith("Account 1:", item, StringComparison.Ordinal),
+                item => Assert.StartsWith("Account 2:", item, StringComparison.Ordinal),
+                item => Assert.StartsWith("Account 3:", item, StringComparison.Ordinal));
+            Assert.Contains(
+                Find<ItemsControl>(view, "import-diagnostics").Items.Cast<string>(),
+                item => item.Contains("row 3", StringComparison.Ordinal));
+
+            localization.SetLanguage("de");
+            Dispatcher.UIThread.RunJobs();
+            Assert.Collection(
+                preview.Items.Cast<string>(),
+                item => Assert.StartsWith("Konto 1:", item, StringComparison.Ordinal),
+                item => Assert.StartsWith("Konto 2:", item, StringComparison.Ordinal),
+                item => Assert.StartsWith("Konto 3:", item, StringComparison.Ordinal));
+            Assert.Contains(
+                Find<ItemsControl>(view, "import-diagnostics").Items.Cast<string>(),
+                item => item.Contains("Zeile 3", StringComparison.Ordinal));
+
+            localization.SetLanguage(ResourceLocalizationService.PseudoLanguageCode);
+            Dispatcher.UIThread.RunJobs();
+            var pseudoItems = preview.Items.Cast<string>().ToArray();
+            Assert.All(pseudoItems, item =>
+            {
+                Assert.StartsWith("⟦", item, StringComparison.Ordinal);
+                Assert.DoesNotContain("Row", item, StringComparison.Ordinal);
+                Assert.DoesNotContain("Zeile", item, StringComparison.Ordinal);
+            });
+            Assert.Contains("1", pseudoItems[0], StringComparison.Ordinal);
+            Assert.Contains("2", pseudoItems[1], StringComparison.Ordinal);
+            Assert.Contains("3", pseudoItems[2], StringComparison.Ordinal);
+            window.Close();
+        }, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task AmbiguousMappingShowsOnlyRequiredTaskAndRefreshesWhenResolved()
     {
         await AccessibilityHeadlessTests.Session.Dispatch(async () =>
@@ -122,11 +178,11 @@ public sealed class CsvImportAutomationTests
         }, CancellationToken.None);
     }
 
-    private static CsvImportView CreateView() => new()
+    private static CsvImportView CreateView(ResourceLocalizationService? localization = null) => new()
     {
         DataContext = new CsvImportScreenViewModel(
             new EmptyAccountInventoryService(),
-            new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"))),
+            localization ?? new ResourceLocalizationService(CultureInfo.GetCultureInfo("en"))),
     };
 
     private static Func<Task<Stream>> StreamFactory(string csv)
