@@ -200,7 +200,7 @@ jobs:
       - name: Install Debian desktop and checkout prerequisites
         run: |
           apt-get update
-          apt-get install --yes --no-install-recommends ca-certificates git xauth xvfb libwebkit2gtk-4.1-0
+          apt-get install --yes --no-install-recommends ca-certificates curl git xauth xvfb libwebkit2gtk-4.1-0
 
       - name: Verify Debian baseline
         run: |
