@@ -43,40 +43,6 @@ public sealed record RecoveryBrowserSessionStartRequest(
     RecoveryNavigationHandoff Handoff,
     RecoveryBrowserContentMode ContentMode);
 
-public interface IRecoveryBrowserHost
-{
-    event EventHandler<RecoveryBrowserHostSnapshot>? SnapshotChanged;
-
-    RecoveryBrowserHostSnapshot Snapshot { get; }
-
-    bool Start(RecoveryBrowserHostRequest request);
-
-    bool Navigate(Uri destination);
-
-    bool Navigate(RecoveryNavigationHandoff handoff, RecoveryBrowserContentMode contentMode);
-
-    bool GoBack();
-
-    bool GoForward();
-
-    bool Reload();
-
-    bool StopLoading();
-
-    Task<RecoveryBrowserCredentialAssistanceResult> InspectCredentialInsertionAsync(
-        RecoveryBrowserCredentialInsertionContract contract,
-        CancellationToken cancellationToken);
-
-    Task<RecoveryBrowserCredentialAssistanceResult> InsertCredentialAsync(
-        RecoveryBrowserCredentialInsertionContract contract,
-        ReadOnlyMemory<byte> secretUtf8,
-        CancellationToken cancellationToken);
-
-    Task ClearBrowsingDataAsync(CancellationToken cancellationToken);
-
-    void Close();
-}
-
 internal interface IRecoveryBrowserPlatformAdapter : IDisposable
 {
     event EventHandler<RecoveryBrowserSecurityEventCode>? SecurityEvent;

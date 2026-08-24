@@ -68,8 +68,6 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 
 **Residual risk:** deleting a file is not forensic erasure on modern storage. On Windows, access to a user-selected export destination continues to follow the ACL semantics inherited from that directory; unpwn does not claim a custom owner-only Windows ACL for arbitrary destinations.
 
-**Pre-release gap:** Linux Recovery Browser profile storage still needs a complete owner-only-from-creation permission invariant. Default process permissions must not be treated as that guarantee.
-
 ### Secret leakage through diagnostics or presentation
 
 **Risk:** credentials, reset tokens, decrypted data, or imported sensitive values enter logs, exception messages, audit events, accessibility text, screenshots/traces, or crash artifacts.
@@ -96,7 +94,7 @@ Detailed cryptographic design and parameter rules live in [Vault Security](VAULT
 
 **Risk:** provider content, redirects, popups, permissions, downloads, external protocols, TLS exceptions, or stale authenticated browser state escape the intended recovery boundary or leak between accounts.
 
-**Mitigations:** exact-origin validated handoff, HTTPS-only production navigation, unsafe-scheme rejection, default-denied popup/download/permission/external-protocol behavior, dedicated unpwn-owned browser profiles, same-account reuse only, cross-account cleanup enforcement, clear→release→delete session cleanup, explicit orphan handling, and no automatic resume after an unclean exit.
+**Mitigations:** exact-origin validated handoff, HTTPS-only production navigation, unsafe-scheme rejection, default-denied popup/download/permission/external-protocol behavior, dedicated unpwn-owned browser profiles, Linux owner-only profile/marker permissions, same-account reuse only, cross-account cleanup enforcement, clear→release→delete session cleanup, explicit orphan handling, and no automatic resume after an unclean exit.
 
 Browser events have no path to canonical completion/risk transitions. Detailed platform and lifecycle rules live in [Recovery Browser Security Boundary](RECOVERY_BROWSER.md).
 

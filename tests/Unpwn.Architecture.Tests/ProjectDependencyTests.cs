@@ -14,7 +14,6 @@ public sealed class ProjectDependencyTests
                 "Unpwn.Automation",
                 "Unpwn.Export",
                 "Unpwn.Import",
-                "Unpwn.Infrastructure",
                 "Unpwn.Providers",
                 "Unpwn.Vault",
             ],
@@ -23,7 +22,6 @@ public sealed class ProjectDependencyTests
             ["Unpwn.Core"] = [],
             ["Unpwn.Export"] = ["Unpwn.Application", "Unpwn.Core"],
             ["Unpwn.Import"] = ["Unpwn.Application", "Unpwn.Core"],
-            ["Unpwn.Infrastructure"] = ["Unpwn.Application", "Unpwn.Core"],
             ["Unpwn.Providers"] = ["Unpwn.Application", "Unpwn.Core"],
             ["Unpwn.Vault"] = ["Unpwn.Application", "Unpwn.Core"],
         };

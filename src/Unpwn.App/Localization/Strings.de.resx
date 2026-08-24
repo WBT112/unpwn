@@ -6,14 +6,11 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="App.WindowTitle" xml:space="preserve"><value>unpwn — Wiederherstellungsbereich</value></data>
   <data name="Common.Cancel" xml:space="preserve"><value>Abbrechen</value></data>
-  <data name="Common.Failed" xml:space="preserve"><value>FEHLGESCHLAGEN</value></data>
   <data name="Completion.Canceled.Message" xml:space="preserve"><value>Der Zustand der Wiederherstellungssitzung wurde nicht verändert.</value></data>
   <data name="Completion.Canceled.Title" xml:space="preserve"><value>Abschluss abgebrochen</value></data>
   <data name="Completion.Command.Error" xml:space="preserve"><value>Die Abschlussaktion konnte nicht ausgeführt werden.</value></data>
   <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungssitzung abschließen</value></data>
   <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Zur Abschlussprüfung</value></data>
-  <data name="Completion.Confirmation.Consequence" xml:space="preserve"><value>Blockierte Arbeiten und ungeklärte Risiken bleiben im abschließenden Wiederherstellungsstatus dokumentiert.</value></data>
-  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>Der abschließende Wiederherstellungsstatus und der geheimnisfreie Bericht wurden verschlüsselt in der Sitzung gespeichert.</value></data>
   <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Wiederherstellungssitzung beendet</value></data>
   <data name="Completion.Review.Button" xml:space="preserve"><value>Abschlussprüfung ausführen</value></data>
   <data name="Completion.Section.Description" xml:space="preserve"><value>Die Prüfung lädt den gespeicherten Konten-, Aktions-, Risiko- und Zugangsdatenstatus neu. Die Prüfung selbst verändert die Sitzung nicht.</value></data>
@@ -145,8 +142,6 @@
   <data name="Import.ReadFailure" xml:space="preserve"><value>Die ausgewählte CSV-Datei konnte nicht gelesen werden.</value></data>
   <data name="Import.SelectAnother" xml:space="preserve"><value>Wähle eine andere CSV-Datei aus.</value></data>
   <data name="Import.Severity.Error" xml:space="preserve"><value>Fehler</value></data>
-  <data name="Import.Severity.Information" xml:space="preserve"><value>Information</value></data>
-  <data name="Import.Severity.Warning" xml:space="preserve"><value>Warnung</value></data>
   <data name="Import.Step.Mapping" xml:space="preserve"><value>Spaltenzuordnung klären</value></data>
   <data name="Import.Step.Review" xml:space="preserve"><value>Import prüfen und bestätigen</value></data>
   <data name="Import.Step.Source" xml:space="preserve"><value>Quelle auswählen</value></data>
@@ -239,12 +234,6 @@
   <data name="Status.Success" xml:space="preserve"><value>Erfolgreich</value></data>
   <data name="Status.UnresolvedRisk" xml:space="preserve"><value>Ungeklärtes Risiko</value></data>
   <data name="Status.Warning" xml:space="preserve"><value>Warnung</value></data>
-  <data name="Vault.Create.Button" xml:space="preserve"><value>Tresor erstellen</value></data>
-  <data name="Vault.Create.Tooltip" xml:space="preserve"><value>Das Erstellen eines Tresors ist in diesem Shell-Issue nicht umgesetzt.</value></data>
-  <data name="Vault.Open.Button" xml:space="preserve"><value>Vorhandenen Tresor öffnen</value></data>
-  <data name="Vault.Open.Tooltip" xml:space="preserve"><value>Das Entsperren eines Tresors ist in diesem Shell-Issue nicht umgesetzt.</value></data>
-  <data name="Vault.Section.Description" xml:space="preserve"><value>Erstellen und Entsperren werden im eigenen Tresor-Issue angeschlossen.</value></data>
-  <data name="Vault.Section.Title" xml:space="preserve"><value>Wiederherstellungstresor</value></data>
   <data name="RecoveryBrowser.Back" xml:space="preserve"><value>Zurück</value></data>
   <data name="RecoveryBrowser.Forward" xml:space="preserve"><value>Vor</value></data>
   <data name="RecoveryBrowser.Reload" xml:space="preserve"><value>Neu laden</value></data>

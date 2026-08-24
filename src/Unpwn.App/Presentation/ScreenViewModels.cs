@@ -135,22 +135,6 @@ public abstract class LocalizedScreenViewModel : ScreenViewModel
     private void Localization_OnCultureChanged(object? sender, EventArgs eventArgs) => RefreshLocalization();
 }
 
-public sealed class PlaceholderScreenViewModel(
-    AppRoute route,
-    ILocalizationService localization,
-    string titleKey,
-    string descriptionKey,
-    AppVisualState statusState,
-    string statusTitleKey,
-    string statusMessageKey) : LocalizedScreenViewModel(
-        route,
-        localization,
-        titleKey,
-        descriptionKey,
-        statusState,
-        statusTitleKey,
-        statusMessageKey);
-
 public sealed class CsvImportScreenViewModel(
     IAccountInventoryService inventory,
     ILocalizationService localization,
@@ -167,11 +151,6 @@ public sealed class CsvImportScreenViewModel(
         inventory ?? throw new ArgumentNullException(nameof(inventory));
     private readonly IRecoveryFlowService? _recoveryFlow = recoveryFlow;
     private int _importActive;
-
-    public CsvImportScreenViewModel(ILocalizationService localization)
-        : this(new UnavailableAccountInventoryService(), localization)
-    {
-    }
 
     public event EventHandler? AccountReviewRequested;
 

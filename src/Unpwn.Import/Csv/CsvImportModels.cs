@@ -1,14 +1,6 @@
 namespace Unpwn.Import.Csv;
 
-public enum CsvImportDiagnosticSeverity
-{
-    Information,
-    Warning,
-    Error,
-}
-
 public sealed record CsvImportDiagnostic(
-    CsvImportDiagnosticSeverity Severity,
     string Code,
     string Message,
     int? RowNumber = null);
@@ -118,6 +110,5 @@ public sealed record CsvImportPreview(
 {
     public bool CanImport =>
         Candidates.Count > 0 &&
-        !Diagnostics.Any(diagnostic =>
-            diagnostic.Severity == CsvImportDiagnosticSeverity.Error && diagnostic.RowNumber is null);
+        !Diagnostics.Any(diagnostic => diagnostic.RowNumber is null);
 }

@@ -115,7 +115,7 @@ Sensitive confirmations receive a structured request containing:
 - resource keys for title, explanation, and confirm-button label
 - typed formatting arguments
 
-The reusable dialog resolves and renders every field before allowing confirmation. Functional destructive or vault operations remain outside the shell issue.
+The reusable dialog resolves and renders every field before allowing confirmation. Functional destructive or vault operations remain outside the shell layer.
 
 Localized confirmation text is never used to identify the requested operation. The command executes only from the structured canonical action.
 
@@ -135,16 +135,12 @@ External provider navigation is exposed through an injected presentation adapter
 validates the repository-defined handoff and the UI displays the destination and expected origins.
 Launcher success, browser return, and elapsed time never call an execution completion transition.
 
-The Recovery Browser foundation provides a reusable embedded view with localized Back, Forward,
-Reload, Stop, Close, visible-origin, and security-status chrome. It accepts only a validated
-`RecoveryNavigationHandoff` and uses an unpwn-owned profile location. Account-bound sessions may be
-reused only for the same account. Closing shows cleanup progress; a failure remains visible and can be
-retried. Startup presents orphaned session data as an assertive warning with explicit discard/retry,
-never as a resumed provider login. The guided workflow now embeds this view beside the current action
-instructions and checklist. Avalonia code-behind only bridges the validated view-model request into
-the native host and focus lifecycle; canonical checklist and outcome transitions remain in the
-existing execution service. The operating-system browser is retained as an explicit labelled
-fallback, never an automatic downgrade.
+The Recovery Browser view owns localized browser chrome, visible origin/security status, cleanup
+progress, and the presentation bridge from a validated `RecoveryNavigationHandoff` to the native
+host. The guided workspace keeps that view beside the current instruction and checklist. Avalonia
+code-behind may bridge native host and focus lifecycle only; it cannot complete a checklist or action.
+Profile isolation, same-account reuse, orphan handling, cleanup, navigation policy, and the explicit
+operating-system-browser fallback are defined only in [Recovery Browser Security Boundary](RECOVERY_BROWSER.md).
 
 The vault-entry screen exposes local diagnostics independently of vault unlock. Export requires a
 fresh preview of the exact sanitized JSON, an explicit approval checkbox, and a user-selected local

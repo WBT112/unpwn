@@ -6,14 +6,11 @@
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms</value></resheader>
   <data name="App.WindowTitle" xml:space="preserve"><value>unpwn — Recovery workspace</value></data>
   <data name="Common.Cancel" xml:space="preserve"><value>Cancel</value></data>
-  <data name="Common.Failed" xml:space="preserve"><value>FAILED</value></data>
   <data name="Completion.Canceled.Message" xml:space="preserve"><value>No recovery-session state was changed.</value></data>
   <data name="Completion.Canceled.Title" xml:space="preserve"><value>Completion canceled</value></data>
   <data name="Completion.Command.Error" xml:space="preserve"><value>The completion action could not be performed.</value></data>
   <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Complete recovery session</value></data>
   <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Continue to completion review</value></data>
-  <data name="Completion.Confirmation.Consequence" xml:space="preserve"><value>Blocked work and unresolved risks will remain recorded in the final recovery status.</value></data>
-  <data name="Completion.Confirmed.Message" xml:space="preserve"><value>The terminal recovery status and secret-free report were saved in the encrypted session.</value></data>
   <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Recovery session ended</value></data>
   <data name="Completion.Review.Button" xml:space="preserve"><value>Run completion preflight</value></data>
   <data name="Completion.Section.Description" xml:space="preserve"><value>The preflight reloads persisted account, action, risk, and credential state. Reviewing it does not change the session.</value></data>
@@ -145,8 +142,6 @@
   <data name="Import.ReadFailure" xml:space="preserve"><value>The selected CSV file could not be read.</value></data>
   <data name="Import.SelectAnother" xml:space="preserve"><value>Select another CSV file.</value></data>
   <data name="Import.Severity.Error" xml:space="preserve"><value>Error</value></data>
-  <data name="Import.Severity.Information" xml:space="preserve"><value>Information</value></data>
-  <data name="Import.Severity.Warning" xml:space="preserve"><value>Warning</value></data>
   <data name="Import.Step.Mapping" xml:space="preserve"><value>Resolve column mapping</value></data>
   <data name="Import.Step.Review" xml:space="preserve"><value>Review and confirm import</value></data>
   <data name="Import.Step.Source" xml:space="preserve"><value>Select source</value></data>
@@ -239,12 +234,6 @@
   <data name="Status.Success" xml:space="preserve"><value>Success</value></data>
   <data name="Status.UnresolvedRisk" xml:space="preserve"><value>Unresolved risk</value></data>
   <data name="Status.Warning" xml:space="preserve"><value>Warning</value></data>
-  <data name="Vault.Create.Button" xml:space="preserve"><value>Create vault</value></data>
-  <data name="Vault.Create.Tooltip" xml:space="preserve"><value>Vault creation is not implemented in this shell issue.</value></data>
-  <data name="Vault.Open.Button" xml:space="preserve"><value>Open existing vault</value></data>
-  <data name="Vault.Open.Tooltip" xml:space="preserve"><value>Vault unlock is not implemented in this shell issue.</value></data>
-  <data name="Vault.Section.Description" xml:space="preserve"><value>Vault creation and unlock operations will be connected in the dedicated vault-entry implementation.</value></data>
-  <data name="Vault.Section.Title" xml:space="preserve"><value>Recovery vault</value></data>
   <data name="RecoveryBrowser.Back" xml:space="preserve"><value>Back</value></data>
   <data name="RecoveryBrowser.Forward" xml:space="preserve"><value>Forward</value></data>
   <data name="RecoveryBrowser.Reload" xml:space="preserve"><value>Reload</value></data>

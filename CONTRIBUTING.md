@@ -26,14 +26,14 @@ Do not claim checks passed unless they were run.
 
 ## Local checks
 
-Requires the .NET 10 SDK.
+Requires the .NET 10 SDK. The PowerShell security scripts additionally require PowerShell 7.
 
 ```shell
 dotnet restore unpwn.slnx
-dotnet build unpwn.slnx --no-restore
-dotnet test unpwn.slnx --no-build
+dotnet build unpwn.slnx --configuration Release --no-restore
+dotnet test unpwn.slnx --configuration Release --no-build
 dotnet format unpwn.slnx --no-restore --verify-no-changes --severity info
-./eng/verify-native-interop.ps1
+pwsh ./eng/verify-native-interop.ps1
 dotnet test unpwn.slnx --configuration Release --no-build --filter "Category=SecurityRegression"
 ```
 

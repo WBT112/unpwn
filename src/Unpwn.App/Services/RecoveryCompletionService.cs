@@ -57,19 +57,6 @@ public interface IRecoveryCompletionService
         CancellationToken cancellationToken);
 }
 
-public sealed class UnavailableRecoveryCompletionService : IRecoveryCompletionService
-{
-    public Task<RecoveryCompletionReviewResult> ReviewAsync(CancellationToken cancellationToken) =>
-        Task.FromResult(RecoveryCompletionReviewResult.Failure(RecoveryCompletionFailureCode.Locked));
-
-    public Task<RecoveryCompletionOperationResult> CompleteAsync(
-        RecoveryCompletionPreflight reviewedPreflight,
-        bool unresolvedRiskExplicitlyAccepted,
-        bool archive,
-        CancellationToken cancellationToken) =>
-        Task.FromResult(RecoveryCompletionOperationResult.Failure(RecoveryCompletionFailureCode.Locked));
-}
-
 public sealed class RecoveryCompletionService(
     IRecoverySessionService sessionService,
     IAccountInventoryService inventoryService,

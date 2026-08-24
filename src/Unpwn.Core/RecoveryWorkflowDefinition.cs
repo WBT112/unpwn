@@ -119,10 +119,8 @@ public enum RecoveryActionType
     ReviewMfa,
     ReviewRecoveryOptions,
     ReviewConnectedApplications,
-    RevokeApplicationAccess,
     ReviewApiTokens,
     ManualRecovery,
-    RecordUnresolvedRisk,
     DocumentCompletion,
     ReviewSshAndSigningKeys,
 }
