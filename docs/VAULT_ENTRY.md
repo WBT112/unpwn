@@ -27,7 +27,7 @@ Language selection is available before the safety gate, but localized text is ne
 
 A new vault requires:
 
-- an explicitly selected local file;
+- the safe, user-local non-existing file suggested by unpwn, or a deliberately selected alternative;
 - a user-defined password and matching confirmation;
 - acknowledgement that a forgotten vault password cannot be recovered;
 - a minimum length check without arbitrary character-composition rules.
@@ -41,6 +41,9 @@ memory clearing is best effort as described in [Vault Security](VAULT_SECURITY.m
 model do not intentionally retain a reusable password value between vault selections.
 
 Creation uses the existing encrypted SQLite vault implementation with Argon2id key derivation and AES-256-GCM authenticated record encryption. The file is not overwritten when it already exists.
+The normal creation form does not expose a raw path field. **Choose a different location** reveals the
+native picker and path detail only when requested. Opening another vault starts with the native file
+picker; recent-reference removal and destructive file deletion stay under **Manage recent vaults**.
 
 ## Opening and unlocking
 

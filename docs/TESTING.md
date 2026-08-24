@@ -66,6 +66,11 @@ Normal CI never navigates to or mutates live providers.
 
 View-model tests cover locked startup, navigation, command concurrency, validation, persistence failures, runtime language changes, safe-message mapping, guided recovery, account review, browser handoff, credential presentation, and completion review.
 
+Static and headless presentation regressions additionally enforce the shared primary/secondary/
+tertiary/destructive semantics, progressive-disclosure ownership for administrative controls, absence
+of the obsolete session acknowledgement, stage-relevant credential actions, automatic completion
+preflight, and the initially collapsed CSV review.
+
 Avalonia headless tests cover screen-entry focus, focus after validation, dialogs, live-region metadata, browser/assistant interaction, and important accessibility states without opening a normal desktop window. These tests supplement rather than replace the manual Windows/NVDA and Ubuntu/Orca release checklist in [Desktop Accessibility Acceptance](ACCESSIBILITY_ACCEPTANCE.md).
 
 The post-import navigation scenario drives the visible reviewed-import action against a temporary

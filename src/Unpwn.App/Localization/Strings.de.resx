@@ -12,9 +12,6 @@
   <data name="Completion.Confirmation.Action" xml:space="preserve"><value>Wiederherstellungssitzung abschließen</value></data>
   <data name="Completion.Confirmation.Confirm" xml:space="preserve"><value>Zur Abschlussprüfung</value></data>
   <data name="Completion.Confirmed.Title" xml:space="preserve"><value>Wiederherstellungssitzung beendet</value></data>
-  <data name="Completion.Review.Button" xml:space="preserve"><value>Abschlussprüfung ausführen</value></data>
-  <data name="Completion.Section.Description" xml:space="preserve"><value>Die Prüfung lädt den gespeicherten Konten-, Aktions-, Risiko- und Zugangsdatenstatus neu. Die Prüfung selbst verändert die Sitzung nicht.</value></data>
-  <data name="Completion.Section.Title" xml:space="preserve"><value>Abschlussprüfung</value></data>
   <data name="Completion.UnlockHint" xml:space="preserve"><value>Entsperre einen Tresor, bevor du den Sitzungsabschluss prüfst.</value></data>
   <data name="Completion.AcceptRisks" xml:space="preserve"><value>Ich akzeptiere ausdrücklich, dass offene Arbeiten und Risiken verbleiben.</value></data>
   <data name="Completion.AcceptRisks.Detail" xml:space="preserve"><value>Diese Bestätigung erfasst den Zustand „Nacharbeit erforderlich“. Sie bedeutet nicht, dass Konten oder Gerät sicher sind.</value></data>
@@ -258,4 +255,10 @@
   <data name="RecoveryBrowser.Session.Orphaned" xml:space="preserve"><value>Eine frühere Recovery-Browser-Sitzung wurde nicht sauber beendet. Ihre temporären Daten werden nicht automatisch fortgesetzt; lösche sie vor dem Start einer neuen Browser-Sitzung.</value></data>
   <data name="RecoveryBrowser.Session.OrphanedTitle" xml:space="preserve"><value>Temporäre Browser-Sitzungsdaten sind noch vorhanden</value></data>
   <data name="RecoveryBrowser.Session.RetryCleanup" xml:space="preserve"><value>Sichere Bereinigung wiederholen</value></data>
+  <data name="Completion.AutoReview.Loading" xml:space="preserve"><value>Der aktuell gespeicherte Recovery-Stand wird geprüft…</value></data>
+  <data name="Completion.BeforeFinish.Title" xml:space="preserve"><value>Vor dem Abschluss</value></data>
+  <data name="Completion.BeforeFinish.Help" xml:space="preserve"><value>Bearbeite diese Punkte oder akzeptiere das verbleibende Risiko ausdrücklich, sofern dies zulässig ist.</value></data>
+  <data name="Completion.Details.Title" xml:space="preserve"><value>Recovery-Details und Bericht</value></data>
+  <data name="Completion.SessionManagement.Title" xml:space="preserve"><value>Sitzungsverwaltung</value></data>
+  <data name="Completion.SessionManagement.Help" xml:space="preserve"><value>Archivieren bewahrt deinen Recovery-Verlauf zur Prüfung auf. Es beendet keine offenen Arbeiten und beweist nicht, dass Konten sicher sind.</value></data>
 </root>

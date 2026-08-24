@@ -38,7 +38,7 @@ public partial class VaultEntryView : AccessibleScreen
         }
     }
 
-    private async void ChooseOpenPathButton_OnClick(
+    private async void OpenAnotherVaultButton_OnClick(
         object? sender,
         RoutedEventArgs eventArgs)
     {
@@ -52,16 +52,16 @@ public partial class VaultEntryView : AccessibleScreen
         {
             Title = viewModel.Localization.GetString("Vault.FilePicker.Open.Title"),
             AllowMultiple = false,
-            FileTypeFilter =
-            [
-                CreateVaultFileType(viewModel),
-            ],
+            FileTypeFilter = [CreateVaultFileType(viewModel)],
         });
         var file = files.SingleOrDefault();
-        if (file?.Path.IsFile == true)
+        if (file?.Path.IsFile != true)
         {
-            viewModel.OpenPath = file.Path.LocalPath;
+            return;
         }
+
+        viewModel.OpenPath = file.Path.LocalPath;
+        viewModel.ShowOpenVaultCommand.Execute(null);
     }
 
     private static FilePickerFileType CreateVaultFileType(

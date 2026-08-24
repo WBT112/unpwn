@@ -13,13 +13,9 @@
   <data name="Dashboard.State.Corrupted.Message" xml:space="preserve"><value>Im verschlüsselten Sitzungsdatensatz fehlen erforderliche Daten oder die sichere Integritätsprüfung ist fehlgeschlagen. Er wurde nicht überschrieben.</value></data>
   <data name="Dashboard.Intake.NameLabel" xml:space="preserve"><value>Name der Sitzung</value></data>
   <data name="Dashboard.Intake.NameWatermark" xml:space="preserve"><value>Lokaler Name der Wiederherstellungssitzung</value></data>
-  <data name="Dashboard.Intake.Indicators.Title" xml:space="preserve"><value>Benötigt ein primärer Wiederherstellungskanal sofortige Aufmerksamkeit?</value></data>
   <data name="Dashboard.Intake.Indicators.Help" xml:space="preserve"><value>Mögliche fremde Kontrolle über eine primäre E-Mail-Adresse oder einen Wiederherstellungskanal zeigt einen sofortigen Hinweis. Erfasse den Zugriff später pro Konto, damit unpwn sicher einen Wiederherstellungsweg wählen kann. Diese Angabe beweist keine Kompromittierung.</value></data>
   <data name="Dashboard.Intake.Indicator.CompromisedRecovery" xml:space="preserve"><value>Eine primäre E-Mail-Adresse oder ein Wiederherstellungskanal könnte unter fremder Kontrolle stehen</value></data>
-  <data name="Dashboard.Intake.SecurityWarning" xml:space="preserve"><value>Der optionale Hinweis wird im verschlüsselten Tresor gespeichert. Er ändert ausschließlich Empfehlungen.</value></data>
-  <data name="Dashboard.Intake.Acknowledge" xml:space="preserve"><value>Ich verstehe, dass dieser Hinweis Prioritäten steuert und keine Kompromittierung eines Kontos oder Geräts beweist.</value></data>
   <data name="Dashboard.Intake.Create" xml:space="preserve"><value>Wiederherstellungssitzung anlegen</value></data>
-  <data name="Dashboard.Intake.SkipHint" xml:space="preserve"><value>Diese Warnung ist optional. Lasse sie deaktiviert, wenn sie nicht zutrifft.</value></data>
   <data name="Dashboard.Session.Status.Active" xml:space="preserve"><value>Aktiv</value></data>
   <data name="Dashboard.Session.Status.Paused" xml:space="preserve"><value>Pausiert</value></data>
   <data name="Dashboard.Session.Status.Archived" xml:space="preserve"><value>Archiviert</value></data>
@@ -29,26 +25,17 @@
   <data name="Dashboard.Session.Vault" xml:space="preserve"><value>Tresor: {0}</value></data>
   <data name="Dashboard.Emergency.Title" xml:space="preserve"><value>Wiederherstellungskanal zuerst prüfen</value></data>
   <data name="Dashboard.Emergency.Message" xml:space="preserve"><value>Deine Angaben deuten darauf hin, dass ein primärer Wiederherstellungskanal oder ein kritischer Zugriff sofortige Aufmerksamkeit benötigen könnte. Das ist eine beratende Priorisierung und kein automatisches Erkennungsergebnis.</value></data>
-  <data name="Dashboard.Critical.Title" xml:space="preserve"><value>Kritische Konten</value></data>
   <data name="Dashboard.Critical.Readiness" xml:space="preserve"><value>{0} von {1} kritischen Konten bearbeitet.</value></data>
-  <data name="Dashboard.Accounts.Title" xml:space="preserve"><value>Kontenabdeckung</value></data>
   <data name="Dashboard.Accounts.Coverage" xml:space="preserve"><value>{0} von {1} Konten sind vollständig geprüft.</value></data>
-  <data name="Dashboard.Progress.Title" xml:space="preserve"><value>Wiederherstellungsfortschritt</value></data>
   <data name="Dashboard.Progress.Weighted" xml:space="preserve"><value>Fortschritt: {0:P0}</value></data>
   <data name="Dashboard.Progress.Disclaimer" xml:space="preserve"><value>Fortschritt ist kein Sicherheitsurteil. Zugriffsverlust, Blockaden, Fehlschläge und ungelöste Risiken bleiben getrennt sichtbar.</value></data>
   <data name="Dashboard.Metric.Unavailable" xml:space="preserve"><value>Keine Sitzungsdaten verfügbar.</value></data>
   <data name="Dashboard.Alert.SectionTitle" xml:space="preserve"><value>Arbeit mit weiterem Handlungsbedarf</value></data>
-  <data name="Dashboard.Alert.Blocked.Title" xml:space="preserve"><value>Blockierte erforderliche Aktionen</value></data>
   <data name="Dashboard.Alert.Blocked.Count" xml:space="preserve"><value>{0} blockierte erforderliche Aktion(en)</value></data>
-  <data name="Dashboard.Alert.Failed.Title" xml:space="preserve"><value>Fehlgeschlagene erforderliche Aktionen</value></data>
   <data name="Dashboard.Alert.Failed.Count" xml:space="preserve"><value>{0} fehlgeschlagene erforderliche Aktion(en)</value></data>
-  <data name="Dashboard.Alert.Unresolved.Title" xml:space="preserve"><value>Ungelöste Risiken</value></data>
   <data name="Dashboard.Alert.Unresolved.Count" xml:space="preserve"><value>{0} ungelöste(s) Risiko/Risiken</value></data>
-  <data name="Dashboard.Alert.LostAccess.Title" xml:space="preserve"><value>Konten mit verlorenem Zugriff</value></data>
   <data name="Dashboard.Alert.LostAccess.Count" xml:space="preserve"><value>{0} Konto/Konten mit verlorenem Zugriff</value></data>
-  <data name="Dashboard.Alert.Export.Title" xml:space="preserve"><value>Zugangsdaten warten auf Export</value></data>
   <data name="Dashboard.Alert.Export.Count" xml:space="preserve"><value>{0} Zugangsdaten warten auf Export</value></data>
-  <data name="Dashboard.Alert.Deletion.Title" xml:space="preserve"><value>Exportierte Zugangsdaten warten auf Löschung</value></data>
   <data name="Dashboard.Alert.Deletion.Count" xml:space="preserve"><value>{0} Zugangsdaten warten auf Löschung</value></data>
   <data name="Dashboard.Alert.Open" xml:space="preserve"><value>Betroffene Arbeit öffnen</value></data>
   <data name="Dashboard.Recommendation.Title" xml:space="preserve"><value>Empfohlener nächster Schritt</value></data>
@@ -79,7 +66,6 @@
   <data name="Dashboard.Archive.Confirmation.Consequence" xml:space="preserve"><value>Die Sitzung bleibt verschlüsselt und lesbar, Änderungen am Wiederherstellungszustand werden jedoch beendet. Konten werden dadurch nicht als sicher oder abgeschlossen markiert.</value></data>
   <data name="Dashboard.Archive.Confirmation.Confirm" xml:space="preserve"><value>Sitzung archivieren</value></data>
   <data name="Dashboard.Validation.NameRequired" xml:space="preserve"><value>Gib einen Sitzungsnamen ein.</value></data>
-  <data name="Dashboard.Validation.AcknowledgementRequired" xml:space="preserve"><value>Bestätige den Sicherheitshinweis, bevor du die Sitzung anlegst.</value></data>
   <data name="Dashboard.Validation.Locked" xml:space="preserve"><value>Der Tresor ist gesperrt.</value></data>
   <data name="Dashboard.Validation.InvalidInput" xml:space="preserve"><value>Prüfe Sitzungsnamen und Bestätigung der Hinweise.</value></data>
   <data name="Dashboard.Validation.Corrupted" xml:space="preserve"><value>Der vorhandene Sitzungsdatensatz ist beschädigt und wurde nicht ersetzt.</value></data>
@@ -92,13 +78,13 @@
   <data name="Dashboard.Status.Empty.Title" xml:space="preserve"><value>Noch keine Wiederherstellungssitzung</value></data>
   <data name="Dashboard.Status.Empty.Message" xml:space="preserve"><value>Lege eine Sitzung an und passe optional die Priorität der Wiederherstellungskanäle an.</value></data>
   <data name="Dashboard.Status.Corrupted.Title" xml:space="preserve"><value>Wiederherstellungssitzung nicht verfügbar</value></data>
-  <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>Der verschlüsselte Datensatz konnte nicht sicher verarbeitet werden und blieb unverändert.</value></data>
+  <data name="Dashboard.Status.Corrupted.Message" xml:space="preserve"><value>Die Recovery-Daten konnten nicht sicher gelesen werden und blieben unverändert.</value></data>
   <data name="Dashboard.Status.Active.Title" xml:space="preserve"><value>Wiederherstellungssitzung aktiv</value></data>
   <data name="Dashboard.Status.Active.Message" xml:space="preserve"><value>Die empfohlene nächste Aufgabe und Arbeit mit weiterem Handlungsbedarf werden unten angezeigt.</value></data>
   <data name="Dashboard.Status.Paused.Title" xml:space="preserve"><value>Wiederherstellungssitzung pausiert</value></data>
   <data name="Dashboard.Status.Paused.Message" xml:space="preserve"><value>Setze die Sitzung fort, bevor du den Wiederherstellungszustand änderst.</value></data>
   <data name="Dashboard.Status.Archived.Title" xml:space="preserve"><value>Wiederherstellungssitzung archiviert</value></data>
-  <data name="Dashboard.Status.Archived.Message" xml:space="preserve"><value>Der verschlüsselte Datensatz bleibt zur Prüfung verfügbar, Zustandsänderungen sind jedoch deaktiviert.</value></data>
+  <data name="Dashboard.Status.Archived.Message" xml:space="preserve"><value>Der Recovery-Verlauf bleibt zur Prüfung verfügbar, Änderungen sind jedoch deaktiviert.</value></data>
   <data name="Dashboard.Status.Emergency.Title" xml:space="preserve"><value>Wirkungsstarker Wiederherstellungskanal muss geprüft werden</value></data>
   <data name="Dashboard.Status.Emergency.Message" xml:space="preserve"><value>Die Vorfallangaben erzeugen eine beratende Priorität. Sie beweisen keine Kompromittierung eines Kontos oder Geräts.</value></data>
   <data name="Dashboard.Status.Created.Title" xml:space="preserve"><value>Wiederherstellungssitzung angelegt</value></data>
@@ -109,4 +95,7 @@
   <data name="Dashboard.Status.Deferred.Title" xml:space="preserve"><value>Konto zurückgestellt</value></data>
   <data name="Dashboard.Status.Deferred.Message" xml:space="preserve"><value>Das Konto bleibt ungelöst und wurde für diesen Durchlauf hinter die anderen offenen Konten verschoben.</value></data>
   <data name="Dashboard.Recommendation.Approach" xml:space="preserve"><value>Wiederherstellungsweg: {0}</value></data>
+  <data name="Dashboard.Intake.SessionDetails" xml:space="preserve"><value>Vorgeschlagenen Sitzungsnamen ändern</value></data>
+  <data name="Dashboard.Progress.OrientationTitle" xml:space="preserve"><value>Fortschritt der Wiederherstellung</value></data>
+  <data name="Dashboard.Details.Title" xml:space="preserve"><value>Recovery-Details und Sitzungsverwaltung</value></data>
 </root>

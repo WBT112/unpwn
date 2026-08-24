@@ -18,7 +18,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     private readonly IConfirmationDialogService _confirmationDialog;
     private string _sessionName = string.Empty;
     private bool _compromisedRecoveryChannel;
-    private bool _securityWarningAcknowledged;
     private string? _validationKey;
 
     public DashboardScreenViewModel(
@@ -113,19 +112,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         set => SetProperty(ref _compromisedRecoveryChannel, value);
     }
 
-    public bool SecurityWarningAcknowledged
-    {
-        get => _securityWarningAcknowledged;
-        set
-        {
-            if (SetProperty(ref _securityWarningAcknowledged, value))
-            {
-                ClearValidation();
-                CreateSessionCommand.RaiseCanExecuteChanged();
-            }
-        }
-    }
-
     public bool IsLockedState => _sessionService.LoadState == RecoverySessionLoadState.Locked;
 
     public bool IsLoadingState => _sessionService.LoadState == RecoverySessionLoadState.Loading;
@@ -155,6 +141,9 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     public bool HasCredentialExports => Dashboard?.CredentialsAwaitingExport > 0;
 
     public bool HasCredentialDeletions => Dashboard?.CredentialsAwaitingDeletion > 0;
+
+    public bool HasNeedsAttention => HasBlockedActions || HasFailedActions ||
+        HasUnresolvedRisks || HasLostAccess || HasCredentialExports || HasCredentialDeletions;
 
     public bool CanSkipRecommendation =>
         IsActiveSession && Dashboard?.Recommendation.AccountId is not null;
@@ -351,8 +340,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
 
     private bool CanCreateSession() =>
         _sessionService.LoadState == RecoverySessionLoadState.Empty &&
-        !string.IsNullOrWhiteSpace(SessionName) &&
-        SecurityWarningAcknowledged;
+        !string.IsNullOrWhiteSpace(SessionName);
 
     protected override void RefreshLocalization()
     {
@@ -375,17 +363,10 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
             return;
         }
 
-        if (!SecurityWarningAcknowledged)
-        {
-            SetValidation("Dashboard.Validation.AcknowledgementRequired");
-            return;
-        }
-
         var result = await _sessionService.CreateAsync(
             new RecoverySessionCreateRequest(
                 SessionName,
-                BuildIndicators(),
-                SecurityWarningAcknowledged),
+                BuildIndicators()),
             cancellationToken);
         if (!result.Succeeded)
         {
@@ -555,6 +536,7 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(HasLostAccess));
         OnPropertyChanged(nameof(HasCredentialExports));
         OnPropertyChanged(nameof(HasCredentialDeletions));
+        OnPropertyChanged(nameof(HasNeedsAttention));
         OnPropertyChanged(nameof(CanSkipRecommendation));
         NotifyLocalizedProperties();
         RaiseCommandStates();
@@ -667,7 +649,6 @@ public sealed class DashboardScreenViewModel : LocalizedScreenViewModel
     {
         SessionName = string.Empty;
         CompromisedRecoveryChannel = false;
-        SecurityWarningAcknowledged = false;
         ClearValidation();
     }
 

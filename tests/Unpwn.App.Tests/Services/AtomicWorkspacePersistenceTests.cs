@@ -26,8 +26,7 @@ public sealed class AtomicWorkspacePersistenceTests
         var result = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Incident",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None);
 
         Assert.False(result.Succeeded);
@@ -82,8 +81,7 @@ public sealed class AtomicWorkspacePersistenceTests
         var created = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Incident",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None);
         Assert.True(created.Succeeded);
         var active = service.CurrentSession!;

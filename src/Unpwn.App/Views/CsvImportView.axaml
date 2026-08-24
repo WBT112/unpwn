@@ -15,17 +15,24 @@
     <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="14">
         <TextBlock Classes="section-title" Text="{DynamicResource Import.Step.Source}" />
-        <StackPanel Orientation="Horizontal" Spacing="12">
+        <StackPanel x:Name="SourcePromptPanel" Orientation="Horizontal" Spacing="12">
           <Button x:Name="OpenCsvButton"
-                  Classes="initial-focus"
+                  Classes="primary initial-focus"
                   AutomationProperties.AutomationId="import-open-csv"
                   TabIndex="4"
                   Click="OpenCsvButton_OnClick"
                   Content="{DynamicResource Import.ChooseFile.Button}" />
+        </StackPanel>
+        <StackPanel x:Name="SelectedSourcePanel" IsVisible="False"
+                    Orientation="Horizontal" Spacing="12">
           <TextBlock x:Name="SelectedFileText"
                      VerticalAlignment="Center"
                      Text="{DynamicResource Import.NoFile}"
                      TextTrimming="CharacterEllipsis" />
+          <Button Classes="tertiary"
+                  AutomationProperties.AutomationId="import-choose-another"
+                  Click="OpenCsvButton_OnClick"
+                  Content="{DynamicResource Import.ChooseAnotherFile.Button}" />
         </StackPanel>
 
         <Border x:Name="PasswordWarningBorder"
@@ -104,7 +111,8 @@
       </StackPanel>
     </Border>
 
-    <Border Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
+    <Border x:Name="ReviewPanel" IsVisible="False"
+            Padding="18" CornerRadius="8" Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
       <StackPanel Spacing="12">
         <TextBlock Classes="section-title" Text="{DynamicResource Import.Step.Review}" />
         <ItemsControl x:Name="DiagnosticsItems"
@@ -130,6 +138,7 @@
                     SelectionChanged="DuplicateResolutionCombo_OnSelectionChanged" />
         </StackPanel>
         <Button x:Name="ImportReviewedButton"
+                Classes="primary"
                 AutomationProperties.AutomationId="import-reviewed"
                 HorizontalAlignment="Left"
                 IsEnabled="False"

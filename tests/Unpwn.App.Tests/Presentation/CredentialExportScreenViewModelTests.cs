@@ -122,6 +122,38 @@ public sealed class CredentialExportScreenViewModelTests
     }
 
     [Fact]
+    public async Task HandoffProjectsExactlyTheNextRelevantLifecycleStage()
+    {
+        var context = CreateContext();
+        await context.ViewModel.RefreshCommand.ExecuteAsync();
+
+        Assert.True(context.ViewModel.SelectedCredentialNeedsUse);
+        Assert.False(context.ViewModel.SelectedCredentialNeedsConfirmation);
+        Assert.False(context.ViewModel.HasCredentialsReadyForExport);
+
+        await context.ViewModel.MarkUsedCommand.ExecuteAsync();
+        Assert.False(context.ViewModel.SelectedCredentialNeedsUse);
+        Assert.True(context.ViewModel.SelectedCredentialNeedsConfirmation);
+
+        await context.ViewModel.ConfirmCredentialCommand.ExecuteAsync();
+        Assert.False(context.ViewModel.SelectedCredentialNeedsConfirmation);
+        Assert.True(context.ViewModel.HasCredentialsReadyForExport);
+
+        context.Repository.SetExported();
+        await context.ViewModel.RefreshCommand.ExecuteAsync();
+        Assert.False(context.ViewModel.HasCredentialsReadyForExport);
+        Assert.True(context.ViewModel.SelectedCredentialAwaitsImportConfirmation);
+
+        await context.ViewModel.ConfirmImportCommand.ExecuteAsync();
+        Assert.False(context.ViewModel.SelectedCredentialAwaitsImportConfirmation);
+        Assert.True(context.ViewModel.SelectedCredentialAwaitsCleanup);
+
+        await context.ViewModel.ConfirmCleanupCommand.ExecuteAsync();
+        Assert.False(context.ViewModel.SelectedCredentialAwaitsCleanup);
+        Assert.True(context.ViewModel.SelectedCredentialCanBeRemoved);
+    }
+
+    [Fact]
     public async Task VaultLockClearsRevealClipboardAndCredentialList()
     {
         var context = CreateContext();

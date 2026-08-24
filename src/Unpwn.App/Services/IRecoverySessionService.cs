@@ -49,8 +49,7 @@ public sealed record RecoverySessionOperationResult(
 
 public sealed record RecoverySessionCreateRequest(
     string Name,
-    IncidentIndicator Indicators,
-    bool SecurityWarningAcknowledged);
+    IncidentIndicator Indicators);
 
 public interface IEncryptedVaultRecordStore
 {

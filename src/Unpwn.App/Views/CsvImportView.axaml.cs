@@ -122,6 +122,9 @@ public partial class CsvImportView : AccessibleScreen
         }
 
         _hasReadFailure = false;
+        SourcePromptPanel.IsVisible = false;
+        SelectedSourcePanel.IsVisible = true;
+        ReviewPanel.IsVisible = true;
         SelectedFileText.Text = fileName;
         PasswordWarningBorder.IsVisible = _analysis.ContainsPasswordColumns;
         RefreshPasswordWarning();
@@ -529,6 +532,9 @@ public partial class CsvImportView : AccessibleScreen
         _openSelectedStream = null;
         _analysis = null;
         _hasReadFailure = true;
+        SourcePromptPanel.IsVisible = true;
+        SelectedSourcePanel.IsVisible = false;
+        ReviewPanel.IsVisible = true;
         _lastCandidates = [];
         _lastDiagnostics =
         [

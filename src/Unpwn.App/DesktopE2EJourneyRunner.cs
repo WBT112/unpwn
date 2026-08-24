@@ -226,13 +226,13 @@ internal sealed class DesktopE2EJourneyRunner(
             }
         });
 
-        await StepAsync("correct-and-retry-import", "import-open-csv", async () =>
+        await StepAsync("correct-and-retry-import", "import-choose-another", async () =>
         {
             await File.WriteAllTextAsync(
                 _configuration.CsvFixturePath,
                 "service,username,url,password\n" +
                 $"synthetic,user@example.invalid,{_configuration.PasswordChangeUri},synthetic-ignored-value\n");
-            await ClickAsync("import-open-csv");
+            await ClickAsync("import-choose-another");
             await WaitForControlAsync<Button>("import-reviewed", control => control.IsEnabled);
             await ClickAsync("import-reviewed");
             await WaitUntilAsync(
@@ -377,10 +377,12 @@ internal sealed class DesktopE2EJourneyRunner(
     {
         await StepAsync("create-vault", "vault-primary-action", async () =>
         {
+            await AssertPrimaryActionAsync("vault-primary-action");
             await ClickAsync("vault-primary-action");
-            var path = await WaitForControlAsync<TextBox>("vault-create-path");
-            if (string.IsNullOrWhiteSpace(path.Text) ||
-                !IsWithinDirectory(path.Text, _configuration.DataRoot))
+            var vault = Shell.CurrentScreen as VaultEntryScreenViewModel ??
+                throw Failure("The vault workspace was not active after choosing creation.");
+            if (string.IsNullOrWhiteSpace(vault.CreatePath) ||
+                !IsWithinDirectory(vault.CreatePath, _configuration.DataRoot))
             {
                 throw Failure("The default vault path escaped the isolated data root.");
             }
@@ -399,13 +401,14 @@ internal sealed class DesktopE2EJourneyRunner(
     {
         await StepAsync("create-session", "dashboard-create-session", async () =>
         {
-            var name = await WaitForControlAsync<TextBox>("dashboard-session-name");
-            if (string.IsNullOrWhiteSpace(name.Text))
+            var dashboard = Shell.CurrentScreen as DashboardScreenViewModel ??
+                throw Failure("The recovery overview was not active for session creation.");
+            if (string.IsNullOrWhiteSpace(dashboard.SessionName))
             {
                 throw Failure("The automatic recovery session name was empty.");
             }
 
-            await SetCheckedAsync("dashboard-security-acknowledge", true);
+            await AssertPrimaryActionAsync("dashboard-create-session");
             await ClickAsync("dashboard-create-session");
             await WaitUntilAsync(
                 () => Shell.CurrentScreen.Route == AppRoute.CsvImport,
@@ -417,26 +420,43 @@ internal sealed class DesktopE2EJourneyRunner(
     {
         await StepAsync("open-csv-import", "import-open-csv", async () =>
         {
+            await AssertPrimaryActionAsync("import-open-csv");
             await ClickAsync("import-open-csv");
             await WaitForControlAsync<Button>("import-reviewed", control => control.IsEnabled);
+            await AssertPrimaryActionAsync("import-reviewed");
             await ClickAsync("import-reviewed");
         });
     }
 
     private async Task CategorizeImportedAccountAsync()
     {
-        await StepAsync("categorize-accounts", "accounts-triage-list", async () =>
+        await StepAsync("categorize-accounts", "accounts-current-triage-task", async () =>
         {
-            var accounts = await WaitForControlAsync<ListBox>(
-                "accounts-triage-list",
-                control => control.Items.Count == 1);
-            accounts.SelectedIndex = 0;
-            var category = await WaitForControlAsync<ComboBox>(
-                "accounts-category",
-                control => control.Items.Count > 0);
-            category.SelectedIndex = 0;
-            await Task.Yield();
-            await ClickAsync("accounts-category-save");
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen is AccountInventoryScreenViewModel { HasAccounts: true },
+                "account-triage-workspace");
+            var accounts = (AccountInventoryScreenViewModel)Shell.CurrentScreen;
+            if (accounts.HasRemainingCategoryReview)
+            {
+                var category = await WaitForControlAsync<ComboBox>(
+                    "accounts-category",
+                    control => control.Items.Count > 0);
+                category.SelectedIndex = 0;
+                await Task.Yield();
+                await AssertPrimaryActionAsync("accounts-category-save");
+                await ClickAsync("accounts-category-save");
+            }
+            else
+            {
+                if (FindControl<Control>("accounts-category") is not null)
+                {
+                    throw Failure("An automatically categorized account exposed mandatory manual triage.");
+                }
+
+                Record("automatic-category", "accounts-continue-recovery", "no-manual-edit-required");
+            }
+
+            await AssertPrimaryActionAsync("accounts-continue-recovery");
             await ClickAsync("accounts-continue-recovery");
         });
     }
@@ -623,6 +643,7 @@ internal sealed class DesktopE2EJourneyRunner(
             () => Shell.CurrentScreen.Route == AppRoute.CredentialsExport,
             "credential-handoff-workspace");
         Record("credential-handoff", "credentials-continue-completion", "opened");
+        await AssertPrimaryActionAsync("credentials-continue-completion");
         await ClickAsync("credentials-continue-completion");
         await WaitUntilAsync(
             () => Shell.CurrentScreen is CompletionScreenViewModel,
@@ -633,18 +654,14 @@ internal sealed class DesktopE2EJourneyRunner(
             $"route={Shell.CurrentScreen.Route};status={Shell.CurrentStatus.State}");
 
         var completion = (CompletionScreenViewModel)Shell.CurrentScreen;
-        if (!completion.HasReview)
-        {
-            await ClickAsync("completion-review");
-        }
-
         await WaitUntilAsync(() => completion.HasReview, "completion-report");
-        Record("completion-report", "completion-review", "visible");
+        Record("completion-report", "completion-loading", "visible");
         if (completion.RequiresRiskAcceptance)
         {
             await SetCheckedAsync("completion-accept-risks", true);
         }
 
+        await AssertPrimaryActionAsync("completion-complete");
         await ClickAsync("completion-complete");
         await ConfirmDialogAsync();
         await WaitUntilAsync(() => completion.IsReadOnly, "completion-finalized");
@@ -727,6 +744,17 @@ internal sealed class DesktopE2EJourneyRunner(
     }
 
     private async Task ConfirmDialogAsync() => await ClickAsync("confirmation-confirm");
+
+    private async Task AssertPrimaryActionAsync(string automationId)
+    {
+        var button = await WaitForControlAsync<Button>(
+            automationId,
+            control => control.IsEnabled && control.IsVisible);
+        if (!button.Classes.Contains("primary"))
+        {
+            throw Failure($"The normal action '{automationId}' was not presented as primary.");
+        }
+    }
 
     private async Task StepAsync(
         string step,

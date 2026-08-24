@@ -31,8 +31,9 @@ Serialized plaintext buffers are cleared after encrypted writes. Locking the vau
 The session name is prefilled from the local operating-system user name as
 `<username>-Recovery`. Unsuitable characters are normalized locally, the result is limited to the
 existing 120-character session-name boundary, and a missing or unusable user name falls back to
-`Recovery`. The suggestion remains editable. No directory or network service is queried, and no
-additional identity metadata is persisted.
+`Recovery`. The normal path uses that suggestion without asking for a name; editing is available in
+secondary session details. No directory or network service is queried, and no additional identity
+metadata is persisted.
 
 The only optional structured guidance input is possible third-party control of a primary email or
 recovery channel. It produces the immediate `SecureRecoveryChannel` advisory. Account-specific access
@@ -40,8 +41,8 @@ is confirmed later inside the relevant recovery execution, where it can safely i
 approach without changing the category queue. Skipping the warning uses the normal recovery order.
 
 Free-form incident narrative and structured choices without a recovery consumer are not collected.
-The interface explains the effect before creation and requires acknowledgement that the answers guide
-prioritization but do not prove compromise.
+The interface explains beside the option that it guides prioritization but does not prove compromise.
+Creating the session does not require a second acknowledgement of the same limitation.
 
 ## Advisory recovery-channel priority
 
@@ -61,7 +62,8 @@ blocker, required-action failure, or unresolved risk. Internal readiness termino
 
 ### Supporting metrics
 
-The dashboard also displays:
+The compact orientation summary shows critical-account handling and reviewed-account coverage. The
+following supporting metrics remain available in expandable recovery details:
 
 - fully reviewed accounts compared with total accounts;
 - simple recovery progress;
@@ -91,6 +93,8 @@ important visible condition:
 - generated-credential export and cleanup after account work.
 
 Each warning summary carries an optional account identifier and action identifier into the shell navigation context. Account and workflow screens can use this target without parsing localized text.
+The normal overview combines these warnings into one compact **Needs attention** area instead of
+presenting a separate dashboard card for every internal counter.
 
 ## Lifecycle
 

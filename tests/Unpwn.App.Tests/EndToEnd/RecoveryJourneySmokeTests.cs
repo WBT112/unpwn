@@ -586,8 +586,7 @@ public sealed class RecoveryJourneySmokeTests
             var result = await Session.CreateAsync(
                 new RecoverySessionCreateRequest(
                     "Synthetic end-to-end recovery",
-                    IncidentIndicator.None,
-                    SecurityWarningAcknowledged: true),
+                    IncidentIndicator.None),
                 CancellationToken.None);
             Assert.True(result.Succeeded);
             await Inventory.InitializeAsync(CancellationToken.None);

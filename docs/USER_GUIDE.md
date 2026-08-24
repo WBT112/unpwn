@@ -43,7 +43,7 @@ After a vault is successfully created, opened, or unlocked, password fields are 
 ### 3. Create the recovery session
 
 unpwn suggests a local session name such as **Tobi-Recovery** from the operating-system user name. You
-can edit it before creation. If no usable local user name is available, the suggestion is
+normally create the session with that suggestion; editing is available under session details. If no usable local user name is available, the suggestion is
 **Recovery**. The suggestion is created locally; unpwn does not query a directory service or derive it
 from imported account or email data.
 
@@ -143,6 +143,10 @@ Real providers and generic/manual workflows continue to use Reveal/Copy/manual e
 
 Move newly generated credentials to an established password manager when appropriate.
 
+The credential workspace shows only the next handoff action for the selected password. Standalone
+generation and lifecycle corrections are advanced tools; replacement passwords normally come from
+the current recovery step.
+
 Plaintext exports such as CSV are sensitive. Avoid synchronized folders where possible, import the file promptly, and remove it afterwards if you no longer need it. File deletion does not guarantee forensic erasure.
 
 ### 10. Review unresolved work and finish explicitly
@@ -151,7 +155,9 @@ Before finishing, review critical accounts, blocked/failed actions, lost access,
 
 If a previous Recovery Browser session did not end cleanly, unpwn requires explicit cleanup before a new embedded provider session. Cleanup means the dedicated temporary browser data was removed according to the application lifecycle; it is not a forensic-erasure guarantee and it does not complete any provider action.
 
-A high progress value does not mean that everything is secure. Completion runs a current preflight and ends only through an explicit terminal choice and secret-free final report.
+A high progress value does not mean that everything is secure. Opening Completion automatically runs
+a current preflight. Outstanding work appears first with direct actions; finishing still requires one
+explicit terminal choice. Report export and session archiving remain secondary to that decision.
 
 ## Important limits
 

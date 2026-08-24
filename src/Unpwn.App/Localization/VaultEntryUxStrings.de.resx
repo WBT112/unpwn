@@ -12,4 +12,7 @@
   <data name="Vault.Choice.TrustedAssessment" xml:space="preserve"><value>Zur Vertrauensprüfung des Geräts zurück</value></data>
   <data name="Vault.Unlocked.ReassessTrustedDevice" xml:space="preserve"><value>Zur Vertrauensprüfung des Geräts zurück</value></data>
   <data name="Vault.Create.DefaultPathHint" xml:space="preserve"><value>unpwn hat einen lokalen benutzerspezifischen Speicherort gewählt. Du kannst vor dem Erstellen einen anderen Speicherort auswählen.</value></data>
+  <data name="Vault.Create.ChooseDifferentLocation" xml:space="preserve"><value>Anderen Speicherort wählen</value></data>
+  <data name="Vault.Open.ChooseAnother" xml:space="preserve"><value>Andere Tresordatei auswählen</value></data>
+  <data name="Vault.Recent.ManageTitle" xml:space="preserve"><value>Zuletzt verwendete Tresore verwalten</value></data>
 </root>

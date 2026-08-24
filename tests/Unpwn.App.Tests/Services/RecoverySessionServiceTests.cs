@@ -23,8 +23,7 @@ public sealed class RecoverySessionServiceTests
         var result = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Recovery session",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None);
 
         Assert.Equal(RecoverySessionLoadState.Loaded, service.LoadState);
@@ -66,8 +65,7 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Deferred work",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None)).Succeeded);
         var accountId = Guid.NewGuid();
         var account = new RecoveryAccountDashboardEntry(
@@ -127,8 +125,7 @@ public sealed class RecoverySessionServiceTests
         var result = await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Replacement",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None);
 
         Assert.Equal(RecoverySessionLoadState.Corrupted, service.LoadState);
@@ -148,8 +145,7 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Current schema",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None)).Succeeded);
         var currentJson = Encoding.UTF8.GetString(Assert.IsType<byte[]>(store.StoredRecord));
         store.StoredRecord = Encoding.UTF8.GetBytes(currentJson.Replace(
@@ -175,8 +171,7 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Current category schema",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None)).Succeeded);
         var account = new RecoveryAccountDashboardEntry(
             Guid.NewGuid(),
@@ -222,8 +217,7 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Lifecycle",
-                IncidentIndicator.CompromisedRecoveryChannel,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.CompromisedRecoveryChannel),
             CancellationToken.None)).Succeeded);
 
         currentTime = currentTime.AddMinutes(1);
@@ -253,8 +247,7 @@ public sealed class RecoverySessionServiceTests
         Assert.True((await service.CreateAsync(
             new RecoverySessionCreateRequest(
                 "Memory boundary",
-                IncidentIndicator.None,
-                SecurityWarningAcknowledged: true),
+                IncidentIndicator.None),
             CancellationToken.None)).Succeeded);
 
         service.ClearForLock();

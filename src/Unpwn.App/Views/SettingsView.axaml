@@ -42,7 +42,7 @@
                      Text="{DynamicResource Vault.Diagnostics.Title}" />
           <TextBlock Text="{DynamicResource Vault.Diagnostics.Description}"
                      TextWrapping="Wrap" />
-          <Button HorizontalAlignment="Left"
+          <Button Classes="secondary" HorizontalAlignment="Left"
                   AutomationProperties.AutomationId="settings-diagnostics-preview"
                   Command="{Binding CreateDiagnosticPreviewCommand}"
                   Content="{DynamicResource Vault.Diagnostics.Preview}" />
@@ -67,7 +67,7 @@
             <CheckBox AutomationProperties.AutomationId="settings-diagnostics-approve"
                       IsChecked="{Binding DiagnosticPreviewApproved, Mode=TwoWay}"
                       Content="{DynamicResource Vault.Diagnostics.Approve}" />
-            <Button HorizontalAlignment="Left"
+            <Button Classes="primary" HorizontalAlignment="Left"
                     AutomationProperties.AutomationId="settings-diagnostics-export"
                     Command="{Binding ExportDiagnosticsCommand}"
                     Content="{DynamicResource Vault.Diagnostics.Export}" />

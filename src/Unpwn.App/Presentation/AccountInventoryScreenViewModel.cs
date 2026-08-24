@@ -270,6 +270,17 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
 
     public bool IsCategoryReviewComplete => CanContinueRecovery && RemainingCategoryCount == 0;
 
+    public bool HasAccounts => _currentInventory?.Accounts.Length > 0;
+
+    public bool IsSelectedAccountPendingReview =>
+        SelectedAccount?.Account.RequiresCategoryReview == true;
+
+    public string SelectedAccountIdentity => SelectedAccount?.DisplayName ?? string.Empty;
+
+    public string SelectedAccountContext => SelectedAccount?.Account.LoginIdentifier ?? string.Empty;
+
+    public bool HasSelectedAccountContext => !string.IsNullOrWhiteSpace(SelectedAccountContext);
+
     public override void Activate() => RefreshFromService();
 
     public void Activate(Guid? accountId)
@@ -629,6 +640,11 @@ public sealed class AccountInventoryScreenViewModel : LocalizedScreenViewModel
         OnPropertyChanged(nameof(CanContinueRecovery));
         OnPropertyChanged(nameof(HasRemainingCategoryReview));
         OnPropertyChanged(nameof(IsCategoryReviewComplete));
+        OnPropertyChanged(nameof(HasAccounts));
+        OnPropertyChanged(nameof(IsSelectedAccountPendingReview));
+        OnPropertyChanged(nameof(SelectedAccountIdentity));
+        OnPropertyChanged(nameof(SelectedAccountContext));
+        OnPropertyChanged(nameof(HasSelectedAccountContext));
     }
 
     private void Inventory_OnInventoryChanged(object? sender, EventArgs eventArgs) => RefreshFromService();

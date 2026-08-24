@@ -207,8 +207,17 @@ public sealed class ShellViewModel : ObservableObject
     public VisualStatusViewModel CurrentStatus
     {
         get => _currentStatus;
-        private set => SetProperty(ref _currentStatus, value);
+        private set
+        {
+            if (SetProperty(ref _currentStatus, value))
+            {
+                OnPropertyChanged(nameof(IsGlobalStatusVisible));
+            }
+        }
     }
+
+    public bool IsGlobalStatusVisible =>
+        CurrentStatus.Presentation is StatusPresentation.GlobalWarning or StatusPresentation.TransientResult;
 
     public Guid? NavigationAccountId
     {
