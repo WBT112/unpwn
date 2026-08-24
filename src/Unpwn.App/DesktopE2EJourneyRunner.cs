@@ -118,6 +118,15 @@ internal sealed class DesktopE2EJourneyRunner(
             case DesktopE2EScenarioCatalog.BrowserStartupFailureFallback:
                 await RunBrowserStartupFailureFallbackAsync();
                 return;
+            case DesktopE2EScenarioCatalog.MultiAccountTransition:
+                await RunMultiAccountTransitionAsync();
+                return;
+            case DesktopE2EScenarioCatalog.InterruptionMidRecovery:
+                await RunInterruptionScenarioAsync(expectOrphanedBrowserSession: false);
+                return;
+            case DesktopE2EScenarioCatalog.InterruptionActiveBrowser:
+                await RunInterruptionScenarioAsync(expectOrphanedBrowserSession: true);
+                return;
             default:
                 throw Failure("The configured desktop scenario was not recognized.");
         }
@@ -362,6 +371,281 @@ internal sealed class DesktopE2EJourneyRunner(
                 throw Failure("The explicit deferral did not remain visibly unresolved.");
             }
         });
+    }
+
+    private async Task RunInterruptionScenarioAsync(bool expectOrphanedBrowserSession)
+    {
+        if (_configuration.IsPreparePhase)
+        {
+            await AcceptTrustedDeviceAsync();
+            await CreateVaultAsync();
+            await CreateSessionAsync();
+            await ImportReviewedCsvAsync();
+            await CategorizeImportedAccountAsync();
+            var workflow = await StartRecoveryAsync();
+            if (!expectOrphanedBrowserSession)
+            {
+                await ClickAsync("recovery-browser-close");
+                await WaitUntilAsync(
+                    () => _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
+                    "pre-interruption-browser-cleanup",
+                    BrowserTimeout);
+            }
+
+            var actionId = workflow.SelectedAction?.DefinitionId ??
+                throw Failure("The interrupted recovery action was not available.");
+            Record(
+                "interruption-checkpoint-ready",
+                "workflow-current-action",
+                expectOrphanedBrowserSession ? "active-browser" : "mid-recovery");
+            await File.WriteAllTextAsync(_configuration.InterruptionReadyPath, actionId);
+            await Task.Delay(Timeout.InfiniteTimeSpan);
+            return;
+        }
+
+        if (!_configuration.IsResumePhase)
+        {
+            throw Failure("The interruption scenario did not specify a valid phase.");
+        }
+
+        await StepAsync("conservative-restart-boundary", "shell-startup-recovery-warning", async () =>
+        {
+            await WaitUntilAsync(
+                () => Shell.HasStartupRecoveryWarning,
+                "unexpected-exit-warning");
+            await WaitForControlAsync<Border>(
+                "shell-startup-recovery-warning",
+                warning => warning.IsVisible);
+
+            if (expectOrphanedBrowserSession)
+            {
+                await WaitUntilAsync(
+                    () => Shell.HasBrowserSessionCleanupWarning &&
+                        _browserSessions.Current.State ==
+                            RecoveryBrowserSessionLifecycleState.OrphanedDataDetected,
+                    "orphaned-browser-session-warning");
+                await ClickAsync("shell-retry-browser-session-cleanup");
+                await WaitUntilAsync(
+                    () => _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle &&
+                        !Shell.HasBrowserSessionCleanupWarning,
+                    "orphaned-browser-session-cleanup",
+                    BrowserTimeout);
+            }
+            else if (Shell.HasBrowserSessionCleanupWarning ||
+                     _browserSessions.Current.State != RecoveryBrowserSessionLifecycleState.Idle)
+            {
+                throw Failure("A cleanly closed browser was incorrectly restored as an orphan.");
+            }
+
+            await ClickAsync("shell-dismiss-recovery-warning");
+        });
+
+        await UnlockExistingVaultAfterRestartAsync();
+        await StepAsync("verify-conservative-resume", "workflow-current-action", async () =>
+        {
+            var workflow = await WaitForWorkflowAsync();
+            var expectedActionId = await File.ReadAllTextAsync(_configuration.InterruptionReadyPath);
+            if (!workflow.IsCurrentActionInProgress ||
+                !string.Equals(
+                    workflow.SelectedAction?.DefinitionId,
+                    expectedActionId,
+                    StringComparison.Ordinal) ||
+                workflow.CompletionCriteria.Any(criterion => criterion.IsAcknowledged) ||
+                _browserSessions.Current.State != RecoveryBrowserSessionLifecycleState.Idle)
+            {
+                throw Failure("Restart fabricated recovery truth or restored an unsafe browser session.");
+            }
+
+            await ClickAsync("workflow-primary-action", allowOffscreen: true);
+            await WaitForNativeBrowserAsync();
+            await ClickAsync("recovery-browser-close");
+            await WaitUntilAsync(
+                () => _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
+                "resumed-browser-cleanup",
+                BrowserTimeout);
+        });
+    }
+
+    private async Task RunMultiAccountTransitionAsync()
+    {
+        await AcceptTrustedDeviceAsync();
+        await CreateVaultAsync();
+        await CreateSessionAsync();
+        await ImportReviewedCsvAsync();
+
+        await StepAsync("review-only-unrecognized-account", "accounts-current-triage-task", async () =>
+        {
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen is AccountInventoryScreenViewModel
+                {
+                    HasAccounts: true,
+                    RemainingCategoryCount: 1,
+                },
+                "single-unrecognized-account-review");
+            var accounts = (AccountInventoryScreenViewModel)Shell.CurrentScreen;
+            var category = await WaitForControlAsync<ComboBox>("accounts-category");
+            category.SelectedItem = accounts.Categories.Single(option =>
+                option.Value == Unpwn.Core.AccountRecoveryCategory.NonCritical);
+            await Task.Yield();
+            await ClickAsync("accounts-category-save");
+            await WaitUntilAsync(
+                () => accounts.IsCategoryReviewComplete,
+                "multi-account-triage-complete");
+            await ClickAsync("accounts-continue-recovery");
+        });
+
+        await StepAsync("defer-email-account", "dashboard-recommendation-skip", async () =>
+        {
+            var dashboard = await WaitForDashboardAsync();
+            if (!dashboard.RecommendationTargetText.Contains("gmail", StringComparison.OrdinalIgnoreCase))
+            {
+                throw Failure("The category queue did not put the email account first.");
+            }
+
+            await ClickAsync("dashboard-recommendation-skip");
+            await WaitUntilAsync(
+                () => !dashboard.SkipRecommendationCommand.IsRunning &&
+                    dashboard.RecommendationTargetText.Contains("github", StringComparison.OrdinalIgnoreCase),
+                "critical-account-after-email-deferral");
+        });
+
+        Guid criticalBrowserAccountId = Guid.Empty;
+        await StepAsync("fail-critical-account", "workflow-problem-apply", async () =>
+        {
+            var workflow = await OpenAndStartRecommendedRecoveryAsync();
+            criticalBrowserAccountId = _browserSessions.Current.ActiveSession?.AccountId ?? Guid.Empty;
+            if (criticalBrowserAccountId == Guid.Empty)
+            {
+                throw Failure("The critical account did not bind an isolated browser session.");
+            }
+
+            await ClickAsync("workflow-cannot-continue", allowOffscreen: true);
+            var problem = await WaitForControlAsync<ComboBox>("workflow-problem-choice");
+            problem.SelectedItem = workflow.ProblemOptions.Single(option =>
+                option.Value == GuidedRecoveryProblem.ProviderStepFailed);
+            await WaitUntilAsync(
+                () => workflow.SelectedProblem?.Value == GuidedRecoveryProblem.ProviderStepFailed,
+                "provider-failure-problem-selection");
+            await SetTextAsync("workflow-problem-reason", "Synthetic provider step failed.");
+            await ClickAsync("workflow-problem-apply");
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen.Route == AppRoute.Dashboard &&
+                    _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
+                "failed-account-return-and-browser-cleanup",
+                BrowserTimeout);
+        });
+
+        await StepAsync("move-past-failed-account", "dashboard-recommendation-skip", async () =>
+        {
+            var dashboard = await WaitForDashboardAsync();
+            await ClickAsync("dashboard-recommendation-skip");
+            await WaitUntilAsync(
+                () => dashboard.RecommendationTargetText.Contains("synthetic", StringComparison.OrdinalIgnoreCase),
+                "unknown-account-after-critical-deferral");
+        });
+
+        await StepAsync("rebind-next-account-browser", "workflow-defer-account", async () =>
+        {
+            await OpenAndStartRecommendedRecoveryAsync();
+            var nextBrowserAccountId = _browserSessions.Current.ActiveSession?.AccountId ?? Guid.Empty;
+            if (nextBrowserAccountId == Guid.Empty || nextBrowserAccountId == criticalBrowserAccountId)
+            {
+                throw Failure("The browser session leaked or failed to rebind across accounts.");
+            }
+
+            await ClickAsync("workflow-defer-account", allowOffscreen: true);
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen.Route == AppRoute.Dashboard &&
+                    _browserSessions.Current.State == RecoveryBrowserSessionLifecycleState.Idle,
+                "deferred-account-browser-cleanup",
+                BrowserTimeout);
+            var dashboard = (DashboardScreenViewModel)Shell.CurrentScreen;
+            if (!dashboard.RecommendationTargetText.Contains("gmail", StringComparison.OrdinalIgnoreCase))
+            {
+                throw Failure("Deferred work did not return through the canonical queue.");
+            }
+        });
+
+        await StepAsync("completion-preflight-shows-open-work", "completion-before-finish", async () =>
+        {
+            await ClickAsync("shell-workspace-toggle");
+            var navigation = await WaitForControlAsync<ListBox>("shell-navigation");
+            navigation.SelectedItem = Shell.NavigationItems.Single(item => item.Route == AppRoute.Completion);
+            await WaitUntilAsync(
+                () => Shell.CurrentScreen is CompletionScreenViewModel { HasReview: true },
+                "multi-account-completion-preflight");
+            var completion = (CompletionScreenViewModel)Shell.CurrentScreen;
+            if (!completion.Issues.Any(issue =>
+                    issue.Issue.Kind == Unpwn.Core.RecoveryCompletionIssueKind.DeferredAccount) ||
+                !completion.Issues.Any(issue =>
+                    issue.Issue.Kind is
+                        Unpwn.Core.RecoveryCompletionIssueKind.RequiredActionFailed or
+                        Unpwn.Core.RecoveryCompletionIssueKind.RequiredActionIncomplete))
+            {
+                throw Failure(
+                    "Completion preflight hid deferred or unresolved multi-account work: " +
+                    string.Join(',', completion.Issues.Select(issue => issue.Issue.Kind)));
+            }
+        });
+    }
+
+    private async Task UnlockExistingVaultAfterRestartAsync()
+    {
+        await StepAsync("unlock-after-interruption", "vault-open-submit", async () =>
+        {
+            await ClickAsync("vault-begin");
+            await ClickAsync("vault-trusted-yes");
+            var vault = Shell.CurrentScreen as VaultEntryScreenViewModel ??
+                throw Failure("The vault workspace was unavailable after restart.");
+            await WaitUntilAsync(() => vault.HasPrimaryRecentVault, "recent-vault-after-restart");
+            await ClickAsync("vault-primary-action");
+            await SetTextAsync("vault-unlock-password", SyntheticVaultPassword);
+            await ClickAsync("vault-open-submit");
+            await WaitUntilAsync(
+                () => Shell.IsVaultUnlocked && Shell.CurrentScreen.Route != AppRoute.VaultEntry,
+                "workspace-resume-after-unlock");
+        });
+    }
+
+    private async Task<DashboardScreenViewModel> WaitForDashboardAsync()
+    {
+        DashboardScreenViewModel? dashboard = null;
+        await WaitUntilAsync(
+            () =>
+            {
+                dashboard = Shell.CurrentScreen as DashboardScreenViewModel;
+                return dashboard is not null && !dashboard.RefreshCommand.IsRunning;
+            },
+            "stable-recovery-overview");
+        return dashboard!;
+    }
+
+    private async Task<WorkflowExecutionScreenViewModel> OpenAndStartRecommendedRecoveryAsync()
+    {
+        await WaitForDashboardAsync();
+        await ClickAsync("dashboard-recommendation-open");
+        var workflow = await WaitForWorkflowAsync();
+        if (!workflow.HasExecution)
+        {
+            await ClickAsync("workflow-begin");
+            await WaitUntilAsync(() => workflow.HasExecution, "multi-account-execution-created");
+        }
+
+        if (!workflow.IsCurrentActionInProgress || !workflow.IsBrowserWorkspaceVisible)
+        {
+            await ClickAsync("workflow-primary-action", allowOffscreen: true);
+        }
+
+        await WaitUntilAsync(
+            () => workflow.IsCurrentActionInProgress,
+            "multi-account-action-started");
+        if (!workflow.IsBrowserWorkspaceVisible)
+        {
+            await ClickAsync("workflow-primary-action", allowOffscreen: true);
+        }
+
+        await WaitForNativeBrowserAsync();
+        return workflow;
     }
 
     private async Task AcceptTrustedDeviceAsync()

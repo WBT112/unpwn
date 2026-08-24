@@ -1,0 +1,7 @@
+service,account,username,url
+gmail.com,Google mailbox release smoke,release-email-google@example.invalid,https://accounts.google.com/
+outlook.com,Microsoft mailbox release smoke,release-email-microsoft@example.invalid,https://login.live.com/
+github.com,GitHub critical release smoke,release-critical-github@example.invalid,https://github.com/login
+bitwarden.com,Bitwarden critical release smoke,release-critical-bitwarden@example.invalid,https://vault.bitwarden.com/
+spotify.com,Spotify noncritical release smoke,release-noncritical-spotify@example.invalid,https://accounts.spotify.com/
+duolingo.com,Duolingo noncritical release smoke,release-noncritical-duolingo@example.invalid,https://www.duolingo.com/log-in
