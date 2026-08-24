@@ -449,6 +449,7 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         {
             if (SetProperty(ref _isBrowserWorkspaceVisible, value))
             {
+                OnPropertyChanged(nameof(IsBrowserWorkspacePresented));
                 OnPropertyChanged(nameof(AssistantGridColumn));
                 OnPropertyChanged(nameof(AssistantGridColumnSpan));
                 OnPropertyChanged(nameof(CanRunGuidedPrimary));
@@ -457,9 +458,12 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         }
     }
 
-    public int AssistantGridColumn => IsBrowserWorkspaceVisible ? 1 : 0;
+    public bool IsBrowserWorkspacePresented =>
+        IsBrowserWorkspaceVisible || IsBrowserLaunchStarting;
 
-    public int AssistantGridColumnSpan => IsBrowserWorkspaceVisible ? 1 : 2;
+    public int AssistantGridColumn => IsBrowserWorkspacePresented ? 1 : 0;
+
+    public int AssistantGridColumnSpan => IsBrowserWorkspacePresented ? 1 : 2;
 
     public long CurrentActionFocusRequest
     {
@@ -1966,6 +1970,9 @@ public sealed class WorkflowExecutionScreenViewModel : LocalizedScreenViewModel
         _browserLaunchFailureReason = failureReason;
         OnPropertyChanged(nameof(BrowserLaunchState));
         OnPropertyChanged(nameof(IsBrowserLaunchStarting));
+        OnPropertyChanged(nameof(IsBrowserWorkspacePresented));
+        OnPropertyChanged(nameof(AssistantGridColumn));
+        OnPropertyChanged(nameof(AssistantGridColumnSpan));
         OnPropertyChanged(nameof(HasBrowserLaunchFailure));
         OnPropertyChanged(nameof(HasStandaloneNavigationStatus));
         OnPropertyChanged(nameof(CanUseExternalBrowserFallback));

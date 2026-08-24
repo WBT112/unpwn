@@ -931,6 +931,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
 
         Assert.Single(requests);
         Assert.Equal(RecoveryBrowserLaunchState.Starting, viewModel.BrowserLaunchState);
+        Assert.True(viewModel.IsBrowserWorkspacePresented);
         Assert.Equal("Opening Recovery Browser…", viewModel.GuidedPrimaryActionText);
         Assert.False(viewModel.CanUseExternalBrowserFallback);
 
@@ -939,6 +940,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
             failureReason: RecoveryBrowserLaunchFailureReason.StartupFailed);
 
         Assert.Equal(RecoveryBrowserLaunchState.Failed, viewModel.BrowserLaunchState);
+        Assert.False(viewModel.IsBrowserWorkspacePresented);
         Assert.Equal("Retry Recovery Browser", viewModel.GuidedPrimaryActionText);
         Assert.True(viewModel.CanUseExternalBrowserFallback);
         Assert.True(viewModel.OpenOfficialPageCommand.CanExecute(null));

@@ -47,7 +47,7 @@
         <Grid ColumnDefinitions="2*,*" ColumnSpacing="18">
           <Border x:Name="BrowserWorkspacePanel"
                   Grid.Column="0"
-                  IsVisible="{Binding IsBrowserWorkspaceVisible}"
+                  IsVisible="{Binding IsBrowserWorkspacePresented}"
                   MinWidth="340"
                   Focusable="True"
                   Padding="12"
