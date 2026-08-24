@@ -27,7 +27,12 @@
                   ItemsSource="{Binding Categories}"
                   SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
                   PlaceholderText="{DynamicResource Accounts.Triage.CategoryRequired}">
-          <ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{ReflectionBinding Label}" /></DataTemplate></ComboBox.ItemTemplate>
+          <ComboBox.ItemTemplate>
+            <DataTemplate>
+              <TextBlock AutomationProperties.AutomationId="{ReflectionBinding Value}"
+                         Text="{ReflectionBinding Label}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
         </ComboBox>
         <Button Classes="primary"
                 AutomationProperties.AutomationId="accounts-category-save"

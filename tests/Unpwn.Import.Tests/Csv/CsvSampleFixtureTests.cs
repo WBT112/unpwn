@@ -144,6 +144,36 @@ public sealed partial class CsvSampleFixtureTests
         }
     }
 
+    [Fact]
+    public void RealEndpointFixtureIsSmallSecretFreeAndMatchesReviewedCategories()
+    {
+        CsvImportPreview preview = Preview("real-endpoint-smoke-sample.csv", GenericMapping);
+        string content = File.ReadAllText(FixturePath("real-endpoint-smoke-sample.csv"));
+
+        Assert.True(preview.CanImport);
+        Assert.Equal(6, preview.Candidates.Count);
+        Assert.Empty(preview.Diagnostics);
+        Assert.DoesNotContain("password", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("UNPWN_TEST_SECRET_", content, StringComparison.Ordinal);
+        Assert.All(preview.Candidates, candidate =>
+        {
+            Assert.EndsWith("@example.invalid", candidate.LoginIdentifier, StringComparison.Ordinal);
+            Assert.Equal(Uri.UriSchemeHttps, new Uri(candidate.AccountUrl!).Scheme);
+        });
+
+        AccountRecoveryCategory[] categories =
+        [
+            .. preview.Candidates.Select(candidate =>
+                RepositoryAccountClassificationCatalog.Classify(
+                    candidate.ServiceName!,
+                    candidate.AccountUrl).Category),
+        ];
+        Assert.Equal(2, categories.Count(category => category == AccountRecoveryCategory.Email));
+        Assert.Equal(2, categories.Count(category => category == AccountRecoveryCategory.Critical));
+        Assert.Equal(2, categories.Count(category => category == AccountRecoveryCategory.NonCritical));
+        Assert.DoesNotContain(AccountRecoveryCategory.Unknown, categories);
+    }
+
     [Theory]
     [InlineData("generic-recovery-sample.csv", false)]
     [InlineData("bitwarden-recovery-sample.csv", true)]

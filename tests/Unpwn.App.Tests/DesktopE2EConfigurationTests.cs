@@ -9,7 +9,7 @@ public sealed class DesktopE2EConfigurationTests
     [Fact]
     public void ScenarioCatalogUsesStableUniqueLanguageNeutralIdentifiers()
     {
-        Assert.Equal(8, DesktopE2EScenarioCatalog.All.Count);
+        Assert.Equal(12, DesktopE2EScenarioCatalog.All.Count);
         Assert.All(DesktopE2EScenarioCatalog.All, scenario =>
         {
             Assert.Matches("^[a-z]+(?:-[a-z]+)*$", scenario);
@@ -45,6 +45,8 @@ public sealed class DesktopE2EConfigurationTests
         Assert.Equal(DesktopE2EScenarioCatalog.Golden, loaded.Scenario);
         Assert.Equal(Path.GetFullPath(data), loaded.DataRoot);
         Assert.Equal(new Uri("http://127.0.0.1:41823"), loaded.ProviderBaseUri);
+        Assert.Equal("single", loaded.Phase);
+        Assert.False(loaded.ExternallyDriven);
         Assert.True(Directory.Exists(artifacts));
     }
 
@@ -108,13 +110,69 @@ public sealed class DesktopE2EConfigurationTests
                 ["--desktop-e2e-config", configuration]));
     }
 
+    [Fact]
+    public void InterruptionPhasesAreLimitedToInterruptionScenarios()
+    {
+        using var temporary = new TestDirectory();
+        var csv = Path.Combine(temporary.Path, "accounts.csv");
+        File.WriteAllText(csv, "service,username\nsynthetic,user@example.invalid\n");
+        var valid = WriteConfiguration(
+            temporary.Path,
+            Path.Combine(temporary.Path, "data"),
+            csv,
+            "http://127.0.0.1:41823",
+            Path.Combine(temporary.Path, "artifacts"),
+            DesktopE2EScenarioCatalog.InterruptionActiveBrowser,
+            phase: "prepare");
+
+        var loaded = DesktopE2EConfiguration.LoadFromArguments(
+            ["--desktop-e2e-config", valid]);
+
+        Assert.NotNull(loaded);
+        Assert.True(loaded.IsPreparePhase);
+
+        var invalid = WriteConfiguration(
+            temporary.Path,
+            Path.Combine(temporary.Path, "data"),
+            csv,
+            "http://127.0.0.1:41823",
+            Path.Combine(temporary.Path, "artifacts"),
+            phase: "resume");
+        Assert.Throws<InvalidOperationException>(() =>
+            DesktopE2EConfiguration.LoadFromArguments(["--desktop-e2e-config", invalid]));
+    }
+
+    [Fact]
+    public void ExternalDriverFlagIsLimitedToBlackBoxScenario()
+    {
+        using var temporary = new TestDirectory();
+        var csv = Path.Combine(temporary.Path, "accounts.csv");
+        File.WriteAllText(csv, "service,username\nsynthetic,user@example.invalid\n");
+        var configuration = WriteConfiguration(
+            temporary.Path,
+            Path.Combine(temporary.Path, "data"),
+            csv,
+            "http://127.0.0.1:41823",
+            Path.Combine(temporary.Path, "artifacts"),
+            DesktopE2EScenarioCatalog.ExternalBlackBox,
+            externallyDriven: true);
+
+        var loaded = DesktopE2EConfiguration.LoadFromArguments(
+            ["--desktop-e2e-config", configuration]);
+
+        Assert.NotNull(loaded);
+        Assert.True(loaded.ExternallyDriven);
+    }
+
     private static string WriteConfiguration(
         string root,
         string dataRoot,
         string csv,
         string provider,
         string artifacts,
-        string scenario = DesktopE2EScenarioCatalog.Golden)
+        string scenario = DesktopE2EScenarioCatalog.Golden,
+        string? phase = null,
+        bool externallyDriven = false)
     {
         var path = Path.Combine(root, "desktop-e2e.json");
         File.WriteAllText(path, JsonSerializer.Serialize(new
@@ -124,6 +182,8 @@ public sealed class DesktopE2EConfigurationTests
             CsvFixturePath = csv,
             ProviderBaseUri = provider,
             ArtifactDirectory = artifacts,
+            Phase = phase,
+            ExternallyDriven = externallyDriven,
         }));
         return path;
     }

@@ -164,7 +164,7 @@ public partial class App : Avalonia.Application
             };
             desktop.MainWindow = mainWindow;
             _ = InitializeVaultReferencesAsync(vaultLifecycle, diagnostics);
-            if (desktopE2E is not null)
+            if (desktopE2E is { ExternallyDriven: false })
             {
                 AttachDesktopE2ERunner(
                     desktop,

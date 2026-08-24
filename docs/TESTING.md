@@ -98,12 +98,20 @@ dotnet test tests/Unpwn.App.Tests/Unpwn.App.Tests.csproj --configuration Release
 `tools/Unpwn.DesktopE2E` starts a loopback-only synthetic provider, launches the real `Unpwn.App`
 desktop process with isolated temporary application data, and drives the visible recovery journey by
 stable automation IDs. The golden scenario covers the complete primary journey. Additional scenarios
-cover safety stop/retry, wrong-password clearing and resume, import correction/retry, defer, and the
-rule that closing a native browser does not complete recovery. The authoritative IDs, tiers, platform
+cover safety stop/retry, wrong-password clearing and resume, import correction/retry, defer,
+multi-account queue/browser transitions, and the rule that closing a native browser does not complete
+recovery. The authoritative IDs, tiers, platform
 matrix, local commands, diagnostics policy, and reviewed coverage gaps live only in
 [Desktop E2E Scenarios](DESKTOP_E2E.md). The harness does not call application services to advance
 user-visible state. Missing native runtime or display support is a failure, never a skip or headless
 substitute.
+
+The scheduled/manual release-confidence layer reuses that harness against self-contained `win-x64`
+and `linux-x64` publish output copied outside the checkout. Two bounded scenarios kill the real process
+at an in-progress action and an active account-bound browser, then prove conservative resume and
+orphan cleanup against the same encrypted data root. A separate small Linux AT-SPI driver activates
+the published app outside its process. These boundaries supplement the broad deterministic harness;
+they do not create a parallel recovery state machine or a retry-heavy duplicate scenario matrix.
 
 ### 7. Localization and culture tests
 
@@ -141,6 +149,18 @@ Before a supported release:
 - execute and record the Windows/NVDA and Ubuntu/Orca accessibility checklist;
 - review vault, import, export, Recovery Browser, credential-insertion, and interruption boundaries;
 - confirm packaging/update behavior without weakening the trusted-device or browser-profile model.
+- run the self-contained Windows/Linux artifact smoke from a clean install root and retain its
+  relative-path/length/SHA-256 inventory;
+- run both abrupt-interruption scenarios and the external semantic desktop smoke;
+- execute and record the deliberately non-destructive real-endpoint fixture procedure;
+- record a real Wayland/compositor run, including whether the application used XWayland, rather than
+  treating Xvfb as the compositor-sensitive release boundary.
+
+The complete evidence table and commands live in [Desktop E2E Scenarios](DESKTOP_E2E.md). The
+`Release confidence` workflow is scheduled and manually dispatchable because artifact, external
+AT-SPI, and interruption checks are release boundaries rather than a reason to slow or destabilize
+the normal pull-request suite. The real-endpoint and physical/VM Wayland checks remain explicit manual
+release records; automation must not weaken origin policy or contact public providers silently.
 
 ## Pull-request CI
 
@@ -179,7 +199,11 @@ A failing secret-leak, unsafe-origin, unauthenticated-vault, invalid workflow, n
 
 ## Test data and artifacts
 
-Use recognizable synthetic data. The canonical import fixtures live under `samples/import/` and cover normal recovery data, password-manager-style mapping/secret-column exclusion, duplicate handling, and deterministic edge cases.
+Use recognizable synthetic data. The canonical import fixtures live under `samples/import/` and
+cover normal recovery data, password-manager-style mapping/secret-column exclusion, duplicate
+handling, and deterministic edge cases. `real-endpoint-smoke-sample.csv` is a separately documented
+six-row manual release fixture; it is never an input to normal deterministic CI and contains only
+synthetic `example.invalid` identities.
 
 Synthetic values must never be accepted by production code as implicit evidence that test mode is active; test-only browser behavior requires explicit configuration and loopback validation.
 

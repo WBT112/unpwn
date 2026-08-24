@@ -1,0 +1,159 @@
+name: Release confidence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "43 4 * * 3"
+
+concurrency:
+  group: release-confidence
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  NUGET_XMLDOC_MODE: skip
+
+jobs:
+  published-desktop:
+    name: Published desktop (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+            entry: Unpwn.App
+          - os: windows-2025
+            rid: win-x64
+            entry: Unpwn.App.exe
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+
+      - name: Install Linux release desktop boundaries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            at-spi2-core dbus-x11 gir1.2-atspi-2.0 libwebkit2gtk-4.1-0 \
+            openbox python3-pyatspi xauth xdotool xvfb
+
+      - name: Restore release runtime and harness
+        run: |
+          dotnet restore src/Unpwn.App/Unpwn.App.csproj --runtime ${{ matrix.rid }}
+          dotnet restore tools/Unpwn.DesktopE2E/Unpwn.DesktopE2E.csproj
+
+      - name: Publish self-contained release candidate
+        run: >-
+          dotnet publish src/Unpwn.App/Unpwn.App.csproj
+          --configuration Release
+          --runtime ${{ matrix.rid }}
+          --self-contained true
+          --no-restore
+          -p:DebugSymbols=false
+          -p:DebugType=None
+          -p:PublishSingleFile=false
+          --output artifacts/publish/${{ matrix.rid }}
+
+      - name: Build outer desktop harness
+        run: >-
+          dotnet build tools/Unpwn.DesktopE2E/Unpwn.DesktopE2E.csproj
+          --configuration Release
+          --no-restore
+
+      - name: Copy release candidate outside repository
+        shell: pwsh
+        run: |
+          $installRoot = Join-Path ([IO.Path]::GetTempPath()) "unpwn-${{ matrix.rid }}-${{ github.run_id }}"
+          Copy-Item 'artifacts/publish/${{ matrix.rid }}' $installRoot -Recurse
+          "UNPWN_RELEASE_INSTALL=$installRoot" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Smoke published Windows artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $harness = (Resolve-Path 'tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll').Path
+          $app = Join-Path $env:UNPWN_RELEASE_INSTALL '${{ matrix.entry }}'
+          foreach ($scenario in @('golden', 'multi-account-transition', 'interruption-mid-recovery', 'interruption-active-browser')) {
+            $artifacts = Join-Path (Get-Location) "artifacts/release-confidence/$scenario"
+            dotnet $harness --app $app --published-root $env:UNPWN_RELEASE_INSTALL --scenario $scenario --artifacts $artifacts
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Smoke published Linux artifact
+        if: runner.os == 'Linux'
+        env:
+          NO_AT_BRIDGE: 0
+        run: |
+          harness="$GITHUB_WORKSPACE/tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll"
+          app="$UNPWN_RELEASE_INSTALL/${{ matrix.entry }}"
+          for scenario in golden multi-account-transition interruption-mid-recovery interruption-active-browser; do
+            artifacts="$GITHUB_WORKSPACE/artifacts/release-confidence/$scenario"
+            xvfb-run --auto-servernum dotnet "$harness" \
+              --app "$app" \
+              --published-root "$UNPWN_RELEASE_INSTALL" \
+              --scenario "$scenario" \
+              --artifacts "$artifacts"
+          done
+
+      - name: Run external semantic desktop smoke
+        if: runner.os == 'Linux'
+        env:
+          NO_AT_BRIDGE: 0
+        run: |
+          harness="$GITHUB_WORKSPACE/tools/Unpwn.DesktopE2E/bin/Release/net10.0/Unpwn.DesktopE2E.dll"
+          app="$UNPWN_RELEASE_INSTALL/${{ matrix.entry }}"
+          artifacts="$GITHUB_WORKSPACE/artifacts/release-confidence/external-black-box"
+          dbus-run-session -- xvfb-run --auto-servernum bash -c '
+            openbox >/tmp/unpwn-openbox.log 2>&1 &
+            window_manager_pid=$!
+            trap "kill \"$window_manager_pid\" 2>/dev/null || true" EXIT
+            dotnet "$1" \
+              --app "$2" \
+              --published-root "$3" \
+              --scenario external-black-box \
+              --external-driver "$4" \
+              --artifacts "$5"
+          ' _ "$harness" "$app" "$UNPWN_RELEASE_INSTALL" \
+            "$GITHUB_WORKSPACE/eng/external-desktop-smoke.py" "$artifacts"
+
+      - name: Verify retained release diagnostics are secret-safe
+        if: always()
+        shell: pwsh
+        run: |
+          $secretMatches = Get-ChildItem artifacts/release-confidence -Recurse -File -ErrorAction SilentlyContinue |
+            Select-String -SimpleMatch -Pattern @(
+              'UNPWN_TEST_SECRET_',
+              'desktop-e2e-only-482!',
+              'synthetic-ignored-value'
+            )
+          if ($secretMatches) {
+            Write-Error 'Synthetic secret markers were found in release diagnostics.'
+            exit 1
+          }
+
+      - name: Upload reviewed release candidate and evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-confidence-${{ matrix.rid }}
+          path: |
+            artifacts/publish/${{ matrix.rid }}
+            artifacts/release-confidence
+          if-no-files-found: error
+          retention-days: 7

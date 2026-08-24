@@ -281,7 +281,8 @@
               </ComboBox.ItemTemplate>
             </ComboBox>
             <TextBlock Text="{Binding SelectedProblemExplanation}" TextWrapping="Wrap" />
-            <TextBox Text="{Binding Reason, Mode=TwoWay}"
+            <TextBox AutomationProperties.AutomationId="workflow-problem-reason"
+                     Text="{Binding Reason, Mode=TwoWay}"
                      MaxLength="1000"
                      PlaceholderText="{DynamicResource Workflow.Guided.Problem.ReasonPlaceholder}"
                      TextWrapping="Wrap" />

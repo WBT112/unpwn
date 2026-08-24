@@ -7,9 +7,14 @@ internal sealed record DesktopE2EConfiguration(
     string DataRoot,
     string CsvFixturePath,
     Uri ProviderBaseUri,
-    string ArtifactDirectory)
+    string ArtifactDirectory,
+    string Phase,
+    bool ExternallyDriven)
 {
     private const string Option = "--desktop-e2e-config";
+    private const string SinglePhase = "single";
+    private const string PreparePhase = "prepare";
+    private const string ResumePhase = "resume";
 
     public static DesktopE2EConfiguration? LoadFromArguments(string[] args)
     {
@@ -62,6 +67,28 @@ internal sealed record DesktopE2EConfiguration(
             throw new InvalidOperationException("The desktop E2E scenario is not supported.");
         }
 
+        var phase = string.IsNullOrWhiteSpace(document.Phase)
+            ? SinglePhase
+            : document.Phase;
+        var isInterruptionScenario = document.Scenario is
+            DesktopE2EScenarioCatalog.InterruptionMidRecovery or
+            DesktopE2EScenarioCatalog.InterruptionActiveBrowser;
+        if (isInterruptionScenario
+                ? phase is not (PreparePhase or ResumePhase)
+                : phase != SinglePhase)
+        {
+            throw new InvalidOperationException("The desktop E2E phase is invalid for the selected scenario.");
+        }
+
+        var externallyDriven = document.ExternallyDriven;
+        if (externallyDriven != string.Equals(
+                document.Scenario,
+                DesktopE2EScenarioCatalog.ExternalBlackBox,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("Only the external black-box scenario can use an external driver.");
+        }
+
         if (!Uri.TryCreate(document.ProviderBaseUri, UriKind.Absolute, out var providerBaseUri) ||
             providerBaseUri.Scheme != Uri.UriSchemeHttp ||
             !providerBaseUri.IsLoopback ||
@@ -78,7 +105,9 @@ internal sealed record DesktopE2EConfiguration(
             dataRoot,
             csvFixturePath,
             providerBaseUri,
-            artifactDirectory);
+            artifactDirectory,
+            phase,
+            externallyDriven);
     }
 
     public Uri PasswordChangeUri => new(
@@ -96,6 +125,12 @@ internal sealed record DesktopE2EConfiguration(
 
     public string RunMarkerPath => Path.Combine(DataRoot, "run-state", "active.marker");
 
+    public string InterruptionReadyPath => Path.Combine(DataRoot, "desktop-e2e-interruption.ready");
+
+    public bool IsPreparePhase => string.Equals(Phase, PreparePhase, StringComparison.Ordinal);
+
+    public bool IsResumePhase => string.Equals(Phase, ResumePhase, StringComparison.Ordinal);
+
     private static string RequireAbsolutePath(string? path, string name)
     {
         if (string.IsNullOrWhiteSpace(path) || !Path.IsPathFullyQualified(path))
@@ -111,5 +146,7 @@ internal sealed record DesktopE2EConfiguration(
         string? DataRoot,
         string? CsvFixturePath,
         string? ProviderBaseUri,
-        string? ArtifactDirectory);
+        string? ArtifactDirectory,
+        string? Phase,
+        bool ExternallyDriven);
 }

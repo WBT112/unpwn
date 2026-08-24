@@ -142,6 +142,7 @@ jobs:
               'vault-wrong-password-and-resume',
               'import-correction-and-retry',
               'defer-account',
+              'multi-account-transition',
               'browser-close-preserves-recovery',
               'reviewed-browser-step-hierarchy',
               'browser-startup-failure-fallback'

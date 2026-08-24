@@ -75,3 +75,36 @@ Use these deliberate setup steps to reproduce current category, queue, workflow,
 - an excluded password column containing only synthetic secret markers.
 
 Importing the fixture a second time exercises existing-inventory duplicate detection. The default path skips duplicates; the explicit alternative imports them as separate accounts without silently merging recovery state.
+
+## Explicit real-endpoint release smoke
+
+`real-endpoint-smoke-sample.csv` is the only repository fixture that intentionally names real public
+provider destinations. It is never consumed by normal PR tests, the synthetic provider, or the
+loopback desktop harness. All login identifiers use the reserved `example.invalid` namespace, and the
+file contains no password, reset, MFA, token, cookie, recovery-code, or credential column.
+
+The six destinations were manually reviewed on 2026-08-24: Google Accounts and Microsoft Account
+provide the two `Email` rows; GitHub sign-in and the repository-reviewed Bitwarden Web Vault entry
+provide the two `Critical` rows; Spotify Accounts and Duolingo sign-in provide the two `NonCritical`
+rows. The provider-classification catalog is the expected category basis. The GitHub workflow,
+Bitwarden browser-entry catalog, and their expected origins are additional repository-reviewed
+navigation metadata. Redirects must remain provider-owned; a new origin requires deliberate review,
+not a relaxed origin rule.
+
+Use the fixture only as a recorded manual release check:
+
+1. Import it through the visible CSV flow and confirm all six explicit candidates.
+2. Verify there is no manual triage and the categories are exactly two `Email`, two `Critical`, and
+   two `NonCritical` accounts.
+3. Verify the canonical queue begins with both email accounts, then both critical accounts, and then
+   both noncritical accounts. Provider/account ordering inside a category remains deterministic.
+4. Start each recommended account through the Managed Recovery Browser and verify a provider-owned
+   public page is visible. Internal-first behavior remains mandatory; the external browser is only a
+   degraded fallback after an actual managed-host failure.
+5. Stop before authentication. Never submit login, reset, MFA, purchase, recovery, profile, or other
+   state-changing forms. Browser navigation or closure must not complete recovery work.
+6. Record endpoint/category/origin drift separately from provider anti-bot, geographic, rate-limit,
+   or transient availability observations.
+
+If a destination changes, re-review its official provider-owned HTTPS location, update the date and
+basis above, and retain the deliberately small two-per-category scope.
