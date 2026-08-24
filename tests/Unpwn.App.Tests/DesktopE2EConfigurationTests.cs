@@ -9,7 +9,7 @@ public sealed class DesktopE2EConfigurationTests
     [Fact]
     public void ScenarioCatalogUsesStableUniqueLanguageNeutralIdentifiers()
     {
-        Assert.Equal(6, DesktopE2EScenarioCatalog.All.Count);
+        Assert.Equal(8, DesktopE2EScenarioCatalog.All.Count);
         Assert.All(DesktopE2EScenarioCatalog.All, scenario =>
         {
             Assert.Matches("^[a-z]+(?:-[a-z]+)*$", scenario);
@@ -64,6 +64,27 @@ public sealed class DesktopE2EConfigurationTests
 
         Assert.Throws<InvalidOperationException>(() =>
             DesktopE2EConfiguration.LoadFromArguments(["--desktop-e2e-config", configuration]));
+    }
+
+    [Fact]
+    public void BrowserFailureHookIsLimitedToItsExplicitScenario()
+    {
+        using var temporary = new TestDirectory();
+        var csv = Path.Combine(temporary.Path, "accounts.csv");
+        File.WriteAllText(csv, "service,username\nbitwarden,user@example.invalid\n");
+        var configuration = WriteConfiguration(
+            temporary.Path,
+            Path.Combine(temporary.Path, "data"),
+            csv,
+            "http://127.0.0.1:41823",
+            Path.Combine(temporary.Path, "artifacts"),
+            DesktopE2EScenarioCatalog.BrowserStartupFailureFallback);
+
+        var loaded = DesktopE2EConfiguration.LoadFromArguments(
+            ["--desktop-e2e-config", configuration]);
+
+        Assert.NotNull(loaded);
+        Assert.True(loaded.ForceBrowserStartupFailure);
     }
 
     [Theory]

@@ -5,12 +5,14 @@
              x:Class="Unpwn.App.Views.WorkflowExecutionView"
              x:DataType="vm:WorkflowExecutionScreenViewModel">
   <StackPanel Spacing="20">
-    <StackPanel Spacing="8">
+    <StackPanel IsVisible="{Binding !HasExecution}" Spacing="8">
       <TextBlock Classes="page-title" Text="{Binding Title}" />
       <TextBlock FontSize="16" Text="{Binding Description}" TextWrapping="Wrap" />
     </StackPanel>
 
-    <views:StatusBannerView DataContext="{Binding Status}" />
+    <Border IsVisible="{Binding !HasExecution}">
+      <views:StatusBannerView DataContext="{Binding Status}" />
+    </Border>
 
     <Border Classes="focus-on-visible"
             IsVisible="{Binding HasValidationMessage}"
@@ -21,42 +23,6 @@
             Padding="14" CornerRadius="8"
             Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
       <TextBlock Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
-    </Border>
-
-    <Border IsVisible="{Binding IsGeneralManualWorkflow}"
-            Padding="14" CornerRadius="8" BorderThickness="2"
-            BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
-            AutomationProperties.Name="{Binding WorkflowTrustTitle}">
-      <StackPanel Spacing="5">
-        <TextBlock FontWeight="SemiBold" Text="{Binding WorkflowTrustTitle}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding WorkflowTrustMessage}" TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-
-    <Border IsVisible="{Binding IsReviewedProviderWorkflow}"
-            Padding="14" CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-            AutomationProperties.Name="{Binding WorkflowTrustTitle}">
-      <StackPanel Spacing="5">
-        <TextBlock FontWeight="SemiBold" Text="{Binding WorkflowTrustTitle}" TextWrapping="Wrap" />
-        <TextBlock Text="{Binding WorkflowTrustMessage}" TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
-
-    <Border IsVisible="{Binding CanDeferAccount}"
-            Padding="14" CornerRadius="8"
-            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-      <StackPanel Spacing="8">
-        <TextBlock FontWeight="SemiBold"
-                   Text="{DynamicResource Workflow.Guided.Defer.Title}"
-                   TextWrapping="Wrap" />
-        <TextBlock Text="{DynamicResource Workflow.Guided.Defer.Help}"
-                   TextWrapping="Wrap" />
-        <Button HorizontalAlignment="Left"
-                AutomationProperties.AutomationId="workflow-defer-account"
-                Content="{DynamicResource Dashboard.Recommendation.Action.Skip}"
-                Command="{Binding DeferAccountCommand}" />
-      </StackPanel>
     </Border>
 
     <Border IsVisible="{Binding !HasExecution}"
@@ -77,11 +43,11 @@
     </Border>
 
     <StackPanel IsVisible="{Binding HasExecution}" Spacing="18">
-      <StackPanel IsVisible="{Binding IsGuidedActionVisible}" Spacing="18">
+      <StackPanel IsVisible="{Binding IsGuidedActionVisible}" Spacing="14">
         <Grid ColumnDefinitions="2*,*" ColumnSpacing="18">
           <Border x:Name="BrowserWorkspacePanel"
                   Grid.Column="0"
-                  IsVisible="{Binding IsBrowserWorkspaceVisible}"
+                  IsVisible="{Binding IsBrowserWorkspacePresented}"
                   MinWidth="340"
                   Focusable="True"
                   Padding="12"
@@ -104,24 +70,10 @@
                 BorderBrush="{DynamicResource SystemControlHighlightAccentBrush}"
                 Background="{DynamicResource SystemControlBackgroundChromeMediumBrush}">
           <StackPanel Spacing="14">
-            <TextBlock Text="{Binding CurrentActionProgressText}" FontWeight="SemiBold" />
-            <TextBlock FontSize="14" Text="{Binding AccountName}" TextWrapping="Wrap" />
+            <TextBlock FontSize="12" Text="{Binding CurrentActionProgressText}" TextWrapping="Wrap" />
+            <TextBlock FontSize="14" FontWeight="SemiBold" Text="{Binding AccountName}" TextWrapping="Wrap" />
             <TextBlock FontSize="24" FontWeight="SemiBold" Text="{Binding CurrentActionTitle}" TextWrapping="Wrap" />
-            <TextBlock FontWeight="SemiBold" Text="{Binding CurrentActionWhyText}" TextWrapping="Wrap" />
             <TextBlock FontSize="16" Text="{Binding CurrentActionInstruction}" TextWrapping="Wrap" />
-
-            <Border Padding="12" CornerRadius="8"
-                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-              <StackPanel Spacing="5">
-                <TextBlock FontWeight="SemiBold"
-                           Text="{DynamicResource Workflow.Guided.Authentication.Title}" />
-                <TextBlock Text="{Binding AuthenticationGuidanceText}"
-                           TextWrapping="Wrap" />
-                <TextBlock IsVisible="{Binding IsPasswordCredentialAction}"
-                           Text="{Binding ReplacementCredentialGuidanceText}"
-                           TextWrapping="Wrap" />
-              </StackPanel>
-            </Border>
 
             <Border IsVisible="{Binding HasCurrentActionWarning}"
                     Padding="12" CornerRadius="8"
@@ -133,47 +85,57 @@
               </StackPanel>
             </Border>
 
-            <StackPanel Spacing="4">
-              <TextBlock FontWeight="SemiBold" Text="{DynamicResource Workflow.Guided.Prerequisites.Title}" />
-              <TextBlock Text="{Binding PrerequisitesText}" TextWrapping="Wrap" />
-            </StackPanel>
-
-            <Border IsVisible="{Binding HasOfficialLocation}"
-                    Padding="14" CornerRadius="8"
+            <Border IsVisible="{Binding IsGeneralManualWorkflow}"
+                    Padding="12" CornerRadius="8"
                     Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-              <StackPanel Spacing="7">
-                <TextBlock FontWeight="SemiBold" Text="{Binding NavigationLocationTitle}" />
-                <TextBlock Text="{DynamicResource Workflow.Navigation.Destination}" />
-                <TextBlock Text="{Binding OfficialLocationText}" TextWrapping="Wrap" />
-                <TextBlock Text="{DynamicResource Workflow.Navigation.ExpectedOrigins}" />
-                <TextBlock Text="{Binding ExpectedOriginsText}" TextWrapping="Wrap" />
-                <TextBlock Text="{DynamicResource Workflow.Navigation.Disclaimer}" TextWrapping="Wrap" />
-                <Button IsVisible="{Binding HasOfficialLocation}"
+              <TextBlock Text="{DynamicResource Workflow.Trust.General.CompactMessage}" TextWrapping="Wrap" />
+            </Border>
+
+            <Border IsVisible="{Binding IsPasswordCredentialAction}"
+                    Padding="12" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="8">
+                <TextBlock FontWeight="SemiBold"
+                           Text="{DynamicResource Workflow.Guided.Credential.Title}" />
+                <TextBlock Text="{Binding ReplacementCredentialGuidanceText}" TextWrapping="Wrap" />
+                <Button IsVisible="{Binding CanGenerateCredentialForCurrentAction}"
                         HorizontalAlignment="Left"
-                        AutomationProperties.AutomationId="workflow-open-discovered-page"
-                        Content="{DynamicResource Workflow.Browser.OpenPrepared}"
-                        Command="{Binding OpenRecoveryBrowserCommand}" />
-                <Button HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="workflow-generate-credential"
+                        Content="{DynamicResource Workflow.Guided.Credential.Generate}"
+                        Command="{Binding GenerateCredentialCommand}" />
+                <TextBlock IsVisible="{Binding HasCredentialReference}"
+                           Text="{Binding CredentialReferenceText}"
+                           TextWrapping="Wrap" />
+                <ContentControl x:Name="CredentialHandoffHost" />
+              </StackPanel>
+            </Border>
+
+            <Button IsVisible="{Binding IsGuidedPrimaryActionVisible}"
+                    HorizontalAlignment="Left"
+                    Classes="accent initial-focus"
+                    AutomationProperties.AutomationId="workflow-primary-action"
+                    Content="{Binding GuidedPrimaryActionText}"
+                    Command="{Binding GuidedPrimaryActionCommand}" />
+
+            <Border IsVisible="{Binding HasBrowserLaunchFailure}"
+                    Padding="14" CornerRadius="8"
+                    BorderThickness="2"
+                    BorderBrush="{DynamicResource SystemControlErrorTextForegroundBrush}"
+                    AutomationProperties.AutomationId="workflow-browser-launch-failure"
+                    AutomationProperties.LiveSetting="Assertive">
+              <StackPanel Spacing="8">
+                <TextBlock FontWeight="SemiBold"
+                           Text="{DynamicResource Workflow.Browser.Degraded.Title}"
+                           TextWrapping="Wrap" />
+                <TextBlock Text="{Binding BrowserLaunchFailureMessage}" TextWrapping="Wrap" />
+                <TextBlock Text="{DynamicResource Workflow.Browser.Degraded.Help}" TextWrapping="Wrap" />
+                <Button IsVisible="{Binding CanUseExternalBrowserFallback}"
+                        HorizontalAlignment="Left"
                         AutomationProperties.AutomationId="workflow-open-external-fallback"
                         Content="{DynamicResource Workflow.Browser.ExternalFallback}"
                         Command="{Binding OpenOfficialPageCommand}" />
               </StackPanel>
             </Border>
-
-            <Button IsVisible="{Binding CanGenerateCredentialForCurrentAction}"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="workflow-generate-credential"
-                    Content="{DynamicResource Workflow.Guided.Credential.Generate}"
-                    Command="{Binding GenerateCredentialCommand}" />
-            <TextBlock IsVisible="{Binding HasCredentialReference}"
-                       Text="{Binding CredentialReferenceText}"
-                       TextWrapping="Wrap" />
-
-            <Button IsVisible="{Binding CanRunGuidedPrimary}"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="workflow-primary-action"
-                    Content="{Binding GuidedPrimaryActionText}"
-                    Command="{Binding GuidedPrimaryActionCommand}" />
 
             <Border IsVisible="{Binding IsCurrentActionInProgress}"
                     Padding="14" CornerRadius="8"
@@ -203,7 +165,7 @@
               </StackPanel>
             </Border>
 
-            <TextBlock IsVisible="{Binding HasNavigationStatus}"
+            <TextBlock IsVisible="{Binding HasStandaloneNavigationStatus}"
                        AutomationProperties.LiveSetting="Polite"
                        Text="{Binding NavigationStatus}"
                        TextWrapping="Wrap" />
@@ -226,11 +188,76 @@
               </StackPanel>
             </Border>
 
-            <Button IsVisible="{Binding CanReportCurrentProblem}"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="workflow-cannot-continue"
-                    Content="{DynamicResource Workflow.Guided.CannotContinue}"
-                    Command="{Binding ShowProblemReviewCommand}" />
+            <WrapPanel ItemSpacing="10" LineSpacing="10">
+              <Button IsVisible="{Binding CanReportCurrentProblem}"
+                      AutomationProperties.AutomationId="workflow-cannot-continue"
+                      Content="{DynamicResource Workflow.Guided.CannotContinue}"
+                      Command="{Binding ShowProblemReviewCommand}" />
+              <Button IsVisible="{Binding CanDeferAccount}"
+                      AutomationProperties.AutomationId="workflow-defer-account"
+                      Content="{DynamicResource Dashboard.Recommendation.Action.Skip}"
+                      Command="{Binding DeferAccountCommand}" />
+            </WrapPanel>
+
+            <WrapPanel ItemSpacing="10" LineSpacing="10">
+              <Button AutomationProperties.AutomationId="workflow-toggle-security-details"
+                      Content="{Binding SecurityDetailsActionText}"
+                      Command="{Binding ToggleSecurityDetailsCommand}" />
+              <Button AutomationProperties.AutomationId="workflow-toggle-progress-details"
+                      Content="{Binding ProgressDetailsActionText}"
+                      Command="{Binding ToggleProgressDetailsCommand}" />
+            </WrapPanel>
+
+            <Border IsVisible="{Binding IsSecurityDetailsVisible}"
+                    AutomationProperties.AutomationId="workflow-security-details"
+                    Padding="14" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="9">
+                <TextBlock FontWeight="SemiBold" Text="{Binding WorkflowTrustTitle}" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding WorkflowTrustMessage}" TextWrapping="Wrap" />
+                <TextBlock FontWeight="SemiBold" Text="{Binding CurrentActionWhyText}" TextWrapping="Wrap" />
+                <TextBlock FontWeight="SemiBold"
+                           Text="{DynamicResource Workflow.Guided.Authentication.Title}" />
+                <TextBlock Text="{Binding AuthenticationGuidanceText}" TextWrapping="Wrap" />
+                <TextBlock FontWeight="SemiBold"
+                           Text="{DynamicResource Workflow.Guided.Prerequisites.Title}" />
+                <TextBlock Text="{Binding PrerequisitesText}" TextWrapping="Wrap" />
+                <StackPanel IsVisible="{Binding HasOfficialLocation}" Spacing="6">
+                  <TextBlock FontWeight="SemiBold" Text="{Binding NavigationLocationTitle}" />
+                  <TextBlock Text="{DynamicResource Workflow.Navigation.Destination}" />
+                  <TextBlock Text="{Binding OfficialLocationText}" TextWrapping="Wrap" />
+                  <TextBlock Text="{DynamicResource Workflow.Navigation.ExpectedOrigins}" />
+                  <TextBlock Text="{Binding ExpectedOriginsText}" TextWrapping="Wrap" />
+                  <TextBlock Text="{DynamicResource Workflow.Navigation.Disclaimer}" TextWrapping="Wrap" />
+                </StackPanel>
+                <Button HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="workflow-show-advanced"
+                        Content="{DynamicResource Workflow.Guided.Advanced.Show}"
+                        Command="{Binding ShowAdvancedStatusCommand}" />
+              </StackPanel>
+            </Border>
+
+            <Border IsVisible="{Binding IsProgressDetailsVisible}"
+                    AutomationProperties.AutomationId="workflow-progress-details"
+                    Padding="14" CornerRadius="8"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+              <StackPanel Spacing="9">
+                <TextBlock FontWeight="SemiBold" Text="{Binding CurrentActionProgressText}" />
+                <ItemsControl ItemsSource="{Binding Actions}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:WorkflowActionItemViewModel">
+                      <Grid Margin="3" ColumnDefinitions="28,*" ColumnSpacing="8">
+                        <TextBlock Grid.Column="0" HorizontalAlignment="Center" FontWeight="Bold" Text="{Binding Symbol}" />
+                        <StackPanel Grid.Column="1" Spacing="2">
+                          <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
+                          <TextBlock FontSize="12" Text="{Binding Status}" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
           </StackPanel>
         </Border>
         </Grid>
@@ -269,29 +296,6 @@
           </StackPanel>
         </Border>
 
-        <Border Padding="16" CornerRadius="10"
-                Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
-          <StackPanel Spacing="10">
-            <TextBlock Classes="section-title" Text="{DynamicResource Workflow.Guided.Progress.Title}" />
-            <ItemsControl ItemsSource="{Binding Actions}">
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:WorkflowActionItemViewModel">
-                  <Grid Margin="3" ColumnDefinitions="28,*" ColumnSpacing="8">
-                    <TextBlock Grid.Column="0" HorizontalAlignment="Center" FontWeight="Bold" Text="{Binding Symbol}" />
-                    <StackPanel Grid.Column="1" Spacing="2">
-                      <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
-                      <TextBlock FontSize="12" Text="{Binding Status}" TextWrapping="Wrap" />
-                    </StackPanel>
-                  </Grid>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="workflow-show-advanced"
-                    Content="{DynamicResource Workflow.Guided.Advanced.Show}"
-                    Command="{Binding ShowAdvancedStatusCommand}" />
-          </StackPanel>
-        </Border>
       </StackPanel>
 
       <StackPanel IsVisible="{Binding IsAdvancedStatusVisible}" Spacing="18">

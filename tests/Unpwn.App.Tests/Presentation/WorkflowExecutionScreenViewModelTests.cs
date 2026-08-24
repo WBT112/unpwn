@@ -53,9 +53,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
 
         await viewModel.RefreshCommand.ExecuteAsync();
-        await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "reset-password");
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        await ExposeExternalFallbackAsync(viewModel);
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
 
         Assert.True(viewModel.HasWorkflow);
@@ -74,9 +73,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var viewModel = fixture.CreateViewModel();
 
         await viewModel.RefreshCommand.ExecuteAsync();
-        await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action =>
-            action.DefinitionId == "reset-password");
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        await ExposeExternalFallbackAsync(viewModel);
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
 
         Assert.True(viewModel.HasWorkflow);
@@ -92,8 +90,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         var fixture = new Fixture();
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
-        await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "reset-password");
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        await ExposeExternalFallbackAsync(viewModel);
         var revision = fixture.Execution.State!.Revision;
         var applyCalls = fixture.Execution.ApplyCalls;
 
@@ -103,14 +101,14 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.Equal("https://github.com/password_reset", fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
         Assert.Equal(applyCalls, fixture.Execution.ApplyCalls);
         Assert.Equal(revision, fixture.Execution.State.Revision);
-        Assert.Equal(RecoveryActionStatus.Open, fixture.Execution.State.GetAction("reset-password").Status);
+        Assert.Equal(RecoveryActionStatus.InProgress, fixture.Execution.State.GetAction("identify-account-reset").Status);
         Assert.Contains("remains unchanged", viewModel.NavigationStatus, StringComparison.Ordinal);
     }
 
     [Theory]
     [InlineData("review-api-tokens-reset", "https://github.com/settings/tokens")]
     [InlineData("review-ssh-signing-keys-reset", "https://github.com/settings/keys")]
-    public async Task OpensTheReviewedLocationForCriticalDeveloperCredentials(
+    public async Task ShowsTheReviewedLocationForCriticalDeveloperCredentialsWithoutExternalFallback(
         string actionId,
         string expectedDestination)
     {
@@ -121,9 +119,9 @@ public sealed class WorkflowExecutionScreenViewModelTests
         viewModel.SelectedAction = viewModel.Actions.Single(action =>
             action.DefinitionId == actionId);
 
-        await viewModel.OpenOfficialPageCommand.ExecuteAsync();
-
-        Assert.Equal(expectedDestination, fixture.ExternalNavigation.LastDestination?.AbsoluteUri);
+        Assert.Equal(expectedDestination, viewModel.OfficialLocationText);
+        Assert.False(viewModel.CanUseExternalBrowserFallback);
+        Assert.False(viewModel.OpenOfficialPageCommand.CanExecute(null));
         Assert.Equal(RecoveryActionStatus.Open, fixture.Execution.State!.GetAction(actionId).Status);
     }
 
@@ -301,8 +299,8 @@ public sealed class WorkflowExecutionScreenViewModelTests
         };
         var viewModel = fixture.CreateViewModel();
         await viewModel.RefreshCommand.ExecuteAsync();
-        await viewModel.BeginCommand.ExecuteAsync();
-        viewModel.SelectedAction = viewModel.Actions.Single(action => action.DefinitionId == "reset-password");
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        await ExposeExternalFallbackAsync(viewModel);
         var revision = fixture.Execution.State!.Revision;
 
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
@@ -483,12 +481,15 @@ public sealed class WorkflowExecutionScreenViewModelTests
         await viewModel.RefreshCommand.ExecuteAsync();
         await viewModel.StartRecoveryCommand.ExecuteAsync();
         Assert.True(viewModel.TryTakePendingRecoveryBrowserRequest(out _));
+        viewModel.ReportRecoveryBrowserOpenResult(
+            false,
+            failureReason: RecoveryBrowserLaunchFailureReason.HostUnavailable);
 
         var requests = new List<RecoveryBrowserWorkspaceRequest>();
         viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
 
         Assert.True(viewModel.CanRunGuidedPrimary);
-        Assert.Equal("Open this step in Recovery Browser", viewModel.GuidedPrimaryActionText);
+        Assert.Equal("Retry Recovery Browser", viewModel.GuidedPrimaryActionText);
         await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
 
         var request = Assert.Single(requests);
@@ -497,7 +498,7 @@ public sealed class WorkflowExecutionScreenViewModelTests
             fixture.Execution.State!.GetAction("identify-account-reset").Status);
 
         viewModel.ReportRecoveryBrowserOpenResult(true, workspaceVisible: true);
-        Assert.False(viewModel.CanRunGuidedPrimary);
+        Assert.True(viewModel.CanRunGuidedPrimary);
     }
 
     [Fact]
@@ -772,6 +773,9 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
         var revision = fixture.Execution.State!.Revision;
 
+        viewModel.ReportRecoveryBrowserOpenResult(
+            false,
+            failureReason: RecoveryBrowserLaunchFailureReason.StartupFailed);
         await viewModel.OpenOfficialPageCommand.ExecuteAsync();
 
         Assert.Equal(1, fixture.ExternalNavigation.OpenCalls);
@@ -906,6 +910,149 @@ public sealed class WorkflowExecutionScreenViewModelTests
         Assert.False(viewModel.HasAccount);
         Assert.False(viewModel.HasExecution);
         Assert.Null(fixture.Execution.State);
+    }
+
+    [Fact]
+    public async Task ManagedBrowserIsTheOnlyPrimaryPathUntilAControlledStartupFailure()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        Assert.Equal(RecoveryBrowserLaunchState.Available, viewModel.BrowserLaunchState);
+        Assert.True(viewModel.IsGuidedPrimaryActionVisible);
+        Assert.False(viewModel.CanUseExternalBrowserFallback);
+        Assert.False(viewModel.OpenOfficialPageCommand.CanExecute(null));
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.Single(requests);
+        Assert.Equal(RecoveryBrowserLaunchState.Starting, viewModel.BrowserLaunchState);
+        Assert.True(viewModel.IsBrowserWorkspacePresented);
+        Assert.Equal("Opening Recovery Browser…", viewModel.GuidedPrimaryActionText);
+        Assert.False(viewModel.CanUseExternalBrowserFallback);
+
+        viewModel.ReportRecoveryBrowserOpenResult(
+            false,
+            failureReason: RecoveryBrowserLaunchFailureReason.StartupFailed);
+
+        Assert.Equal(RecoveryBrowserLaunchState.Failed, viewModel.BrowserLaunchState);
+        Assert.False(viewModel.IsBrowserWorkspacePresented);
+        Assert.Equal("Retry Recovery Browser", viewModel.GuidedPrimaryActionText);
+        Assert.True(viewModel.CanUseExternalBrowserFallback);
+        Assert.True(viewModel.OpenOfficialPageCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task ActivePrimaryActionFocusesBrowserWithoutChangingRecoveryTruth()
+    {
+        var fixture = new Fixture();
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        var revision = fixture.Execution.State!.Revision;
+        var focusRequests = 0;
+        viewModel.RecoveryBrowserFocusRequested += (_, _) => focusRequests++;
+
+        viewModel.ReportRecoveryBrowserOpenResult(true, workspaceVisible: true);
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.Equal(1, focusRequests);
+        Assert.Equal(revision, fixture.Execution.State.Revision);
+        Assert.Equal(RecoveryBrowserLaunchState.Active, viewModel.BrowserLaunchState);
+        Assert.False(viewModel.CanUseExternalBrowserFallback);
+    }
+
+    [Fact]
+    public async Task ActiveWorkspaceStartsTheNextOpenActionBeforeReusingBrowser()
+    {
+        var fixture = new Fixture { Confirm = true };
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+        viewModel.ReportRecoveryBrowserOpenResult(true, workspaceVisible: true);
+        foreach (var criterion in viewModel.CompletionCriteria)
+        {
+            await criterion.ToggleCommand.ExecuteAsync();
+        }
+        await viewModel.CompleteActionCommand.ExecuteAsync();
+        var nextActionId = viewModel.SelectedAction!.DefinitionId;
+        var requests = new List<RecoveryBrowserWorkspaceRequest>();
+        viewModel.RecoveryBrowserRequested += (_, request) => requests.Add(request);
+
+        Assert.Equal(
+            RecoveryActionStatus.Open,
+            fixture.Execution.State!.GetAction(nextActionId).Status);
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+
+        Assert.Equal(
+            RecoveryActionStatus.InProgress,
+            fixture.Execution.State.GetAction(nextActionId).Status);
+        Assert.Single(requests);
+    }
+
+    [Fact]
+    public async Task RejectedDestinationNeverEnablesExternalFallback()
+    {
+        var fixture = new Fixture(
+            "unsupported.example",
+            "https://private.example.test/account");
+        fixture.LocationDiscovery.Result = RecoveryLocationDiscoveryResult.Failure(
+            RecoveryLocationDiscoveryFailureCode.UnsafeNetworkTarget);
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.BeginCommand.ExecuteAsync();
+
+        await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+        viewModel.ReportRecoveryBrowserOpenResult(
+            false,
+            failureReason: RecoveryBrowserLaunchFailureReason.StartupFailed);
+        await viewModel.OpenOfficialPageCommand.ExecuteAsync();
+
+        Assert.True(viewModel.HasBrowserLocationProblem);
+        Assert.False(viewModel.CanUseExternalBrowserFallback);
+        Assert.False(viewModel.OpenOfficialPageCommand.CanExecute(null));
+        Assert.Equal(0, fixture.ExternalNavigation.OpenCalls);
+    }
+
+    [Fact]
+    public async Task SecurityAndProgressDetailsAreCollapsedAndIndependent()
+    {
+        var fixture = new Fixture(
+            providerId: "bitwarden",
+            accountUrl: "https://bitwarden-vault.example.test/account");
+        var viewModel = fixture.CreateViewModel();
+        await viewModel.RefreshCommand.ExecuteAsync();
+        await viewModel.StartRecoveryCommand.ExecuteAsync();
+
+        Assert.True(viewModel.IsGeneralManualWorkflow);
+        Assert.False(viewModel.IsSecurityDetailsVisible);
+        Assert.False(viewModel.IsProgressDetailsVisible);
+
+        viewModel.ToggleSecurityDetailsCommand.Execute(null);
+        Assert.True(viewModel.IsSecurityDetailsVisible);
+        Assert.False(viewModel.IsProgressDetailsVisible);
+
+        viewModel.ToggleProgressDetailsCommand.Execute(null);
+        Assert.True(viewModel.IsSecurityDetailsVisible);
+        Assert.True(viewModel.IsProgressDetailsVisible);
+    }
+
+    private static async Task ExposeExternalFallbackAsync(
+        WorkflowExecutionScreenViewModel viewModel)
+    {
+        if (!viewModel.HasPreparedNavigation)
+        {
+            await viewModel.GuidedPrimaryActionCommand.ExecuteAsync();
+        }
+        Assert.True(viewModel.HasPreparedNavigation);
+        viewModel.ReportRecoveryBrowserOpenResult(
+            false,
+            failureReason: RecoveryBrowserLaunchFailureReason.StartupFailed);
+        Assert.True(viewModel.CanUseExternalBrowserFallback);
     }
 
     private sealed class Fixture

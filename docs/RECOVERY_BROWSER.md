@@ -31,7 +31,13 @@ and allowed origins: the workflow remains clearly labelled as general guidance, 
 upgrades its trust level nor changes recovery state. Imported URLs, display names, and browser content
 cannot create or extend these entries.
 
-The external operating-system browser is an explicitly labelled fallback. Managed-host failure must never silently downgrade to the external browser. The Linux WebKitGTK dialog is still an isolated unpwn-owned host with the same boundary and lifecycle; it is not the external-browser fallback.
+The external operating-system browser is an explicitly labelled degraded-mode fallback. It is hidden
+while the Managed Recovery Browser is available, starting, or active and becomes available only after
+a controlled lifecycle, host, or runtime startup failure for an already validated handoff. Retrying the
+managed browser remains the primary action. Managed-host failure must never silently downgrade to the
+external browser. Closing a healthy managed session is not a startup failure and does not reveal the
+fallback. The Linux WebKitGTK dialog is still an isolated unpwn-owned host with the same boundary and
+lifecycle; it is not the external-browser fallback.
 
 If no reviewed or safely discovered start address is available, the browser stays closed and the
 guided screen explains why. The user can open the affected account directly in the account editor
@@ -137,6 +143,11 @@ No platform may silently fall back to an unhardened profile or host.
 The assistant initially receives focus when the combined workspace opens. Later action refreshes do
 not steal focus while the user is interacting with provider content.
 
+The assistant models managed-browser presentation explicitly as available/not started, starting,
+active, or failed. These states are transient presentation context only. They do not acknowledge a
+criterion, complete an action, or change recovery/risk truth. When active, the single primary action
+focuses the existing browser instead of creating a competing navigation path.
+
 ## Testing
 
 Tests use synthetic/loopback content only and cover:
@@ -149,7 +160,8 @@ Tests use synthetic/loopback content only and cover:
 - clear → release → delete cleanup ordering;
 - cleanup failure/retry, abnormal termination, orphan detection, and no auto-resume;
 - checklist persistence with no browser-driven recovery transition;
-- explicit external-browser fallback;
+- hidden-by-default external-browser fallback exposed only after a controlled managed-host failure,
+  including the invariant that rejected destinations never expose it;
 - credential reveal/copy/lock/close cleanup;
 - provider-reviewed synthetic insertion, late vault retrieval, wrong origin, changed content, MFA/CAPTCHA/email-link stops, and no form submission;
 - rejection of generic automatic DOM insertion;

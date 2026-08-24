@@ -51,13 +51,19 @@ internal static class DesktopE2EHarness
 
         await using var provider = await SyntheticProvider.StartAsync();
         var csvPath = Path.Combine(runRoot, "synthetic-accounts.csv");
+        var service = scenario switch
+        {
+            "reviewed-browser-step-hierarchy" => "github.com",
+            "browser-startup-failure-fallback" => "bitwarden",
+            _ => "synthetic",
+        };
         var csvContents = string.Equals(
             scenario,
             "import-correction-and-retry",
             StringComparison.Ordinal)
             ? "unrelated,columns\nvalue,only\n"
             : "service,username,url,password\n" +
-                $"synthetic,user@example.invalid,{provider.PasswordChangeUri},synthetic-ignored-value\n";
+                $"{service},user@example.invalid,{provider.PasswordChangeUri},synthetic-ignored-value\n";
         await File.WriteAllTextAsync(
             csvPath,
             csvContents);

@@ -229,13 +229,25 @@ public sealed class AccessibilityHeadlessTests
             var currentAction = FindByAutomationId(view, "workflow-current-action");
             Assert.True(Assert.IsType<Control>(currentAction, exactMatch: false).Focusable);
             Assert.NotNull(FindByAutomationId(view, "workflow-primary-action"));
+            Assert.Single(
+                view.GetLogicalDescendants().OfType<StyledElement>(),
+                element => AutomationProperties.GetAutomationId(element) == "workflow-primary-action");
             Assert.NotNull(FindByAutomationId(view, "workflow-defer-account"));
             Assert.DoesNotContain(
                 view.GetLogicalDescendants().OfType<StyledElement>(),
                 element => AutomationProperties.GetAutomationId(element) == "workflow-recovery-path");
             var browserWorkspace = FindByAutomationId(view, "workflow-browser-workspace");
             Assert.True(Assert.IsType<Control>(browserWorkspace, exactMatch: false).Focusable);
+            Assert.DoesNotContain(
+                view.GetLogicalDescendants().OfType<StyledElement>(),
+                element => AutomationProperties.GetAutomationId(element) ==
+                    "workflow-open-discovered-page");
+            Assert.NotNull(FindByAutomationId(view, "workflow-browser-launch-failure"));
             Assert.NotNull(FindByAutomationId(view, "workflow-open-external-fallback"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-toggle-security-details"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-security-details"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-toggle-progress-details"));
+            Assert.NotNull(FindByAutomationId(view, "workflow-progress-details"));
             Assert.NotNull(FindByAutomationId(view, "workflow-review-account-details"));
             Assert.NotNull(FindByAutomationId(view, "workflow-criteria-acknowledge"));
             Assert.NotNull(FindByAutomationId(view, "workflow-done"));
